@@ -15,8 +15,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function LoginForm() {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -91,7 +93,12 @@ export default function LoginForm() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button className="w-full mt-8" type="submit" disabled={isLoading}>
+          <Button
+            className="w-full mt-8"
+            type="submit"
+            disabled={isLoading}
+            onClick={() => navigate("/admin")}
+          >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
