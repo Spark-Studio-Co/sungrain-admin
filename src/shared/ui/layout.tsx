@@ -9,6 +9,7 @@ import {
   BarChart,
   HelpCircle,
   SunIcon,
+  FileIcon,
 } from "lucide-react";
 
 import {
@@ -37,25 +38,25 @@ const navigationItems = [
   {
     title: "Главная",
     icon: Home,
-    url: "#",
+    url: "/admin",
     isActive: true,
   },
   {
     title: "Пользователи",
     icon: Users,
-    url: "#",
+    url: "/admin/users",
   },
   {
-    title: "Таблицы",
-    icon: Settings,
-    url: "#",
+    title: "Контракты",
+    icon: FileIcon,
+    url: "/admin/contracts",
   },
 ];
 
 export const Layout: React.FC<ILayout> = ({ children }) => {
   return (
     <SidebarProvider>
-      <div className="h-[100vh] flex">
+      <div className="h-[100vh] flex w-full max-w-[1920px] pr-8">
         <Sidebar>
           <SidebarHeader>
             <SidebarMenu>
