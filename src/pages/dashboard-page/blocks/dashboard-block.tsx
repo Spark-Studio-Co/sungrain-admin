@@ -17,63 +17,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useGetContracts } from "@/entities/contracts/api/get/use-get-contracts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { useMemo } from "react";
 
-// Status badge mapping
-const statusBadge = {
-  active: { label: "Активен", variant: "default" },
-  completed: { label: "Завершен", variant: "success" },
-  pending: { label: "Ожидает", variant: "warning" },
-};
-
-// Sample data for activities (keeping this as static for now)
-const recentActivities = [
-  {
-    id: 1,
-    action: "Добавлен новый вагон",
-    contract: "001-2024",
-    user: "Иванов А.П.",
-    timestamp: "Сегодня, 14:32",
-  },
-  {
-    id: 2,
-    action: "Загружен документ 'Паспорт качества №123'",
-    contract: "001-2024",
-    user: "Петрова Е.С.",
-    timestamp: "Сегодня, 12:15",
-  },
-  {
-    id: 3,
-    action: "Изменен статус вагона на 'Отгружен'",
-    contract: "002-2024",
-    user: "Сидоров И.В.",
-    timestamp: "Сегодня, 10:45",
-  },
-  {
-    id: 4,
-    action: "Создан новый контракт",
-    contract: "005-2024",
-    user: "Иванов А.П.",
-    timestamp: "Вчера, 16:20",
-  },
-  {
-    id: 5,
-    action: "Завершена отгрузка по контракту",
-    contract: "003-2024",
-    user: "Петрова Е.С.",
-    timestamp: "Вчера, 14:05",
-  },
-];
-
 export const DashboardBlock = () => {
-  // Fetch the 5 most recent contracts
+  const navigate = useNavigate();
+
   const {
     data: contractsData,
     isLoading,
@@ -81,16 +34,12 @@ export const DashboardBlock = () => {
     error,
   } = useGetContracts({
     page: 1,
-    limit: 5, // Fetch only 5 contracts
+    limit: 5,
   });
 
-  // Extract contracts from the response
   const recentContracts = useMemo(() => {
     if (!contractsData || !contractsData.data) return [];
 
-    console.log("contract data:", contractsData);
-
-    // Map API data to the format we need
     return contractsData.data.map((contract: any) => ({
       id: contract.id || `${Math.floor(Math.random() * 1000)}-2024`,
       crop: contract.crop || "Не указано",
@@ -100,34 +49,21 @@ export const DashboardBlock = () => {
       date: contract.created_at
         ? new Date(contract.created_at).toLocaleDateString("ru-RU")
         : "Не указано",
-      // Assuming these fields might not be in your API response, so providing defaults
       status: contract.status || "active",
       progress: contract.progress || Math.floor(Math.random() * 100),
     }));
   }, [contractsData]);
 
-  // Calculate summary statistics
   const totalContracts = recentContracts.length;
+
   const activeContracts = recentContracts.filter(
     (c: any) => c.status === "active"
-  ).length;
-  const completedContracts = recentContracts.filter(
-    (c: any) => c.status === "completed"
   ).length;
 
   const totalVolume = recentContracts.reduce(
     (sum: any, contract: any) => sum + contract.volume,
     0
   );
-  const shippedVolume = recentContracts.reduce(
-    (sum: any, contract: any) =>
-      sum + (contract.volume * contract.progress) / 100,
-    0
-  );
-  const remainingVolume = totalVolume - shippedVolume;
-
-  const shippingProgress =
-    totalVolume > 0 ? (shippedVolume / totalVolume) * 100 : 0;
 
   return (
     <div className="container mx-auto py-6 space-y-8">
@@ -160,13 +96,12 @@ export const DashboardBlock = () => {
               <>
                 <div className="text-2xl font-bold">{totalContracts}</div>
                 <p className="text-xs text-muted-foreground">
-                  Активных: {activeContracts}, Завершенных: {completedContracts}
+                  Активных: {activeContracts}
                 </p>
               </>
             )}
           </CardContent>
         </Card>
-
         <Card className="w-full">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Общий объем</CardTitle>
@@ -178,23 +113,17 @@ export const DashboardBlock = () => {
             ) : (
               <>
                 <div className="text-2xl font-bold">
-                  {totalVolume.toLocaleString()} т
+                  {totalVolume.toLocaleString()} т.
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Отгружено: {Math.round(shippedVolume).toLocaleString()} т
-                </p>
               </>
             )}
           </CardContent>
         </Card>
       </div>
-
-      {/* Main Content */}
       <Tabs defaultValue="contracts" className="space-y-4">
         <TabsList>
           <TabsTrigger value="contracts">Контракты</TabsTrigger>
         </TabsList>
-
         <TabsContent value="contracts" className="space-y-4">
           <Card>
             <CardHeader>
@@ -215,7 +144,6 @@ export const DashboardBlock = () => {
                   </div>
                 </Alert>
               )}
-
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -223,12 +151,10 @@ export const DashboardBlock = () => {
                     <TableHead>Культура</TableHead>
                     <TableHead>Объем (т)</TableHead>
                     <TableHead>Дата</TableHead>
-                    <TableHead>Статус</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    // Loading skeleton
                     Array(5)
                       .fill(0)
                       .map((_, index) => (
@@ -243,9 +169,13 @@ export const DashboardBlock = () => {
                         </TableRow>
                       ))
                   ) : recentContracts.length > 0 ? (
-                    // Actual data
                     recentContracts.map((contract: any) => (
-                      <TableRow key={contract.id}>
+                      <TableRow
+                        key={contract.id}
+                        onClick={() =>
+                          navigate(`/admin/contracts/${contract.id}`)
+                        }
+                      >
                         <TableCell className="font-medium">
                           {contract.id}
                         </TableCell>
@@ -254,18 +184,6 @@ export const DashboardBlock = () => {
                           {contract.volume.toLocaleString()}
                         </TableCell>
                         <TableCell>{contract.date}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              (statusBadge[contract.status]?.variant as
-                                | "default"
-                                | "success"
-                                | "warning") || "default"
-                            }
-                          >
-                            {statusBadge[contract.status]?.label || "Активен"}
-                          </Badge>
-                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
