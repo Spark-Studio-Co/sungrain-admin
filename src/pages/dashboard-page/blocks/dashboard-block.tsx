@@ -18,13 +18,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useGetContracts } from "@/entities/contracts/api/get/use-get-contracts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { useMemo } from "react";
 
 export const DashboardBlock = () => {
+  const navigate = useNavigate();
+
   const {
     data: contractsData,
     isLoading,
@@ -68,12 +70,6 @@ export const DashboardBlock = () => {
     (sum: any, contract: any) => sum + contract.volume,
     0
   );
-  const shippedVolume = recentContracts.reduce(
-    (sum: any, contract: any) =>
-      sum + (contract.volume * contract.progress) / 100,
-    0
-  );
-
   return (
     <div className="container mx-auto py-6 space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -122,11 +118,8 @@ export const DashboardBlock = () => {
             ) : (
               <>
                 <div className="text-2xl font-bold">
-                  {totalVolume.toLocaleString()} т
+                  {totalVolume.toLocaleString()} т.
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Отгружено: {Math.round(shippedVolume).toLocaleString()} т
-                </p>
               </>
             )}
           </CardContent>
@@ -167,7 +160,6 @@ export const DashboardBlock = () => {
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    // Loading skeleton
                     Array(5)
                       .fill(0)
                       .map((_, index) => (
@@ -182,9 +174,13 @@ export const DashboardBlock = () => {
                         </TableRow>
                       ))
                   ) : recentContracts.length > 0 ? (
-                    // Actual data
                     recentContracts.map((contract: any) => (
-                      <TableRow key={contract.id}>
+                      <TableRow
+                        key={contract.id}
+                        onClick={() =>
+                          navigate(`/admin/contracts/${contract.id}`)
+                        }
+                      >
                         <TableCell className="font-medium">
                           {contract.id}
                         </TableCell>
