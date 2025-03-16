@@ -1,11 +1,12 @@
 import { apiClient } from "@/shared/api/apiClient";
 
 export interface AddWagonRequest {
+  contractId: string
   number: string;
   capacity: number;
   owner: string;
   status: string
-  // document: File
+  files: File[]
 }
 
 export const addWagon = async (data: AddWagonRequest) => {
@@ -13,13 +14,20 @@ export const addWagon = async (data: AddWagonRequest) => {
   const formData = new FormData();
 
   // Add all the text fields
+  formData.append('contractId', data.contractId);
   formData.append('status', data.status)
   formData.append('number', data.number);
   formData.append('capacity', data.capacity.toString());
   formData.append('owner', data.owner);
 
-  // Add the document file
-  // formData.append('document', data.document);
+
+  // Add the document files
+  if (data.files && data.files.length > 0) {
+    // Append each file individually
+    data.files.forEach(file => {
+      formData.append(`files`, file);
+    });
+  }
 
   // Send the request with the correct Content-Type header
   const response = await apiClient.post("/wagon", formData, {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Download, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,42 +17,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddWagonPopup } from "@/entities/wagon/ui/add-wagon-popup";
 import { usePopupStore } from "@/shared/model/popup-store";
 import { useGetContractsId } from "@/entities/contracts/api/get/use-get-contract-id";
 
-// Status mapping for wagon statuses
-const statusMap = {
-  at_elevator: {
-    label: "На элеваторе",
-    color: "default",
-    icon: <span className="h-2 w-2 rounded-full bg-gray-500" />,
-  },
-  loading: {
-    label: "Загрузка",
-    color: "warning",
-    icon: <span className="h-2 w-2 rounded-full bg-yellow-500" />,
-  },
-  in_transit: {
-    label: "В пути",
-    color: "warning",
-    icon: <span className="h-2 w-2 rounded-full bg-yellow-500" />,
-  },
-  shipped: {
-    label: "Отгружен",
-    color: "success",
-    icon: <span className="h-2 w-2 rounded-full bg-green-500" />,
-  },
-};
 
 interface ContractInnerBlockProps {
   contractId: string;
@@ -185,8 +154,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {documents.length > 0 ? (
-                      documents.map((doc: any) => (
+                    {contract?.files?.length > 0 ? (
+                      contract?.files?.map((doc: any) => (
                         <TableRow key={doc.id}>
                           <TableCell>{doc.name}</TableCell>
                           <TableCell>{doc.uploadedAt}</TableCell>
@@ -236,8 +205,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {wagons.length > 0 ? (
-                    wagons.map((wagon: any) => (
+                  {contract?.wagons?.length > 0 ? (
+                    contract?.wagons?.map((wagon: any) => (
                       <TableRow
                         key={wagon.id}
                         className={
@@ -268,7 +237,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           </CardContent>
         </Card>
       </div>
-      <AddWagonPopup />
+      <AddWagonPopup contractId={contractId} />
     </>
   );
 };

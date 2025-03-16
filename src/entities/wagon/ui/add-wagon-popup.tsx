@@ -19,7 +19,7 @@ import { usePopupStore } from "@/shared/model/popup-store";
 import { useAddWagon } from "../api/use-add-wagon";
 import { cn } from "@/lib/utils";
 
-export const AddWagonPopup = () => {
+export const AddWagonPopup = ({ contractId }: { contractId: string }) => {
   const { isOpen, close } = usePopupStore("addWagon");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -84,18 +84,18 @@ export const AddWagonPopup = () => {
 
   const handleSubmit = () => {
     if (!newWagon.number || !newWagon.capacity || !newWagon.owner) {
-      console.error("Please fill all fields and upload at least one document");
+      console.error("Please fill all fields");
       return;
     }
-
-    const document = files[0];
 
     addWagonMutation.mutate(
       {
         number: newWagon.number,
         capacity: Number(newWagon.capacity),
         owner: newWagon.owner,
-        status: ''
+        status: '',
+        contractId: contractId,
+        files: files
       },
       {
         onSuccess: () => {
