@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  TrendingUp,
-  Package,
-  Truck,
-  FileText,
-  ArrowRight,
-  Building2,
-  CheckCircle2,
-  AlertCircle,
-} from "lucide-react";
+import { Package, FileText, ArrowRight, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -118,18 +109,19 @@ export const DashboardBlock = () => {
   // Calculate summary statistics
   const totalContracts = recentContracts.length;
   const activeContracts = recentContracts.filter(
-    (c) => c.status === "active"
+    (c: any) => c.status === "active"
   ).length;
   const completedContracts = recentContracts.filter(
-    (c) => c.status === "completed"
+    (c: any) => c.status === "completed"
   ).length;
 
   const totalVolume = recentContracts.reduce(
-    (sum, contract) => sum + contract.volume,
+    (sum: any, contract: any) => sum + contract.volume,
     0
   );
   const shippedVolume = recentContracts.reduce(
-    (sum, contract) => sum + (contract.volume * contract.progress) / 100,
+    (sum: any, contract: any) =>
+      sum + (contract.volume * contract.progress) / 100,
     0
   );
   const remainingVolume = totalVolume - shippedVolume;

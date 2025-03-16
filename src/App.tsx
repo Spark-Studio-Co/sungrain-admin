@@ -35,11 +35,6 @@ function App() {
     fetchAdminStatus();
   }, [token]);
 
-  // ✅ Prevent rendering until `isAdmin` is determined
-  if (isAdmin === null) {
-    return <Loader variant="card" />;
-  }
-
   return (
     <QueryClientProvider client={reactQueryClient}>
       <Routes>
