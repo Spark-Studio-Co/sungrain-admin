@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@radix-ui/react-label";
 import { Upload, X, FileText, File } from "lucide-react";
 import { usePopupStore } from "@/shared/model/popup-store";
+import { useAddWagon } from "../api/use-add-wagon";
 import { cn } from "@/lib/utils";
 
 export const AddWagonPopup = () => {
@@ -79,23 +80,42 @@ export const AddWagonPopup = () => {
     }
   };
 
+  const addWagonMutation = useAddWagon();
+
   const handleSubmit = () => {
-    // Create FormData to send files along with wagon data
-    const formData = new FormData();
+    if (!newWagon.number || !newWagon.capacity || !newWagon.owner) {
+      console.error("Please fill all fields and upload at least one document");
+      return;
+    }
 
-    // Append wagon data
-    formData.append("wagonData", JSON.stringify(newWagon));
+    const document = files[0];
 
-    // Append files
-    files.forEach((file, index) => {
-      formData.append(`file-${index}`, file);
-    });
+    addWagonMutation.mutate(
+      {
+        number: newWagon.number,
+        capacity: Number(newWagon.capacity),
+        owner: newWagon.owner,
+        status: ''
+      },
+      {
+        onSuccess: () => {
+          // Reset form
+          setNewWagon({
+            number: "",
+            capacity: "",
+            owner: ""
+          });
+          setFiles([]);
 
-    // Here you would send the formData to your API
-    console.log("Submitting wagon data with files:", newWagon, files);
-
-    // Close the dialog after submission
-    close();
+          // Close the dialog
+          close();
+        },
+        onError: (error) => {
+          console.error("Error adding wagon:", error);
+          // You could add error handling UI here
+        }
+      }
+    );
   };
 
   return (
@@ -218,7 +238,12 @@ export const AddWagonPopup = () => {
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSubmit}>Добавить</Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={addWagonMutation.isPending}
+          >
+            {addWagonMutation.isPending ? "Добавление..." : "Добавить"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
