@@ -17,8 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
 import { useGetContracts } from "@/entities/contracts/api/get/use-get-contracts";
@@ -26,54 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { useMemo } from "react";
 
-// Status badge mapping
-const statusBadge = {
-  active: { label: "Активен", variant: "default" },
-  completed: { label: "Завершен", variant: "success" },
-  pending: { label: "Ожидает", variant: "warning" },
-};
-
-// Sample data for activities (keeping this as static for now)
-const recentActivities = [
-  {
-    id: 1,
-    action: "Добавлен новый вагон",
-    contract: "001-2024",
-    user: "Иванов А.П.",
-    timestamp: "Сегодня, 14:32",
-  },
-  {
-    id: 2,
-    action: "Загружен документ 'Паспорт качества №123'",
-    contract: "001-2024",
-    user: "Петрова Е.С.",
-    timestamp: "Сегодня, 12:15",
-  },
-  {
-    id: 3,
-    action: "Изменен статус вагона на 'Отгружен'",
-    contract: "002-2024",
-    user: "Сидоров И.В.",
-    timestamp: "Сегодня, 10:45",
-  },
-  {
-    id: 4,
-    action: "Создан новый контракт",
-    contract: "005-2024",
-    user: "Иванов А.П.",
-    timestamp: "Вчера, 16:20",
-  },
-  {
-    id: 5,
-    action: "Завершена отгрузка по контракту",
-    contract: "003-2024",
-    user: "Петрова Е.С.",
-    timestamp: "Вчера, 14:05",
-  },
-];
-
 export const DashboardBlock = () => {
-  // Fetch the 5 most recent contracts
   const {
     data: contractsData,
     isLoading,
@@ -81,14 +32,11 @@ export const DashboardBlock = () => {
     error,
   } = useGetContracts({
     page: 1,
-    limit: 5, // Fetch only 5 contracts
+    limit: 5,
   });
 
-  // Extract contracts from the response
   const recentContracts = useMemo(() => {
     if (!contractsData || !contractsData.data) return [];
-
-    console.log("contract data:", contractsData);
 
     // Map API data to the format we need
     return contractsData.data.map((contract: any) => ({
@@ -106,11 +54,12 @@ export const DashboardBlock = () => {
     }));
   }, [contractsData]);
 
-  // Calculate summary statistics
   const totalContracts = recentContracts.length;
+
   const activeContracts = recentContracts.filter(
     (c: any) => c.status === "active"
   ).length;
+
   const completedContracts = recentContracts.filter(
     (c: any) => c.status === "completed"
   ).length;
@@ -124,10 +73,6 @@ export const DashboardBlock = () => {
       sum + (contract.volume * contract.progress) / 100,
     0
   );
-  const remainingVolume = totalVolume - shippedVolume;
-
-  const shippingProgress =
-    totalVolume > 0 ? (shippedVolume / totalVolume) * 100 : 0;
 
   return (
     <div className="container mx-auto py-6 space-y-8">
@@ -166,7 +111,6 @@ export const DashboardBlock = () => {
             )}
           </CardContent>
         </Card>
-
         <Card className="w-full">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Общий объем</CardTitle>
@@ -188,13 +132,10 @@ export const DashboardBlock = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Main Content */}
       <Tabs defaultValue="contracts" className="space-y-4">
         <TabsList>
           <TabsTrigger value="contracts">Контракты</TabsTrigger>
         </TabsList>
-
         <TabsContent value="contracts" className="space-y-4">
           <Card>
             <CardHeader>
@@ -215,7 +156,6 @@ export const DashboardBlock = () => {
                   </div>
                 </Alert>
               )}
-
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -223,7 +163,6 @@ export const DashboardBlock = () => {
                     <TableHead>Культура</TableHead>
                     <TableHead>Объем (т)</TableHead>
                     <TableHead>Дата</TableHead>
-                    <TableHead>Статус</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -254,18 +193,6 @@ export const DashboardBlock = () => {
                           {contract.volume.toLocaleString()}
                         </TableCell>
                         <TableCell>{contract.date}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              (statusBadge[contract.status]?.variant as
-                                | "default"
-                                | "success"
-                                | "warning") || "default"
-                            }
-                          >
-                            {statusBadge[contract.status]?.label || "Активен"}
-                          </Badge>
-                        </TableCell>
                       </TableRow>
                     ))
                   ) : (

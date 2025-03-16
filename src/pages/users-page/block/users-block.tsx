@@ -26,11 +26,8 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useGetUsers } from "@/entities/users/api/get/use-get-users";
-import { useUpdateUsers } from "@/entities/users/api/patch/use-update-user";
 import { AddUserPopup } from "@/entities/users/ui/add-user-popup";
 import { useCreateUserDialogStore } from "@/entities/users/model/use-create-user-dialog";
-
-const roles = ["ADMIN", "USER"];
 
 // Define the User interface
 interface User {
@@ -46,20 +43,16 @@ interface User {
 
 export const UsersBlock = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
-  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const { setDialogOpen } = useCreateUserDialogStore();
-
-  const updateUserMutation = useUpdateUsers();
 
   const {
     data: usersData = { data: [], total: 0, page: 1, totalPages: 1 },
     isLoading,
     isError,
     error,
-    refetch,
   } = useGetUsers({
     page: currentPage,
     limit: itemsPerPage,
@@ -68,34 +61,9 @@ export const UsersBlock = () => {
   // Extract users from the response
   const users = usersData.data || [];
 
-  // Handle role change
-  const handleRoleChange = (userId: string, newRole: string) => {
-    const userToUpdate = users.find((user: User) => user.id === userId);
-    if (userToUpdate) {
-      updateUserMutation.mutate({
-        ...userToUpdate,
-        role: newRole,
-      });
-    }
-  };
-
-  // Handle edit user
-  const handleEditUser = (user: User) => {
-    setEditingUser(user);
-    setDialogOpen(true);
-  };
-
   // Handle add new user
   const handleAddUser = () => {
     setDialogOpen(true);
-  };
-
-  // Handle delete user
-  const handleDeleteUser = (userId: string) => {
-    // In a real application, you would make an API call to delete the user
-    console.log(`Deleting user ${userId}`);
-    // After API call succeeds:
-    refetch();
   };
 
   // Handle search input change
