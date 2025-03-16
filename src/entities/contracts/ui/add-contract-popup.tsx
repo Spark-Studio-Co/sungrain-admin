@@ -77,33 +77,26 @@ export const AddContractDialog = () => {
     // Create FormData to send files along with contract data
     const formData = new FormData();
 
-    // Append contract data
-    formData.append(
-      "contractData",
-      JSON.stringify({
-        ...newContract,
-        totalVolume: Number(newContract.totalVolume),
-      })
-    );
+    // Append each field separately
+    formData.append("crop", newContract.crop);
+    formData.append("sender", newContract.sender);
+    formData.append("company", newContract.company);
+    formData.append("receiver", newContract.receiver);
+    formData.append("departureStation", newContract.departureStation);
+    formData.append("destinationStation", newContract.destinationStation);
+    formData.append("totalVolume", newContract.totalVolume.toString());
 
     // Append files
-    files.forEach((file, index) => {
-      formData.append(`file-${index}`, file);
+    files.forEach((file) => {
+      formData.append("files", file); // Use 'files' as the field name for all files
     });
 
-    // In a real implementation, you would modify your mutation to handle FormData
-    mutation.mutate(
-      {
-        ...newContract,
-        totalVolume: Number(newContract.totalVolume),
-        // You would pass formData here in a real implementation
+    // Send the FormData to the API
+    mutation.mutate(formData, {
+      onSuccess: () => {
+        setDialogOpen(false);
       },
-      {
-        onSuccess: () => {
-          setDialogOpen(false);
-        },
-      }
-    );
+    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

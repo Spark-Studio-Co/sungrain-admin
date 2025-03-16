@@ -17,12 +17,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddWagonPopup } from "@/entities/wagon/ui/add-wagon-popup";
 import { usePopupStore } from "@/shared/model/popup-store";
 import { useGetContractsId } from "@/entities/contracts/api/get/use-get-contract-id";
-
 
 interface ContractInnerBlockProps {
   contractId: string;

@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { addContract, AddContractRequest } from "./create-contract";
+import { addContract, type AddContractRequest } from "./create-contract";
 
 export const useAddContract = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: AddContractRequest) => addContract(data),
+    mutationFn: (data: AddContractRequest | FormData) => addContract(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
     },
