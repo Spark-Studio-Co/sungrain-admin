@@ -7,7 +7,6 @@ export const useAddColumn = () => {
   return useMutation({
     mutationFn: (data: AddColumnRequest) => addColumnToTable(data),
     onSuccess: () => {
-      // Invalidates the table schema query to refetch updated data
       queryClient.invalidateQueries({ queryKey: ["tableSchema"] });
     },
     onError: (error) => {

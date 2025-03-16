@@ -9,7 +9,6 @@ export interface AddContractRequest {
   totalVolume: number;
 }
 
-// ✅ Fetch Contracts with Pagination & Search
 export const getContracts = async ({
   page = 1,
   limit = 10,

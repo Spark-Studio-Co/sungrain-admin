@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { Download, FileText, Truck, Building2 } from "lucide-react";
+"use client";
+
+import { useState, useEffect } from "react";
+import { Download, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,7 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
 import {
   Select,
   SelectContent,
@@ -24,142 +25,149 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AddWagonPopup } from "@/entities/wagon/ui/add-wagon-popup";
-
 import { usePopupStore } from "@/shared/model/popup-store";
+import { useGetContractsId } from "@/entities/contracts/api/get/use-get-contract-id";
 
-// Initial wagon data
-const initialWagons = [
-  {
-    id: 1,
-    number: "2980596",
-    capacity: 63800,
-    owner: "Логсофт",
-    status: "shipped",
-  },
-  {
-    id: 2,
-    number: "29927696",
-    capacity: 64250,
-    owner: "Логсофт",
-    status: "in_transit",
-  },
-  {
-    id: 3,
-    number: "29027984",
-    capacity: 63600,
-    owner: "Логсофт",
-    status: "at_elevator",
-  },
-];
-
-// Initial documents data
-const initialDocuments = [
-  {
-    id: 1,
-    name: "Паспорт качества №123",
-    type: "quality_passport",
-    uploadedAt: "2024-03-15",
-  },
-  {
-    id: 2,
-    name: "ЭПД №456",
-    type: "waybill",
-    uploadedAt: "2024-03-15",
-  },
-  {
-    id: 3,
-    name: "Акт взвешивания №789",
-    type: "weight_act",
-    uploadedAt: "2024-03-15",
-  },
-];
-
+// Status mapping for wagon statuses
 const statusMap = {
-  shipped: {
-    label: "Отгружен",
-    color: "success",
-    icon: <FileText className="h-4 w-4" />,
+  at_elevator: {
+    label: "На элеваторе",
+    color: "default",
+    icon: <span className="h-2 w-2 rounded-full bg-gray-500" />,
+  },
+  loading: {
+    label: "Загрузка",
+    color: "warning",
+    icon: <span className="h-2 w-2 rounded-full bg-yellow-500" />,
   },
   in_transit: {
     label: "В пути",
     color: "warning",
-    icon: <Truck className="h-4 w-4" />,
+    icon: <span className="h-2 w-2 rounded-full bg-yellow-500" />,
   },
-  at_elevator: {
-    label: "На элеваторе",
-    color: "default",
-    icon: <Building2 className="h-4 w-4" />,
+  shipped: {
+    label: "Отгружен",
+    color: "success",
+    icon: <span className="h-2 w-2 rounded-full bg-green-500" />,
   },
 };
 
-export const ContractInnerBlock = () => {
-  const [wagons, setWagons] = useState(initialWagons);
-  const [documents, setDocuments] = useState(initialDocuments);
-  const [newWagon, setNewWagon] = useState({
-    number: "",
-    capacity: "",
-    owner: "",
-    status: "at_elevator",
-  });
+interface ContractInnerBlockProps {
+  contractId: string;
+}
 
-  // Shipment metrics
-  const totalPurchased = 1000; // tons
-  const totalShipped = wagons
-    .filter((w) => w.status === "shipped")
-    .reduce((acc, wagon) => acc + wagon.capacity / 1000, 0);
-  const remainingPurchase = totalPurchased - totalShipped;
-  const shippingProgress = (totalShipped / totalPurchased) * 100;
+export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
+  const {
+    data: contract,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useGetContractsId(contractId);
 
-  // Add new wagon
-  const handleAddWagon = () => {
-    const wagon = {
-      id: wagons.length + 1,
-      ...newWagon,
-      capacity: Number.parseInt(newWagon.capacity),
-    };
-    setWagons([...wagons, wagon]);
-    setNewWagon({
-      number: "",
-      capacity: "",
-      owner: "",
-      status: "at_elevator",
-    });
-  };
+  const { open } = usePopupStore("addWagon");
 
-  // Update wagon status
-  const handleStatusUpdate = (wagonId: number, newStatus: string) => {
-    setWagons(
-      wagons.map((wagon) =>
-        wagon.id === wagonId ? { ...wagon, status: newStatus } : wagon
-      )
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-6 space-y-6">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-10 w-40" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="border rounded-lg p-4">
+                <Skeleton className="h-64 w-full" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96" />
+          </CardHeader>
+          <CardContent>
+            <div className="border rounded-lg p-4">
+              <Skeleton className="h-64 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
-  };
+  }
 
-  const { isOpen, open } = usePopupStore('addWagon')
-
+  if (isError) {
+    return (
+      <div className="container mx-auto py-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Ошибка</AlertTitle>
+          <AlertDescription>
+            Не удалось загрузить данные контракта.{" "}
+            {error?.message || "Пожалуйста, попробуйте позже."}
+          </AlertDescription>
+        </Alert>
+        <div className="mt-4">
+          <Button onClick={() => refetch()}>Попробовать снова</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
       <div className="container mx-auto py-6 space-y-6">
-        {/* Contract Details Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Договор закупа</CardTitle>
+            <CardTitle>Договор закупа #{contract?.id}</CardTitle>
             <CardDescription>
-              Детали контракта и управление документами
+              {contract?.crop} - {contract?.totalVolume} тонн |{" "}
+              {contract?.departureStation} → {contract?.destinationStation}
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Грузоотправитель
+                </p>
+                <p>{contract?.sender}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Грузополучатель
+                </p>
+                <p>{contract?.receiver}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Компания
+                </p>
+                <p>{contract?.company}</p>
+              </div>
+            </div>
             <Button variant="outline" className="gap-2">
               <Download className="h-4 w-4" />
               Скачать договор
             </Button>
           </CardContent>
         </Card>
-
-        {/* Shipping Documents Section */}
         <Card>
           <CardHeader>
             <CardTitle>Отгрузочные документы</CardTitle>
@@ -177,18 +185,26 @@ export const ContractInnerBlock = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {documents.map((doc) => (
-                      <TableRow key={doc.id}>
-                        <TableCell>{doc.name}</TableCell>
-                        <TableCell>{doc.uploadedAt}</TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" className="gap-2">
-                            <Download className="h-4 w-4" />
-                            Скачать
-                          </Button>
+                    {documents.length > 0 ? (
+                      documents.map((doc: any) => (
+                        <TableRow key={doc.id}>
+                          <TableCell>{doc.name}</TableCell>
+                          <TableCell>{doc.uploadedAt}</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" className="gap-2">
+                              <Download className="h-4 w-4" />
+                              Скачать
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-6">
+                          Документы не найдены
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -220,59 +236,32 @@ export const ContractInnerBlock = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {wagons.map((wagon) => (
-                    <TableRow
-                      key={wagon.id}
-                      className={wagon.status === "shipped" ? "bg-green-50" : ""}
-                    >
-                      <TableCell>{wagon.id}</TableCell>
-                      <TableCell>{wagon.number}</TableCell>
-                      <TableCell>{wagon.capacity.toLocaleString()}</TableCell>
-                      <TableCell>{wagon.owner}</TableCell>
-                      <TableCell>
-                        <Select
-                          value={wagon.status}
-                          onValueChange={(value) =>
-                            handleStatusUpdate(wagon.id, value)
-                          }
-                        >
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue>
-                              <div className="flex items-center gap-2">
-                                {statusMap[wagon.status].icon}
-                                <Badge
-                                  variant={
-                                    statusMap[wagon.status].color as
-                                    | "default"
-                                    | "success"
-                                    | "warning"
-                                  }
-                                >
-                                </Badge>
-                              </div>
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(statusMap).map(
-                              ([value, { label, icon }]) => (
-                                <SelectItem key={value} value={value}>
-                                  <div className="flex items-center gap-2">
-                                    {icon}
-                                    {label}
-                                  </div>
-                                </SelectItem>
-                              )
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          Редактировать
-                        </Button>
+                  {wagons.length > 0 ? (
+                    wagons.map((wagon: any) => (
+                      <TableRow
+                        key={wagon.id}
+                        className={
+                          wagon.status === "shipped" ? "bg-green-50" : ""
+                        }
+                      >
+                        <TableCell>{wagon.id}</TableCell>
+                        <TableCell>{wagon.number}</TableCell>
+                        <TableCell>{wagon.capacity.toLocaleString()}</TableCell>
+                        <TableCell>{wagon.owner}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm">
+                            Редактировать
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-6">
+                        Вагоны не найдены
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </div>
