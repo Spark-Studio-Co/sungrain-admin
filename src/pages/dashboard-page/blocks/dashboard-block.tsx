@@ -40,7 +40,6 @@ export const DashboardBlock = () => {
   const recentContracts = useMemo(() => {
     if (!contractsData || !contractsData.data) return [];
 
-    // Map API data to the format we need
     return contractsData.data.map((contract: any) => ({
       id: contract.id || `${Math.floor(Math.random() * 1000)}-2024`,
       crop: contract.crop || "Не указано",
@@ -50,7 +49,6 @@ export const DashboardBlock = () => {
       date: contract.created_at
         ? new Date(contract.created_at).toLocaleDateString("ru-RU")
         : "Не указано",
-      // Assuming these fields might not be in your API response, so providing defaults
       status: contract.status || "active",
       progress: contract.progress || Math.floor(Math.random() * 100),
     }));
@@ -62,14 +60,11 @@ export const DashboardBlock = () => {
     (c: any) => c.status === "active"
   ).length;
 
-  const completedContracts = recentContracts.filter(
-    (c: any) => c.status === "completed"
-  ).length;
-
   const totalVolume = recentContracts.reduce(
     (sum: any, contract: any) => sum + contract.volume,
     0
   );
+
   return (
     <div className="container mx-auto py-6 space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -101,7 +96,7 @@ export const DashboardBlock = () => {
               <>
                 <div className="text-2xl font-bold">{totalContracts}</div>
                 <p className="text-xs text-muted-foreground">
-                  Активных: {activeContracts}, Завершенных: {completedContracts}
+                  Активных: {activeContracts}
                 </p>
               </>
             )}
