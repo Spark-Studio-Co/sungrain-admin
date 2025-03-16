@@ -19,7 +19,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  FileSpreadsheet,
   FileIcon as FilePdf,
   Search,
   Plus,
@@ -42,13 +41,15 @@ import { useGetContracts } from "@/entities/contracts/api/get/use-get-contracts"
 import { useContractDialogStore } from "@/entities/contracts/model/use-contract-dialog";
 import { AddContractDialog } from "@/entities/contracts/ui/add-contract-popup";
 import { useNavigate } from "react-router-dom";
+import { useExportTable } from "@/entities/table/api/get/use-export-table";
 
 // Crop options
 
 export const ContractsBlock = () => {
+  const { downloadPDF } = useExportTable();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(10);
   const navigate = useNavigate();
 
   const {
@@ -56,7 +57,6 @@ export const ContractsBlock = () => {
     isLoading,
     isError,
     error,
-    refetch,
   } = useGetContracts({
     page: currentPage,
     limit: itemsPerPage,
@@ -135,14 +135,6 @@ export const ContractsBlock = () => {
     return pages;
   };
 
-  // Export functions (defined outside of render to avoid recreation)
-  const exportToExcel = () => {
-    alert("Экспорт в Excel...");
-  };
-
-  const exportToPDF = () => {
-    alert("Экспорт в PDF...");
-  };
 
   return (
     <div>
@@ -165,15 +157,14 @@ export const ContractsBlock = () => {
               >
                 <Plus /> Добавить контракт
               </Button>
-              {/* Simplified dropdown implementation */}
               <div className="relative">
                 <Button
                   variant="outline"
                   className="gap-2"
                   onClick={() =>
                     document
-                      .getElementById("export-menu")
-                      .classList.toggle("hidden")
+                      ?.getElementById("export-menu")
+                      ?.classList.toggle("hidden")
                   }
                 >
                   <Download className="h-4 w-4" />
@@ -187,10 +178,9 @@ export const ContractsBlock = () => {
                   <div className="py-1">
                     <button
                       className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={exportToPDF}
+                      onClick={downloadPDF}
                     >
                       <FilePdf className="mr-2 h-4 w-4" />
-                      <span>Экспорт в PDF</span>
                     </button>
                   </div>
                 </div>

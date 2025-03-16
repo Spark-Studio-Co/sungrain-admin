@@ -25,8 +25,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Layout } from "@/shared/ui/layout";
+import { AddWagonPopup } from "@/entities/wagon/ui/add-wagon-popup";
+
+import { usePopupStore } from "@/shared/model/popup-store";
 
 // Initial wagon data
 const initialWagons = [
@@ -136,50 +137,138 @@ export const ContractInnerBlock = () => {
     );
   };
 
-  return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Contract Details Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Договор закупа</CardTitle>
-          <CardDescription>
-            Детали контракта и управление документами
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Скачать договор
-          </Button>
-        </CardContent>
-      </Card>
+  const { isOpen, open } = usePopupStore('addWagon')
 
-      {/* Shipping Documents Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Отгрузочные документы</CardTitle>
-          <CardDescription>Управление документами отгрузки</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+
+  return (
+    <>
+      <div className="container mx-auto py-6 space-y-6">
+        {/* Contract Details Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Договор закупа</CardTitle>
+            <CardDescription>
+              Детали контракта и управление документами
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Скачать договор
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Shipping Documents Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Отгрузочные документы</CardTitle>
+            <CardDescription>Управление документами отгрузки</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Название</TableHead>
+                      <TableHead>Дата загрузки</TableHead>
+                      <TableHead className="text-right">Действия</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {documents.map((doc) => (
+                      <TableRow key={doc.id}>
+                        <TableCell>{doc.name}</TableCell>
+                        <TableCell>{doc.uploadedAt}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" className="gap-2">
+                            <Download className="h-4 w-4" />
+                            Скачать
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div className="w-full">
+              <CardTitle className="!w-full !flex items-center justify-between">
+                Реестр вагонов <Button onClick={open}>Добавить вагон</Button>
+              </CardTitle>
+              <CardDescription>
+                Управление вагонами и их статусами
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
             <div className="border rounded-lg">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Название</TableHead>
-                    <TableHead>Дата загрузки</TableHead>
+                    <TableHead>№</TableHead>
+                    <TableHead>№ вагона</TableHead>
+                    <TableHead>Г/П, кг</TableHead>
+                    <TableHead>Собственник</TableHead>
+                    <TableHead>Статус</TableHead>
                     <TableHead className="text-right">Действия</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {documents.map((doc) => (
-                    <TableRow key={doc.id}>
-                      <TableCell>{doc.name}</TableCell>
-                      <TableCell>{doc.uploadedAt}</TableCell>
+                  {wagons.map((wagon) => (
+                    <TableRow
+                      key={wagon.id}
+                      className={wagon.status === "shipped" ? "bg-green-50" : ""}
+                    >
+                      <TableCell>{wagon.id}</TableCell>
+                      <TableCell>{wagon.number}</TableCell>
+                      <TableCell>{wagon.capacity.toLocaleString()}</TableCell>
+                      <TableCell>{wagon.owner}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={wagon.status}
+                          onValueChange={(value) =>
+                            handleStatusUpdate(wagon.id, value)
+                          }
+                        >
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue>
+                              <div className="flex items-center gap-2">
+                                {statusMap[wagon.status].icon}
+                                <Badge
+                                  variant={
+                                    statusMap[wagon.status].color as
+                                    | "default"
+                                    | "success"
+                                    | "warning"
+                                  }
+                                >
+                                </Badge>
+                              </div>
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(statusMap).map(
+                              ([value, { label, icon }]) => (
+                                <SelectItem key={value} value={value}>
+                                  <div className="flex items-center gap-2">
+                                    {icon}
+                                    {label}
+                                  </div>
+                                </SelectItem>
+                              )
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" className="gap-2">
-                          <Download className="h-4 w-4" />
-                          Скачать
+                        <Button variant="ghost" size="sm">
+                          Редактировать
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -187,95 +276,10 @@ export const ContractInnerBlock = () => {
                 </TableBody>
               </Table>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Wagon Registry Section */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div className="w-full">
-            <CardTitle className="!w-full !flex items-center justify-between">
-              Реестр вагонов <Button>Добавить вагон</Button>
-            </CardTitle>
-            <CardDescription>
-              Управление вагонами и их статусами
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>№</TableHead>
-                  <TableHead>№ вагона</TableHead>
-                  <TableHead>Г/П, кг</TableHead>
-                  <TableHead>Собственник</TableHead>
-                  <TableHead>Статус</TableHead>
-                  <TableHead className="text-right">Действия</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {wagons.map((wagon) => (
-                  <TableRow
-                    key={wagon.id}
-                    className={wagon.status === "shipped" ? "bg-green-50" : ""}
-                  >
-                    <TableCell>{wagon.id}</TableCell>
-                    <TableCell>{wagon.number}</TableCell>
-                    <TableCell>{wagon.capacity.toLocaleString()}</TableCell>
-                    <TableCell>{wagon.owner}</TableCell>
-                    <TableCell>
-                      <Select
-                        value={wagon.status}
-                        onValueChange={(value) =>
-                          handleStatusUpdate(wagon.id, value)
-                        }
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue>
-                            <div className="flex items-center gap-2">
-                              {statusMap[wagon.status].icon}
-                              <Badge
-                                variant={
-                                  statusMap[wagon.status].color as
-                                    | "default"
-                                    | "success"
-                                    | "warning"
-                                }
-                              >
-                                {statusMap[wagon.status].label}
-                              </Badge>
-                            </div>
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(statusMap).map(
-                            ([value, { label, icon }]) => (
-                              <SelectItem key={value} value={value}>
-                                <div className="flex items-center gap-2">
-                                  {icon}
-                                  {label}
-                                </div>
-                              </SelectItem>
-                            )
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
-                        Редактировать
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      </div>
+      <AddWagonPopup />
+    </>
   );
 };

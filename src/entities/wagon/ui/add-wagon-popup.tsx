@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,48 +8,18 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@radix-ui/react-label";
-import { Plus } from "lucide-react";
-import { useAddWagon } from "../api/use-add-wagon";
-import { useWagonStore } from "../model/use-wagon-popup";
+
+import { usePopupStore } from "@/shared/model/popup-store";
+
 
 export const AddWagonPopup = () => {
-  const { isAddDialogOpen, setIsAddDialogOpen } = useWagonStore();
-  const [newWagon, setNewWagon] = useState({
-    number: "",
-    capacity: "",
-    owner: "",
-  });
-
-  const mutation = useAddWagon();
-
-  const handleAddWagon = () => {
-    mutation.mutate(
-      {
-        number: newWagon.number,
-        capacity: Number(newWagon.capacity),
-        owner: newWagon.owner,
-      },
-      {
-        onSuccess: () => {
-          setIsAddDialogOpen(false); // Close modal on success
-          setNewWagon({ number: "", capacity: "", owner: "" });
-        },
-      }
-    );
-  };
+  const { isOpen, close } = usePopupStore('addWagon')
 
   return (
-    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          Добавить вагон
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Добавить новый вагон</DialogTitle>
@@ -63,10 +32,9 @@ export const AddWagonPopup = () => {
             </Label>
             <Input
               id="wagon-number"
-              value={newWagon.number}
-              onChange={(e) =>
-                setNewWagon({ ...newWagon, number: e.target.value })
-              }
+              // onChange={(e) =>
+              //   setNewWagon({ ...newWagon, number: e.target.value })
+              // }
               className="col-span-3"
             />
           </div>
@@ -77,10 +45,10 @@ export const AddWagonPopup = () => {
             <Input
               id="capacity"
               type="number"
-              value={newWagon.capacity}
-              onChange={(e) =>
-                setNewWagon({ ...newWagon, capacity: e.target.value })
-              }
+              // value={newWagon.capacity}
+              // onChange={(e) =>
+              //   setNewWagon({ ...newWagon, capacity: e.target.value })
+              // }
               className="col-span-3"
             />
           </div>
@@ -90,17 +58,17 @@ export const AddWagonPopup = () => {
             </Label>
             <Input
               id="owner"
-              value={newWagon.owner}
-              onChange={(e) =>
-                setNewWagon({ ...newWagon, owner: e.target.value })
-              }
+              // value={newWagon.owner}
+              // onChange={(e) =>
+              //   setNewWagon({ ...newWagon, owner: e.target.value })
+              // }
               className="col-span-3"
             />
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleAddWagon} disabled={mutation.isPending}>
-            {mutation.isPending ? "Добавление..." : "Добавить"}
+          <Button>
+            Добавить
           </Button>
         </DialogFooter>
       </DialogContent>
