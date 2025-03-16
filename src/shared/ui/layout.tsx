@@ -1,20 +1,12 @@
 "use client";
 
 import type React from "react";
-import {
-  GalleryVerticalEnd,
-  Home,
-  Settings,
-  Users,
-  BarChart,
-  HelpCircle,
-  SunIcon,
-  FileIcon,
-} from "lucide-react";
+import { Home, Users, SunIcon, FileIcon, LogOut } from "lucide-react";
 
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -26,8 +18,10 @@ import {
   SidebarRail,
   SidebarInset,
   SidebarTrigger,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { useAuthData } from "@/entities/auth/model/use-auth-store";
 
 interface ILayout {
   children: React.ReactNode;
@@ -39,7 +33,6 @@ const navigationItems = [
     title: "Главная",
     icon: Home,
     url: "/admin",
-    isActive: true,
   },
   {
     title: "Пользователи",
@@ -54,6 +47,16 @@ const navigationItems = [
 ];
 
 export const Layout: React.FC<ILayout> = ({ children }) => {
+  const { removeRole, removeRequestId, removeUserId, removeToken } =
+    useAuthData();
+
+  const handleLogout = () => {
+    removeRequestId();
+    removeRole();
+    removeUserId();
+    removeToken();
+  };
+
   return (
     <SidebarProvider>
       <div className="h-[100vh] flex w-full max-w-[1920px] pr-8">
@@ -81,7 +84,7 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
                 <SidebarMenu>
                   {navigationItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={item.isActive}>
+                      <SidebarMenuButton asChild>
                         <a href={item.url}>
                           <item.icon className="size-4" />
                           <span>{item.title}</span>
@@ -93,6 +96,20 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
+          <SidebarFooter>
+            <SidebarSeparator />
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={handleLogout}
+                  className="text-red-500 hover:text-red-600 hover:bg-red-100/10"
+                >
+                  <LogOut className="size-4" />
+                  <span>Выйти</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarFooter>
           <SidebarRail />
         </Sidebar>
         <SidebarInset className="flex flex-col flex-1">

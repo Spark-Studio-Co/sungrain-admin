@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -5,7 +8,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -17,22 +19,62 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { UserPlus } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { useEditUserDialogStore } from "../model/use-edit-user-dialog";
+
+const roles = ["ADMIN", "USER"];
 
 export const EditUserPopup = () => {
+  const { isEditDialogOpen, setDialogOpen } = useEditUserDialogStore();
+  const isEditing = !!editingUser?.id;
+
+  const [userData, setUserData] = useState({
+    username: "",
+    name: "",
+    email: "",
+    password: "",
+    role: "Пользователь",
+  });
+
+  // Update form when editing user changes
+  useEffect(() => {
+    if (editingUser) {
+      setUserData({
+        username: editingUser.username || "",
+        name: editingUser.name || "",
+        email: editingUser.email || "",
+        password: "", // Don't populate password when editing
+        role: editingUser.role || "Пользователь",
+      });
+    } else {
+      // Reset form for new user
+      setUserData({
+        username: "",
+        name: "",
+        email: "",
+        password: "",
+        role: "Пользователь",
+      });
+    }
+  }, [editingUser, isEditDialogOpen]);
+
+  const handleSave = () => {
+    onSave(isEditing ? { ...userData, id: editingUser.id } : userData);
+  };
+
   return (
-    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-      <DialogTrigger asChild>
-        <Button className="flex items-center gap-2">
-          <UserPlus className="h-4 w-4" />
-          Добавить пользователя
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
+    <Dialog open={isEditDialogOpen} onOpenChange={setDialogOpen}>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Добавить нового пользователя</DialogTitle>
+          <DialogTitle>
+            {isEditing
+              ? "Редактировать пользователя"
+              : "Добавить нового пользователя"}
+          </DialogTitle>
           <DialogDescription>
-            Заполните информацию о новом пользователе
+            {isEditing
+              ? "Измените информацию о пользователе"
+              : "Заполните информацию о новом пользователе"}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -42,9 +84,9 @@ export const EditUserPopup = () => {
             </Label>
             <Input
               id="username"
-              value={newUser.username}
+              value={userData.username}
               onChange={(e) =>
-                setNewUser({ ...newUser, username: e.target.value })
+                setUserData({ ...userData, username: e.target.value })
               }
               className="col-span-3"
             />
@@ -55,8 +97,10 @@ export const EditUserPopup = () => {
             </Label>
             <Input
               id="name"
-              value={newUser.name}
-              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+              value={userData.name}
+              onChange={(e) =>
+                setUserData({ ...userData, name: e.target.value })
+              }
               className="col-span-3"
             />
           </div>
@@ -67,24 +111,25 @@ export const EditUserPopup = () => {
             <Input
               id="email"
               type="email"
-              value={newUser.email}
+              value={userData.email}
               onChange={(e) =>
-                setNewUser({ ...newUser, email: e.target.value })
+                setUserData({ ...userData, email: e.target.value })
               }
               className="col-span-3"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">
+            <Label htmlFor="password" className="text-right">
               Пароль
             </Label>
             <Input
               id="password"
               type="password"
-              value={newUser.email}
+              value={userData.password}
               onChange={(e) =>
-                setNewUser({ ...newUser, email: e.target.value })
+                setUserData({ ...userData, password: e.target.value })
               }
+              placeholder={isEditing ? "Оставьте пустым, чтобы не менять" : ""}
               className="col-span-3"
             />
           </div>
@@ -93,8 +138,10 @@ export const EditUserPopup = () => {
               Роль
             </Label>
             <Select
-              value={newUser.role}
-              onValueChange={(value) => setNewUser({ ...newUser, role: value })}
+              value={userData.role}
+              onValueChange={(value) =>
+                setUserData({ ...userData, role: value })
+              }
             >
               <SelectTrigger className="col-span-3 w-full">
                 <SelectValue placeholder="Выберите роль" />
@@ -110,8 +157,17 @@ export const EditUserPopup = () => {
           </div>
         </div>
         <DialogFooter>
-          <Button type="submit" onClick={addNewUser}>
-            Добавить
+          <Button type="submit" onClick={handleSave} disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isEditing ? "Сохранение..." : "Добавление..."}
+              </>
+            ) : isEditing ? (
+              "Сохранить"
+            ) : (
+              "Добавить"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

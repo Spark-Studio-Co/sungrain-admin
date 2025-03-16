@@ -194,8 +194,10 @@ export const ContractInnerBlock = () => {
       {/* Wagon Registry Section */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Реестр вагонов</CardTitle>
+          <div className="w-full">
+            <CardTitle className="!w-full !flex items-center justify-between">
+              Реестр вагонов <Button>Добавить вагон</Button>
+            </CardTitle>
             <CardDescription>
               Управление вагонами и их статусами
             </CardDescription>
@@ -271,57 +273,6 @@ export const ContractInnerBlock = () => {
                 ))}
               </TableBody>
             </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Shipment Balance Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Остаток отгрузки</CardTitle>
-          <CardDescription>Прогресс выполнения контракта</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <Progress value={shippingProgress} className="h-2" />
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">
-                  Закуплено
-                </div>
-                <div className="text-2xl font-bold">
-                  {totalPurchased.toLocaleString()} т
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">
-                  Отгружено
-                </div>
-                <div className="text-2xl font-bold">
-                  {totalShipped.toLocaleString()} т
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">
-                  Остаток закупа
-                </div>
-                <div className="text-2xl font-bold">
-                  {remainingPurchase.toLocaleString()} т
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-muted-foreground">
-                  Остаток отгрузки
-                </div>
-                <div className="text-2xl font-bold">
-                  {remainingPurchase.toLocaleString()} т
-                </div>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>

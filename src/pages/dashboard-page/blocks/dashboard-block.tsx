@@ -1,22 +1,20 @@
+"use client";
+
 import {
   TrendingUp,
   Package,
   Truck,
   FileText,
   ArrowRight,
-  Calendar,
-  Clock,
   Building2,
   CheckCircle2,
   AlertCircle,
-  FileBarChart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -32,61 +30,19 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
+import { useGetContracts } from "@/entities/contracts/api/get/use-get-contracts";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert } from "@/components/ui/alert";
+import { useMemo } from "react";
 
-// Sample data for the dashboard
-const recentContracts = [
-  {
-    id: "001-2024",
-    crop: "Пшеница",
-    sender: "ООО Агрохолдинг",
-    receiver: "ЗАО ЗерноТрейд",
-    volume: 1200,
-    date: "15.03.2024",
-    status: "active",
-    progress: 65,
-  },
-  {
-    id: "002-2024",
-    crop: "Подсолнечник",
-    sender: "АО СельхозПром",
-    receiver: "ООО МаслоЭкспорт",
-    volume: 850,
-    date: "12.03.2024",
-    status: "active",
-    progress: 42,
-  },
-  {
-    id: "003-2024",
-    crop: "Кукуруза",
-    sender: "ООО ЮгАгро",
-    receiver: "ЗАО ЗерноТрейд",
-    volume: 950,
-    date: "10.03.2024",
-    status: "completed",
-    progress: 100,
-  },
-  {
-    id: "004-2024",
-    crop: "Ячмень",
-    sender: "КФХ Колос",
-    receiver: "ООО БалтЭкспорт",
-    volume: 750,
-    date: "05.03.2024",
-    status: "active",
-    progress: 78,
-  },
-  {
-    id: "005-2024",
-    crop: "Рапс",
-    sender: "АО АгроИнвест",
-    receiver: "ООО МаслоЭкспорт",
-    volume: 600,
-    date: "01.03.2024",
-    status: "completed",
-    progress: 100,
-  },
-];
+// Status badge mapping
+const statusBadge = {
+  active: { label: "Активен", variant: "default" },
+  completed: { label: "Завершен", variant: "success" },
+  pending: { label: "Ожидает", variant: "warning" },
+};
 
+// Sample data for activities (keeping this as static for now)
 const recentActivities = [
   {
     id: 1,
@@ -100,7 +56,7 @@ const recentActivities = [
     action: "Загружен документ 'Паспорт качества №123'",
     contract: "001-2024",
     user: "Петрова Е.С.",
-    timestamp: "��егодня, 12:15",
+    timestamp: "Сегодня, 12:15",
   },
   {
     id: 3,
@@ -125,13 +81,40 @@ const recentActivities = [
   },
 ];
 
-// Status badge mapping
-const statusBadge = {
-  active: { label: "Активен", variant: "default" },
-  completed: { label: "Завершен", variant: "success" },
-  pending: { label: "Ожидает", variant: "warning" },
-};
 export const DashboardBlock = () => {
+  // Fetch the 5 most recent contracts
+  const {
+    data: contractsData,
+    isLoading,
+    isError,
+    error,
+  } = useGetContracts({
+    page: 1,
+    limit: 5, // Fetch only 5 contracts
+  });
+
+  // Extract contracts from the response
+  const recentContracts = useMemo(() => {
+    if (!contractsData || !contractsData.data) return [];
+
+    console.log("contract data:", contractsData);
+
+    // Map API data to the format we need
+    return contractsData.data.map((contract: any) => ({
+      id: contract.id || `${Math.floor(Math.random() * 1000)}-2024`,
+      crop: contract.crop || "Не указано",
+      sender: contract.sender || "Не указано",
+      receiver: contract.receiver || "Не указано",
+      volume: contract.totalVolume || 0,
+      date: contract.created_at
+        ? new Date(contract.created_at).toLocaleDateString("ru-RU")
+        : "Не указано",
+      // Assuming these fields might not be in your API response, so providing defaults
+      status: contract.status || "active",
+      progress: contract.progress || Math.floor(Math.random() * 100),
+    }));
+  }, [contractsData]);
+
   // Calculate summary statistics
   const totalContracts = recentContracts.length;
   const activeContracts = recentContracts.filter(
@@ -151,7 +134,8 @@ export const DashboardBlock = () => {
   );
   const remainingVolume = totalVolume - shippedVolume;
 
-  const shippingProgress = (shippedVolume / totalVolume) * 100;
+  const shippingProgress =
+    totalVolume > 0 ? (shippedVolume / totalVolume) * 100 : 0;
 
   return (
     <div className="container mx-auto py-6 space-y-8">
@@ -169,8 +153,8 @@ export const DashboardBlock = () => {
           </Link>
         </Button>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+      <div className="w-full flex gap-4">
+        <Card className="w-full">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Всего контрактов
@@ -178,58 +162,37 @@ export const DashboardBlock = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalContracts}</div>
-            <p className="text-xs text-muted-foreground">
-              Активных: {activeContracts}, Завершенных: {completedContracts}
-            </p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{totalContracts}</div>
+                <p className="text-xs text-muted-foreground">
+                  Активных: {activeContracts}, Завершенных: {completedContracts}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="w-full">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Общий объем</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {totalVolume.toLocaleString()} т
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Отгружено: {Math.round(shippedVolume).toLocaleString()} т
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Прогресс отгрузки
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {Math.round(shippingProgress)}%
-            </div>
-            <Progress value={shippingProgress} className="h-2" />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Остаток отгрузки
-            </CardTitle>
-            <Truck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {Math.round(remainingVolume).toLocaleString()} т
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {Math.round((remainingVolume / totalVolume) * 100)}% от общего
-              объема
-            </p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  {totalVolume.toLocaleString()} т
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Отгружено: {Math.round(shippedVolume).toLocaleString()} т
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -238,7 +201,6 @@ export const DashboardBlock = () => {
       <Tabs defaultValue="contracts" className="space-y-4">
         <TabsList>
           <TabsTrigger value="contracts">Контракты</TabsTrigger>
-          <TabsTrigger value="activity">Активность</TabsTrigger>
         </TabsList>
 
         <TabsContent value="contracts" className="space-y-4">
@@ -250,6 +212,18 @@ export const DashboardBlock = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {isError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <div>
+                    <h4 className="font-medium">Ошибка загрузки данных</h4>
+                    <p className="text-sm">
+                      {error?.message || "Пожалуйста, попробуйте позже"}
+                    </p>
+                  </div>
+                </Alert>
+              )}
+
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -258,204 +232,58 @@ export const DashboardBlock = () => {
                     <TableHead>Объем (т)</TableHead>
                     <TableHead>Дата</TableHead>
                     <TableHead>Статус</TableHead>
-                    <TableHead>Прогресс</TableHead>
-                    <TableHead className="text-right">Действия</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentContracts.map((contract) => (
-                    <TableRow key={contract.id}>
-                      <TableCell className="font-medium">
-                        {contract.id}
-                      </TableCell>
-                      <TableCell>{contract.crop}</TableCell>
-                      <TableCell>{contract.volume.toLocaleString()}</TableCell>
-                      <TableCell>{contract.date}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            statusBadge[contract.status].variant as
-                              | "default"
-                              | "success"
-                              | "warning"
-                          }
-                        >
-                          {statusBadge[contract.status].label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Progress
-                            value={contract.progress}
-                            className="h-2 w-[60px]"
-                          />
-                          <span className="text-xs text-muted-foreground">
-                            {contract.progress}%
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/contracts/${contract.id}`}>
-                            Подробнее
-                          </Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-            <CardFooter>
-              <Button variant="outline" size="sm" className="ml-auto" asChild>
-                <Link href="/contracts">
-                  Посмотреть все
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-
-          {/* Shipment Status Distribution */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Статус вагонов
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Отгружено</span>
-                    </div>
-                    <span className="font-medium">42</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Truck className="h-4 w-4 text-amber-500" />
-                      <span className="text-sm">В пути</span>
-                    </div>
-                    <span className="font-medium">18</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm">На элеваторе</span>
-                    </div>
-                    <span className="font-medium">24</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Ближайшие отгрузки
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Сегодня</span>
-                    </div>
-                    <span className="font-medium">5 вагонов</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Завтра</span>
-                    </div>
-                    <span className="font-medium">8 вагонов</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">На этой неделе</span>
-                    </div>
-                    <span className="font-medium">15 вагонов</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Документы</CardTitle>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FileBarChart className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Паспорта качества</span>
-                    </div>
-                    <span className="font-medium">24</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">ЭПД</span>
-                    </div>
-                    <span className="font-medium">18</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-amber-500" />
-                      <span className="text-sm">Требуют внимания</span>
-                    </div>
-                    <span className="font-medium">3</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="activity">
-          <Card>
-            <CardHeader>
-              <CardTitle>Последние действия</CardTitle>
-              <CardDescription>
-                История действий пользователей в системе
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Действие</TableHead>
-                    <TableHead>Контракт</TableHead>
-                    <TableHead>Пользователь</TableHead>
-                    <TableHead>Время</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentActivities.map((activity) => (
-                    <TableRow key={activity.id}>
-                      <TableCell>{activity.action}</TableCell>
-                      <TableCell>
-                        <Link
-                          href={`/contracts/${activity.contract}`}
-                          className="text-blue-600 hover:underline"
-                        >
-                          {activity.contract}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{activity.user}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span>{activity.timestamp}</span>
-                        </div>
+                  {isLoading ? (
+                    // Loading skeleton
+                    Array(5)
+                      .fill(0)
+                      .map((_, index) => (
+                        <TableRow key={`skeleton-${index}`}>
+                          {Array(6)
+                            .fill(0)
+                            .map((_, cellIndex) => (
+                              <TableCell key={`cell-${index}-${cellIndex}`}>
+                                <Skeleton className="h-6 w-full" />
+                              </TableCell>
+                            ))}
+                        </TableRow>
+                      ))
+                  ) : recentContracts.length > 0 ? (
+                    // Actual data
+                    recentContracts.map((contract: any) => (
+                      <TableRow key={contract.id}>
+                        <TableCell className="font-medium">
+                          {contract.id}
+                        </TableCell>
+                        <TableCell>{contract.crop}</TableCell>
+                        <TableCell>
+                          {contract.volume.toLocaleString()}
+                        </TableCell>
+                        <TableCell>{contract.date}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              (statusBadge[contract.status]?.variant as
+                                | "default"
+                                | "success"
+                                | "warning") || "default"
+                            }
+                          >
+                            {statusBadge[contract.status]?.label || "Активен"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    // No data
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-4">
+                        Контракты не найдены
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

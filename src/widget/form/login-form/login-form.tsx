@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,34 +15,51 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuthData } from "@/entities/auth/model/use-auth-store";
+import { useLogin } from "@/entities/auth/api/post/use-login";
 
 export default function LoginForm() {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const { token } = useAuthData(); // Check if user is already logged in
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  const loginMutation = useLogin();
+
+  // Redirect if user is already logged in
+  if (token) {
+    navigate("/admin");
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loginMutation.isPending) return;
+
     setError("");
 
     if (!email || !password) {
-      setError("Please fill in all fields");
+      setError("Пожалуйста, заполните все поля");
       return;
     }
 
-    try {
-      setIsLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulating API call
-
-      console.log("Login successful");
-    } catch (err) {
-      setError("Invalid email or password");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
+    loginMutation.mutate(
+      { email, password },
+      {
+        onSuccess: (data) => {
+          // Redirect based on role
+          if (data.role === "admin") {
+            navigate("/admin");
+          } else {
+            navigate("/dashboard");
+          }
+        },
+        onError: (err: any) => {
+          setError("Неверный email или пароль");
+          console.error(err);
+        },
+      }
+    );
   };
 
   return (
@@ -55,7 +71,7 @@ export default function LoginForm() {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           {error && (
-            <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+            <div className="bg-red-100 text-red-600 text-sm p-3 rounded-md">
               {error}
             </div>
           )}
@@ -67,7 +83,7 @@ export default function LoginForm() {
               placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
+              disabled={loginMutation.isPending}
               required
             />
           </div>
@@ -87,7 +103,7 @@ export default function LoginForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
+              disabled={loginMutation.isPending}
               required
             />
           </div>
@@ -96,10 +112,9 @@ export default function LoginForm() {
           <Button
             className="w-full mt-8"
             type="submit"
-            disabled={isLoading}
-            onClick={() => navigate("/admin")}
+            disabled={loginMutation.isPending}
           >
-            {isLoading ? (
+            {loginMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Входим...
