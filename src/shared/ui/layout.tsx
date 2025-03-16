@@ -22,12 +22,12 @@ import {
 } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useAuthData } from "@/entities/auth/model/use-auth-store";
+import { Link } from "react-router-dom";
 
 interface ILayout {
   children: React.ReactNode;
 }
 
-// Navigation items for the sidebar
 const navigationItems = [
   {
     title: "Главная",
@@ -65,14 +65,14 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton size="lg" asChild>
-                  <a href="#">
+                  <Link to="/">
                     <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-sidebar-primary-foreground">
                       <SunIcon className="size-4" />
                     </div>
                     <div className="flex flex-col gap-0.5 leading-none">
                       <span className="font-semibold">SUNGRAIN</span>
                     </div>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

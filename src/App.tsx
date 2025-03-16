@@ -10,30 +10,36 @@ import DashboardPage from "./pages/dashboard-page/dashboard-page";
 import { useAuthData } from "./entities/auth/model/use-auth-store";
 import { checkIsAdmin } from "./entities/users/api/check-is-admin";
 import { useState, useEffect } from "react";
-import { Loader } from "./shared/ui/loader";
 
 function App() {
   const { token } = useAuthData();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null); // ✅ Start with `null`
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(() => {
+    const storedAdminStatus = localStorage.getItem("isAdmin");
+    return storedAdminStatus ? JSON.parse(storedAdminStatus) : null;
+  });
 
   useEffect(() => {
     if (!token) {
-      setIsAdmin(null); // ✅ Prevent fetching if there's no token
+      setIsAdmin(null);
+      localStorage.removeItem("isAdmin");
       return;
     }
 
     const fetchAdminStatus = async () => {
       try {
         const adminStatus = await checkIsAdmin();
-        setIsAdmin(adminStatus); // ✅ Ensure it gets a boolean
+        setIsAdmin(adminStatus);
+        localStorage.setItem("isAdmin", JSON.stringify(adminStatus));
       } catch (error) {
-        console.error("Error checking admin status:", error);
-        setIsAdmin(false); // ✅ Default to `false` if error
+        setIsAdmin(false);
+        localStorage.setItem("isAdmin", "false");
       }
     };
 
-    fetchAdminStatus();
-  }, [token]);
+    if (isAdmin === null) {
+      fetchAdminStatus();
+    }
+  }, [token, isAdmin]);
 
   return (
     <QueryClientProvider client={reactQueryClient}>
