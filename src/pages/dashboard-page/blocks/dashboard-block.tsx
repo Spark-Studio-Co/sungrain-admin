@@ -61,7 +61,7 @@ export const DashboardBlock = () => {
   ).length;
 
   const totalVolume = recentContracts.reduce(
-    (sum: any, contract: any) => sum + contract.volume,
+    (sum: any, contract: any) => sum + Number(contract.volume),
     0
   );
 
