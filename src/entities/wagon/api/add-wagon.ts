@@ -20,11 +20,9 @@ export const addWagon = async (data: AddWagonRequest) => {
   formData.append('capacity', data.capacity.toString());
   formData.append('owner', data.owner);
 
-
-  // Add the document files
+  // Add files to the FormData
   if (data.files && data.files.length > 0) {
-    // Append each file individually
-    data.files.forEach(file => {
+    data.files.forEach((file) => {
       formData.append(`files`, file);
     });
   }

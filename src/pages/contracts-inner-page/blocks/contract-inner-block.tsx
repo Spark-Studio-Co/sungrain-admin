@@ -99,6 +99,15 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     );
   }
 
+  const renderedFiles = contract?.wagons
+    .flatMap((wagon: any) => {
+      return wagon.files && wagon.files.length > 0 ? wagon.files.map((file: any) => ({
+        file,
+        wagonNumber: wagon.number
+      })) : [];
+    })
+    .filter(Boolean) || [];
+
   return (
     <>
       <div className="container mx-auto py-6 space-y-6">
@@ -131,7 +140,23 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                 <p>{contract?.company}</p>
               </div>
             </div>
-            <Button variant="outline" className="gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => {
+                if (contract?.documentUrl) {
+                  const link = document.createElement('a');
+                  link.href = contract.documentUrl;
+                  link.target = '_blank';
+                  link.download = '';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                } else {
+                  alert('Документ договора недоступен');
+                }
+              }}
+            >
               <Download className="h-4 w-4" />
               Скачать договор
             </Button>
@@ -149,18 +174,45 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Название</TableHead>
-                      <TableHead>Дата загрузки</TableHead>
                       <TableHead className="text-right">Действия</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {contract?.files?.length > 0 ? (
-                      contract?.files?.map((doc: any) => (
-                        <TableRow key={doc.id}>
-                          <TableCell>{doc.name}</TableCell>
-                          <TableCell>{doc.uploadedAt}</TableCell>
+                    {renderedFiles.length > 0 ? (
+                      renderedFiles.map((doc: any, index: number) => (
+                        <TableRow key={index}>
+                          <TableCell>{
+                            (() => {
+                              const filename = doc.file.toString();
+                              if (filename.includes('/uploads/')) {
+                                const filenameAfterUploads = filename.split('/uploads/')[1];
+                                const match = filenameAfterUploads.match(/^([^-]+)/);
+                                if (match && match[1]) {
+                                  return match[1];
+                                }
+                              }
+
+                              const lastPart = filename.split('/').pop() || '';
+                              const baseName = lastPart.split('-')[0];
+                              return baseName || 'Документ вагона';
+                            })()
+                          }</TableCell>
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" className="gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="gap-2"
+                              onClick={() => {
+                                // Create a temporary anchor element to trigger the download
+                                const link = document.createElement('a');
+                                link.href = doc.file.toString();
+                                link.target = '_blank';
+                                link.download = ''; // Browser will use the filename from the URL
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }}
+                            >
                               <Download className="h-4 w-4" />
                               Скачать
                             </Button>
@@ -200,8 +252,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                     <TableHead>№ вагона</TableHead>
                     <TableHead>Г/П, кг</TableHead>
                     <TableHead>Собственник</TableHead>
-                    <TableHead>Статус</TableHead>
-                    <TableHead className="text-right">Действия</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -217,11 +267,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                         <TableCell>{wagon.number}</TableCell>
                         <TableCell>{wagon.capacity.toLocaleString()}</TableCell>
                         <TableCell>{wagon.owner}</TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">
-                            Редактировать
-                          </Button>
-                        </TableCell>
                       </TableRow>
                     ))
                   ) : (

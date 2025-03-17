@@ -88,6 +88,10 @@ export const AddWagonPopup = ({ contractId }: { contractId: string }) => {
       return;
     }
 
+    // Instead of trying to rename files (which can be complex due to browser security),
+    // we'll just use the original files and handle the naming on the server side
+    // or in the display logic
+    
     addWagonMutation.mutate(
       {
         number: newWagon.number,
