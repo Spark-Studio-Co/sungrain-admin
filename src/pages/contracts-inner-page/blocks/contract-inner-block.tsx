@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Download, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,13 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddWagonPopup } from "@/entities/wagon/ui/add-wagon-popup";
@@ -32,29 +24,7 @@ import { usePopupStore } from "@/shared/model/popup-store";
 import { useGetUserContractById } from "@/entities/contracts/api/get/use-get-user-contract-by-id";
 import { useGetContractsId } from "@/entities/contracts/api/get/use-get-contract-id";
 
-// Status mapping for wagon statuses
-const statusMap = {
-  at_elevator: {
-    label: "На элеваторе",
-    color: "default",
-    icon: <span className="h-2 w-2 rounded-full bg-gray-500" />,
-  },
-  loading: {
-    label: "Загрузка",
-    color: "warning",
-    icon: <span className="h-2 w-2 rounded-full bg-yellow-500" />,
-  },
-  in_transit: {
-    label: "В пути",
-    color: "warning",
-    icon: <span className="h-2 w-2 rounded-full bg-yellow-500" />,
-  },
-  shipped: {
-    label: "Отгружен",
-    color: "success",
-    icon: <span className="h-2 w-2 rounded-full bg-green-500" />,
-  },
-};
+
 
 interface ContractInnerBlockProps {
   contractId: string;
@@ -62,6 +32,7 @@ interface ContractInnerBlockProps {
 
 export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   const isAdmin = localStorage.getItem("isAdmin") === "true";
+  const { open } = usePopupStore("addWagon");
 
   const {
     data: contract,
@@ -79,34 +50,13 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     refetch: userRefetch,
   } = useGetUserContractById(contractId);
 
-  // Use the appropriate data and states based on user role
   const contractData = isAdmin ? contract : userContract;
   const isDataLoading = isAdmin ? isLoading : isUserLoading;
   const isDataError = isAdmin ? isError : isUserError;
   const dataError = isAdmin ? error : userError;
   const handleRefetch = isAdmin ? refetch : userRefetch;
 
-  const [wagons, setWagons] = useState([]);
-  const [documents, setDocuments] = useState([]);
-  const [newWagon, setNewWagon] = useState({
-    number: "",
-    capacity: "",
-    owner: "",
-    status: "at_elevator",
-  });
 
-  // Update wagon status
-  const handleStatusUpdate = (wagonId: number, newStatus: string) => {
-    setWagons(
-      wagons.map((wagon: any) =>
-        wagon.id === wagonId ? { ...wagon, status: newStatus } : wagon
-      )
-    );
-  };
-
-  const { open } = usePopupStore("addWagon");
-
-  // If loading, show skeleton
   if (isDataLoading) {
     return (
       <div className="container mx-auto py-6 space-y-6">
@@ -149,7 +99,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     );
   }
 
-  // If error, show error message
   if (isDataError) {
     return (
       <div className="container mx-auto py-6">
@@ -168,59 +117,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     );
   }
 
-  // Initialize wagons and documents from contract data if available
-  useEffect(() => {
-    if (contractData) {
-      if (contractData.wagons) {
-        setWagons(contractData.wagons);
-      }
-      if (contractData.documents) {
-        setDocuments(contractData.documents);
-      }
-    }
-  }, [contractData]);
-
-  const handleDownload = () => {
-    if (!contractData?.files[0]) {
-      alert("Файл не найден!");
-      return;
-    }
-
-    const link = document.createElement("a");
-    link.href = contractData.files[0];
-    link.setAttribute("download", "contract.pdf"); // Change filename if needed
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Initialize wagons and documents from contract data if available
-  useEffect(() => {
-    if (contractData) {
-      if (contractData.wagons) {
-        setWagons(contractData.wagons);
-      }
-      if (contractData.documents) {
-        setDocuments(contractData.documents);
-      }
-    }
-  }, [contractData]);
-
-  const handleDownload = () => {
-    if (!contractData?.files[0]) {
-      alert("Файл не найден!");
-      return;
-    }
-
-    const link = document.createElement("a");
-    link.href = contractData.files[0];
-    link.setAttribute("download", "contract.pdf"); // Change filename if needed
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const renderedFiles = contract?.wagons
+  const renderedFiles = contractData?.wagons
     .flatMap((wagon: any) => {
       return wagon.files && wagon.files.length > 0 ? wagon.files.map((file: any) => ({
         file,
@@ -229,10 +126,27 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     })
     .filter(Boolean) || [];
 
+
+  const handleDownload = () => {
+    if (!contractData?.files[0]) {
+      alert("Файл не найден!");
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = contractData.files[0];
+    link.setAttribute("download", "contract.pdf");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+
+
+
   return (
     <>
       <div className="container mx-auto py-6 space-y-6">
-        {/* Contract Details Section */}
         <Card>
           <CardHeader>
             <CardTitle>Договор закупа #{contractData?.id}</CardTitle>
@@ -274,7 +188,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           </CardContent>
         </Card>
 
-        {/* Shipping Documents Section */}
         <Card>
           <CardHeader>
             <CardTitle>Отгрузочные документы</CardTitle>
@@ -315,16 +228,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                               variant="ghost"
                               size="sm"
                               className="gap-2"
-                              onClick={() => {
-                                // Create a temporary anchor element to trigger the download
-                                const link = document.createElement('a');
-                                link.href = doc.file.toString();
-                                link.target = '_blank';
-                                link.download = ''; // Browser will use the filename from the URL
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                              }}
+                              onClick={handleDownload}
                             >
                               <Download className="h-4 w-4" />
                               Скачать
@@ -369,8 +273,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {contract?.wagons?.length > 0 ? (
-                    contract?.wagons?.map((wagon: any) => (
+                  {contractData?.wagons?.length > 0 ? (
+                    contractData?.wagons?.map((wagon: any) => (
                       <TableRow
                         key={wagon.id}
                         className={
@@ -396,7 +300,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           </CardContent>
         </Card>
       </div>
-      <AddWagonPopup />
+      <AddWagonPopup contractId={contractId} />
     </>
   );
-};
+}
