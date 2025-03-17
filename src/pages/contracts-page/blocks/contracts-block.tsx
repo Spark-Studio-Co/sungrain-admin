@@ -42,10 +42,10 @@ import { useContractDialogStore } from "@/entities/contracts/model/use-contract-
 import { AddContractDialog } from "@/entities/contracts/ui/add-contract-popup";
 import { useNavigate } from "react-router-dom";
 import { useExportTable } from "@/entities/table/api/get/use-export-table";
-
-// Crop options
+import { useGetUserContracts } from "@/entities/contracts/api/get/use-get-user-contracts";
 
 export const ContractsBlock = () => {
+  const isAdmin = localStorage.getItem("isAdmin") === "true";
   const { downloadPDF } = useExportTable();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,11 +62,19 @@ export const ContractsBlock = () => {
     limit: itemsPerPage,
   });
 
-  // Use useMemo instead of useState + useEffect for filtering
+  const {
+    data: userContracts = { data: [], total: 0, page: 1, totalPages: 1 },
+    isLoading: isUserLoading,
+    isError: isUserError,
+    error: userError,
+  } = useGetUserContracts({
+    page: currentPage,
+    limit: itemsPerPage,
+  });
+
   const filteredContracts = useMemo(() => {
     if (!contracts || !contracts.data) return [];
 
-    // If we're searching, filter the current page data
     if (searchTerm) {
       return contracts.data.filter((contract: any) =>
         Object.values(contract).some(
@@ -81,19 +89,20 @@ export const ContractsBlock = () => {
     return contracts.data;
   }, [contracts, searchTerm]);
 
-  // Handle search input change
+  const contractsToDisplay = isAdmin ? contracts.data : userContracts.data;
+  const isDataLoading = isAdmin ? isLoading : isUserLoading;
+  const isDataError = isAdmin ? isError : isUserError;
+  const dataError = isAdmin ? error : userError;
+
   const handleSearchChange = (e: any) => {
     setSearchTerm(e.target.value);
-    // Reset to first page when searching
     setCurrentPage(1);
   };
 
-  // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  // Generate page numbers for pagination
   const getPageNumbers = () => {
     const totalPages = contracts.totalPages || 1;
     const currentPageNum = currentPage;
@@ -135,7 +144,6 @@ export const ContractsBlock = () => {
     return pages;
   };
 
-
   return (
     <div>
       <Card className="border-none shadow-none">
@@ -150,27 +158,32 @@ export const ContractsBlock = () => {
               </CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button
-                onClick={() =>
-                  useContractDialogStore.getState().setDialogOpen(true)
-                }
-              >
-                <Plus /> Добавить контракт
-              </Button>
-              <div className="relative">
+              {isAdmin && (
                 <Button
-                  variant="outline"
-                  className="gap-2"
                   onClick={() =>
-                    document
-                      ?.getElementById("export-menu")
-                      ?.classList.toggle("hidden")
+                    useContractDialogStore.getState().setDialogOpen(true)
                   }
                 >
-                  <Download className="h-4 w-4" />
-                  Экспорт
-                  <ChevronDown className="h-4 w-4" />
+                  <Plus /> Добавить контракт
                 </Button>
+              )}
+              <div className="relative">
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() =>
+                      document
+                        ?.getElementById("export-menu")
+                        ?.classList.toggle("hidden")
+                    }
+                  >
+                    <Download className="h-4 w-4" />
+                    Экспорт
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                )}
+
                 <div
                   id="export-menu"
                   className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10"
@@ -199,13 +212,13 @@ export const ContractsBlock = () => {
         </CardHeader>
 
         <CardContent className="px-0 pb-0">
-          {isError && (
+          {isDataError && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Ошибка</AlertTitle>
               <AlertDescription>
                 Не удалось загрузить данные.{" "}
-                {error?.message || "Пожалуйста, попробуйте позже."}
+                {dataError?.message || "Пожалуйста, попробуйте позже."}
               </AlertDescription>
             </Alert>
           )}
@@ -237,7 +250,7 @@ export const ContractsBlock = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
+                {isDataLoading ? (
                   Array(5)
                     .fill(0)
                     .map((_, index) => (
@@ -254,12 +267,60 @@ export const ContractsBlock = () => {
                           ))}
                       </TableRow>
                     ))
-                ) : filteredContracts.length > 0 ? (
-                  filteredContracts.map((contract: any) => (
+                ) : searchTerm ? (
+                  filteredContracts.length > 0 ? (
+                    filteredContracts.map((contract: any) => (
+                      <TableRow
+                        key={contract.id}
+                        onClick={() =>
+                          navigate(
+                            isAdmin
+                              ? `/admin/contracts/${contract.id}`
+                              : `/contracts/${contract.id}`
+                          )
+                        }
+                        className="hover:bg-muted/50 h-[100px] transition-colors"
+                      >
+                        <TableCell className="text-center font-medium">
+                          {contract.id}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {contract.crop}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {contract.sender}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {contract.receiver}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {contract.departureStation}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {contract.destinationStation}
+                        </TableCell>
+                        <TableCell className="text-center font-medium">
+                          {contract.totalVolume}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">
+                        Контракты не найдены.
+                      </TableCell>
+                    </TableRow>
+                  )
+                ) : contractsToDisplay.length > 0 ? (
+                  contractsToDisplay.map((contract: any) => (
                     <TableRow
                       key={contract.id}
                       onClick={() =>
-                        navigate(`/admin/contracts/${contract.id}`)
+                        navigate(
+                          isAdmin
+                            ? `/admin/contracts/${contract.id}`
+                            : `/contracts/${contract.id}`
+                        )
                       }
                       className="hover:bg-muted/50 h-[100px] transition-colors"
                     >
@@ -296,71 +357,82 @@ export const ContractsBlock = () => {
               </TableBody>
             </Table>
           </div>
-
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-muted-foreground mb-4 sm:mb-0">
-              Всего контрактов: {isLoading ? "..." : contracts.total || 0}
+              Всего контрактов:{" "}
+              {isDataLoading
+                ? "..."
+                : (isAdmin ? contracts.total : userContracts.total) || 0}
             </div>
-
-            {/* Pagination */}
-            {!isLoading && contracts.totalPages > 1 && (
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (currentPage > 1) {
-                          handlePageChange(currentPage - 1);
+            {!isDataLoading &&
+              (isAdmin ? contracts.totalPages : userContracts.totalPages) >
+                1 && (
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage > 1) {
+                            handlePageChange(currentPage - 1);
+                          }
+                        }}
+                        className={
+                          currentPage === 1
+                            ? "pointer-events-none opacity-50"
+                            : ""
                         }
-                      }}
-                      className={
-                        currentPage === 1
-                          ? "pointer-events-none opacity-50"
-                          : ""
-                      }
-                    />
-                  </PaginationItem>
-
-                  {getPageNumbers().map((pageNum, index) => (
-                    <PaginationItem key={index}>
-                      {pageNum < 0 ? (
-                        <PaginationEllipsis />
-                      ) : (
-                        <PaginationLink
-                          href="#"
-                          isActive={pageNum === currentPage}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handlePageChange(pageNum);
-                          }}
-                        >
-                          {pageNum}
-                        </PaginationLink>
-                      )}
+                      />
                     </PaginationItem>
-                  ))}
 
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (currentPage < (contracts.totalPages || 1)) {
-                          handlePageChange(currentPage + 1);
+                    {getPageNumbers().map((pageNum, index) => (
+                      <PaginationItem key={index}>
+                        {pageNum < 0 ? (
+                          <PaginationEllipsis />
+                        ) : (
+                          <PaginationLink
+                            href="#"
+                            isActive={pageNum === currentPage}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePageChange(pageNum);
+                            }}
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        )}
+                      </PaginationItem>
+                    ))}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (
+                            currentPage <
+                              (isAdmin
+                                ? contracts.totalPages
+                                : userContracts.totalPages) ||
+                            1
+                          ) {
+                            handlePageChange(currentPage + 1);
+                          }
+                        }}
+                        className={
+                          currentPage ===
+                          ((isAdmin
+                            ? contracts.totalPages
+                            : userContracts.totalPages) || 1)
+                            ? "pointer-events-none opacity-50"
+                            : ""
                         }
-                      }}
-                      className={
-                        currentPage === (contracts.totalPages || 1)
-                          ? "pointer-events-none opacity-50"
-                          : ""
-                      }
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            )}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
           </div>
         </CardContent>
       </Card>

@@ -33,16 +33,25 @@ const navigationItems = [
     title: "Главная",
     icon: Home,
     url: "/admin",
+    isAdmin: true,
   },
   {
     title: "Пользователи",
     icon: Users,
     url: "/admin/users",
+    isAdmin: true,
   },
   {
     title: "Контракты",
     icon: FileIcon,
     url: "/admin/contracts",
+    isAdmin: true,
+  },
+  {
+    title: "Контракты",
+    icon: FileIcon,
+    url: "/contracts",
+    isAdmin: false,
   },
 ];
 
@@ -56,6 +65,8 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
     removeUserId();
     removeToken();
   };
+
+  const isAdmin = localStorage.getItem("isAdmin") === "true";
 
   return (
     <SidebarProvider>
@@ -82,16 +93,18 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
               <SidebarGroupLabel>Navigation</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {navigationItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <a href={item.url}>
-                          <item.icon className="size-4" />
-                          <span>{item.title}</span>
-                        </a>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                  {navigationItems
+                    .filter((item) => item.isAdmin === isAdmin)
+                    .map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild>
+                          <a href={item.url}>
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                          </a>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

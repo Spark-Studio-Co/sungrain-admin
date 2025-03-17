@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Download, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,18 +18,51 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddWagonPopup } from "@/entities/wagon/ui/add-wagon-popup";
 import { usePopupStore } from "@/shared/model/popup-store";
+import { useGetUserContractById } from "@/entities/contracts/api/get/use-get-user-contract-by-id";
 import { useGetContractsId } from "@/entities/contracts/api/get/use-get-contract-id";
+
+// Status mapping for wagon statuses
+const statusMap = {
+  at_elevator: {
+    label: "На элеваторе",
+    color: "default",
+    icon: <span className="h-2 w-2 rounded-full bg-gray-500" />,
+  },
+  loading: {
+    label: "Загрузка",
+    color: "warning",
+    icon: <span className="h-2 w-2 rounded-full bg-yellow-500" />,
+  },
+  in_transit: {
+    label: "В пути",
+    color: "warning",
+    icon: <span className="h-2 w-2 rounded-full bg-yellow-500" />,
+  },
+  shipped: {
+    label: "Отгружен",
+    color: "success",
+    icon: <span className="h-2 w-2 rounded-full bg-green-500" />,
+  },
+};
 
 interface ContractInnerBlockProps {
   contractId: string;
 }
 
 export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
+  const isAdmin = localStorage.getItem("isAdmin") === "true";
+
   const {
     data: contract,
     isLoading,
@@ -37,9 +71,43 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     refetch,
   } = useGetContractsId(contractId);
 
+  const {
+    data: userContract,
+    isLoading: isUserLoading,
+    isError: isUserError,
+    error: userError,
+    refetch: userRefetch,
+  } = useGetUserContractById(contractId);
+
+  // Use the appropriate data and states based on user role
+  const contractData = isAdmin ? contract : userContract;
+  const isDataLoading = isAdmin ? isLoading : isUserLoading;
+  const isDataError = isAdmin ? isError : isUserError;
+  const dataError = isAdmin ? error : userError;
+  const handleRefetch = isAdmin ? refetch : userRefetch;
+
+  const [wagons, setWagons] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [newWagon, setNewWagon] = useState({
+    number: "",
+    capacity: "",
+    owner: "",
+    status: "at_elevator",
+  });
+
+  // Update wagon status
+  const handleStatusUpdate = (wagonId: number, newStatus: string) => {
+    setWagons(
+      wagons.map((wagon: any) =>
+        wagon.id === wagonId ? { ...wagon, status: newStatus } : wagon
+      )
+    );
+  };
+
   const { open } = usePopupStore("addWagon");
 
-  if (isLoading) {
+  // If loading, show skeleton
+  if (isDataLoading) {
     return (
       <div className="container mx-auto py-6 space-y-6">
         <Card>
@@ -81,7 +149,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     );
   }
 
-  if (isError) {
+  // If error, show error message
+  if (isDataError) {
     return (
       <div className="container mx-auto py-6">
         <Alert variant="destructive">
@@ -89,25 +158,53 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           <AlertTitle>Ошибка</AlertTitle>
           <AlertDescription>
             Не удалось загрузить данные контракта.{" "}
-            {error?.message || "Пожалуйста, попробуйте позже."}
+            {dataError?.message || "Пожалуйста, попробуйте позже."}
           </AlertDescription>
         </Alert>
         <div className="mt-4">
-          <Button onClick={() => refetch()}>Попробовать снова</Button>
+          <Button onClick={() => handleRefetch()}>Попробовать снова</Button>
         </div>
       </div>
     );
   }
 
+  // Initialize wagons and documents from contract data if available
+  useEffect(() => {
+    if (contractData) {
+      if (contractData.wagons) {
+        setWagons(contractData.wagons);
+      }
+      if (contractData.documents) {
+        setDocuments(contractData.documents);
+      }
+    }
+  }, [contractData]);
+
+  const handleDownload = () => {
+    if (!contractData?.files[0]) {
+      alert("Файл не найден!");
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = contractData.files[0];
+    link.setAttribute("download", "contract.pdf"); // Change filename if needed
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <>
       <div className="container mx-auto py-6 space-y-6">
+        {/* Contract Details Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Договор закупа #{contract?.id}</CardTitle>
+            <CardTitle>Договор закупа #{contractData?.id}</CardTitle>
             <CardDescription>
-              {contract?.crop} - {contract?.totalVolume} тонн |{" "}
-              {contract?.departureStation} → {contract?.destinationStation}
+              {contractData?.crop} - {contractData?.totalVolume} тонн |{" "}
+              {contractData?.departureStation} →{" "}
+              {contractData?.destinationStation}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -116,27 +213,33 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                 <p className="text-sm font-medium text-muted-foreground">
                   Грузоотправитель
                 </p>
-                <p>{contract?.sender}</p>
+                <p>{contractData?.sender}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   Грузополучатель
                 </p>
-                <p>{contract?.receiver}</p>
+                <p>{contractData?.receiver}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   Компания
                 </p>
-                <p>{contract?.company}</p>
+                <p>{contractData?.company}</p>
               </div>
             </div>
-            <Button variant="outline" className="gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleDownload}
+            >
               <Download className="h-4 w-4" />
               Скачать договор
             </Button>
           </CardContent>
         </Card>
+
+        {/* Shipping Documents Section */}
         <Card>
           <CardHeader>
             <CardTitle>Отгрузочные документы</CardTitle>
@@ -154,8 +257,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {contract?.files?.length > 0 ? (
-                      contract?.files?.map((doc: any) => (
+                    {contractData?.files?.length > 0 ? (
+                      contractData?.files?.map((doc: any) => (
                         <TableRow key={doc.id}>
                           <TableCell>{doc.name}</TableCell>
                           <TableCell>{doc.uploadedAt}</TableCell>
@@ -184,7 +287,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="w-full">
               <CardTitle className="!w-full !flex items-center justify-between">
-                Реестр вагонов <Button onClick={open}>Добавить вагон</Button>
+                Реестр вагонов{" "}
+                {isAdmin && <Button onClick={open}>Добавить вагон</Button>}
               </CardTitle>
               <CardDescription>
                 Управление вагонами и их статусами
@@ -205,25 +309,59 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {contract?.wagons?.length > 0 ? (
-                    contract?.wagons?.map((wagon: any) => (
-                      <TableRow
-                        key={wagon.id}
-                        className={
-                          wagon.status === "shipped" ? "bg-green-50" : ""
-                        }
-                      >
-                        <TableCell>{wagon.id}</TableCell>
-                        <TableCell>{wagon.number}</TableCell>
-                        <TableCell>{wagon.capacity.toLocaleString()}</TableCell>
-                        <TableCell>{wagon.owner}</TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">
-                            Редактировать
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                  {contractData?.wagons?.length > 0 ? (
+                    contractData?.wagons?.map((wagon: any) => {
+                      const wagonStatus = wagon.status || "at_elevator";
+                      return (
+                        <TableRow
+                          key={wagon.id}
+                          className={
+                            wagonStatus === "shipped" ? "bg-green-50" : ""
+                          }
+                        >
+                          <TableCell>{wagon.id}</TableCell>
+                          <TableCell>{wagon.number}</TableCell>
+                          <TableCell>
+                            {wagon.capacity.toLocaleString()}
+                          </TableCell>
+                          <TableCell>{wagon.owner}</TableCell>
+                          <TableCell>
+                            <Select
+                              value={wagonStatus}
+                              onValueChange={(value) =>
+                                handleStatusUpdate(wagon.id, value)
+                              }
+                            >
+                              <SelectTrigger className="w-[180px]">
+                                <SelectValue>
+                                  <div className="flex items-center gap-2">
+                                    {statusMap[wagonStatus]?.icon}
+                                    <span>{statusMap[wagonStatus]?.label}</span>
+                                  </div>
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(statusMap).map(
+                                  ([value, { label, icon }]) => (
+                                    <SelectItem key={value} value={value}>
+                                      <div className="flex items-center gap-2">
+                                        {icon}
+                                        {label}
+                                      </div>
+                                    </SelectItem>
+                                  )
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm">
+                              Редактировать
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   ) : (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-6">
@@ -237,7 +375,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           </CardContent>
         </Card>
       </div>
-      <AddWagonPopup contractId={contractId} />
+      <AddWagonPopup />
     </>
   );
 };

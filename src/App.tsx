@@ -36,9 +36,7 @@ function App() {
       }
     };
 
-    if (isAdmin === null) {
-      fetchAdminStatus();
-    }
+    fetchAdminStatus();
   }, [token, isAdmin]);
 
   return (
