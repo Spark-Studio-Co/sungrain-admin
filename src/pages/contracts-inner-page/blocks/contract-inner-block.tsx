@@ -24,8 +24,6 @@ import { usePopupStore } from "@/shared/model/popup-store";
 import { useGetUserContractById } from "@/entities/contracts/api/get/use-get-user-contract-by-id";
 import { useGetContractsId } from "@/entities/contracts/api/get/use-get-contract-id";
 
-
-
 interface ContractInnerBlockProps {
   contractId: string;
 }
@@ -55,7 +53,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   const isDataError = isAdmin ? isError : isUserError;
   const dataError = isAdmin ? error : userError;
   const handleRefetch = isAdmin ? refetch : userRefetch;
-
 
   if (isDataLoading) {
     return (
@@ -117,15 +114,17 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     );
   }
 
-  const renderedFiles = contractData?.wagons
-    .flatMap((wagon: any) => {
-      return wagon.files && wagon.files.length > 0 ? wagon.files.map((file: any) => ({
-        file,
-        wagonNumber: wagon.number
-      })) : [];
-    })
-    .filter(Boolean) || [];
-
+  const renderedFiles =
+    contractData?.wagons
+      .flatMap((wagon: any) => {
+        return wagon.files && wagon.files.length > 0
+          ? wagon.files.map((file: any) => ({
+              file,
+              wagonNumber: wagon.number,
+            }))
+          : [];
+      })
+      .filter(Boolean) || [];
 
   const handleDownload = () => {
     if (!contractData?.files[0]) {
@@ -140,9 +139,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     link.click();
     document.body.removeChild(link);
   };
-
-
-
 
   return (
     <>
@@ -207,22 +203,24 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                     {renderedFiles.length > 0 ? (
                       renderedFiles.map((doc: any, index: number) => (
                         <TableRow key={index}>
-                          <TableCell>{
-                            (() => {
+                          <TableCell>
+                            {(() => {
                               const filename = doc.file.toString();
-                              if (filename.includes('/uploads/')) {
-                                const filenameAfterUploads = filename.split('/uploads/')[1];
-                                const match = filenameAfterUploads.match(/^([^-]+)/);
+                              if (filename.includes("/uploads/")) {
+                                const filenameAfterUploads =
+                                  filename.split("/uploads/")[1];
+                                const match =
+                                  filenameAfterUploads.match(/^([^-]+)/);
                                 if (match && match[1]) {
                                   return match[1];
                                 }
                               }
 
-                              const lastPart = filename.split('/').pop() || '';
-                              const baseName = lastPart.split('-')[0];
-                              return baseName || 'Документ вагона';
-                            })()
-                          }</TableCell>
+                              const lastPart = filename.split("/").pop() || "";
+                              const baseName = lastPart.split("-")[0];
+                              return baseName || "Документ вагона";
+                            })()}
+                          </TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"
@@ -303,4 +301,4 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
       <AddWagonPopup contractId={contractId} />
     </>
   );
-}
+};
