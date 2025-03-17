@@ -20,14 +20,13 @@ import { useLogin } from "@/entities/auth/api/post/use-login";
 
 export default function LoginForm() {
   const navigate = useNavigate();
-  const { token } = useAuthData(); // Check if user is already logged in
+  const { token } = useAuthData();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const loginMutation = useLogin();
 
-  // Redirect if user is already logged in
   if (token) {
     navigate("/admin");
   }

@@ -29,7 +29,6 @@ import { useGetUsers } from "@/entities/users/api/get/use-get-users";
 import { AddUserPopup } from "@/entities/users/ui/add-user-popup";
 import { useCreateUserDialogStore } from "@/entities/users/model/use-create-user-dialog";
 
-// Define the User interface
 interface User {
   id?: string;
   username?: string;
@@ -58,18 +57,14 @@ export const UsersBlock = () => {
     limit: itemsPerPage,
   });
 
-  // Extract users from the response
   const users = usersData.data || [];
 
-  // Handle add new user
   const handleAddUser = () => {
     setDialogOpen(true);
   };
 
-  // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    // Reset to first page when searching
     setCurrentPage(1);
   };
 
