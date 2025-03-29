@@ -3,8 +3,8 @@ import axios from "axios";
 
 // ✅ Create Axios Instance
 export const apiClient = axios.create({
-  // baseURL: "http://localhost:6001",
-  baseURL: "https://agro-pv-backend-production.up.railway.app/api",
+  baseURL: "http://localhost:6001/api",
+  // baseURL: "https://agro-pv-backend-production.up.railway.app/api",
   withCredentials: true,
 });
 

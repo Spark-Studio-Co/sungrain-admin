@@ -1,6 +1,7 @@
 "use client";
+
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Layout } from "@/shared/ui/layout";
 import {
   Card,
@@ -20,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, Edit, Trash2, Save, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,44 +33,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-interface Agriculture {
-  id: string;
-  name: string;
-}
-
-const initialAgricultures: Agriculture[] = [
-  {
-    id: "1",
-    name: "Пшеница",
-  },
-  {
-    id: "2",
-    name: "Подсолнечник",
-  },
-  {
-    id: "3",
-    name: "Кукуруза",
-  },
-  {
-    id: "4",
-    name: "Ячмень",
-  },
-  {
-    id: "5",
-    name: "Рапс",
-  },
-];
+import type { CultureData } from "@/entities/cultures/api/create-cultures.api";
+import { useFetchCultures } from "@/entities/cultures/api/use-get-cultures";
+import { useCreateCultures } from "@/entities/cultures/api/use-create-culture";
+import { useUpdateCulture } from "@/entities/cultures/api/use-update-culture";
+import { useDeleteCulture } from "@/entities/cultures/api/use-delete-culture";
 
 export default function AgricultureManagementPage() {
   // State
-  const [agricultures, setAgricultures] =
-    useState<Agriculture[]>(initialAgricultures);
-  const [filteredAgricultures, setFilteredAgricultures] =
-    useState<Agriculture[]>(initialAgricultures);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
 
   // Dialog states
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -77,122 +51,80 @@ export default function AgricultureManagementPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Form state
-  const [newAgriculture, setNewAgriculture] = useState<
-    Omit<Agriculture, "id" | "createdAt" | "updatedAt">
-  >({
+  const [newCulture, setNewCulture] = useState<CultureData>({
     name: "",
   });
 
-  const [editingAgriculture, setEditingAgriculture] =
-    useState<Agriculture | null>(null);
-  const [deletingAgriculture, setDeletingAgriculture] =
-    useState<Agriculture | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingCulture, setEditingCulture] = useState<any>(null);
+  const [deletingCulture, setDeletingCulture] = useState<any>(null);
 
-  // Simulate loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+  // Queries and mutations
+  const { data, isLoading, isError, error } = useFetchCultures(page, limit);
+  const { mutate: createCulture, isPending: isCreating } = useCreateCultures();
+  const { mutate: updateCultureMutation, isPending: isUpdating } =
+    useUpdateCulture();
+  const { mutate: deleteCultureMutation, isPending: isDeleting } =
+    useDeleteCulture();
 
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Filter agricultures based on search term, type, and status
-  useEffect(() => {
-    let results = agricultures;
-
-    if (searchTerm) {
-      results = results.filter((agriculture) =>
-        agriculture.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter cultures based on search term
+  const filteredCultures =
+    data?.data.filter((culture) => {
+      return (
+        !searchTerm ||
+        culture.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
-    }
-
-    setFilteredAgricultures(results);
-  }, [searchTerm, agricultures]);
+    }) || [];
 
   // Handlers
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
-  const handleAddAgriculture = () => {
-    setIsSubmitting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        const id = (agricultures.length + 1).toString();
-        const newAgricultureWithId: Agriculture = {
-          ...newAgriculture,
-          id,
-        };
-        setAgricultures([...agricultures, newAgricultureWithId]);
-        setNewAgriculture({
+  const handleAddCulture = () => {
+    createCulture(newCulture, {
+      onSuccess: () => {
+        setNewCulture({
           name: "",
         });
         setIsAddDialogOpen(false);
-      } catch (err) {
-        setError("Не удалось добавить культуру. Пожалуйста, попробуйте снова.");
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 1000);
+      },
+    });
   };
 
-  const handleEditAgriculture = () => {
-    if (!editingAgriculture) return;
-
-    setIsSubmitting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        const now = new Date().toISOString().split("T")[0];
-        const updatedAgricultures = agricultures.map((agriculture) =>
-          agriculture.id === editingAgriculture.id
-            ? { ...editingAgriculture, updatedAt: now }
-            : agriculture
-        );
-        setAgricultures(updatedAgricultures);
-        setIsEditDialogOpen(false);
-      } catch (err) {
-        setError("Не удалось обновить культуру. Пожалуйста, попробуйте снова.");
-      } finally {
-        setIsSubmitting(false);
+  const handleEditCulture = () => {
+    if (!editingCulture || !editingCulture.originalName) return;
+    updateCultureMutation(
+      {
+        old_name: editingCulture.originalName,
+        name: editingCulture.name,
+      },
+      {
+        onSuccess: () => {
+          setIsEditDialogOpen(false);
+        },
       }
-    }, 1000);
+    );
   };
 
-  const handleDeleteAgriculture = () => {
-    if (!deletingAgriculture) return;
-
-    setIsSubmitting(true);
-    setTimeout(() => {
-      try {
-        const updatedAgricultures = agricultures.filter(
-          (agriculture) => agriculture.id !== deletingAgriculture.id
-        );
-
-        setAgricultures(updatedAgricultures);
-
-        // Close dialog
+  const handleDeleteCulture = () => {
+    if (!deletingCulture) return;
+    deleteCultureMutation(deletingCulture.name, {
+      onSuccess: () => {
         setIsDeleteDialogOpen(false);
-      } catch (err) {
-        setError("Не удалось удалить культуру. Пожалуйста, попробуйте снова.");
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 1000);
+      },
+    });
   };
 
-  const openEditDialog = (agriculture: Agriculture) => {
-    setEditingAgriculture(agriculture);
+  const openEditDialog = (culture: any) => {
+    setEditingCulture({
+      ...culture,
+      originalName: culture.name,
+    });
     setIsEditDialogOpen(true);
   };
 
-  const openDeleteDialog = (agriculture: Agriculture) => {
-    setDeletingAgriculture(agriculture);
+  const openDeleteDialog = (culture: any) => {
+    setDeletingCulture(culture);
     setIsDeleteDialogOpen(true);
   };
 
@@ -204,13 +136,18 @@ export default function AgricultureManagementPage() {
             УПРАВЛЕНИЕ СЕЛЬХОЗКУЛЬТУРАМИ
           </h1>
         </div>
-        {error && (
+
+        {isError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Ошибка</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              {(error as Error)?.message ||
+                "Произошла ошибка при загрузке данных"}
+            </AlertDescription>
           </Alert>
         )}
+
         <Tabs defaultValue="list" className="space-y-4">
           <TabsContent value="list" className="space-y-4">
             <div className="flex flex-col sm:flex-row justify-between gap-4">
@@ -255,39 +192,30 @@ export default function AgricultureManagementPage() {
                             <TableCell>
                               <Skeleton className="h-6 w-24" />
                             </TableCell>
-                            <TableCell>
-                              <Skeleton className="h-6 w-20" />
-                            </TableCell>
-                            <TableCell>
-                              <Skeleton className="h-6 w-40" />
-                            </TableCell>
-                            <TableCell>
-                              <Skeleton className="h-6 w-16" />
-                            </TableCell>
-                            <TableCell>
-                              <Skeleton className="h-6 w-32" />
+                            <TableCell className="text-right">
+                              <Skeleton className="h-6 w-20 ml-auto" />
                             </TableCell>
                           </TableRow>
                         ))
-                    ) : filteredAgricultures.length > 0 ? (
-                      filteredAgricultures.map((agriculture) => (
-                        <TableRow key={agriculture.id}>
+                    ) : filteredCultures.length > 0 ? (
+                      filteredCultures.map((culture) => (
+                        <TableRow key={culture.id}>
                           <TableCell className="font-medium">
-                            {agriculture.name}
+                            {culture.name}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button
                                 variant="outline"
                                 size="icon"
-                                onClick={() => openEditDialog(agriculture)}
+                                onClick={() => openEditDialog(culture)}
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="destructive"
                                 size="icon"
-                                onClick={() => openDeleteDialog(agriculture)}
+                                onClick={() => openDeleteDialog(culture)}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -297,7 +225,7 @@ export default function AgricultureManagementPage() {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
+                        <TableCell colSpan={2} className="h-24 text-center">
                           Культуры не найдены.
                         </TableCell>
                       </TableRow>
@@ -309,6 +237,8 @@ export default function AgricultureManagementPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Add Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
@@ -324,10 +254,10 @@ export default function AgricultureManagementPage() {
               </Label>
               <Input
                 id="name"
-                value={newAgriculture.name}
+                value={newCulture.name}
                 onChange={(e) =>
-                  setNewAgriculture({
-                    ...newAgriculture,
+                  setNewCulture({
+                    ...newCulture,
                     name: e.target.value,
                   })
                 }
@@ -336,8 +266,8 @@ export default function AgricultureManagementPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleAddAgriculture} disabled={isSubmitting}>
-              {isSubmitting ? (
+            <Button onClick={handleAddCulture} disabled={isCreating}>
+              {isCreating ? (
                 <>
                   <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Добавление...
@@ -349,13 +279,15 @@ export default function AgricultureManagementPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {editingAgriculture && (
+
+      {/* Edit Dialog */}
+      {editingCulture && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="sm:max-w-[550px]">
             <DialogHeader>
               <DialogTitle>Редактировать культуру</DialogTitle>
               <DialogDescription>
-                Редактирование культуры: {editingAgriculture.name}
+                Редактирование культуры: {editingCulture.name}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -365,10 +297,10 @@ export default function AgricultureManagementPage() {
                 </Label>
                 <Input
                   id="edit-name"
-                  value={editingAgriculture.name}
+                  value={editingCulture.name}
                   onChange={(e) =>
-                    setEditingAgriculture({
-                      ...editingAgriculture,
+                    setEditingCulture({
+                      ...editingCulture,
                       name: e.target.value,
                     })
                   }
@@ -383,8 +315,8 @@ export default function AgricultureManagementPage() {
               >
                 Отмена
               </Button>
-              <Button onClick={handleEditAgriculture} disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button onClick={handleEditCulture} disabled={isUpdating}>
+                {isUpdating ? (
                   <>
                     <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Сохранение...
@@ -400,14 +332,16 @@ export default function AgricultureManagementPage() {
           </DialogContent>
         </Dialog>
       )}
-      {deletingAgriculture && (
+
+      {/* Delete Confirmation Dialog */}
+      {deletingCulture && (
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Удалить культуру</DialogTitle>
               <DialogDescription>
-                Вы уверены, что хотите удалить культуру "
-                {deletingAgriculture.name}"?
+                Вы уверены, что хотите удалить культуру "{deletingCulture.name}
+                "?
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
@@ -424,10 +358,10 @@ export default function AgricultureManagementPage() {
               </Button>
               <Button
                 variant="destructive"
-                onClick={handleDeleteAgriculture}
-                disabled={isSubmitting}
+                onClick={handleDeleteCulture}
+                disabled={isDeleting}
               >
-                {isSubmitting ? (
+                {isDeleting ? (
                   <>
                     <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Удаление...

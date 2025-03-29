@@ -76,8 +76,6 @@ export default function StationsPage() {
   const [filteredStations, setFilteredStations] =
     useState<Station[]>(initialStations);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,7 +96,6 @@ export default function StationsPage() {
   const [deletingStation, setDeletingStation] = useState<Station | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Simulate loading
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -107,7 +104,6 @@ export default function StationsPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Filter stations based on search term, status, and type
   useEffect(() => {
     let results = stations;
 
@@ -120,19 +116,11 @@ export default function StationsPage() {
     }
 
     setFilteredStations(results);
-  }, [searchTerm, statusFilter, typeFilter, stations]);
+  }, [searchTerm, stations]);
 
   // Handlers
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-  };
-
-  const handleStatusFilterChange = (value: string) => {
-    setStatusFilter(value);
-  };
-
-  const handleTypeFilterChange = (value: string) => {
-    setTypeFilter(value);
   };
 
   const handleAddStation = () => {
