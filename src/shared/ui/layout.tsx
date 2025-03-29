@@ -1,7 +1,18 @@
 "use client";
 
 import type React from "react";
-import { Home, Users, SunIcon, FileIcon, LogOut } from "lucide-react";
+import {
+  Home,
+  Users,
+  SunIcon,
+  FileIcon,
+  LogOut,
+  CoinsIcon,
+  WheatIcon,
+  Handshake,
+  UserCheck,
+  TrainFront,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -33,24 +44,48 @@ const navigationItems = [
     title: "Главная",
     icon: Home,
     url: "/admin",
-    isAdmin: true,
+    isAdmin: false,
   },
   {
     title: "Пользователи",
     icon: Users,
     url: "/admin/users",
-    isAdmin: true,
+    isAdmin: false,
   },
   {
     title: "Контракты",
     icon: FileIcon,
     url: "/admin/contracts",
-    isAdmin: true,
+    isAdmin: false,
   },
   {
-    title: "Контракты",
-    icon: FileIcon,
-    url: "/contracts",
+    title: "Финансы",
+    icon: CoinsIcon,
+    url: "/admin/finance",
+    isAdmin: false,
+  },
+  {
+    title: "Культуры",
+    icon: WheatIcon,
+    url: "/admin/cultures",
+    isAdmin: false,
+  },
+  {
+    title: "Грузоотправитель",
+    icon: UserCheck,
+    url: "/admin/sender",
+    isAdmin: false,
+  },
+  {
+    title: "Грузополучатель",
+    icon: Handshake,
+    url: "/admin/receiver",
+    isAdmin: false,
+  },
+  {
+    title: "Станции",
+    icon: TrainFront,
+    url: "/admin/stations",
     isAdmin: false,
   },
 ];

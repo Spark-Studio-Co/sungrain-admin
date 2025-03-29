@@ -89,13 +89,6 @@ export default function LoginForm() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Пароль</Label>
-              <Button
-                variant="link"
-                className="px-0 font-normal h-auto"
-                size="sm"
-              >
-                Забыли пароль?
-              </Button>
             </div>
             <Input
               id="password"

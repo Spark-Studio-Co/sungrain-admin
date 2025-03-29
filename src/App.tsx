@@ -10,6 +10,11 @@ import DashboardPage from "./pages/dashboard-page/dashboard-page";
 import { useAuthData } from "./entities/auth/model/use-auth-store";
 import { checkIsAdmin } from "./entities/users/api/check-is-admin";
 import { useState, useEffect } from "react";
+import FinancesPage from "./pages/finances-page/finances-page";
+import AgricultureManagementPage from "./pages/cultrures-page/cultures-page";
+import ReceiverPage from "./pages/receiver-page/receiver-page";
+import SenderPage from "./pages/sender-page/sender-page";
+import StationsPage from "./pages/stations-page/stations-page";
 
 function App() {
   const { token } = useAuthData();
@@ -42,32 +47,37 @@ function App() {
   return (
     <QueryClientProvider client={reactQueryClient}>
       <Routes>
-        {token ? (
-          isAdmin ? (
-            <>
-              <Route path="/" element={<Navigate to="/admin" replace />} />
-              <Route path="/admin" element={<DashboardPage />} />
-              <Route path="/admin/contracts" element={<ContractsPage />} />
-              <Route
-                path="/admin/contracts/:id"
-                element={<ContractsInnerPage />}
-              />
-              <Route path="/admin/users" element={<UsersPage />} />
-              <Route path="*" element={<Navigate to="/admin" replace />} />
-            </>
-          ) : (
-            <>
-              <Route path="/contracts" element={<ContractsPage />} />
-              <Route path="/contracts/:id" element={<ContractsInnerPage />} />
-              <Route path="*" element={<Navigate to="/contracts" replace />} />
-            </>
-          )
-        ) : (
-          <>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </>
-        )}
+        {/* {token ? (
+          isAdmin ? ( */}
+        <>
+          <Route path="/" element={<Navigate to="/admin" replace />} />
+          <Route path="/admin" element={<DashboardPage />} />
+          <Route path="/admin/contracts" element={<ContractsPage />} />
+          <Route path="/admin/contracts/:id" element={<ContractsInnerPage />} />
+          <Route path="/admin/users" element={<UsersPage />} />
+          <Route path="/admin/finance" element={<FinancesPage />} />
+          <Route
+            path="/admin/cultures"
+            element={<AgricultureManagementPage />}
+          />
+          <Route path="/admin/sender" element={<SenderPage />} />
+          <Route path="/admin/receiver" element={<ReceiverPage />} />
+          <Route path="/admin/stations" element={<StationsPage />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </>
+        {/* ) : ( */}
+        {/* <>
+          <Route path="/contracts" element={<ContractsPage />} />
+          <Route path="/contracts/:id" element={<ContractsInnerPage />} />
+          <Route path="*" element={<Navigate to="/contracts" replace />} />
+        </> */}
+        {/* ) */}
+        {/* ) : ( */}
+        <>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </>
+        {/* )} */}
       </Routes>
     </QueryClientProvider>
   );

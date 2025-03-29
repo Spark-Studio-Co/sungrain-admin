@@ -3,6 +3,7 @@ import axios from "axios";
 
 // ✅ Create Axios Instance
 export const apiClient = axios.create({
+  // baseURL: "http://localhost:6001",
   baseURL: "https://agro-pv-backend-production.up.railway.app/api",
   withCredentials: true,
 });
@@ -12,7 +13,7 @@ const refresh = useAuthData.getState().refreshToken;
 // ✅ Automatically Attach Token to Requests
 apiClient.interceptors.request.use(
   (config) => {
-    const token = useAuthData.getState().token; // ✅ Get token from Zustand store
+    const token = useAuthData.getState().token;
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
