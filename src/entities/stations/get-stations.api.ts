@@ -9,6 +9,7 @@ export interface GetCultureData {
 export interface PaginatedResponse<T> {
   data: T[];
   page: number;
+  lastPage: number;
   limit: number;
   total: number;
   totalPages: number;

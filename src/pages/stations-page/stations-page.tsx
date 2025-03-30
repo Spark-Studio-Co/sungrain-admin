@@ -1,13 +1,13 @@
 "use client";
 
 import type React from "react";
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Layout } from "@/shared/ui/layout";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -22,7 +22,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, Edit, Trash2, Save, AlertCircle } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Save,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -33,187 +44,125 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// Types
-interface Station {
-  id: string;
-  name: string;
-  code: string;
-}
-
-// Sample data
-const initialStations: Station[] = [
-  {
-    id: "1",
-    name: "Краснодар-Сортировочный",
-    code: "520004",
-  },
-  {
-    id: "2",
-    name: "Новороссийск-Порт",
-    code: "521500",
-  },
-  {
-    id: "3",
-    name: "Ростов-Товарный",
-    code: "510102",
-  },
-  {
-    id: "4",
-    name: "Таганрог-Порт",
-    code: "511401",
-  },
-  {
-    id: "5",
-    name: "Ставрополь-Грузовой",
-    code: "530001",
-  },
-];
+import { useFetchStations } from "@/entities/stations/use-get-stations";
+import { useCreateStation } from "@/entities/stations/use-create-stations";
+import { useUpdateStation } from "@/entities/stations/use-update-stations";
+import { useDeleteStations } from "@/entities/stations/use-delete-stations";
+import type { StationData } from "@/entities/stations/create-stations.api";
+import type { UpdateStationData } from "@/entities/stations/update-stations.api";
 
 export default function StationsPage() {
-  // State
-  const [stations, setStations] = useState<Station[]>(initialStations);
-  const [filteredStations, setFilteredStations] =
-    useState<Station[]>(initialStations);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
-  // Dialog states
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  // Form state
-  const [newStation, setNewStation] = useState<
-    Omit<Station, "id" | "createdAt" | "updatedAt">
-  >({
+  const [newStation, setNewStation] = useState<StationData>({
     name: "",
     code: "",
   });
 
-  const [editingStation, setEditingStation] = useState<Station | null>(null);
-  const [deletingStation, setDeletingStation] = useState<Station | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingStation, setEditingStation] = useState<any>(null);
+  const [deletingStation, setDeletingStation] = useState<any>(null);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+  const { data, isLoading, isError, error } = useFetchStations(page, limit);
+  const createMutation = useCreateStation();
+  const updateMutation = useUpdateStation();
+  const deleteMutation = useDeleteStations();
 
-    return () => clearTimeout(timer);
-  }, []);
+  // Extract pagination data
+  const totalItems = data?.total || 0;
+  const lastPage = data?.lastPage || 1;
+  const currentPage = data?.page || 1;
 
-  useEffect(() => {
-    let results = stations;
-
-    if (searchTerm) {
-      results = results.filter(
-        (station) =>
+  const filteredStations = Array.isArray(data?.data)
+    ? data.data.filter((station) => {
+        return (
+          !searchTerm ||
           station.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           station.code.includes(searchTerm)
-      );
-    }
+        );
+      })
+    : [];
 
-    setFilteredStations(results);
-  }, [searchTerm, stations]);
-
-  // Handlers
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+    setPage(1); // Reset to first page when searching
   };
 
   const handleAddStation = () => {
-    setIsSubmitting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        const id = (stations.length + 1).toString();
-
-        const newStationWithId: Station = {
-          ...newStation,
-          id,
-        };
-
-        setStations([...stations, newStationWithId]);
-
-        // Reset form
+    createMutation.mutate(newStation, {
+      onSuccess: () => {
         setNewStation({
           name: "",
           code: "",
         });
-
-        // Close dialog
         setIsAddDialogOpen(false);
-      } catch (err) {
-        setError("Не удалось добавить станцию. Пожалуйста, попробуйте снова.");
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 1000);
+      },
+    });
   };
 
+  // Update the handleEditStation function to match your API
   const handleEditStation = () => {
     if (!editingStation) return;
 
-    setIsSubmitting(true);
+    const updateData: UpdateStationData = {
+      id: editingStation.id,
+      name: editingStation.name,
+    };
 
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        const now = new Date().toISOString().split("T")[0];
-
-        const updatedStations = stations.map((station) =>
-          station.id === editingStation.id
-            ? { ...editingStation, updatedAt: now }
-            : station
-        );
-
-        setStations(updatedStations);
-
-        // Close dialog
+    updateMutation.mutate(updateData, {
+      onSuccess: () => {
         setIsEditDialogOpen(false);
-      } catch (err) {
-        setError("Не удалось обновить станцию. Пожалуйста, попробуйте снова.");
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 1000);
+      },
+    });
   };
 
   const handleDeleteStation = () => {
     if (!deletingStation) return;
 
-    setIsSubmitting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        const updatedStations = stations.filter(
-          (station) => station.id !== deletingStation.id
-        );
-
-        setStations(updatedStations);
-
-        // Close dialog
+    deleteMutation.mutate(Number(deletingStation.id), {
+      onSuccess: () => {
         setIsDeleteDialogOpen(false);
-      } catch (err) {
-        setError("Не удалось удалить станцию. Пожалуйста, попробуйте снова.");
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 1000);
+      },
+    });
   };
 
-  const openEditDialog = (station: Station) => {
-    setEditingStation(station);
+  const openEditDialog = (station: any) => {
+    setEditingStation({
+      ...station,
+      originalName: station.name,
+    });
     setIsEditDialogOpen(true);
   };
 
-  const openDeleteDialog = (station: Station) => {
+  const openDeleteDialog = (station: any) => {
     setDeletingStation(station);
     setIsDeleteDialogOpen(true);
+  };
+
+  // Pagination handlers
+  const goToFirstPage = () => setPage(1);
+  const goToPreviousPage = () =>
+    setPage((prev) => (prev > 1 ? prev - 1 : prev));
+  const goToNextPage = () =>
+    setPage((prev) => (prev < lastPage ? prev + 1 : prev));
+  const goToLastPage = () => setPage(lastPage);
+
+  const handleLimitChange = (value: string) => {
+    setLimit(Number(value));
+    setPage(1); // Reset to first page when changing limit
   };
 
   return (
@@ -224,13 +173,18 @@ export default function StationsPage() {
             УПРАВЛЕНИЕ СТАНЦИЯМИ
           </h1>
         </div>
-        {error && (
+
+        {isError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Ошибка</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              {(error as Error)?.message ||
+                "Произошла ошибка при загрузке данных"}
+            </AlertDescription>
           </Alert>
         )}
+
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -277,18 +231,6 @@ export default function StationsPage() {
                         <TableCell>
                           <Skeleton className="h-6 w-16" />
                         </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-24" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-20" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-16" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-24" />
-                        </TableCell>
                         <TableCell className="text-right">
                           <Skeleton className="h-6 w-20 ml-auto" />
                         </TableCell>
@@ -323,7 +265,7 @@ export default function StationsPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
+                    <TableCell colSpan={3} className="h-24 text-center">
                       Станции не найдены.
                     </TableCell>
                   </TableRow>
@@ -331,6 +273,78 @@ export default function StationsPage() {
               </TableBody>
             </Table>
           </CardContent>
+          <CardFooter className="flex items-center justify-between pt-4">
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <div>
+                Страница {currentPage} из {lastPage}
+              </div>
+              <div>|</div>
+              <div>
+                Всего: {totalItems}{" "}
+                {totalItems === 1
+                  ? "запись"
+                  : totalItems % 10 === 1 && totalItems % 100 !== 11
+                  ? "запись"
+                  : totalItems % 10 >= 2 &&
+                    totalItems % 10 <= 4 &&
+                    (totalItems % 100 < 10 || totalItems % 100 >= 20)
+                  ? "записи"
+                  : "записей"}
+              </div>
+              <div>|</div>
+              <div className="flex items-center space-x-2">
+                <span>Показывать:</span>
+                <Select
+                  value={limit.toString()}
+                  onValueChange={handleLimitChange}
+                >
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue placeholder={limit.toString()} />
+                  </SelectTrigger>
+                  <SelectContent side="top">
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToFirstPage}
+                disabled={currentPage === 1 || isLoading}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1 || isLoading}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToNextPage}
+                disabled={currentPage === lastPage || isLoading}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToLastPage}
+                disabled={currentPage === lastPage || isLoading}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardFooter>
         </Card>
       </div>
 
@@ -378,8 +392,11 @@ export default function StationsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleAddStation} disabled={isSubmitting}>
-              {isSubmitting ? (
+            <Button
+              onClick={handleAddStation}
+              disabled={createMutation.isPending}
+            >
+              {createMutation.isPending ? (
                 <>
                   <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Добавление...
@@ -399,7 +416,7 @@ export default function StationsPage() {
             <DialogHeader>
               <DialogTitle>Редактировать станцию</DialogTitle>
               <DialogDescription>
-                Редактирование станции: {editingStation.name}
+                Редактирование станции: {editingStation.originalName}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -443,8 +460,11 @@ export default function StationsPage() {
               >
                 Отмена
               </Button>
-              <Button onClick={handleEditStation} disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button
+                onClick={handleEditStation}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? (
                   <>
                     <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Сохранение...
@@ -460,6 +480,8 @@ export default function StationsPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Delete Confirmation Dialog */}
       {deletingStation && (
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
@@ -484,9 +506,9 @@ export default function StationsPage() {
               <Button
                 variant="destructive"
                 onClick={handleDeleteStation}
-                disabled={isSubmitting}
+                disabled={deleteMutation.isPending}
               >
-                {isSubmitting ? (
+                {deleteMutation.isPending ? (
                   <>
                     <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Удаление...
