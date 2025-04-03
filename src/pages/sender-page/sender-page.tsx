@@ -1,13 +1,13 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useEffect } from "react";
 import { Layout } from "@/shared/ui/layout";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -22,7 +22,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, Edit, Trash2, Save, AlertCircle } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Save,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -33,51 +44,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useCreateSender } from "@/entities/sender/api/create/use-create-sender";
+import { useUpdateSender } from "@/entities/sender/api/update/use-update-sender";
+import { useDeleteSender } from "@/entities/sender/api/delete/use-delete-sender";
+import { useGetSenders } from "@/entities/sender/api/get/use-get-senders";
+import { CreateSenderData } from "@/entities/sender/api/create/create-sender";
+import { UpdateSenderData } from "@/entities/sender/api/update/update-sender";
 
 // Types
-interface Shipper {
+interface Sender {
   id: string;
   name: string;
-  fullName: string;
 }
 
-// Sample data
-const initialShippers: Shipper[] = [
-  {
-    id: "1",
-    name: "ООО Агрохолдинг",
-    fullName: "Общество с ограниченной ответственностью 'Агрохолдинг'",
-  },
-  {
-    id: "2",
-    name: "АО СельхозПром",
-    fullName: "Акционерное общество 'СельхозПром'",
-  },
-  {
-    id: "3",
-    name: "ООО ЮгАгро",
-    fullName: "Общество с ограниченной ответственностью 'ЮгАгро'",
-  },
-  {
-    id: "4",
-    name: "КФХ Колос",
-    fullName: "Крестьянское (фермерское) хозяйство 'Колос'",
-  },
-  {
-    id: "5",
-    name: "АО АгроИнвест",
-    fullName: "Акционерное общество 'АгроИнвест'",
-  },
-];
-
 export default function SenderPage() {
-  const [shippers, setShippers] = useState<Shipper[]>(initialShippers);
-  const [filteredShippers, setFilteredShippers] =
-    useState<Shipper[]>(initialShippers);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   // Dialog states
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -85,147 +75,121 @@ export default function SenderPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Form state
-  const [newShipper, setNewShipper] = useState<
-    Omit<Shipper, "id" | "createdAt" | "updatedAt">
-  >({
+  const [newSender, setNewSender] = useState<CreateSenderData>({
     name: "",
-    fullName: "",
   });
 
-  const [editingShipper, setEditingShipper] = useState<Shipper | null>(null);
-  const [deletingShipper, setDeletingShipper] = useState<Shipper | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingSender, setEditingSender] = useState<Sender | null>(null);
+  const [deletingSender, setDeletingSender] = useState<Sender | null>(null);
 
-  // Simulate loading
+  // React Query hooks
+  const { data, isLoading, isError, error } = useGetSenders(page, limit);
+  const createMutation = useCreateSender();
+  const updateMutation = useUpdateSender();
+  const deleteMutation = useDeleteSender();
+
+  // Extract pagination data
+  const totalItems = data?.total || 0;
+  const currentPage = data?.page || 1;
+  const lastPage = Math.ceil(totalItems / limit) || 1;
+
+  // Filter senders based on search term
+  const filteredSenders = Array.isArray(data?.data)
+    ? data.data.filter((sender) => {
+        return (
+          !searchTerm ||
+          sender.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      })
+    : [];
+
+  // Debug logs for data
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Filter shippers based on search term and status
-  useEffect(() => {
-    let results = shippers;
-
-    if (searchTerm) {
-      results = results.filter(
-        (shipper) =>
-          shipper.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          shipper.fullName.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    if (data) {
+      console.log("Loaded senders data:", data);
     }
-
-    setFilteredShippers(results);
-  }, [searchTerm, statusFilter, shippers]);
+  }, [data]);
 
   // Handlers
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+    setPage(1); // Reset to first page when searching
   };
 
-  const handleStatusFilterChange = (value: string) => {
-    setStatusFilter(value);
-  };
-
-  const handleAddShipper = () => {
-    setIsSubmitting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        const id = (shippers.length + 1).toString();
-
-        const newShipperWithId: Shipper = {
-          ...newShipper,
-          id,
-        };
-
-        setShippers([...shippers, newShipperWithId]);
-
-        // Reset form
-        setNewShipper({
+  const handleAddSender = () => {
+    createMutation.mutate(newSender, {
+      onSuccess: () => {
+        setNewSender({
           name: "",
-          fullName: "",
         });
-
-        // Close dialog
         setIsAddDialogOpen(false);
-      } catch (err) {
-        setError(
-          "Не удалось добавить грузоотправителя. Пожалуйста, попробуйте снова."
-        );
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 1000);
+      },
+    });
   };
 
-  const handleEditShipper = () => {
-    if (!editingShipper) return;
+  const handleEditSender = () => {
+    if (!editingSender) return;
 
-    setIsSubmitting(true);
+    const updateData: UpdateSenderData = {
+      id: editingSender.id,
+      name: editingSender.name,
+    };
 
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        const now = new Date().toISOString().split("T")[0];
+    console.log("Sending update with data:", updateData);
 
-        const updatedShippers = shippers.map((shipper) =>
-          shipper.id === editingShipper.id
-            ? { ...editingShipper, updatedAt: now }
-            : shipper
-        );
-
-        setShippers(updatedShippers);
-
-        // Close dialog
+    updateMutation.mutate(updateData, {
+      onSuccess: () => {
+        console.log("Update successful");
         setIsEditDialogOpen(false);
-      } catch (err) {
-        setError(
-          "Не удалось обновить грузоотправителя. Пожалуйста, попробуйте снова."
-        );
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 1000);
+      },
+      onError: (error) => {
+        console.error("Error updating sender:", error);
+      },
+    });
   };
 
-  const handleDeleteShipper = () => {
-    if (!deletingShipper) return;
+  const handleDeleteSender = () => {
+    if (!deletingSender) return;
 
-    setIsSubmitting(true);
+    console.log("Deleting sender with ID:", deletingSender.id);
 
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        const updatedShippers = shippers.filter(
-          (shipper) => shipper.id !== deletingShipper.id
-        );
-
-        setShippers(updatedShippers);
-
-        // Close dialog
+    // Make sure we're passing the ID as a string
+    deleteMutation.mutate(deletingSender.id, {
+      onSuccess: () => {
+        console.log("Delete successful");
         setIsDeleteDialogOpen(false);
-      } catch (err) {
-        setError(
-          "Не удалось удалить грузоотправителя. Пожалуйста, попробуйте снова."
-        );
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 1000);
+      },
+      onError: (error) => {
+        console.error("Error deleting sender:", error);
+      },
+    });
   };
 
-  const openEditDialog = (shipper: Shipper) => {
-    setEditingShipper(shipper);
+  const openEditDialog = (sender: Sender) => {
+    console.log("Opening edit dialog for sender:", sender);
+    setEditingSender({
+      ...sender,
+    });
     setIsEditDialogOpen(true);
   };
 
-  const openDeleteDialog = (shipper: Shipper) => {
-    setDeletingShipper(shipper);
+  const openDeleteDialog = (sender: Sender) => {
+    console.log("Opening delete dialog for sender:", sender);
+    setDeletingSender(sender);
     setIsDeleteDialogOpen(true);
+  };
+
+  // Pagination handlers
+  const goToFirstPage = () => setPage(1);
+  const goToPreviousPage = () =>
+    setPage((prev) => (prev > 1 ? prev - 1 : prev));
+  const goToNextPage = () =>
+    setPage((prev) => (prev < lastPage ? prev + 1 : prev));
+  const goToLastPage = () => setPage(lastPage);
+
+  const handleLimitChange = (value: string) => {
+    setLimit(Number(value));
+    setPage(1); // Reset to first page when changing limit
   };
 
   return (
@@ -237,11 +201,14 @@ export default function SenderPage() {
           </h1>
         </div>
 
-        {error && (
+        {isError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Ошибка</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              {(error as Error)?.message ||
+                "Произошла ошибка при загрузке данных"}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -274,6 +241,7 @@ export default function SenderPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>ID</TableHead>
                   <TableHead>Название</TableHead>
                   <TableHead className="text-right">Действия</TableHead>
                 </TableRow>
@@ -285,19 +253,7 @@ export default function SenderPage() {
                     .map((_, index) => (
                       <TableRow key={`skeleton-${index}`}>
                         <TableCell>
-                          <Skeleton className="h-6 w-24" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-40" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-20" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-32" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-16" />
+                          <Skeleton className="h-6 w-12" />
                         </TableCell>
                         <TableCell>
                           <Skeleton className="h-6 w-24" />
@@ -307,26 +263,26 @@ export default function SenderPage() {
                         </TableCell>
                       </TableRow>
                     ))
-                ) : filteredShippers.length > 0 ? (
-                  filteredShippers.map((shipper) => (
-                    <TableRow key={shipper.id}>
+                ) : filteredSenders.length > 0 ? (
+                  filteredSenders.map((sender: any) => (
+                    <TableRow key={sender.id}>
+                      <TableCell>{sender.id}</TableCell>
                       <TableCell className="font-medium">
-                        {shipper.name}
+                        {sender.name}
                       </TableCell>
-
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => openEditDialog(shipper)}
+                            onClick={() => openEditDialog(sender)}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="destructive"
                             size="icon"
-                            onClick={() => openDeleteDialog(shipper)}
+                            onClick={() => openDeleteDialog(sender)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -336,7 +292,7 @@ export default function SenderPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
+                    <TableCell colSpan={3} className="h-24 text-center">
                       Грузоотправители не найдены.
                     </TableCell>
                   </TableRow>
@@ -344,6 +300,78 @@ export default function SenderPage() {
               </TableBody>
             </Table>
           </CardContent>
+          <CardFooter className="flex items-center justify-between pt-4">
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <div>
+                Страница {currentPage} из {lastPage}
+              </div>
+              <div>|</div>
+              <div>
+                Всего: {totalItems}{" "}
+                {totalItems === 1
+                  ? "запись"
+                  : totalItems % 10 === 1 && totalItems % 100 !== 11
+                  ? "запись"
+                  : totalItems % 10 >= 2 &&
+                    totalItems % 10 <= 4 &&
+                    (totalItems % 100 < 10 || totalItems % 100 >= 20)
+                  ? "записи"
+                  : "записей"}
+              </div>
+              <div>|</div>
+              <div className="flex items-center space-x-2">
+                <span>Показывать:</span>
+                <Select
+                  value={limit.toString()}
+                  onValueChange={handleLimitChange}
+                >
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue placeholder={limit.toString()} />
+                  </SelectTrigger>
+                  <SelectContent side="top">
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToFirstPage}
+                disabled={currentPage === 1 || isLoading}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1 || isLoading}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToNextPage}
+                disabled={currentPage === lastPage || isLoading}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToLastPage}
+                disabled={currentPage === lastPage || isLoading}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardFooter>
         </Card>
       </div>
 
@@ -363,10 +391,10 @@ export default function SenderPage() {
               </Label>
               <Input
                 id="name"
-                value={newShipper.name}
+                value={newSender.name}
                 onChange={(e) =>
-                  setNewShipper({
-                    ...newShipper,
+                  setNewSender({
+                    ...newSender,
                     name: e.target.value,
                   })
                 }
@@ -375,8 +403,11 @@ export default function SenderPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleAddShipper} disabled={isSubmitting}>
-              {isSubmitting ? (
+            <Button
+              onClick={handleAddSender}
+              disabled={createMutation.isPending}
+            >
+              {createMutation.isPending ? (
                 <>
                   <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Добавление...
@@ -390,13 +421,13 @@ export default function SenderPage() {
       </Dialog>
 
       {/* Edit Dialog */}
-      {editingShipper && (
+      {editingSender && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="sm:max-w-[550px]">
             <DialogHeader>
               <DialogTitle>Редактировать грузоотправителя</DialogTitle>
               <DialogDescription>
-                Редактирование грузоотправителя: {editingShipper.name}
+                Редактирование грузоотправителя: {editingSender.name}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -406,13 +437,14 @@ export default function SenderPage() {
                 </Label>
                 <Input
                   id="edit-name"
-                  value={editingShipper.name}
-                  onChange={(e) =>
-                    setEditingShipper({
-                      ...editingShipper,
+                  value={editingSender.name}
+                  onChange={(e) => {
+                    console.log("Changing name to:", e.target.value);
+                    setEditingSender({
+                      ...editingSender,
                       name: e.target.value,
-                    })
-                  }
+                    });
+                  }}
                   className="col-span-3"
                 />
               </div>
@@ -424,8 +456,11 @@ export default function SenderPage() {
               >
                 Отмена
               </Button>
-              <Button onClick={handleEditShipper} disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button
+                onClick={handleEditSender}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? (
                   <>
                     <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Сохранение...
@@ -443,14 +478,14 @@ export default function SenderPage() {
       )}
 
       {/* Delete Confirmation Dialog */}
-      {deletingShipper && (
+      {deletingSender && (
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Удалить грузоотправителя</DialogTitle>
               <DialogDescription>
                 Вы уверены, что хотите удалить грузоотправителя "
-                {deletingShipper.name}"?
+                {deletingSender.name}"?
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
@@ -468,10 +503,10 @@ export default function SenderPage() {
               </Button>
               <Button
                 variant="destructive"
-                onClick={handleDeleteShipper}
-                disabled={isSubmitting}
+                onClick={handleDeleteSender}
+                disabled={deleteMutation.isPending}
               >
-                {isSubmitting ? (
+                {deleteMutation.isPending ? (
                   <>
                     <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Удаление...

@@ -1,13 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { addWagon, AddWagonRequest } from "./add-wagon";
+import { addWagon, type AddWagonRequest } from "./add-wagon";
 
 export const useAddWagon = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: AddWagonRequest) => addWagon(data),
+    mutationFn: (data: FormData | AddWagonRequest) => addWagon(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wagons"] });
+      // Also invalidate contracts since they contain wagons
+      queryClient.invalidateQueries({ queryKey: ["contracts"] });
     },
     onError: (error) => {
       console.error("Ошибка при добавлении вагона:", error);

@@ -1,11 +1,22 @@
 "use client";
 
-import { Package, FileText, ArrowRight, AlertCircle } from "lucide-react";
+import {
+  Package,
+  FileText,
+  ArrowRight,
+  AlertCircle,
+  Truck,
+  Clock,
+  Building2,
+  CheckCircle2,
+  FileBarChart,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -18,11 +29,52 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Link, useNavigate } from "react-router-dom";
 import { useGetContracts } from "@/entities/contracts/api/get/use-get-contracts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { useMemo } from "react";
+
+// Sample activity data
+const recentActivities = [
+  {
+    id: 1,
+    action: "Добавлен новый вагон",
+    contract: "001-2024",
+    user: "Иванов А.П.",
+    timestamp: "Сегодня, 14:32",
+  },
+  {
+    id: 2,
+    action: "Загружен документ 'Паспорт качества №123'",
+    contract: "001-2024",
+    user: "Петрова Е.С.",
+    timestamp: "Сегодня, 12:15",
+  },
+  {
+    id: 3,
+    action: "Изменен статус вагона на 'Отгружен'",
+    contract: "002-2024",
+    user: "Сидоров И.В.",
+    timestamp: "Сегодня, 10:45",
+  },
+  {
+    id: 4,
+    action: "Создан новый контракт",
+    contract: "005-2024",
+    user: "Иванов А.П.",
+    timestamp: "Вчера, 16:20",
+  },
+  {
+    id: 5,
+    action: "Завершена отгрузка по контракту",
+    contract: "003-2024",
+    user: "Петрова Е.С.",
+    timestamp: "Вчера, 14:05",
+  },
+];
 
 export const DashboardBlock = () => {
   const navigate = useNavigate();
@@ -54,14 +106,23 @@ export const DashboardBlock = () => {
     }));
   }, [contractsData]);
 
-  const totalContracts = recentContracts.length;
-
+  // Calculate summary statistics
+  const totalContracts = contractsData?.total || recentContracts.length;
   const activeContracts = recentContracts.filter(
     (c: any) => c.status === "active"
   ).length;
+  const completedContracts = recentContracts.filter(
+    (c: any) => c.status === "completed"
+  ).length;
 
   const totalVolume = recentContracts.reduce(
-    (sum: any, contract: any) => sum + Number(contract.volume),
+    (sum: number, contract: any) => sum + Number(contract.volume),
+    0
+  );
+
+  const shippedVolume = recentContracts.reduce(
+    (sum: number, contract: any) =>
+      sum + (Number(contract.volume) * contract.progress) / 100,
     0
   );
 
@@ -81,8 +142,10 @@ export const DashboardBlock = () => {
           </Link>
         </Button>
       </div>
-      <div className="w-full flex gap-4">
-        <Card className="w-full">
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Всего контрактов
@@ -96,13 +159,14 @@ export const DashboardBlock = () => {
               <>
                 <div className="text-2xl font-bold">{totalContracts}</div>
                 <p className="text-xs text-muted-foreground">
-                  Активных: {activeContracts}
+                  Активных: {activeContracts}, Завершенных: {completedContracts}
                 </p>
               </>
             )}
           </CardContent>
         </Card>
-        <Card className="w-full">
+
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Общий объем</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
@@ -113,8 +177,11 @@ export const DashboardBlock = () => {
             ) : (
               <>
                 <div className="text-2xl font-bold">
-                  {totalVolume.toLocaleString()} т.
+                  {totalVolume.toLocaleString()} т
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Отгружено: {Math.round(shippedVolume).toLocaleString()} т
+                </p>
               </>
             )}
           </CardContent>
@@ -123,7 +190,9 @@ export const DashboardBlock = () => {
       <Tabs defaultValue="contracts" className="space-y-4">
         <TabsList>
           <TabsTrigger value="contracts">Контракты</TabsTrigger>
+          <TabsTrigger value="activity">Активность</TabsTrigger>
         </TabsList>
+
         <TabsContent value="contracts" className="space-y-4">
           <Card>
             <CardHeader>
@@ -151,6 +220,8 @@ export const DashboardBlock = () => {
                     <TableHead>Культура</TableHead>
                     <TableHead>Объем (т)</TableHead>
                     <TableHead>Дата</TableHead>
+                    <TableHead>Статус</TableHead>
+                    <TableHead className="text-right">Действия</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -159,7 +230,7 @@ export const DashboardBlock = () => {
                       .fill(0)
                       .map((_, index) => (
                         <TableRow key={`skeleton-${index}`}>
-                          {Array(6)
+                          {Array(7)
                             .fill(0)
                             .map((_, cellIndex) => (
                               <TableCell key={`cell-${index}-${cellIndex}`}>
@@ -170,12 +241,7 @@ export const DashboardBlock = () => {
                       ))
                   ) : recentContracts.length > 0 ? (
                     recentContracts.map((contract: any) => (
-                      <TableRow
-                        key={contract.id}
-                        onClick={() =>
-                          navigate(`/admin/contracts/${contract.id}`)
-                        }
-                      >
+                      <TableRow key={contract.id}>
                         <TableCell className="font-medium">
                           {contract.id}
                         </TableCell>
@@ -184,16 +250,160 @@ export const DashboardBlock = () => {
                           {contract.volume.toLocaleString()}
                         </TableCell>
                         <TableCell>{contract.date}</TableCell>
+
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress
+                              value={contract.progress}
+                              className="h-2 w-[60px]"
+                            />
+                            <span className="text-xs text-muted-foreground">
+                              {contract.progress}%
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              navigate(`/admin/contracts/${contract.id}`)
+                            }
+                          >
+                            Подробнее
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
-                    // No data
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4">
+                      <TableCell colSpan={7} className="text-center py-4">
                         Контракты не найдены
                       </TableCell>
                     </TableRow>
                   )}
+                </TableBody>
+              </Table>
+            </CardContent>
+            <CardFooter>
+              <Button variant="outline" size="sm" className="ml-auto" asChild>
+                <Link to="/admin/contracts">
+                  Посмотреть все
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+
+          {/* Shipment Status Distribution */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Статус вагонов
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-2">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">Отгружено</span>
+                    </div>
+                    <span className="font-medium">42</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Truck className="h-4 w-4 text-amber-500" />
+                      <span className="text-sm">В пути</span>
+                    </div>
+                    <span className="font-medium">18</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm">На элеваторе</span>
+                    </div>
+                    <span className="font-medium">24</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Документы</CardTitle>
+              </CardHeader>
+              <CardContent className="pb-2">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileBarChart className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">Паспорта качества</span>
+                    </div>
+                    <span className="font-medium">24</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">ЭПД</span>
+                    </div>
+                    <span className="font-medium">18</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-500" />
+                      <span className="text-sm">Требуют внимания</span>
+                    </div>
+                    <span className="font-medium">3</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="activity">
+          <Card>
+            <CardHeader>
+              <CardTitle>Последние действия</CardTitle>
+              <CardDescription>
+                История действий пользователей в системе
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Действие</TableHead>
+                    <TableHead>Контракт</TableHead>
+                    <TableHead>Пользователь</TableHead>
+                    <TableHead>Время</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentActivities.map((activity) => (
+                    <TableRow key={activity.id}>
+                      <TableCell>{activity.action}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="link"
+                          className="p-0 h-auto"
+                          onClick={() =>
+                            navigate(`/admin/contracts/${activity.contract}`)
+                          }
+                        >
+                          {activity.contract}
+                        </Button>
+                      </TableCell>
+                      <TableCell>{activity.user}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <span>{activity.timestamp}</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </CardContent>

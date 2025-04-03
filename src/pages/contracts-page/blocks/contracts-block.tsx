@@ -1,5 +1,7 @@
 "use client";
 
+import type React from "react";
+
 import { useState, useMemo } from "react";
 import {
   Table,
@@ -25,6 +27,8 @@ import {
   Download,
   ChevronDown,
   AlertCircle,
+  Trash2,
+  MoreHorizontal,
 } from "lucide-react";
 import {
   Pagination,
@@ -43,6 +47,22 @@ import { AddContractDialog } from "@/entities/contracts/ui/add-contract-popup";
 import { useNavigate } from "react-router-dom";
 import { useExportTable } from "@/entities/table/api/get/use-export-table";
 import { useGetUserContracts } from "@/entities/contracts/api/get/use-get-user-contracts";
+import { useDeleteContract } from "@/entities/contracts/api/delete/use-delete-contract";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 export const ContractsBlock = () => {
   const isAdmin = localStorage.getItem("isAdmin") === "true";
@@ -51,12 +71,15 @@ export const ContractsBlock = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const navigate = useNavigate();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [contractToDelete, setContractToDelete] = useState<any>(null);
 
   const {
     data: contracts = { data: [], total: 0, page: 1, totalPages: 1 },
     isLoading,
     isError,
     error,
+    refetch: refetchContracts,
   } = useGetContracts({
     page: currentPage,
     limit: itemsPerPage,
@@ -67,10 +90,13 @@ export const ContractsBlock = () => {
     isLoading: isUserLoading,
     isError: isUserError,
     error: userError,
+    refetch: refetchUserContracts,
   } = useGetUserContracts({
     page: currentPage,
     limit: itemsPerPage,
   });
+
+  const { mutate: deleteContract, isPending: isDeleting } = useDeleteContract();
 
   const filteredContracts = useMemo(() => {
     if (!contracts || !contracts.data) return [];
@@ -94,13 +120,29 @@ export const ContractsBlock = () => {
   const isDataError = isAdmin ? isError : isUserError;
   const dataError = isAdmin ? error : userError;
 
-  const handleSearchChange = (e: any) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1);
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, contract: any) => {
+    e.stopPropagation(); // Prevent row click navigation
+    setContractToDelete(contract);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (contractToDelete) {
+      deleteContract(contractToDelete.id, {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+        },
+      });
+    }
   };
 
   const getPageNumbers = () => {
@@ -144,6 +186,12 @@ export const ContractsBlock = () => {
     return pages;
   };
 
+  const handleRowClick = (contract: any) => {
+    navigate(
+      isAdmin ? `/admin/contracts/${contract.id}` : `/contracts/${contract.id}`
+    );
+  };
+
   return (
     <div>
       <Card className="border-none shadow-none">
@@ -164,7 +212,7 @@ export const ContractsBlock = () => {
                     useContractDialogStore.getState().setDialogOpen(true)
                   }
                 >
-                  <Plus /> Добавить контракт
+                  <Plus className="mr-2 h-4 w-4" /> Добавить контракт
                 </Button>
               )}
               <div className="relative">
@@ -231,6 +279,9 @@ export const ContractsBlock = () => {
                     Номер
                   </TableHead>
                   <TableHead className="w-[150px] text-center font-medium">
+                    Название
+                  </TableHead>
+                  <TableHead className="w-[150px] text-center font-medium">
                     Культура
                   </TableHead>
                   <TableHead className="w-[200px] text-center font-medium">
@@ -248,6 +299,17 @@ export const ContractsBlock = () => {
                   <TableHead className="w-[150px] text-center font-medium">
                     Общий объем (тонн)
                   </TableHead>
+                  <TableHead className="w-[100px] text-center font-medium">
+                    Валюта
+                  </TableHead>
+                  <TableHead className="w-[100px] text-center font-medium">
+                    Компания
+                  </TableHead>
+                  {isAdmin && (
+                    <TableHead className="w-[80px] text-center font-medium">
+                      Действия
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -256,7 +318,7 @@ export const ContractsBlock = () => {
                     .fill(0)
                     .map((_, index) => (
                       <TableRow key={`skeleton-${index}`} className="h-[100px]">
-                        {Array(7)
+                        {Array(isAdmin ? 11 : 10)
                           .fill(0)
                           .map((_, cellIndex) => (
                             <TableCell
@@ -273,17 +335,14 @@ export const ContractsBlock = () => {
                     filteredContracts.map((contract: any) => (
                       <TableRow
                         key={contract.id}
-                        onClick={() =>
-                          navigate(
-                            isAdmin
-                              ? `/admin/contracts/${contract.id}`
-                              : `/contracts/${contract.id}`
-                          )
-                        }
-                        className="hover:bg-muted/50 h-[100px] transition-colors"
+                        className="hover:bg-muted/50 h-[100px] transition-colors cursor-pointer"
+                        onClick={() => handleRowClick(contract)}
                       >
                         <TableCell className="text-center font-medium">
-                          {contract.id}
+                          {contract.number}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {contract.name}
                         </TableCell>
                         <TableCell className="text-center">
                           {contract.crop}
@@ -295,19 +354,55 @@ export const ContractsBlock = () => {
                           {contract.receiver}
                         </TableCell>
                         <TableCell className="text-center">
-                          {contract.departureStation}
+                          {contract.departure_station}
                         </TableCell>
                         <TableCell className="text-center">
-                          {contract.destinationStation}
+                          {contract.destination_station}
                         </TableCell>
                         <TableCell className="text-center font-medium">
-                          {contract.totalVolume}
+                          {contract.total_volume}
                         </TableCell>
+                        <TableCell className="text-center">
+                          {contract.currency}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {contract.company?.name || "-"}
+                        </TableCell>
+                        {isAdmin && (
+                          <TableCell className="text-center">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  className="h-8 w-8 p-0"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <span className="sr-only">Открыть меню</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={(e) =>
+                                    handleDeleteClick(e, contract)
+                                  }
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Удалить
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
+                      <TableCell
+                        colSpan={isAdmin ? 11 : 10}
+                        className="h-24 text-center"
+                      >
                         Контракты не найдены.
                       </TableCell>
                     </TableRow>
@@ -316,17 +411,14 @@ export const ContractsBlock = () => {
                   contractsToDisplay.map((contract: any) => (
                     <TableRow
                       key={contract.id}
-                      onClick={() =>
-                        navigate(
-                          isAdmin
-                            ? `/admin/contracts/${contract.id}`
-                            : `/contracts/${contract.id}`
-                        )
-                      }
-                      className="hover:bg-muted/50 h-[100px] transition-colors"
+                      className="hover:bg-muted/50 h-[100px] transition-colors cursor-pointer"
+                      onClick={() => handleRowClick(contract)}
                     >
                       <TableCell className="text-center font-medium">
-                        {contract.id}
+                        {contract.number}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {contract.name}
                       </TableCell>
                       <TableCell className="text-center">
                         {contract.crop}
@@ -338,19 +430,59 @@ export const ContractsBlock = () => {
                         {contract.receiver}
                       </TableCell>
                       <TableCell className="text-center">
-                        {contract.departureStation}
+                        {contract.departure_station}
                       </TableCell>
                       <TableCell className="text-center">
-                        {contract.destinationStation}
+                        {contract.destination_station}
                       </TableCell>
                       <TableCell className="text-center font-medium">
-                        {contract.totalVolume}
+                        {contract.total_volume}
                       </TableCell>
+                      <TableCell className="text-center">
+                        {contract.currency}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {contract.company ? (
+                          <Badge variant="outline">
+                            {contract.company.name}
+                          </Badge>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      {isAdmin && (
+                        <TableCell className="text-center">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <span className="sr-only">Открыть меню</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={(e) => handleDeleteClick(e, contract)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Удалить
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
+                    <TableCell
+                      colSpan={isAdmin ? 11 : 10}
+                      className="h-24 text-center"
+                    >
                       Контракты не найдены.
                     </TableCell>
                   </TableRow>
@@ -437,6 +569,37 @@ export const ContractsBlock = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Удаление контракта</DialogTitle>
+            <DialogDescription>
+              Вы уверены, что хотите удалить контракт{" "}
+              {contractToDelete?.name ? `"${contractToDelete.name}"` : ""}? Это
+              действие нельзя отменить.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Отмена
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Удаление..." : "Удалить"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <AddContractDialog />
     </div>
   );

@@ -6,12 +6,13 @@ export const useUpdateUsers = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: AddUserRequest) => updateUser(data),
+    mutationFn: ({ id, data }: { id: number | string; data: AddUserRequest }) =>
+      updateUser(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
     },
     onError: (error) => {
-      console.error("Ошибка при добавлении пользователя:", error);
+      console.error("Ошибка при обновлении пользователя:", error);
     },
   });
 };

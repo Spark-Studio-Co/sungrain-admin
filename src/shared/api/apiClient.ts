@@ -1,62 +1,93 @@
 import { useAuthData } from "@/entities/auth/model/use-auth-store";
 import axios from "axios";
 
-// ✅ Create Axios Instance
+// Axios instance
 export const apiClient = axios.create({
-  baseURL: "http://localhost:6001/api",
   // baseURL: "https://agro-pv-backend-production.up.railway.app/api",
+  baseURL: "http://localhost:6001/api",
   withCredentials: true,
 });
 
-const refresh = useAuthData.getState().refreshToken;
-
-// ✅ Automatically Attach Token to Requests
+// Attach access token
 apiClient.interceptors.request.use(
   (config) => {
     const token = useAuthData.getState().token;
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// ✅ Refresh Token Function
-const refreshToken = async (data: any) => {
+// Refresh token function
+const refreshToken = async (refresh: string) => {
   try {
-    console.log(data);
     const response = await apiClient.post("/auth/refresh", {
-      refresh_token: data,
+      refresh_token: refresh,
     });
-    const { token } = response.data;
 
-    // ✅ Save new token in Zustand
-    useAuthData.getState().saveToken(token);
-
-    return token;
-  } catch (error) {
-    console.error("Failed to refresh token:", error);
-    throw error;
+    useAuthData.getState().saveToken(response.data.access_token);
+    return response.data.access_token;
+  } catch (err) {
+    console.error("❌ Refresh failed:", err);
+    useAuthData.getState().removeToken?.(); // Optional logout method
+    window.location.href = "/login"; // 🔁 Redirect
+    throw err;
   }
 };
 
-// ✅ Handle 401 Unauthorized Responses & Refresh Token
+// Global flag to avoid infinite loops
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) prom.reject(error);
+    else prom.resolve(token);
+  });
+
+  failedQueue = [];
+};
+
+// Axios response interceptor
 apiClient.interceptors.response.use(
-  (response) => response, // ✅ Forward successful responses
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true; // ✅ Prevent infinite loop
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url.includes("/auth/refresh")
+    ) {
+      originalRequest._retry = true;
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({
+            resolve: (token: string) => {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              resolve(apiClient(originalRequest));
+            },
+            reject: (err: any) => reject(err),
+          });
+        });
+      }
+
+      isRefreshing = true;
 
       try {
-        const newToken = await refreshToken(refresh as any);
+        const refresh = useAuthData.getState().refreshToken;
+        const newToken = await refreshToken(refresh as string);
+        processQueue(null, newToken);
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
-        return apiClient(originalRequest); // ✅ Retry the failed request
-      } catch (refreshError) {
-        console.error("Refresh token failed:", refreshError);
+        return apiClient(originalRequest);
+      } catch (err) {
+        processQueue(err, null);
+        return Promise.reject(err);
+      } finally {
+        isRefreshing = false;
       }
     }
 

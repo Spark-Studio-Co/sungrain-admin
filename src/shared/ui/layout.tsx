@@ -12,6 +12,7 @@ import {
   Handshake,
   UserCheck,
   TrainFront,
+  GlobeIcon,
 } from "lucide-react";
 
 import {
@@ -44,49 +45,55 @@ const navigationItems = [
     title: "Главная",
     icon: Home,
     url: "/admin",
-    isAdmin: false,
+    isAdmin: true,
   },
   {
     title: "Пользователи",
     icon: Users,
     url: "/admin/users",
-    isAdmin: false,
+    isAdmin: true,
   },
   {
     title: "Контракты",
     icon: FileIcon,
     url: "/admin/contracts",
-    isAdmin: false,
+    isAdmin: true,
   },
   {
     title: "Финансы",
     icon: CoinsIcon,
     url: "/admin/finance",
-    isAdmin: false,
+    isAdmin: true,
   },
   {
     title: "Культуры",
     icon: WheatIcon,
     url: "/admin/cultures",
-    isAdmin: false,
+    isAdmin: true,
   },
   {
     title: "Грузоотправитель",
     icon: UserCheck,
     url: "/admin/sender",
-    isAdmin: false,
+    isAdmin: true,
   },
   {
     title: "Грузополучатель",
     icon: Handshake,
     url: "/admin/receiver",
-    isAdmin: false,
+    isAdmin: true,
   },
   {
     title: "Станции",
     icon: TrainFront,
     url: "/admin/stations",
-    isAdmin: false,
+    isAdmin: true,
+  },
+  {
+    title: "Компании",
+    icon: GlobeIcon,
+    url: "/admin/companies",
+    isAdmin: true,
   },
 ];
 
@@ -125,7 +132,7 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
-              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+              <SidebarGroupLabel>Навигации</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   {navigationItems

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Plus, Search, CalendarIcon } from "lucide-react";
+import { Download, Plus, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -39,56 +39,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-
-// Sample shipping document data
-const shippingDocuments = [
-  { id: 1, name: "ТЛГ + инструкция", status: "completed" },
-  { id: 2, name: "ИКР", status: "pending" },
-  { id: 3, name: "Счет-фактура", status: "completed" },
-  { id: 4, name: "Паспорта качества", status: "pending" },
-  { id: 5, name: "Коды транзитные", status: "pending" },
-  { id: 6, name: "СТ-1", status: "pending" },
-  { id: 7, name: "РГП", status: "pending" },
-  { id: 8, name: "Фито", status: "pending" },
-  { id: 9, name: "ДС", status: "pending" },
-];
-
-// Sample contracts data
-const contracts = [
-  {
-    id: "001-2024",
-    name: "Контракт №001-2024",
-    shipper: "ООО Агрохолдинг",
-    receiver: "ООО ЗерноТрейд",
-  },
-  {
-    id: "002-2024",
-    name: "Контракт №002-2024",
-    shipper: "АО СельхозПром",
-    receiver: "ООО МаслоЭкспорт",
-  },
-  {
-    id: "003-2024",
-    name: "Контракт №003-2024",
-    shipper: "ООО ЮгАгро",
-    receiver: "ООО ЗерноТрейд",
-  },
-  {
-    id: "004-2024",
-    name: "Контракт №004-2024",
-    shipper: "КФХ Колос",
-    receiver: "ООО БалтЭкспорт",
-  },
-];
 
 // Sample invoice data
 const invoices = [
@@ -170,14 +122,78 @@ export default function FinancesPage() {
   const [date, setDate] = useState<Date>();
   const [allInvoices, setAllInvoices] = useState(invoices);
 
-  // New invoice state
+  // Update the newInvoice state to include all the fields
   const [newInvoice, setNewInvoice] = useState({
+    // Invoice Info
+    invoice_number: "",
+    invoice_date: "",
+
+    // Receiver (TOO "SUN GRAIN")
+    receiver_company_name: "ТОО «SUN GRAIN»", // Default value
+    receiver_legal_country: "Республика Казахстан",
+    receiver_legal_region: "Алматинская область",
+    receiver_legal_district: "Карасайский район",
+    receiver_legal_city: "город Каскелен",
+    receiver_legal_street: "ул. Наурызбай",
+    receiver_legal_office: "88, офис 7",
+    receiver_bin: "231240014096",
+    receiver_account_usd: "KZ0696507F0009576396",
+    receiver_bank_branch: 'Филиал АО "ForteBank" в г. Павлодар',
+    receiver_bic: "IRTYKZKA",
+    receiver_correspondent_bank: "Bank of New York, USA",
+    receiver_swift: "IRVTUS3N",
+    receiver_account_number: "890-0548-533",
+
+    // Sender
+    sender_company_name: "",
+    sender_country: "",
+    sender_region: "",
+    sender_district: "",
+    sender_street: "",
+
+    // Contract
+    contract_number: "",
+    contract_date: "",
+    contract_appendix_number: "",
+    contract_appendix_date: "",
+
+    // Product & Payment
+    product_name: "",
+    price_per_ton_usd: "",
+    total_quantity_mt: "",
+    payment_amount_usd: "",
+    total_amount_usd: "",
+
+    // Signature
+    director_name: "",
+
+    // Keep the original fields for backward compatibility
     contract: "",
     amount: "",
-    currency: "RUB",
+    currency: "USD",
     status: "pending",
     dueDate: "",
     description: "",
+  });
+
+  // Add this state after the other state declarations
+  const [isViewInvoiceDialogOpen, setIsViewInvoiceDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+
+  // Add these new state variables after the existing state declarations
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [allPayments, setAllPayments] = useState(payments);
+  const [newPayment, setNewPayment] = useState({
+    invoice_id: "",
+    payment_date: "",
+    payment_amount: "",
+    payment_currency: "USD",
+    payment_method: "bank_transfer",
+    payment_reference: "",
+    payment_description: "",
+    bank_name: "",
+    bank_account: "",
+    payment_status: "completed",
   });
 
   // Filter invoices based on search term and status
@@ -203,18 +219,19 @@ export default function FinancesPage() {
         const newId = `INV-${String(allInvoices.length + 1).padStart(3, "0")}`;
 
         // Format the date
-        const formattedDate = date
-          ? format(date, "dd.MM.yyyy")
-          : format(new Date(), "dd.MM.yyyy");
+        const formattedDate =
+          newInvoice.invoice_date || format(new Date(), "dd.MM.yyyy");
 
-        // Create the new invoice object
+        // Create the new invoice object with basic display fields
         const invoice = {
           id: newId,
-          contract: newInvoice.contract,
+          contract: newInvoice.contract_number || newInvoice.contract,
           date: formattedDate,
-          amount: Number(newInvoice.amount),
+          amount: Number(newInvoice.total_amount_usd || newInvoice.amount || 0),
           currency: newInvoice.currency,
           status: newInvoice.status,
+          // Store all the detailed data for viewing later
+          details: { ...newInvoice },
         };
 
         // Add the new invoice to the list
@@ -222,9 +239,53 @@ export default function FinancesPage() {
 
         // Reset the form
         setNewInvoice({
+          // Invoice Info
+          invoice_number: "",
+          invoice_date: "",
+
+          // Receiver (TOO "SUN GRAIN")
+          receiver_company_name: "ТОО «SUN GRAIN»", // Default value
+          receiver_legal_country: "Республика Казахстан",
+          receiver_legal_region: "Алматинская область",
+          receiver_legal_district: "Карасайский район",
+          receiver_legal_city: "город Каскелен",
+          receiver_legal_street: "ул. Наурызбай",
+          receiver_legal_office: "88, офис 7",
+          receiver_bin: "231240014096",
+          receiver_account_usd: "KZ0696507F0009576396",
+          receiver_bank_branch: 'Филиал АО "ForteBank" в г. Павлодар',
+          receiver_bic: "IRTYKZKA",
+          receiver_correspondent_bank: "Bank of New York, USA",
+          receiver_swift: "IRVTUS3N",
+          receiver_account_number: "890-0548-533",
+
+          // Sender
+          sender_company_name: "",
+          sender_country: "",
+          sender_region: "",
+          sender_district: "",
+          sender_street: "",
+
+          // Contract
+          contract_number: "",
+          contract_date: "",
+          contract_appendix_number: "",
+          contract_appendix_date: "",
+
+          // Product & Payment
+          product_name: "",
+          price_per_ton_usd: "",
+          total_quantity_mt: "",
+          payment_amount_usd: "",
+          total_amount_usd: "",
+
+          // Signature
+          director_name: "",
+
+          // Original fields
           contract: "",
           amount: "",
-          currency: "RUB",
+          currency: "USD",
           status: "pending",
           dueDate: "",
           description: "",
@@ -235,6 +296,158 @@ export default function FinancesPage() {
         setIsInvoiceDialogOpen(false);
       } catch (error) {
         console.error("Error adding invoice:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    }, 1000);
+  };
+
+  // Add this function before the return statement
+  const openViewInvoiceDialog = (invoice: any) => {
+    setSelectedInvoice(invoice);
+    setIsViewInvoiceDialogOpen(true);
+  };
+
+  // Add this helper function to convert numbers to words (for Russian)
+  function numberToWords(num: number): string {
+    // This is a simplified version - in a real app, you'd want a more complete implementation
+    const units = [
+      "",
+      "один",
+      "два",
+      "три",
+      "четыре",
+      "пять",
+      "шесть",
+      "семь",
+      "восемь",
+      "девять",
+    ];
+    const teens = [
+      "десять",
+      "одиннадцать",
+      "двенадцать",
+      "тринадцать",
+      "четырнадцать",
+      "пятнадцать",
+      "шестнадцать",
+      "семнадцать",
+      "восемнадцать",
+      "девятнадцать",
+    ];
+    const tens = [
+      "",
+      "",
+      "двадцать",
+      "тридцать",
+      "сорок",
+      "пятьдесят",
+      "шестьдесят",
+      "семьдесят",
+      "восемьдесят",
+      "девяносто",
+    ];
+    const hundreds = [
+      "",
+      "сто",
+      "двести",
+      "триста",
+      "четыреста",
+      "пятьсот",
+      "шестьсот",
+      "семьсот",
+      "восемьсот",
+      "девятьсот",
+    ];
+
+    if (num === 0) return "ноль";
+
+    let result = "";
+
+    // Handle thousands
+    if (num >= 1000) {
+      const thousandsDigit = Math.floor(num / 1000);
+      if (thousandsDigit === 1) {
+        result += "одна тысяча ";
+      } else if (thousandsDigit === 2) {
+        result += "две тысячи ";
+      } else if (thousandsDigit >= 3 && thousandsDigit <= 4) {
+        result += units[thousandsDigit] + " тысячи ";
+      } else {
+        result += units[thousandsDigit] + " тысяч ";
+      }
+      num %= 1000;
+    }
+
+    // Handle hundreds
+    if (num >= 100) {
+      result += hundreds[Math.floor(num / 100)] + " ";
+      num %= 100;
+    }
+
+    // Handle tens and units
+    if (num >= 10 && num < 20) {
+      result += teens[num - 10] + " ";
+    } else {
+      if (num >= 20) {
+        result += tens[Math.floor(num / 10)] + " ";
+        num %= 10;
+      }
+      if (num > 0) {
+        result += units[num] + " ";
+      }
+    }
+
+    return result.trim().charAt(0).toUpperCase() + result.trim().slice(1);
+  }
+
+  // Add this function before the return statement
+  const handleAddPayment = () => {
+    setIsSubmitting(true);
+
+    // Simulate API call
+    setTimeout(() => {
+      try {
+        // Generate a new payment ID
+        const newId = `PAY-${String(allPayments.length + 1).padStart(3, "0")}`;
+
+        // Format the date
+        const formattedDate =
+          newPayment.payment_date || format(new Date(), "dd.MM.yyyy");
+
+        // Create the new payment object
+        const payment = {
+          id: newId,
+          invoice: newPayment.invoice_id,
+          date: formattedDate,
+          amount: Number(newPayment.payment_amount || 0),
+          method: newPayment.payment_method,
+          reference: newPayment.payment_reference,
+          // Store all the detailed data for viewing later
+          details: { ...newPayment },
+        };
+
+        // Add the new payment to the list
+        setAllPayments([...allPayments, payment]);
+
+        // Reset the form
+        setNewPayment({
+          invoice_id: "",
+          payment_date: "",
+          payment_amount: "",
+          payment_currency: "USD",
+          payment_method: "bank_transfer",
+          payment_reference: "",
+          payment_description: "",
+          bank_name: "",
+          bank_account: "",
+          payment_status: "completed",
+        });
+
+        // Close the dialog
+        setIsPaymentDialogOpen(false);
+      } catch (error) {
+        console.error("Error adding payment:", error);
       } finally {
         setIsSubmitting(false);
       }
@@ -288,163 +501,539 @@ export default function FinancesPage() {
                       Создать счет
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="sm:max-w-[550px]">
+                  <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Создать новый счет</DialogTitle>
                       <DialogDescription>
                         Заполните информацию для создания нового счета
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="contract" className="text-right">
-                          Контракт
-                        </Label>
-                        <Select
-                          value={newInvoice.contract}
-                          onValueChange={(value) =>
-                            setNewInvoice({ ...newInvoice, contract: value })
-                          }
-                        >
-                          <SelectTrigger className="col-span-3 w-full">
-                            <SelectValue placeholder="Выберите контракт" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {contracts.map((contract) => (
-                              <SelectItem key={contract.id} value={contract.id}>
-                                {contract.name} ({contract.shipper} -{" "}
-                                {contract.receiver})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="date" className="text-right">
-                          Дата счета
-                        </Label>
-                        <div className="col-span-3">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full justify-start text-left font-normal",
-                                  !date && "text-muted-foreground"
-                                )}
-                              >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {date
-                                  ? format(date, "PPP", { locale: ru })
-                                  : "Выберите дату"}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                              <Calendar
-                                mode="single"
-                                selected={date}
-                                onSelect={setDate}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
+                    <div className="grid gap-6 py-4">
+                      {/* Invoice Info Section */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">
+                          🧾 Информация о счете
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="invoice_number">Номер счета</Label>
+                            <Input
+                              id="invoice_number"
+                              value={newInvoice.invoice_number}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  invoice_number: e.target.value,
+                                })
+                              }
+                              placeholder="Введите номер счета"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="invoice_date">Дата счета</Label>
+                            <Input
+                              id="invoice_date"
+                              type="date"
+                              value={newInvoice.invoice_date}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  invoice_date: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="amount" className="text-right">
-                          Сумма
-                        </Label>
-                        <div className="col-span-3 flex gap-2">
-                          <Input
-                            id="amount"
-                            type="number"
-                            value={newInvoice.amount}
-                            onChange={(e) =>
-                              setNewInvoice({
-                                ...newInvoice,
-                                amount: e.target.value,
-                              })
-                            }
-                            className="flex-1"
-                            placeholder="Введите сумму"
-                          />
-                          <Select
-                            value={newInvoice.currency}
-                            onValueChange={(value) =>
-                              setNewInvoice({ ...newInvoice, currency: value })
-                            }
-                          >
-                            <SelectTrigger className="w-[100px]">
-                              <SelectValue placeholder="Валюта" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="RUB">RUB</SelectItem>
-                              <SelectItem value="USD">USD</SelectItem>
-                              <SelectItem value="EUR">EUR</SelectItem>
-                            </SelectContent>
-                          </Select>
+                      {/* Receiver Section */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">📥 Получатель</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="receiver_company_name">
+                              Название компании
+                            </Label>
+                            <Input
+                              id="receiver_company_name"
+                              value={newInvoice.receiver_company_name}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  receiver_company_name: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="receiver_legal_country">
+                              Страна
+                            </Label>
+                            <Input
+                              id="receiver_legal_country"
+                              value={newInvoice.receiver_legal_country}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  receiver_legal_country: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="receiver_legal_region">
+                              Область
+                            </Label>
+                            <Input
+                              id="receiver_legal_region"
+                              value={newInvoice.receiver_legal_region}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  receiver_legal_region: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="receiver_legal_district">
+                              Район
+                            </Label>
+                            <Input
+                              id="receiver_legal_district"
+                              value={newInvoice.receiver_legal_district}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  receiver_legal_district: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="receiver_legal_city">Город</Label>
+                            <Input
+                              id="receiver_legal_city"
+                              value={newInvoice.receiver_legal_city}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  receiver_legal_city: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="receiver_legal_street">Улица</Label>
+                            <Input
+                              id="receiver_legal_street"
+                              value={newInvoice.receiver_legal_street}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  receiver_legal_street: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="receiver_legal_office">Офис</Label>
+                            <Input
+                              id="receiver_legal_office"
+                              value={newInvoice.receiver_legal_office}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  receiver_legal_office: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="receiver_bin">БИН</Label>
+                            <Input
+                              id="receiver_bin"
+                              value={newInvoice.receiver_bin}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  receiver_bin: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="receiver_account_usd">
+                              Счет USD
+                            </Label>
+                            <Input
+                              id="receiver_account_usd"
+                              value={newInvoice.receiver_account_usd}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  receiver_account_usd: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="receiver_bank_branch">
+                              Филиал банка
+                            </Label>
+                            <Input
+                              id="receiver_bank_branch"
+                              value={newInvoice.receiver_bank_branch}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  receiver_bank_branch: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="receiver_bic">БИК</Label>
+                            <Input
+                              id="receiver_bic"
+                              value={newInvoice.receiver_bic}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  receiver_bic: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="receiver_correspondent_bank">
+                              Банк-корреспондент
+                            </Label>
+                            <Input
+                              id="receiver_correspondent_bank"
+                              value={newInvoice.receiver_correspondent_bank}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  receiver_correspondent_bank: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="receiver_swift">SWIFT</Label>
+                            <Input
+                              id="receiver_swift"
+                              value={newInvoice.receiver_swift}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  receiver_swift: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="receiver_account_number">
+                              Номер счета
+                            </Label>
+                            <Input
+                              id="receiver_account_number"
+                              value={newInvoice.receiver_account_number}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  receiver_account_number: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="status" className="text-right">
-                          Статус
-                        </Label>
-                        <Select
-                          value={newInvoice.status}
-                          onValueChange={(value) =>
-                            setNewInvoice({ ...newInvoice, status: value })
-                          }
-                        >
-                          <SelectTrigger className="col-span-3 w-full">
-                            <SelectValue placeholder="Выберите статус" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">
-                              Ожидает оплаты
-                            </SelectItem>
-                            <SelectItem value="paid">Оплачен</SelectItem>
-                            <SelectItem value="overdue">Просрочен</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      {/* Sender Section */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">
+                          📤 Отправитель
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="sender_company_name">
+                              Название компании
+                            </Label>
+                            <Input
+                              id="sender_company_name"
+                              value={newInvoice.sender_company_name}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  sender_company_name: e.target.value,
+                                })
+                              }
+                              placeholder="ООО «Название компании»"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="sender_country">Страна</Label>
+                            <Input
+                              id="sender_country"
+                              value={newInvoice.sender_country}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  sender_country: e.target.value,
+                                })
+                              }
+                              placeholder="Республика Таджикистан"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="sender_region">Область</Label>
+                            <Input
+                              id="sender_region"
+                              value={newInvoice.sender_region}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  sender_region: e.target.value,
+                                })
+                              }
+                              placeholder="Согдийская область"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="sender_district">Район</Label>
+                            <Input
+                              id="sender_district"
+                              value={newInvoice.sender_district}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  sender_district: e.target.value,
+                                })
+                              }
+                              placeholder="Б.Гафуровский р-н"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="sender_street">Улица</Label>
+                            <Input
+                              id="sender_street"
+                              value={newInvoice.sender_street}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  sender_street: e.target.value,
+                                })
+                              }
+                              placeholder="ул. Ленина"
+                            />
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="dueDate" className="text-right">
-                          Срок оплаты
-                        </Label>
-                        <Input
-                          id="dueDate"
-                          type="date"
-                          value={newInvoice.dueDate}
-                          onChange={(e) =>
-                            setNewInvoice({
-                              ...newInvoice,
-                              dueDate: e.target.value,
-                            })
-                          }
-                          className="col-span-3"
-                        />
+                      {/* Contract Section */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">📄 Контракт</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="contract_number">
+                              Номер контракта
+                            </Label>
+                            <Input
+                              id="contract_number"
+                              value={newInvoice.contract_number}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  contract_number: e.target.value,
+                                })
+                              }
+                              placeholder="SG-MH-1"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="contract_date">
+                              Дата контракта
+                            </Label>
+                            <Input
+                              id="contract_date"
+                              type="date"
+                              value={newInvoice.contract_date}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  contract_date: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="contract_appendix_number">
+                              Номер приложения
+                            </Label>
+                            <Input
+                              id="contract_appendix_number"
+                              value={newInvoice.contract_appendix_number}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  contract_appendix_number: e.target.value,
+                                })
+                              }
+                              placeholder="3"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="contract_appendix_date">
+                              Дата приложения
+                            </Label>
+                            <Input
+                              id="contract_appendix_date"
+                              type="date"
+                              value={newInvoice.contract_appendix_date}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  contract_appendix_date: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="description" className="text-right">
-                          Описание
-                        </Label>
-                        <Input
-                          id="description"
-                          value={newInvoice.description}
-                          onChange={(e) =>
-                            setNewInvoice({
-                              ...newInvoice,
-                              description: e.target.value,
-                            })
-                          }
-                          className="col-span-3"
-                          placeholder="Дополнительная информация"
-                        />
+                      {/* Product & Payment Section */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">
+                          🌾 Продукт и оплата
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="product_name">
+                              Название продукта
+                            </Label>
+                            <Input
+                              id="product_name"
+                              value={newInvoice.product_name}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  product_name: e.target.value,
+                                })
+                              }
+                              placeholder="Пшеница мягкая"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="price_per_ton_usd">
+                              Цена за тонну (USD)
+                            </Label>
+                            <Input
+                              id="price_per_ton_usd"
+                              type="number"
+                              value={newInvoice.price_per_ton_usd}
+                              onChange={(e) => {
+                                const price = e.target.value;
+                                const quantity = newInvoice.total_quantity_mt;
+                                const payment =
+                                  price && quantity
+                                    ? Number(price) * Number(quantity)
+                                    : "";
+
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  price_per_ton_usd: price,
+                                  payment_amount_usd: String(payment),
+                                  total_amount_usd: String(payment),
+                                });
+                              }}
+                              placeholder="120"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="total_quantity_mt">
+                              Количество (МТ)
+                            </Label>
+                            <Input
+                              id="total_quantity_mt"
+                              type="number"
+                              value={newInvoice.total_quantity_mt}
+                              onChange={(e) => {
+                                const quantity = e.target.value;
+                                const price = newInvoice.price_per_ton_usd;
+                                const payment =
+                                  price && quantity
+                                    ? Number(price) * Number(quantity)
+                                    : "";
+
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  total_quantity_mt: quantity,
+                                  payment_amount_usd: String(payment),
+                                  total_amount_usd: String(payment),
+                                });
+                              }}
+                              placeholder="136"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="payment_amount_usd">
+                              Сумма оплаты (USD)
+                            </Label>
+                            <Input
+                              id="payment_amount_usd"
+                              type="number"
+                              value={newInvoice.payment_amount_usd}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  payment_amount_usd: e.target.value,
+                                  total_amount_usd: e.target.value,
+                                })
+                              }
+                              placeholder="16320"
+                            />
+                          </div>
+                          <div className="space-y-2 col-span-2">
+                            <Label htmlFor="total_amount_usd">
+                              Итоговая сумма (USD)
+                            </Label>
+                            <Input
+                              id="total_amount_usd"
+                              type="number"
+                              value={newInvoice.total_amount_usd}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  total_amount_usd: e.target.value,
+                                })
+                              }
+                              placeholder="16320"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Signature Section */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">🧑‍💼 Подпись</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="director_name">ФИО директора</Label>
+                            <Input
+                              id="director_name"
+                              value={newInvoice.director_name}
+                              onChange={(e) =>
+                                setNewInvoice({
+                                  ...newInvoice,
+                                  director_name: e.target.value,
+                                })
+                              }
+                              placeholder="Иванов И.И."
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <DialogFooter>
@@ -519,10 +1108,10 @@ export default function FinancesPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0"
+                              onClick={() => openViewInvoiceDialog(invoice)}
                             >
                               <Download className="h-4 w-4" />
-                              <span className="sr-only">Скачать</span>
+                              <span className="sr-only">Просмотр</span>
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -545,15 +1134,130 @@ export default function FinancesPage() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input placeholder="Поиск платежей..." className="pl-10" />
               </div>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Добавить платеж
-              </Button>
+              <Dialog
+                open={isPaymentDialogOpen}
+                onOpenChange={setIsPaymentDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Добавить платеж
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Добавить новый платеж</DialogTitle>
+                    <DialogDescription>
+                      Заполните информацию о платеже
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-6 py-4">
+                    {/* Payment Info Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">
+                        💰 Информация о платеже
+                      </h3>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-2 w-full">
+                          <Label htmlFor="invoice_id" className="w-full">
+                            Счет
+                          </Label>
+                          <Select
+                            value={newPayment.invoice_id}
+                            onValueChange={(value) =>
+                              setNewPayment({
+                                ...newPayment,
+                                invoice_id: value,
+                              })
+                            }
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Выберите счет" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {invoices.map((invoice) => (
+                                <SelectItem key={invoice.id} value={invoice.id}>
+                                  {invoice.id} (
+                                  {invoice.amount.toLocaleString()}{" "}
+                                  {invoice.currency})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="payment_date">Дата платежа</Label>
+                          <Input
+                            id="payment_date"
+                            type="date"
+                            value={newPayment.payment_date}
+                            onChange={(e) =>
+                              setNewPayment({
+                                ...newPayment,
+                                payment_date: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="payment_amount">Сумма платежа</Label>
+                          <Input
+                            id="payment_amount"
+                            type="number"
+                            value={newPayment.payment_amount}
+                            onChange={(e) =>
+                              setNewPayment({
+                                ...newPayment,
+                                payment_amount: e.target.value,
+                              })
+                            }
+                            placeholder="1000"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="payment_currency">Валюта</Label>
+                          <Select
+                            value={newPayment.payment_currency}
+                            onValueChange={(value) =>
+                              setNewPayment({
+                                ...newPayment,
+                                payment_currency: value,
+                              })
+                            }
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Выберите валюту" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="USD">USD</SelectItem>
+                              <SelectItem value="RUB">RUB</SelectItem>
+                              <SelectItem value="EUR">EUR</SelectItem>
+                              <SelectItem value="KZT">KZT</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleAddPayment} disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Создание...
+                        </>
+                      ) : (
+                        "Добавить платеж"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle>Платежи</CardTitle>
+                <CardTitle>Оплата</CardTitle>
                 <CardDescription>История платежей по счетам</CardDescription>
               </CardHeader>
               <CardContent>
@@ -566,27 +1270,47 @@ export default function FinancesPage() {
                       <TableHead>Сумма</TableHead>
                       <TableHead>Способ оплаты</TableHead>
                       <TableHead>Референс</TableHead>
+                      <TableHead className="text-right">Действия</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payments.map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell className="font-medium">
-                          {payment.id}
+                    {allPayments.length > 0 ? (
+                      allPayments.map((payment) => (
+                        <TableRow key={payment.id}>
+                          <TableCell className="font-medium">
+                            {payment.id}
+                          </TableCell>
+                          <TableCell>{payment.invoice}</TableCell>
+                          <TableCell>{payment.date}</TableCell>
+                          <TableCell>
+                            {payment.amount.toLocaleString()}{" "}
+                            {payment.details?.payment_currency || "RUB"}
+                          </TableCell>
+                          <TableCell>
+                            {payment.method === "bank_transfer"
+                              ? "Банковский перевод"
+                              : payment.method === "cash"
+                              ? "Наличные"
+                              : payment.method === "credit_card"
+                              ? "Кредитная карта"
+                              : payment.method}
+                          </TableCell>
+                          <TableCell>{payment.reference}</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm">
+                              <Download className="h-4 w-4" />
+                              <span className="sr-only">Скачать</span>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center">
+                          Платежи не найдены.
                         </TableCell>
-                        <TableCell>{payment.invoice}</TableCell>
-                        <TableCell>{payment.date}</TableCell>
-                        <TableCell>
-                          {payment.amount.toLocaleString()} RUB
-                        </TableCell>
-                        <TableCell>
-                          {payment.method === "bank_transfer"
-                            ? "Банковский перевод"
-                            : payment.method}
-                        </TableCell>
-                        <TableCell>{payment.reference}</TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -594,6 +1318,182 @@ export default function FinancesPage() {
           </TabsContent>
         </Tabs>
       </div>
+      {/* View Invoice Dialog */}
+      {selectedInvoice && (
+        <Dialog
+          open={isViewInvoiceDialogOpen}
+          onOpenChange={setIsViewInvoiceDialogOpen}
+        >
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Детали счета</DialogTitle>
+              <DialogDescription>
+                Информация о счете №{selectedInvoice.id}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <div className="text-right text-lg font-bold mb-6">
+                {selectedInvoice.date}
+              </div>
+
+              <div className="border rounded-md p-4 space-y-4">
+                <div>
+                  <h3 className="font-bold text-lg">Получатель:</h3>
+                  <p className="text-lg font-bold mt-2">
+                    {selectedInvoice.details?.receiver_company_name ||
+                      "ТОО «SUN GRAIN»"}
+                  </p>
+
+                  <div className="mt-4 space-y-2">
+                    <p>
+                      <span className="font-bold">Юридический адрес:</span>{" "}
+                      {selectedInvoice.details?.receiver_legal_country ||
+                        "Республика Казахстан"}
+                      ,
+                      {selectedInvoice.details?.receiver_legal_region ||
+                        "Алматинская область"}
+                      ,
+                      {selectedInvoice.details?.receiver_legal_district ||
+                        "Карасайский район"}
+                      ,
+                      {selectedInvoice.details?.receiver_legal_city ||
+                        "город Каскелен"}
+                      ,
+                      {selectedInvoice.details?.receiver_legal_street ||
+                        "ул. Наурызбай"}
+                      ,
+                      {selectedInvoice.details?.receiver_legal_office ||
+                        "88, офис 7"}
+                    </p>
+                    <p>
+                      <span className="font-bold">БИН:</span>{" "}
+                      {selectedInvoice.details?.receiver_bin || "231240014096"}
+                    </p>
+                    <p>
+                      <span className="font-bold">Текущий счет USD:</span>{" "}
+                      {selectedInvoice.details?.receiver_account_usd ||
+                        "KZ0696507F0009576396"}
+                    </p>
+                    <p>
+                      {selectedInvoice.details?.receiver_bank_branch ||
+                        'Филиал АО "ForteBank" в г. Павлодар'}
+                    </p>
+                    <p>
+                      <span className="font-bold">БИК:</span>{" "}
+                      {selectedInvoice.details?.receiver_bic || "IRTYKZKA"}
+                    </p>
+                    <p>
+                      <span className="font-bold">CORRESPONDENT BANK:</span>{" "}
+                      {selectedInvoice.details?.receiver_correspondent_bank ||
+                        "Bank of New York, USA"}
+                    </p>
+                    <p>
+                      <span className="font-bold">SWIFT:</span>{" "}
+                      {selectedInvoice.details?.receiver_swift || "IRVTUS3N"}
+                    </p>
+                    <p>
+                      <span className="font-bold">ACC:</span>{" "}
+                      {selectedInvoice.details?.receiver_account_number ||
+                        "890-0548-533"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <p>
+                    <span className="font-bold">Отправитель:</span> ООО «
+                    {selectedInvoice.details?.sender_company_name ||
+                      "Манучехр Хучаев"}
+                    »,
+                    {selectedInvoice.details?.sender_country ||
+                      "Республика Таджикистан"}
+                    {selectedInvoice.details?.sender_region ||
+                      "Согдийская область"}
+                    {selectedInvoice.details?.sender_district ||
+                      "Б.Гафуровский р-н"}
+                    ,{selectedInvoice.details?.sender_street || "ул. Ленина"}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                  <div className="font-bold">Контракт №</div>
+                  <div>
+                    №{selectedInvoice.details?.contract_number || "SG-MH-1"} от{" "}
+                    {selectedInvoice.details?.contract_date
+                      ? format(
+                          new Date(selectedInvoice.details.contract_date),
+                          "d MMMM yyyy",
+                          { locale: ru }
+                        )
+                      : "1 февраля 2025"}{" "}
+                    года
+                    {selectedInvoice.details?.contract_appendix_number &&
+                      `, приложение №${selectedInvoice.details.contract_appendix_number}`}
+                    {selectedInvoice.details?.contract_appendix_date &&
+                      ` от ${format(
+                        new Date(
+                          selectedInvoice.details.contract_appendix_date
+                        ),
+                        "d MMMM yyyy",
+                        {
+                          locale: ru,
+                        }
+                      )} года`}
+                  </div>
+
+                  <div className="font-bold">
+                    {selectedInvoice.details?.product_name || "Пшеница мягкая"}
+                  </div>
+                  <div>
+                    {selectedInvoice.details?.price_per_ton_usd || "120"} USD за
+                    тонну
+                  </div>
+
+                  <div className="font-bold">
+                    Оплата за{" "}
+                    {selectedInvoice.details?.total_quantity_mt || "136"} МТ
+                  </div>
+                  <div>
+                    {selectedInvoice.details?.payment_amount_usd || "16 320"}{" "}
+                    USD
+                  </div>
+
+                  <div className="font-bold">Всего:</div>
+                  <div>
+                    {selectedInvoice.details?.total_amount_usd || "16 320"}
+                    {selectedInvoice.details?.total_amount_usd
+                      ? ` (${numberToWords(
+                          Number(selectedInvoice.details.total_amount_usd)
+                        )})`
+                      : " (Шестнадцать тысяч триста двадцать)"}{" "}
+                    долларов США, 00 центов
+                  </div>
+                </div>
+
+                {selectedInvoice.details?.director_name && (
+                  <div className="border-t pt-4 text-right">
+                    <p className="font-bold">
+                      Директор: {selectedInvoice.details.director_name}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsViewInvoiceDialogOpen(false)}
+              >
+                Закрыть
+              </Button>
+              <Button>
+                <Download className="h-4 w-4 mr-2" />
+                Скачать счет
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </Layout>
   );
 }

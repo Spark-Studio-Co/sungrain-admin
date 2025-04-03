@@ -1,10 +1,7 @@
 "use client";
 
-import { DialogFooter } from "@/components/ui/dialog";
-
 import type React from "react";
-
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Layout } from "@/shared/ui/layout";
 import {
   Card,
@@ -24,18 +21,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit, Trash2, Save, AlertCircle } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+// Import React Query hooks
+import { useCreateReceiver } from "@/entities/receiver/api/create/use-create-receiver";
+import { useUpdateReceiver } from "@/entities/receiver/api/update/use-update-receiver";
+import { useDeleteReceiver } from "@/entities/receiver/api/delete/use-delete-receiver";
+import type { CreateReceiverData } from "@/entities/receiver/api/create/create-receiver";
+import type { UpdateReceiverData } from "@/entities/receiver/api/update/update-receiver";
+import { useGetReceivers } from "@/entities/receiver/api/get/use-get-receiver";
 
 // Types
 interface Receiver {
@@ -43,49 +47,16 @@ interface Receiver {
   name: string;
 }
 
-// Sample data
-const initialReceivers: Receiver[] = [
-  {
-    id: "1",
-    name: "ООО ЗерноТрейд",
-  },
-  {
-    id: "2",
-    name: "ООО МаслоЭкспорт",
-  },
-  {
-    id: "3",
-    name: "ООО БалтЭкспорт",
-  },
-  {
-    id: "4",
-    name: "ООО ЮжныйПорт",
-  },
-  {
-    id: "5",
-    name: "ООО ЗерноЭкспорт",
-  },
-];
-
 export default function ReceiversPage() {
-  // State
-  const [receivers, setReceivers] = useState<Receiver[]>(initialReceivers);
-  const [filteredReceivers, setFilteredReceivers] =
-    useState<Receiver[]>(initialReceivers);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
-  // Dialog states
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  // Form state
-  const [newReceiver, setNewReceiver] = useState<
-    Omit<Receiver, "id" | "createdAt" | "updatedAt">
-  >({
+  const [newReceiver, setNewReceiver] = useState<CreateReceiverData>({
     name: "",
   });
 
@@ -93,129 +64,95 @@ export default function ReceiversPage() {
   const [deletingReceiver, setDeletingReceiver] = useState<Receiver | null>(
     null
   );
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Simulate loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+  // React Query hooks
+  const { data, isLoading, isError, error } = useGetReceivers(page, limit);
+  const createMutation = useCreateReceiver();
+  const updateMutation = useUpdateReceiver();
+  const deleteMutation = useDeleteReceiver();
 
-    return () => clearTimeout(timer);
-  }, []);
+  // Extract pagination data
+  const totalItems = data?.total || 0;
+  const currentPage = data?.page || 1;
+  const lastPage = Math.ceil(totalItems / limit) || 1;
 
-  // Filter receivers based on search term and status
-  useEffect(() => {
-    let results = receivers;
-
-    if (searchTerm) {
-      results = results.filter((receiver) =>
-        receiver.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    setFilteredReceivers(results);
-  }, [searchTerm, statusFilter, receivers]);
+  const filteredReceivers = Array.isArray(data?.data)
+    ? data.data.filter((receiver) => {
+        return (
+          !searchTerm ||
+          receiver.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      })
+    : [];
 
   // Handlers
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+    setPage(1);
   };
 
   const handleAddReceiver = () => {
-    setIsSubmitting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        const id = (receivers.length + 1).toString();
-
-        const newReceiverWithId: Receiver = {
-          ...newReceiver,
-          id,
-        };
-
-        setReceivers([...receivers, newReceiverWithId]);
-
-        // Reset form
+    createMutation.mutate(newReceiver, {
+      onSuccess: () => {
         setNewReceiver({
           name: "",
         });
-
-        // Close dialog
         setIsAddDialogOpen(false);
-      } catch (err) {
-        setError(
-          "Не удалось добавить грузополучателя. Пожалуйста, попробуйте снова."
-        );
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 1000);
+      },
+      onError: (error) => {
+        console.error("Error creating receiver:", error);
+      },
+    });
   };
 
   const handleEditReceiver = () => {
     if (!editingReceiver) return;
 
-    setIsSubmitting(true);
+    const updateData: UpdateReceiverData = {
+      id: editingReceiver.id,
+      name: editingReceiver.name,
+    };
 
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        const now = new Date().toISOString().split("T")[0];
+    console.log("Updating receiver with data:", updateData);
 
-        const updatedReceivers = receivers.map((receiver) =>
-          receiver.id === editingReceiver.id
-            ? { ...editingReceiver, updatedAt: now }
-            : receiver
-        );
-
-        setReceivers(updatedReceivers);
-
-        // Close dialog
+    updateMutation.mutate(updateData, {
+      onSuccess: () => {
+        console.log("Update successful");
         setIsEditDialogOpen(false);
-      } catch (err) {
-        setError(
-          "Не удалось обновить грузополучателя. Пожалуйста, попробуйте снова."
-        );
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 1000);
+      },
+      onError: (error) => {
+        console.error("Error updating receiver:", error);
+      },
+    });
   };
 
   const handleDeleteReceiver = () => {
     if (!deletingReceiver) return;
 
-    setIsSubmitting(true);
+    console.log("Deleting receiver with ID:", deletingReceiver.id);
 
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        const updatedReceivers = receivers.filter(
-          (receiver) => receiver.id !== deletingReceiver.id
-        );
-
-        setReceivers(updatedReceivers);
-
-        // Close dialog
+    // Make sure we're passing the ID as a string
+    deleteMutation.mutate(String(deletingReceiver.id), {
+      onSuccess: () => {
+        console.log("Delete successful");
         setIsDeleteDialogOpen(false);
-      } catch (err) {
-        setError(
-          "Не удалось удалить грузополучателя. Пожалуйста, попробуйте снова."
-        );
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 1000);
+      },
+      onError: (error) => {
+        console.error("Error deleting receiver:", error);
+      },
+    });
   };
 
   const openEditDialog = (receiver: Receiver) => {
-    setEditingReceiver(receiver);
+    console.log("Opening edit dialog for receiver:", receiver);
+    setEditingReceiver({
+      ...receiver,
+    });
     setIsEditDialogOpen(true);
   };
 
   const openDeleteDialog = (receiver: Receiver) => {
+    console.log("Opening delete dialog for receiver:", receiver);
     setDeletingReceiver(receiver);
     setIsDeleteDialogOpen(true);
   };
@@ -229,11 +166,14 @@ export default function ReceiversPage() {
           </h1>
         </div>
 
-        {error && (
+        {isError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Ошибка</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              {(error as Error)?.message ||
+                "Произошла ошибка при загрузке данных"}
+            </AlertDescription>
           </Alert>
         )}
 
@@ -266,6 +206,7 @@ export default function ReceiversPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>ID</TableHead>
                   <TableHead>Название</TableHead>
                   <TableHead className="text-right">Действия</TableHead>
                 </TableRow>
@@ -277,19 +218,7 @@ export default function ReceiversPage() {
                     .map((_, index) => (
                       <TableRow key={`skeleton-${index}`}>
                         <TableCell>
-                          <Skeleton className="h-6 w-24" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-40" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-20" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-32" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-16" />
+                          <Skeleton className="h-6 w-12" />
                         </TableCell>
                         <TableCell>
                           <Skeleton className="h-6 w-24" />
@@ -300,12 +229,12 @@ export default function ReceiversPage() {
                       </TableRow>
                     ))
                 ) : filteredReceivers.length > 0 ? (
-                  filteredReceivers.map((receiver) => (
+                  filteredReceivers.map((receiver: any) => (
                     <TableRow key={receiver.id}>
+                      <TableCell>{receiver.id}</TableCell>
                       <TableCell className="font-medium">
                         {receiver.name}
                       </TableCell>
-
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -328,7 +257,7 @@ export default function ReceiversPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
+                    <TableCell colSpan={3} className="h-24 text-center">
                       Грузополучатели не найдены.
                     </TableCell>
                   </TableRow>
@@ -367,8 +296,11 @@ export default function ReceiversPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleAddReceiver} disabled={isSubmitting}>
-              {isSubmitting ? (
+            <Button
+              onClick={handleAddReceiver}
+              disabled={createMutation.isPending}
+            >
+              {createMutation.isPending ? (
                 <>
                   <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Добавление...
@@ -399,12 +331,13 @@ export default function ReceiversPage() {
                 <Input
                   id="edit-name"
                   value={editingReceiver.name}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    console.log("Changing name to:", e.target.value);
                     setEditingReceiver({
                       ...editingReceiver,
                       name: e.target.value,
-                    })
-                  }
+                    });
+                  }}
                   className="col-span-3"
                 />
               </div>
@@ -416,8 +349,11 @@ export default function ReceiversPage() {
               >
                 Отмена
               </Button>
-              <Button onClick={handleEditReceiver} disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button
+                onClick={handleEditReceiver}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? (
                   <>
                     <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Сохранение...
@@ -461,9 +397,9 @@ export default function ReceiversPage() {
               <Button
                 variant="destructive"
                 onClick={handleDeleteReceiver}
-                disabled={isSubmitting}
+                disabled={deleteMutation.isPending}
               >
-                {isSubmitting ? (
+                {deleteMutation.isPending ? (
                   <>
                     <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Удаление...
