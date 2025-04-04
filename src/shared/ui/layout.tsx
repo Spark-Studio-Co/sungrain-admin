@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { useEffect, useState } from "react";
 import {
   Home,
   Users,
@@ -100,6 +101,24 @@ const navigationItems = [
 export const Layout: React.FC<ILayout> = ({ children }) => {
   const { removeRole, removeRequestId, removeUserId, removeToken } =
     useAuthData();
+  const [currentPath, setCurrentPath] = useState("");
+
+  // Update current path when component mounts and when location changes
+  useEffect(() => {
+    const updateCurrentPath = () => {
+      setCurrentPath(window.location.pathname);
+    };
+
+    // Set initial path
+    updateCurrentPath();
+
+    // Listen for route changes
+    window.addEventListener("popstate", updateCurrentPath);
+
+    return () => {
+      window.removeEventListener("popstate", updateCurrentPath);
+    };
+  }, []);
 
   const handleLogout = () => {
     removeRequestId();
@@ -109,6 +128,16 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
   };
 
   const isAdmin = localStorage.getItem("isAdmin") === "true";
+
+  // Check if a navigation item is active
+  const isActive = (url: string) => {
+    // Exact match for home page
+    if (url === "/admin" && currentPath === "/admin") {
+      return true;
+    }
+    // For other pages, check if the current path starts with the URL
+    return url !== "/admin" && currentPath.startsWith(url);
+  };
 
   return (
     <SidebarProvider>
@@ -137,16 +166,31 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
                 <SidebarMenu>
                   {navigationItems
                     .filter((item) => item.isAdmin === isAdmin)
-                    .map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                          <a href={item.url}>
-                            <item.icon className="size-4" />
-                            <span>{item.title}</span>
-                          </a>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
+                    .map((item) => {
+                      const active = isActive(item.url);
+                      return (
+                        <SidebarMenuItem key={item.title}>
+                          <SidebarMenuButton
+                            asChild
+                            isActive={active}
+                            className={
+                              active
+                                ? "bg-orange-100 text-orange-600 hover:bg-orange-200 hover:text-orange-700"
+                                : ""
+                            }
+                          >
+                            <a href={item.url}>
+                              <item.icon
+                                className={`size-4 ${
+                                  active ? "text-orange-600" : ""
+                                }`}
+                              />
+                              <span>{item.title}</span>
+                            </a>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

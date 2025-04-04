@@ -8,7 +8,6 @@ export const useAddWagon = () => {
     mutationFn: (data: FormData | AddWagonRequest) => addWagon(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wagons"] });
-      // Also invalidate contracts since they contain wagons
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
     },
     onError: (error) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
-import { useAddWagon } from "../api/use-add-wagon";
+import { useAddWagon } from "../api/post/use-add-wagon";
 
 interface AddWagonPopupProps {
   contractId: string;
@@ -71,6 +71,16 @@ export const AddWagonPopup = ({ contractId }: AddWagonPopupProps) => {
   ]);
 
   const mutation = useAddWagon();
+
+  // Check if all documents have files and update status accordingly
+  useEffect(() => {
+    if (documents.length > 0) {
+      const allFilesUploaded = documents.every((doc) => doc.file);
+      if (allFilesUploaded) {
+        setNewWagon((prev) => ({ ...prev, status: "shipped" }));
+      }
+    }
+  }, [documents]);
 
   // Update the handleAddWagon function to match the expected API structure
   const handleAddWagon = () => {

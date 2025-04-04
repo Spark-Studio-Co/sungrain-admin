@@ -1,14 +1,12 @@
 import { useAuthData } from "@/entities/auth/model/use-auth-store";
 import axios from "axios";
 
-// Axios instance
 export const apiClient = axios.create({
   // baseURL: "https://agro-pv-backend-production.up.railway.app/api",
   baseURL: "http://localhost:6001/api",
   withCredentials: true,
 });
 
-// Attach access token
 apiClient.interceptors.request.use(
   (config) => {
     const token = useAuthData.getState().token;

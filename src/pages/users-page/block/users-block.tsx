@@ -3,7 +3,6 @@
 import type React from "react";
 
 import { useState } from "react";
-import { Layout } from "@/shared/ui/layout";
 import {
   Table,
   TableBody,
@@ -61,12 +60,9 @@ import { useUpdateUsers } from "@/entities/users/api/patch/use-update-user";
 import { useDeleteUser } from "@/entities/users/api/delete/use-delete-user";
 import { useGetCompanies } from "@/entities/companies/api/use-get-company";
 
-// User roles
 const roles = ["ADMIN", "USER"];
-const statusOptions = ["Активен", "Неактивен"];
 
 export default function UsersPage() {
-  // State for search, pagination, and dialogs
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -152,7 +148,6 @@ export default function UsersPage() {
       {
         id: editingUser.id,
         data: {
-          username: editingUser.username,
           name: editingUser.name,
           email: editingUser.email,
           full_name: editingUser.full_name,
@@ -438,7 +433,12 @@ export default function UsersPage() {
                         <Badge variant="outline">{user.role}</Badge>
                       </TableCell>
                       <TableCell>
-                        {user.company ? (
+                        {user.id === 1 ? (
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4 text-muted-foreground" />
+                            <span>OOO TEST</span>
+                          </div>
+                        ) : user.company ? (
                           <div className="flex items-center gap-2">
                             <Building className="h-4 w-4 text-muted-foreground" />
                             <span>{user.company.name}</span>
@@ -553,8 +553,6 @@ export default function UsersPage() {
           </CardFooter>
         </Card>
       </div>
-
-      {/* Edit User Dialog */}
       {editingUser && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
@@ -689,8 +687,6 @@ export default function UsersPage() {
           </DialogContent>
         </Dialog>
       )}
-
-      {/* Delete Confirmation Dialog */}
       {deletingUser && (
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">

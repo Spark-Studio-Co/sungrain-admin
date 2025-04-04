@@ -1,7 +1,7 @@
 import { apiClient } from "@/shared/api/apiClient";
 
 export interface AddUserRequest {
-  username?: string;
+  full_name?: string;
   name?: string;
   companyId?: any;
   email?: string;
