@@ -33,9 +33,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useGetContractsId } from "@/entities/contracts/api/get/use-get-contract-id";
-import { useFetchCultures } from "@/entities/cultures/api/use-get-cultures";
 import { useCreateApplication } from "@/entities/applications/api/use-create-application";
 import { useUpdateApplication } from "@/entities/applications/api/use-update-application";
+import { useUploadApplicationFiles } from "@/entities/applications/api/use-upload-application-files";
+import { useDeleteApplicationFile } from "@/entities/applications/api/use-delete-application-file";
+import { useFetchCultures } from "@/entities/cultures/api/use-get-cultures";
 
 interface ApplicationDialogProps {
   isOpen: boolean;
@@ -56,7 +58,9 @@ export const ApplicationDialog = ({
     100
   );
 
+  // Also update the formData state to include currency from contractData
   const [formData, setFormData] = useState({
+    currency: contractData?.currency || "",
     price_per_ton: application?.price_per_ton || "",
     volume: application?.volume || "",
     culture: application?.culture || "",
@@ -66,6 +70,9 @@ export const ApplicationDialog = ({
   const [totalAmount, setTotalAmount] = useState(
     application?.total_amount || 0
   );
+  // Update the useState for documents to properly initialize from application files if they exist
+  // Replace the current documents state initialization with this:
+
   const [documents, setDocuments] = useState<
     Array<{
       name: string;
@@ -76,15 +83,30 @@ export const ApplicationDialog = ({
       id?: string | number;
       location?: string;
     }>
-  >(
-    application?.documents || [
+  >(() => {
+    // If we have an application with files, initialize from those
+    if (application?.files && application.files.length > 0) {
+      return application.files.map((file: any) => ({
+        id: file.id,
+        name: file.name || "Документ",
+        number: file.number || "",
+        date: file.date || "",
+        fileName: file.name,
+        location: typeof file === "string" ? file : file.location || file.file,
+      }));
+    }
+
+    // Otherwise use default documents
+    return [
       { name: "Счет на оплату", number: "", date: "" },
       { name: "Акт выполненных работ", number: "", date: "" },
-    ]
-  );
+    ];
+  });
 
   const createMutation = useCreateApplication();
   const updateMutation = useUpdateApplication();
+  const uploadFilesMutation = useUploadApplicationFiles();
+  const deleteFileMutation = useDeleteApplicationFile();
 
   useEffect(() => {
     if (application?.culture && !formData.culture) {
@@ -148,7 +170,15 @@ export const ApplicationDialog = ({
   };
 
   const removeDocumentRow = (index: number) => {
-    setDocuments((prev) => prev.filter((_, i) => i !== index));
+    // If this is an existing document with an ID and we're in edit mode
+    const doc = documents[index];
+    if (application?.id && doc.number && !doc.file) {
+      // For existing documents without new files, we need to delete from the server
+      handleDeleteDocument(index);
+    } else {
+      // For new documents or those with new files, just remove from state
+      setDocuments((prev) => prev.filter((_, i) => i !== index));
+    }
   };
 
   const updateDocument = (index: number, field: string, value: string) => {
@@ -157,88 +187,96 @@ export const ApplicationDialog = ({
     );
   };
 
+  // Add a function to handle document deletion
+  const handleDeleteDocument = async (index: number) => {
+    const doc = documents[index];
+
+    console.log(doc);
+
+    if (application?.id && doc.number) {
+      try {
+        await deleteFileMutation.mutateAsync({
+          applicationId: application.id,
+          docNumber: doc.number,
+        });
+
+        // Remove the document from the local state
+        removeDocumentRow(index);
+      } catch (error) {
+        console.error("Error deleting document:", error);
+      }
+    } else {
+      // If there's no application ID or document number, just remove from local state
+      removeDocumentRow(index);
+    }
+  };
+
+  // Update the handleSubmit function to include currency in the data
   const handleSubmit = async () => {
     try {
-      // Create FormData for file uploads
+      // For creating/updating basic application data
       const formDataObj = new FormData();
 
-      // Add basic application data
+      formDataObj.append("currency", formData.currency);
       formDataObj.append("price_per_ton", formData.price_per_ton);
       formDataObj.append("volume", formData.volume);
       formDataObj.append("culture", formData.culture);
       formDataObj.append("contractId", contractId);
 
-      // Add documents info
-      const documentsInfo = documents.map((doc) => ({
-        id: doc.id,
-        name: doc.name,
-        number: doc.number,
-        date: doc.date,
-        location: doc.location,
-      }));
-
-      formDataObj.append("documents_info", JSON.stringify(documentsInfo));
-
-      // Add document files - IMPORTANT: Match the field name with the FilesInterceptor
-      let hasFiles = false;
-      documents.forEach((doc, index) => {
-        if (doc.file) {
-          hasFiles = true;
-          // Use 'files' as the field name to match the FilesInterceptor in the controller
-          formDataObj.append("files", doc.file);
-
-          // Log file details to verify it's being added correctly
-          console.log(`Adding file ${index}:`, {
-            name: doc.file.name,
-            type: doc.file.type,
-            size: doc.file.size,
-          });
-        }
-      });
-
-      console.log("Submitting form data:", {
-        price_per_ton: formData.price_per_ton,
-        volume: formData.volume,
-        culture: formData.culture,
-        contractId,
-        documentsInfo,
-        hasFiles,
-        filesCount: documents.filter((doc) => doc.file).length,
-      });
-
-      // Log the FormData entries to verify content
-      for (const pair of formDataObj.entries()) {
-        console.log(
-          `${pair[0]}:`,
-          pair[1] instanceof File
-            ? `File: ${pair[1].name} (${pair[1].size} bytes)`
-            : pair[1]
-        );
-      }
+      // First, create or update the application
+      let applicationId;
 
       if (application) {
-        // Update existing application
-        await updateMutation.mutateAsync(
-          {
-            id: application.id,
-            data: formDataObj as any,
-          },
-          {
-            onSuccess: () => {
-              onClose(true); // Close and refresh
-            },
-          }
-        );
-      } else {
-        // Create new application
-        await createMutation.mutateAsync(formDataObj as any, {
-          onSuccess: () => {
-            onClose(true); // Close and refresh
+        const result = await updateMutation.mutateAsync({
+          id: application.id,
+          data: {
+            price_per_ton: Number(formData.price_per_ton),
+            volume: Number(formData.volume),
+            culture: formData.culture,
+            currency: formData.currency,
+            contractId: contractId,
           },
         });
+        applicationId = application.id;
+      } else {
+        // Create new application
+        const result = await createMutation.mutateAsync({
+          price_per_ton: Number(formData.price_per_ton),
+          currency: formData.currency,
+          volume: Number(formData.volume),
+          culture: formData.culture,
+          contractId: contractId,
+        });
+        applicationId = result.id;
       }
+
+      // Then handle file uploads if there are any
+      const docsWithFiles = documents.filter((doc) => doc.file);
+
+      if (docsWithFiles.length > 0) {
+        // Create the files_info array with the required structure
+        const filesInfo = docsWithFiles.map((doc) => ({
+          name: doc.name,
+          number: doc.number || "",
+          date: doc.date || "",
+        }));
+
+        // Get all files
+        const files = docsWithFiles.map((doc) => doc.file as File);
+
+        // Use the upload files mutation
+        await uploadFilesMutation.mutateAsync({
+          applicationId: applicationId,
+          files: files,
+          filesInfo: filesInfo,
+        });
+      }
+
+      // Close dialog and refresh data
+      onClose(true);
     } catch (error) {
       console.error("Error saving application:", error);
+      // You could add toast notification here for error feedback
     }
   };
 
@@ -322,8 +360,11 @@ export const ApplicationDialog = ({
                         Загрузка культур...
                       </option>
                     ) : culturesData?.data && culturesData.data.length > 0 ? (
-                      culturesData.data.map((culture: any, index: number) => (
-                        <option key={index} value={culture.id || culture.value}>
+                      culturesData.data.map((culture: any) => (
+                        <option
+                          key={culture.id || culture.value}
+                          value={culture.id || culture.value}
+                        >
                           {culture.name}
                         </option>
                       ))
@@ -510,7 +551,17 @@ export const ApplicationDialog = ({
                       variant="ghost"
                       size="sm"
                       className="h-8 w-8 p-0 text-red-500 hover:bg-red-50"
-                      onClick={() => removeDocumentRow(index)}
+                      onClick={() => {
+                        const doc = documents[index];
+                        if (application?.id && doc.number && !doc.file) {
+                          console.log(doc);
+                          handleDeleteDocument(index);
+                        } else {
+                          console.log(doc);
+
+                          removeDocumentRow(index);
+                        }
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

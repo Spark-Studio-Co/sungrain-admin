@@ -314,7 +314,7 @@ export const ApplicationBlock = ({
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <FileText className="h-4 w-4 text-blue-500" />
-                            <span>{application.documents?.length || 0}</span>
+                            <span>{application.files?.length || 0}</span>
                           </div>
                         </TableCell>
                         <TableCell>

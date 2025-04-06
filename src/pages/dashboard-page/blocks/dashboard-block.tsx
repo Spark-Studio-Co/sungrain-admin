@@ -1,16 +1,6 @@
 "use client";
 
-import {
-  Package,
-  FileText,
-  ArrowRight,
-  AlertCircle,
-  Truck,
-  Clock,
-  Building2,
-  CheckCircle2,
-  FileBarChart,
-} from "lucide-react";
+import { Package, FileText, ArrowRight, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Link, useNavigate } from "react-router-dom";
 import { useGetContracts } from "@/entities/contracts/api/get/use-get-contracts";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -65,23 +55,10 @@ export const DashboardBlock = () => {
     }));
   }, [contractsData]);
 
-  // Calculate summary statistics
   const totalContracts = contractsData?.total || recentContracts.length;
-  const activeContracts = recentContracts.filter(
-    (c: any) => c.status === "active"
-  ).length;
-  const completedContracts = recentContracts.filter(
-    (c: any) => c.status === "completed"
-  ).length;
 
   const totalVolume = recentContracts.reduce(
     (sum: number, contract: any) => sum + Number(contract.volume),
-    0
-  );
-
-  const shippedVolume = recentContracts.reduce(
-    (sum: number, contract: any) =>
-      sum + (Number(contract.volume) * contract.progress) / 100,
     0
   );
 
@@ -103,7 +80,7 @@ export const DashboardBlock = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -117,14 +94,10 @@ export const DashboardBlock = () => {
             ) : (
               <>
                 <div className="text-2xl font-bold">{totalContracts}</div>
-                <p className="text-xs text-muted-foreground">
-                  Активных: {activeContracts}, Завершенных: {completedContracts}
-                </p>
               </>
             )}
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Общий объем</CardTitle>
@@ -138,9 +111,6 @@ export const DashboardBlock = () => {
                 <div className="text-2xl font-bold">
                   {totalVolume.toLocaleString()} т
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Отгружено: {Math.round(shippedVolume).toLocaleString()} т
-                </p>
               </>
             )}
           </CardContent>
@@ -235,72 +205,6 @@ export const DashboardBlock = () => {
               </Button>
             </CardFooter>
           </Card>
-
-          {/* Shipment Status Distribution */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Статус вагонов
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span className="text-sm">Отгружено</span>
-                    </div>
-                    <span className="font-medium">42</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Truck className="h-4 w-4 text-amber-500" />
-                      <span className="text-sm">В пути</span>
-                    </div>
-                    <span className="font-medium">18</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm">На элеваторе</span>
-                    </div>
-                    <span className="font-medium">24</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Документы</CardTitle>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FileBarChart className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Паспорта качества</span>
-                    </div>
-                    <span className="font-medium">24</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">ЭПД</span>
-                    </div>
-                    <span className="font-medium">18</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-amber-500" />
-                      <span className="text-sm">Требуют внимания</span>
-                    </div>
-                    <span className="font-medium">3</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
       </Tabs>
     </div>

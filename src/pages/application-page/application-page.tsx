@@ -308,7 +308,6 @@ export default function ApplicationPage() {
                         <div className="col-span-3">Дата документа</div>
                         <div className="col-span-3">Действия</div>
                       </div>
-
                       {application.files.map((file: any, index: number) => (
                         <div
                           key={index}

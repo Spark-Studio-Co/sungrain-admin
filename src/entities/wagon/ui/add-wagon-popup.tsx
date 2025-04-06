@@ -286,10 +286,10 @@ export const AddWagonPopup = ({
                     setNewWagon({ ...newWagon, status: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Выберите статус" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="w-full">
                     <SelectItem value="at_elevator">На элеваторе</SelectItem>
                     <SelectItem value="in_transit">В пути</SelectItem>
                     <SelectItem value="shipped">Отгружен</SelectItem>

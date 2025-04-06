@@ -43,6 +43,46 @@ export const ContractHeader = ({
     }
   };
 
+  // Add download logic
+  const handleDownloadFile = () => {
+    if (!contractData?.files || contractData.files.length === 0) {
+      console.error("No files available for download");
+      return;
+    }
+
+    // Get the first file from the files array
+    const file = contractData.files[0];
+
+    // Determine the file URL based on the data structure
+    let fileUrl;
+    if (typeof file === "string") {
+      fileUrl = file;
+    } else if (file.location) {
+      fileUrl = file.location;
+    } else if (file.url) {
+      fileUrl = file.url;
+    } else {
+      console.error("File URL not found");
+      return;
+    }
+
+    // Create a filename for the download
+    const fileName = `contract-${
+      contractData?.number || contractData?.id || "download"
+    }.pdf`;
+
+    // Create a temporary link element
+    const link = document.createElement("a");
+    link.href = fileUrl;
+    link.setAttribute("download", fileName);
+    link.setAttribute("target", "_blank");
+
+    // Append to the document, click it, and remove it
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -52,9 +92,7 @@ export const ContractHeader = ({
               <FileText className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-xl">
-                Договор закупа #{contractData?.number || contractData?.id}
-              </CardTitle>
+              <CardTitle className="text-xl">{contractData?.name}</CardTitle>
               <CardDescription className="flex items-center gap-1 mt-1">
                 <Package className="h-4 w-4 text-muted-foreground" />
                 {contractData?.crop}
@@ -180,7 +218,11 @@ export const ContractHeader = ({
         <Button
           variant="outline"
           className="gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
-          onClick={handleDownload}
+          onClick={() => {
+            // Use the internal download function but also call the prop function for compatibility
+            handleDownloadFile();
+            handleDownload();
+          }}
           disabled={!contractData?.files || contractData.files.length === 0}
         >
           <Download className="h-4 w-4" />

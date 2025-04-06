@@ -110,11 +110,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
         ? contractData.files[0]
         : contractData.files[0].url;
 
-    if (!fileUrl) {
-      alert("URL файла не найден!");
-      return;
-    }
-
     const link = document.createElement("a");
     link.href = fileUrl;
     link.setAttribute(

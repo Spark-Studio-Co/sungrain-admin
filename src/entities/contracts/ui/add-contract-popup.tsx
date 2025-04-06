@@ -21,7 +21,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Upload, X, FileText, File, Info } from "lucide-react";
+import {
+  Loader2,
+  Upload,
+  X,
+  FileText,
+  File,
+  Info,
+  Plus,
+  Trash2,
+  CalendarIcon,
+} from "lucide-react";
 import { useAddContract } from "../api/post/use-create-contract";
 import { useState } from "react";
 import { useContractDialogStore } from "../model/use-contract-dialog";
@@ -33,6 +43,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGetReceivers } from "@/entities/receiver/api/get/use-get-receiver";
 import { useFetchStations } from "@/entities/stations/use-get-stations";
 import { useGetCompanies } from "@/entities/companies/api/use-get-company";
+import { format } from "date-fns";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 export const AddContractDialog = () => {
   // Use Zustand store for dialog state
@@ -72,6 +89,21 @@ export const AddContractDialog = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
+  const [documents, setDocuments] = useState<
+    Array<{
+      name: string;
+      number: string;
+      date: string;
+      file?: File;
+      fileName?: string;
+    }>
+  >([
+    { name: "Паспорт качества", number: "", date: "" },
+    { name: "ЭПД", number: "", date: "" },
+  ]);
+
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([null, null]);
+
   const mutation = useAddContract();
 
   // Reset form when dialog opens
@@ -91,6 +123,11 @@ export const AddContractDialog = () => {
         currency: "USD",
       });
       setFiles([]);
+      setDocuments([
+        { name: "Паспорт качества", number: "", date: "" },
+        { name: "ЭПД", number: "", date: "" },
+      ]);
+      fileInputRefs.current = [null, null];
     }
   }, [isAddDialogOpen]);
 
@@ -111,9 +148,33 @@ export const AddContractDialog = () => {
     formData.append("total_volume", Number(newContract.total_volume) as any);
     formData.append("currency", newContract.currency);
 
-    // Append files
+    // Add documents info
+    const documentsInfo = documents
+      .filter((doc) => doc.file)
+      .map((doc) => ({
+        name: doc.name,
+        number: doc.number,
+        date: doc.date,
+      }));
+
+    if (documentsInfo.length > 0) {
+      formData.append("files_info", JSON.stringify(documentsInfo));
+    }
+
+    // Append document files
+    documents.forEach((doc) => {
+      if (doc.file) {
+        formData.append("files", doc.file);
+      }
+    });
+
+    // Append additional files
     files.forEach((file) => {
-      formData.append("files", file); // Use 'files' as the field name for all files
+      // Check if this file is already included in documents
+      const isDocumentFile = documents.some((doc) => doc.file === file);
+      if (!isDocumentFile) {
+        formData.append("files", file);
+      }
     });
 
     // Send the FormData to the API
@@ -174,14 +235,13 @@ export const AddContractDialog = () => {
 
   return (
     <Dialog open={isAddDialogOpen} onOpenChange={setDialogOpen}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[950px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">Добавить новый контракт</DialogTitle>
           <DialogDescription>
             Заполните информацию о новом контракте
           </DialogDescription>
         </DialogHeader>
-
         <Tabs defaultValue="basic" className="w-full">
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="basic">Основная информация</TabsTrigger>
@@ -485,93 +545,165 @@ export const AddContractDialog = () => {
               </div>
             </div>
           </TabsContent>
-
           <TabsContent value="documents" className="space-y-4">
-            <div className="space-y-4">
-              <div
-                className={cn(
-                  "border-2 border-dashed rounded-md p-8 text-center cursor-pointer transition-colors",
-                  isDragging
-                    ? "border-primary bg-primary/5"
-                    : "border-muted-foreground/25 hover:border-primary/50"
-                )}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-medium mb-2">
-                  Загрузите документы
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Перетащите файлы сюда или{" "}
-                  <span className="text-primary font-medium">
-                    выберите файлы
-                  </span>
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Поддерживаемые форматы: PDF, DOC, DOCX, XLS, XLSX
-                </p>
-              </div>
+            <div className="space-y-6">
+              {/* Document Management UI */}
+              <div className="bg-amber-50 p-6 rounded-md">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold text-amber-700 uppercase text-sm">
+                    ДОКУМЕНТЫ ВАГОНА
+                  </h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setDocuments([
+                        ...documents,
+                        { name: "", number: "", date: "" },
+                      ])
+                    }
+                    className="text-amber-600 border-amber-300 hover:bg-amber-100"
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Добавить документ
+                  </Button>
+                </div>
 
-              {/* File List */}
-              {files.length > 0 ? (
-                <div className="mt-4 space-y-2 border rounded-md p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Info className="h-4 w-4 text-blue-500" />
-                    <span className="text-sm font-medium">
-                      Загруженные файлы ({files.length})
-                    </span>
+                <div className="bg-white p-4 rounded-md border border-amber-100">
+                  <div className="grid grid-cols-5 gap-4 mb-4 text-sm font-medium text-muted-foreground">
+                    <div>№</div>
+                    <div>Наименование</div>
+                    <div>Номер</div>
+                    <div>Дата документа</div>
+                    <div>Загрузить файл</div>
                   </div>
-                  <div className="max-h-[200px] overflow-y-auto pr-2">
-                    {files.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between bg-muted/50 p-3 rounded-md mb-2 hover:bg-muted transition-colors"
-                      >
-                        <div className="flex items-center space-x-3 overflow-hidden">
-                          {getFileIcon(file.name)}
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium truncate max-w-[300px]">
-                              {file.name}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {(file.size / 1024).toFixed(0)} KB
-                            </span>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeFile(index);
+
+                  {documents.map((doc, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-5 gap-4 items-center py-3 border-b border-gray-100"
+                    >
+                      <div className="font-medium">{index + 1}</div>
+                      <div>
+                        <Input
+                          value={doc.name}
+                          onChange={(e) => {
+                            const newDocs = [...documents];
+                            newDocs[index].name = e.target.value;
+                            setDocuments(newDocs);
                           }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                          placeholder="Название документа"
+                          className="border-dashed"
+                        />
                       </div>
-                    ))}
-                  </div>
+                      <div>
+                        <Input
+                          value={doc.number}
+                          onChange={(e) => {
+                            const newDocs = [...documents];
+                            newDocs[index].number = e.target.value;
+                            setDocuments(newDocs);
+                          }}
+                          placeholder="№ документ"
+                          className="border-dashed"
+                        />
+                      </div>
+                      <div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal border-dashed",
+                                !doc.date && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {doc.date ? (
+                                format(new Date(doc.date), "dd.MM.yyyy")
+                              ) : (
+                                <span>Выберите дату</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={
+                                doc.date ? new Date(doc.date) : undefined
+                              }
+                              onSelect={(date) => {
+                                if (date) {
+                                  const newDocs = [...documents];
+                                  newDocs[index].date = format(
+                                    date,
+                                    "yyyy-MM-dd"
+                                  );
+                                  setDocuments(newDocs);
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="file"
+                          id={`file-${index}`}
+                          className="hidden"
+                          ref={(el) => (fileInputRefs.current[index] = el)}
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              const file = e.target.files[0];
+                              const newDocs = [...documents];
+                              newDocs[index].file = file;
+                              newDocs[index].fileName = file.name;
+                              setDocuments(newDocs);
+
+                              // Also add to the files array for backward compatibility
+                              setFiles((prev) => [...prev, file]);
+                            }
+                          }}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-green-600 hover:bg-green-50"
+                          onClick={() => fileInputRefs.current[index]?.click()}
+                        >
+                          <Upload className="h-4 w-4" />
+                          {doc.fileName ? "Заменить" : "Загрузить"}
+                        </Button>
+                        {doc.fileName && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:bg-red-50"
+                            onClick={() => {
+                              const newDocs = [...documents];
+                              newDocs[index].file = undefined;
+                              newDocs[index].fileName = undefined;
+                              setDocuments(newDocs);
+
+                              // Also remove from files array
+                              if (doc.file) {
+                                setFiles((prev) =>
+                                  prev.filter((f) => f !== doc.file)
+                                );
+                              }
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <div className="text-center text-muted-foreground text-sm p-4 border rounded-md bg-muted/10">
-                  Нет загруженных файлов
-                </div>
-              )}
+              </div>
             </div>
           </TabsContent>
         </Tabs>
-
         <DialogFooter className="mt-6 pt-4 border-t">
           <Button
             type="submit"

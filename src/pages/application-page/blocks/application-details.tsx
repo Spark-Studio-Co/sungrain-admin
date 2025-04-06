@@ -47,7 +47,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useGetApplication } from "@/entities/applications/api/use-get-application";
-import { useUpdateApplication } from "@/entities/applications/api/use-update-application";
 import { useUploadApplicationFiles } from "@/entities/applications/api/use-upload-application-files";
 import { useDeleteApplicationFile } from "@/entities/applications/api/use-delete-application-file";
 import { WagonRegistry } from "@/pages/contracts-inner-page/blocks/wagon-registry";
@@ -81,17 +80,13 @@ export const ApplicationDetail = ({
     refetch,
   } = useGetApplication(applicationId);
 
-  // Extract the first application from the array if it's an array
   const application = Array.isArray(applicationData)
     ? applicationData[0]
     : applicationData;
 
-  // Add mutation hooks for updating and deleting wagons
   const updateWagonMutation = useUpdateWagon();
   const deleteWagonMutation = useDeleteWagon();
-  const updateApplicationMutation = useUpdateApplication();
   const uploadFilesMutation = useUploadApplicationFiles();
-  const deleteFileMutation = useDeleteApplicationFile();
   const deleteFileByNumberMutation = useDeleteApplicationFile();
 
   // Format date
@@ -124,7 +119,6 @@ export const ApplicationDetail = ({
     if (!newDocument.file || !newDocument.name) return;
 
     try {
-      // Create the files_info array with the required structure
       const filesInfo = [
         {
           name: newDocument.name,
@@ -133,12 +127,23 @@ export const ApplicationDetail = ({
         },
       ];
 
-      // Use the new Tanstack Query hook for file upload
-      await uploadFilesMutation.mutateAsync({
-        applicationId,
-        files: [newDocument.file],
-        filesInfo,
-      });
+      await uploadFilesMutation.mutateAsync(
+        {
+          applicationId,
+          files: [newDocument.file],
+          filesInfo,
+        },
+        {
+          onSuccess: () => {
+            console.log("✅ File uploaded successfully!");
+            refetch();
+            setIsUploadDialogOpen(false);
+          },
+          onError: (error) => {
+            console.error("Upload failed:", error);
+          },
+        }
+      );
 
       setIsUploadDialogOpen(false);
       setNewDocument({
@@ -148,28 +153,17 @@ export const ApplicationDetail = ({
         file: null,
       });
 
-      // Refresh the application data
       refetch();
     } catch (error) {
       console.error("Error uploading document:", error);
-      toast({
-        title: "Ошибка загрузки",
-        description:
-          "Не удалось загрузить документ. Пожалуйста, попробуйте еще раз.",
-        variant: "destructive",
-      });
     }
   };
 
   // Handle document deletion
-  const handleDeleteDocument = async (
-    documentId: string,
-    filename?: string,
-    docNumber?: string
-  ) => {
+  const handleDeleteDocument = async (docNumber?: string) => {
     try {
       if (docNumber) {
-        // If we have a document number, use the number-based deletion endpoint
+        console.log(docNumber);
         await deleteFileByNumberMutation.mutateAsync({
           applicationId: application?.id || applicationId,
           docNumber,
@@ -471,7 +465,6 @@ export const ApplicationDetail = ({
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="documents" className="mt-4">
           <Card>
             <CardHeader className="pb-2">
@@ -548,16 +541,7 @@ export const ApplicationDetail = ({
                             size="sm"
                             className="h-8 w-8 p-0 text-red-500 hover:bg-red-50"
                             onClick={() => {
-                              // Extract filename from location URL if available
-                              const filename = file.location
-                                ? file.location.split("/").pop()
-                                : undefined;
-                              // Pass the document number if available
-                              handleDeleteDocument(
-                                file.id,
-                                filename,
-                                file.number
-                              );
+                              handleDeleteDocument(file.number);
                             }}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -604,7 +588,6 @@ export const ApplicationDetail = ({
               Заполните информацию о документе и загрузите файл
             </DialogDescription>
           </DialogHeader>
-
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="doc-name" className="text-right">

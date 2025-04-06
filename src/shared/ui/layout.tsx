@@ -141,7 +141,7 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
 
   return (
     <SidebarProvider>
-      <div className="h-[100vh] flex w-full max-w-[1920px] pr-8">
+      <div className="h-[100vh] flex w-full max-w-[8120px] pr-8">
         <Sidebar>
           <SidebarHeader>
             <SidebarMenu>

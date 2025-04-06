@@ -79,7 +79,6 @@ export const ContractsBlock = () => {
     isLoading,
     isError,
     error,
-    refetch: refetchContracts,
   } = useGetContracts({
     page: currentPage,
     limit: itemsPerPage,
@@ -90,7 +89,6 @@ export const ContractsBlock = () => {
     isLoading: isUserLoading,
     isError: isUserError,
     error: userError,
-    refetch: refetchUserContracts,
   } = useGetUserContracts({
     page: currentPage,
     limit: itemsPerPage,
@@ -492,7 +490,7 @@ export const ContractsBlock = () => {
           </div>
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-muted-foreground mb-4 sm:mb-0">
-              Всего контрактов:{" "}
+              Всего контрактов:
               {isDataLoading
                 ? "..."
                 : (isAdmin ? contracts.total : userContracts.total) || 0}
