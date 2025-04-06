@@ -29,52 +29,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Link, useNavigate } from "react-router-dom";
 import { useGetContracts } from "@/entities/contracts/api/get/use-get-contracts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { useMemo } from "react";
-
-// Sample activity data
-const recentActivities = [
-  {
-    id: 1,
-    action: "Добавлен новый вагон",
-    contract: "001-2024",
-    user: "Иванов А.П.",
-    timestamp: "Сегодня, 14:32",
-  },
-  {
-    id: 2,
-    action: "Загружен документ 'Паспорт качества №123'",
-    contract: "001-2024",
-    user: "Петрова Е.С.",
-    timestamp: "Сегодня, 12:15",
-  },
-  {
-    id: 3,
-    action: "Изменен статус вагона на 'Отгружен'",
-    contract: "002-2024",
-    user: "Сидоров И.В.",
-    timestamp: "Сегодня, 10:45",
-  },
-  {
-    id: 4,
-    action: "Создан новый контракт",
-    contract: "005-2024",
-    user: "Иванов А.П.",
-    timestamp: "Вчера, 16:20",
-  },
-  {
-    id: 5,
-    action: "Завершена отгрузка по контракту",
-    contract: "003-2024",
-    user: "Петрова Е.С.",
-    timestamp: "Вчера, 14:05",
-  },
-];
 
 export const DashboardBlock = () => {
   const navigate = useNavigate();
@@ -97,7 +56,7 @@ export const DashboardBlock = () => {
       crop: contract.crop || "Не указано",
       sender: contract.sender || "Не указано",
       receiver: contract.receiver || "Не указано",
-      volume: contract.totalVolume || 0,
+      volume: contract.total_volume || 0,
       date: contract.created_at
         ? new Date(contract.created_at).toLocaleDateString("ru-RU")
         : "Не указано",
@@ -188,11 +147,6 @@ export const DashboardBlock = () => {
         </Card>
       </div>
       <Tabs defaultValue="contracts" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="contracts">Контракты</TabsTrigger>
-          <TabsTrigger value="activity">Активность</TabsTrigger>
-        </TabsList>
-
         <TabsContent value="contracts" className="space-y-4">
           <Card>
             <CardHeader>
@@ -220,7 +174,6 @@ export const DashboardBlock = () => {
                     <TableHead>Культура</TableHead>
                     <TableHead>Объем (т)</TableHead>
                     <TableHead>Дата</TableHead>
-                    <TableHead>Статус</TableHead>
                     <TableHead className="text-right">Действия</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -250,18 +203,6 @@ export const DashboardBlock = () => {
                           {contract.volume.toLocaleString()}
                         </TableCell>
                         <TableCell>{contract.date}</TableCell>
-
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress
-                              value={contract.progress}
-                              className="h-2 w-[60px]"
-                            />
-                            <span className="text-xs text-muted-foreground">
-                              {contract.progress}%
-                            </span>
-                          </div>
-                        </TableCell>
                         <TableCell className="text-right">
                           <Button
                             variant="ghost"
@@ -360,54 +301,6 @@ export const DashboardBlock = () => {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        <TabsContent value="activity">
-          <Card>
-            <CardHeader>
-              <CardTitle>Последние действия</CardTitle>
-              <CardDescription>
-                История действий пользователей в системе
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Действие</TableHead>
-                    <TableHead>Контракт</TableHead>
-                    <TableHead>Пользователь</TableHead>
-                    <TableHead>Время</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentActivities.map((activity) => (
-                    <TableRow key={activity.id}>
-                      <TableCell>{activity.action}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="link"
-                          className="p-0 h-auto"
-                          onClick={() =>
-                            navigate(`/admin/contracts/${activity.contract}`)
-                          }
-                        >
-                          {activity.contract}
-                        </Button>
-                      </TableCell>
-                      <TableCell>{activity.user}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span>{activity.timestamp}</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

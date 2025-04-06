@@ -175,7 +175,7 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
                             isActive={active}
                             className={
                               active
-                                ? "bg-orange-100 text-orange-600 hover:bg-orange-200 hover:text-orange-700"
+                                ? "bg-orange-100 text-orange-400 hover:bg-orange-200 hover:text-orange-700"
                                 : ""
                             }
                           >

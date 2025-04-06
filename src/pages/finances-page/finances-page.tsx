@@ -1071,7 +1071,6 @@ export default function FinancesPage() {
                       <TableHead>Контракт</TableHead>
                       <TableHead>Дата</TableHead>
                       <TableHead>Сумма</TableHead>
-                      <TableHead>Статус</TableHead>
                       <TableHead className="text-right">Действия</TableHead>
                     </TableRow>
                   </TableHeader>

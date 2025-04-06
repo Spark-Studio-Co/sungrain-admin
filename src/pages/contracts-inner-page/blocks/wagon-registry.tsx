@@ -108,6 +108,7 @@ export const WagonRegistry = ({
       capacity: wagon.capacity?.toString() || "",
       real_weight: wagon.real_weight?.toString() || "",
       date_of_departure: wagon.date_of_departure || "",
+      date_of_unloading: wagon.date_of_unloading || "",
     });
 
     // Set up documents for editing
@@ -221,6 +222,11 @@ export const WagonRegistry = ({
         formData.append("date_of_departure", editingWagon.date_of_departure);
       }
 
+      // Add date_of_unloading as string
+      if (editingWagon.date_of_unloading) {
+        formData.append("date_of_unloading", editingWagon.date_of_unloading);
+      }
+
       // Append files with proper files_info structure
       const filesInfo = documents
         .filter((doc) => doc.file || doc.location)
@@ -309,9 +315,10 @@ export const WagonRegistry = ({
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>№ вагона</TableHead>
-                  <TableHead>Вес по документам, кг</TableHead>
-                  <TableHead>Дата отправки</TableHead>
+                  <TableHead>Г/П, кг</TableHead>
                   <TableHead>Собственник</TableHead>
+                  <TableHead>Дата отправления</TableHead>
+                  <TableHead>Дата отгрузки</TableHead>
                   <TableHead>Статус</TableHead>
                   {isAdmin && (
                     <TableHead className="text-right">Действия</TableHead>
@@ -332,10 +339,17 @@ export const WagonRegistry = ({
                       <TableCell>
                         {wagon.capacity?.toLocaleString() || "Не указана"}
                       </TableCell>
-                      <TableCell>
-                        {formatDate(wagon.date_of_departure) || "Не указан"}
-                      </TableCell>
                       <TableCell>{wagon.owner || "Не указан"}</TableCell>
+                      <TableCell>
+                        {wagon.date_of_departure
+                          ? formatDate(wagon.date_of_departure)
+                          : "Не указана"}
+                      </TableCell>
+                      <TableCell>
+                        {wagon.date_of_unloading
+                          ? formatDate(wagon.date_of_unloading)
+                          : "Не указана"}
+                      </TableCell>
                       <TableCell>
                         <Badge
                           variant={
@@ -398,7 +412,7 @@ export const WagonRegistry = ({
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={isAdmin ? 6 : 5}
+                      colSpan={isAdmin ? 8 : 7}
                       className="text-center py-6"
                     >
                       Вагоны не найдены
@@ -566,6 +580,59 @@ export const WagonRegistry = ({
                               setEditingWagon({
                                 ...editingWagon,
                                 date_of_departure: format(date, "yyyy-MM-dd"),
+                              });
+                            }
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="edit-date_of_unloading"
+                      className="font-medium"
+                    >
+                      Дата отгрузки
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="edit-date_of_unloading"
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !editingWagon.date_of_unloading &&
+                              "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {editingWagon.date_of_unloading ? (
+                            formatDate(editingWagon.date_of_unloading)
+                          ) : (
+                            <span>Выберите дату</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={
+                            editingWagon.date_of_unloading
+                              ? new Date(editingWagon.date_of_unloading)
+                              : undefined
+                          }
+                          onSelect={(date) => {
+                            if (date) {
+                              setEditingWagon({
+                                ...editingWagon,
+                                date_of_unloading: format(date, "yyyy-MM-dd"),
+                              });
+                            } else {
+                              setEditingWagon({
+                                ...editingWagon,
+                                date_of_unloading: "",
                               });
                             }
                           }}
@@ -779,7 +846,7 @@ export const WagonRegistry = ({
             <AlertDialogAction
               onClick={handleDeleteWagon}
               disabled={isDeleting}
-              className="bg-destructive !text-white hover:bg-destructive/90"
+              className="bg-destructive text-white hover:bg-destructive/90"
             >
               {isDeleting ? (
                 <>

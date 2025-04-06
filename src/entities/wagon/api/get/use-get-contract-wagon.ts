@@ -3,7 +3,7 @@ import { getContractWagons } from "./get-contract-wagons";
 
 export const useGetWagonContracts = (contractId: string) => {
   return useQuery({
-    queryKey: ["contracts"],
+    queryKey: ["wagons"],
     queryFn: () => getContractWagons(contractId),
   });
 };

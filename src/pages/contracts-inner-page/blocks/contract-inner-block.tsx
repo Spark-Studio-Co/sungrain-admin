@@ -1,29 +1,40 @@
 "use client";
+
+import { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddWagonPopup } from "@/entities/wagon/ui/add-wagon-popup";
 import { usePopupStore } from "@/shared/model/popup-store";
 import { useGetUserContractById } from "@/entities/contracts/api/get/use-get-user-contract-by-id";
 import { useGetContractsId } from "@/entities/contracts/api/get/use-get-contract-id";
 import { useGetCompanies } from "@/entities/companies/api/use-get-company";
 import { useGetWagonContracts } from "@/entities/wagon/api/get/use-get-contract-wagon";
-import { ContractHeader } from "./contract-header";
-import { WagonDetails } from "./wagon-details";
-import { ShippingDocuments } from "./shipping-document";
-import { WagonRegistry } from "./wagon-registry";
 import { useUpdateWagon } from "@/entities/wagon/api/patch/use-update-wagon";
 import { useDeleteWagon } from "@/entities/wagon/api/delete/use-delete-wagon";
+import { ContractHeader } from "./contract-header";
+import { WagonDetails } from "./wagon-details";
+import { WagonRegistry } from "./wagon-registry";
+import { ShippingDocuments } from "./shipping-document";
+import { ApplicationDetail } from "@/pages/application-page/blocks/application-details";
+import { ApplicationBlock } from "./contracts-application-block";
+import { useParams } from "react-router-dom";
 
 interface ContractInnerBlockProps {
   contractId: string;
 }
 
 export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
+  const { id } = useParams();
   const isAdmin = localStorage.getItem("isAdmin") === "true";
   const { open } = usePopupStore("addWagon");
+  const [activeTab, setActiveTab] = useState("details");
+  const [selectedApplicationId, setSelectedApplicationId] = useState<
+    string | null
+  >(null);
 
   const {
     data: contract,
@@ -119,31 +130,22 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     const link = document.createElement("a");
     link.href = fileUrl;
     link.setAttribute("download", fileName);
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // Handle wagon update
-  const handleUpdateWagon = async (wagonId: string | number, data: any) => {
-    try {
-      await updateWagonMutation.mutateAsync({ id: wagonId, data });
-      refetchWagons();
-    } catch (error) {
-      console.error("Failed to update wagon:", error);
-      throw error;
-    }
+  // Handle application selection
+  const handleSelectApplication = (applicationId: string) => {
+    setSelectedApplicationId(applicationId);
+    setActiveTab("applications");
   };
 
-  // Handle wagon deletion
-  const handleDeleteWagon = async (wagonId: string | number) => {
-    try {
-      await deleteWagonMutation.mutateAsync(wagonId);
-      refetchWagons();
-    } catch (error) {
-      console.error("Failed to delete wagon:", error);
-      throw error;
-    }
+  // Handle back to applications list
+  const handleBackToApplications = () => {
+    setSelectedApplicationId(null);
   };
 
   if (isDataLoading || isWagonsLoading) {
@@ -214,29 +216,42 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   return (
     <>
       <div className="container mx-auto py-6 space-y-6">
-        {/* Contract Header Component */}
         <ContractHeader
           contractData={contractData}
           getCompanyName={getCompanyName}
           handleDownload={handleDownload}
         />
-
-        {/* Wagon Details Component */}
-        <WagonDetails wagons={wagons} handleFileDownload={handleFileDownload} />
-
-        {/* Shipping Documents Component */}
-        <ShippingDocuments renderedFiles={renderedFiles} />
-
-        {/* Wagon Registry Component with edit/delete functionality */}
-        <WagonRegistry
-          wagons={wagons}
-          isAdmin={isAdmin}
-          onAddWagon={open}
-          onUpdateWagon={handleUpdateWagon}
-          onDeleteWagon={handleDeleteWagon}
-        />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="details">Детали договора</TabsTrigger>
+            <TabsTrigger value="applications">Заявки</TabsTrigger>
+          </TabsList>
+          <TabsContent value="details" className="mt-4">
+            <WagonDetails
+              wagons={wagons}
+              handleFileDownload={handleFileDownload}
+            />
+          </TabsContent>
+          <TabsContent value="applications" className="mt-4">
+            {selectedApplicationId ? (
+              <ApplicationDetail
+                contractId={id as any}
+                applicationId={selectedApplicationId}
+                onBack={handleBackToApplications}
+              />
+            ) : (
+              <ApplicationBlock
+                contractId={contractId}
+                onSelectApplication={handleSelectApplication}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
-      <AddWagonPopup contractId={contractId} />
+      <AddWagonPopup
+        contractId={contractId}
+        applicationId={selectedApplicationId || undefined}
+      />
     </>
   );
 };

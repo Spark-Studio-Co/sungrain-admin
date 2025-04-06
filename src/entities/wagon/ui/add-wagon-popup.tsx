@@ -41,9 +41,13 @@ import { useAddWagon } from "../api/post/use-add-wagon";
 
 interface AddWagonPopupProps {
   contractId: string;
+  applicationId?: string;
 }
 
-export const AddWagonPopup = ({ contractId }: AddWagonPopupProps) => {
+export const AddWagonPopup = ({
+  contractId,
+  applicationId,
+}: AddWagonPopupProps) => {
   const { isOpen, close } = usePopupStore("addWagon");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -54,6 +58,7 @@ export const AddWagonPopup = ({ contractId }: AddWagonPopupProps) => {
     owner: "",
     status: "at_elevator",
     date_of_departure: "",
+    date_of_unloading: "",
   });
 
   const [files, setFiles] = useState<File[]>([]);
@@ -113,8 +118,18 @@ export const AddWagonPopup = ({ contractId }: AddWagonPopupProps) => {
       formData.append("date_of_departure", newWagon.date_of_departure);
     }
 
-    // Add contract_id instead of contractId (to match the many-to-many relationship)
+    // Add date_of_unloading as string
+    if (newWagon.date_of_unloading) {
+      formData.append("date_of_unloading", newWagon.date_of_unloading);
+    }
+
+    // Add contract_id
     formData.append("contract_id", contractId);
+
+    // Add application_id if available
+    if (applicationId) {
+      formData.append("applicationId", applicationId);
+    }
 
     // Append files with proper files_info structure
     const filesInfo = documents
@@ -144,6 +159,7 @@ export const AddWagonPopup = ({ contractId }: AddWagonPopupProps) => {
           owner: "",
           status: "at_elevator",
           date_of_departure: "",
+          date_of_unloading: "",
         });
         setFiles([]);
         setDocuments([
@@ -318,6 +334,51 @@ export const AddWagonPopup = ({ contractId }: AddWagonPopupProps) => {
                           setNewWagon({
                             ...newWagon,
                             date_of_departure: format(date, "yyyy-MM-dd"),
+                          });
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="date_of_unloading" className="font-medium">
+                  Дата отгрузки
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !newWagon.date_of_unloading && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {newWagon.date_of_unloading ? (
+                        format(
+                          new Date(newWagon.date_of_unloading),
+                          "dd.MM.yyyy"
+                        )
+                      ) : (
+                        <span>Выберите дату</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={
+                        newWagon.date_of_unloading
+                          ? new Date(newWagon.date_of_unloading)
+                          : undefined
+                      }
+                      onSelect={(date) => {
+                        if (date) {
+                          setNewWagon({
+                            ...newWagon,
+                            date_of_unloading: format(date, "yyyy-MM-dd"),
                           });
                         }
                       }}

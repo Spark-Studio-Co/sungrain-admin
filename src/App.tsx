@@ -16,6 +16,7 @@ import ReceiverPage from "./pages/receiver-page/receiver-page";
 import SenderPage from "./pages/sender-page/sender-page";
 import StationsPage from "./pages/stations-page/stations-page";
 import CompaniesPage from "./pages/companies-page/companies-page";
+import ApplicationPage from "./pages/application-page/application-page";
 
 function App() {
   const { token } = useAuthData();
@@ -55,6 +56,10 @@ function App() {
           <Route path="/admin" element={<DashboardPage />} />
           <Route path="/admin/contracts" element={<ContractsPage />} />
           <Route path="/admin/contracts/:id" element={<ContractsInnerPage />} />
+          <Route
+            path="/admin/contracts/:id/applications/:application_id"
+            element={<ApplicationPage />}
+          />
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/finance" element={<FinancesPage />} />
           <Route
