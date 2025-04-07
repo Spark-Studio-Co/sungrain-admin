@@ -45,7 +45,7 @@ import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contra
 import { useContractDialogStore } from "@/entities/contracts/model/use-contract-dialog";
 import { AddContractDialog } from "@/entities/contracts/ui/add-contract-popup";
 import { useNavigate } from "react-router-dom";
-import { useExportTable } from "@/entities/table/api/get/use-export-table";
+import { useExportTable } from "@/entities/table/hooks/query/use-export-table.query";
 import { useGetUserContracts } from "@/entities/contracts/hooks/query/use-get-user-contracts.query";
 import { useDeleteContract } from "@/entities/contracts/hooks/mutations/use-delete-contract.mutations";
 import {

@@ -36,12 +36,12 @@ import { useAddContract } from "../api/post/use-create-contract";
 import { useState } from "react";
 import { useContractDialogStore } from "../model/use-contract-dialog";
 import { cn } from "@/lib/utils";
-import { useFetchCultures } from "@/entities/cultures/api/use-get-cultures";
-import { useGetSenders } from "@/entities/sender/api/get/use-get-senders";
+import { useFetchCultures } from "@/entities/cultures/hooks/query/use-get-cultures.query";
+import { useGetSenders } from "@/entities/sender/hooks/query/use-get-senders.query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGetReceivers } from "@/entities/receiver/api/get/use-get-receiver";
-import { useFetchStations } from "@/entities/stations/use-get-stations";
+import { useGetReceivers } from "@/entities/receiver/hooks/query/use-get-receiver.query";
+import { useFetchStations } from "@/entities/stations/hooks/query/use-get-stations.query";
 import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 import { format } from "date-fns";
 import {

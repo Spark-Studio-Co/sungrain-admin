@@ -51,12 +51,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCreateSender } from "@/entities/sender/api/create/use-create-sender";
-import { useUpdateSender } from "@/entities/sender/api/update/use-update-sender";
-import { useDeleteSender } from "@/entities/sender/api/delete/use-delete-sender";
-import { useGetSenders } from "@/entities/sender/api/get/use-get-senders";
-import { CreateSenderData } from "@/entities/sender/api/create/create-sender";
-import { UpdateSenderData } from "@/entities/sender/api/update/update-sender";
+import { useCreateSender } from "@/entities/sender/hooks/mutations/use-create-sender.mutation";
+import { useUpdateSender } from "@/entities/sender/hooks/mutations/use-update-sender.mutation";
+import { useDeleteSender } from "@/entities/sender/hooks/mutations/use-delete-sender.mutation";
+import { useGetSenders } from "@/entities/sender/hooks/query/use-get-senders.query";
+import { CreateSenderData } from "@/entities/sender/api/create/create-sender.api";
+import { UpdateSenderData } from "@/entities/sender/api/update/update-sender.api";
 
 // Types
 interface Sender {

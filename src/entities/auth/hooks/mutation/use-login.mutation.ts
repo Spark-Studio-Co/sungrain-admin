@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { LoginDTO } from "../../api/dto/login.dto";
-import { login } from "../../api/post/login";
+import { login } from "../../api/post/login.api";
 import { useAuthData } from "../../model/use-auth-store";
 
 export const useLogin = () => {

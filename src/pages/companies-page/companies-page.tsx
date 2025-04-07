@@ -64,7 +64,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 import { useCreateCompany } from "@/entities/companies/hooks/mutations/use-create-company.mutation";
-import { useGetUsers } from "@/entities/users/api/get/use-get-users";
+import { useGetUsers } from "@/entities/users/hooks/query/use-get-users.query";
 import { useUpdateCompanies } from "@/entities/companies/hooks/mutations/use-update-company.mutation";
 import { useDeleteCompany } from "@/entities/companies/hooks/mutations/use-delete-company.mutation";
 import { MultiSelect } from "@/components/ui/multi-select";

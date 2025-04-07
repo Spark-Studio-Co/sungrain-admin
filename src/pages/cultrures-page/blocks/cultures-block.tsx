@@ -31,10 +31,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { CultureData } from "@/entities/cultures/api/post/create-cultures.api";
-import { useFetchCultures } from "@/entities/cultures/api/use-get-cultures";
-import { useCreateCultures } from "@/entities/cultures/api/use-create-culture";
-import { useUpdateCulture } from "@/entities/cultures/api/use-update-culture";
-import { useDeleteCulture } from "@/entities/cultures/api/use-delete-culture";
+import { useFetchCultures } from "@/entities/cultures/hooks/query/use-get-cultures.query";
+import { useCreateCultures } from "@/entities/cultures/hooks/mutations/use-create-culture.mutation";
+import { useUpdateCulture } from "@/entities/cultures/hooks/query/use-update-culture.mutation";
+import { useDeleteCulture } from "@/entities/cultures/hooks/mutations/use-delete-culture.mutation";
 
 export const CulturesBlock = () => {
   const [searchTerm, setSearchTerm] = useState("");

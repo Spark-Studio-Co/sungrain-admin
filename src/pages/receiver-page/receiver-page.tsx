@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Layout } from "@/shared/ui/layout";
 import {
   Card,
@@ -34,12 +34,12 @@ import {
 } from "@/components/ui/dialog";
 
 // Import React Query hooks
-import { useCreateReceiver } from "@/entities/receiver/api/create/use-create-receiver";
-import { useUpdateReceiver } from "@/entities/receiver/api/update/use-update-receiver";
-import { useDeleteReceiver } from "@/entities/receiver/api/delete/use-delete-receiver";
-import type { CreateReceiverData } from "@/entities/receiver/api/create/create-receiver";
-import type { UpdateReceiverData } from "@/entities/receiver/api/update/update-receiver";
-import { useGetReceivers } from "@/entities/receiver/api/get/use-get-receiver";
+import { useCreateReceiver } from "@/entities/receiver/hooks/mutations/use-create-receiver.mutation";
+import { useUpdateReceiver } from "@/entities/receiver/hooks/mutations/use-update-receiver.mutation";
+import { useDeleteReceiver } from "@/entities/receiver/hooks/mutations/use-delete-receiver.mutation";
+import type { CreateReceiverData } from "@/entities/receiver/api/create/create-receiver.api";
+import type { UpdateReceiverData } from "@/entities/receiver/api/update/update-receiver.api";
+import { useGetReceivers } from "@/entities/receiver/hooks/query/use-get-receiver.query";
 
 // Types
 interface Receiver {
@@ -50,7 +50,7 @@ interface Receiver {
 export default function ReceiversPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit] = useState(10);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -72,9 +72,9 @@ export default function ReceiversPage() {
   const deleteMutation = useDeleteReceiver();
 
   // Extract pagination data
-  const totalItems = data?.total || 0;
-  const currentPage = data?.page || 1;
-  const lastPage = Math.ceil(totalItems / limit) || 1;
+  // const totalItems = data?.total || 0;
+  // const currentPage = data?.page || 1;
+  // const lastPage = Math.ceil(totalItems / limit) || 1;
 
   const filteredReceivers = Array.isArray(data?.data)
     ? data.data.filter((receiver) => {

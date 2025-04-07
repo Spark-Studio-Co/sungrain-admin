@@ -37,7 +37,7 @@ import { useCreateApplication } from "@/entities/applications/hooks/mutations/us
 import { useUpdateApplication } from "@/entities/applications/hooks/mutations/use-update-application.mutation";
 import { useUploadApplicationFiles } from "@/entities/applications/hooks/mutations/use-upload-application-files.mutation";
 import { useDeleteApplicationFile } from "@/entities/applications/hooks/mutations/use-delete-application-file.mutation";
-import { useFetchCultures } from "@/entities/cultures/api/use-get-cultures";
+import { useFetchCultures } from "@/entities/cultures/hooks/query/use-get-cultures.query";
 
 interface ApplicationDialogProps {
   isOpen: boolean;

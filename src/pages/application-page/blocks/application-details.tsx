@@ -39,8 +39,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { usePopupStore } from "@/shared/model/popup-store";
-import { useUpdateWagon } from "@/entities/wagon/api/patch/use-update-wagon";
-import { useDeleteWagon } from "@/entities/wagon/api/delete/use-delete-wagon";
+import { useUpdateWagon } from "@/entities/wagon/hooks/mutations/use-update-wagon.mutation";
+import { useDeleteWagon } from "@/entities/wagon/hooks/mutations/use-delete-wagon.mutation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -83,10 +83,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { useGetInvoices } from "@/entities/invoices/api/use-get-invoices";
-import { useCreateInvoice } from "@/entities/invoices/api/use-create-invoice";
-import { useUpdateInvoice } from "@/entities/invoices/api/use-update-invoice";
-import { useDeleteInvoice } from "@/entities/invoices/api/use-delete-invoice";
+import { useGetInvoices } from "@/entities/invoices/hooks/query/use-get-invoices.query";
+import { useCreateInvoice } from "@/entities/invoices/hooks/mutations/use-create-invoice.mutation";
+import { useUpdateInvoice } from "@/entities/invoices/hooks/mutations/use-update-invoice.mutation";
+import { useDeleteInvoice } from "@/entities/invoices/hooks/mutations/use-delete-invoice.mutation";
 
 interface ApplicationDetailProps {
   applicationId: string;

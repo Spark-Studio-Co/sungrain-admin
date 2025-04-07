@@ -8,7 +8,7 @@ import UsersPage from "./pages/users-page/users-page";
 import ContractsInnerPage from "./pages/contracts-inner-page/contracts-inner-page";
 import DashboardPage from "./pages/dashboard-page/dashboard-page";
 import { useAuthData } from "./entities/auth/model/use-auth-store";
-import { checkIsAdmin } from "./entities/users/api/check-is-admin";
+import { checkIsAdmin } from "./entities/users/api/get/check-is-admin.api";
 import { useState, useEffect } from "react";
 import FinancesPage from "./pages/finances-page/finances-page";
 import AgricultureManagementPage from "./pages/cultrures-page/cultures-page";

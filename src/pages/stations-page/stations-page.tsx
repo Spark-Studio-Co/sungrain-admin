@@ -52,12 +52,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { useFetchStations } from "@/entities/stations/use-get-stations";
-import { useCreateStation } from "@/entities/stations/use-create-stations";
-import { useUpdateStation } from "@/entities/stations/use-update-stations";
-import { useDeleteStations } from "@/entities/stations/use-delete-stations";
-import type { StationData } from "@/entities/stations/create-stations.api";
-import type { UpdateStationData } from "@/entities/stations/update-stations.api";
+import { useFetchStations } from "@/entities/stations/hooks/query/use-get-stations.query";
+import { useCreateStation } from "@/entities/stations/hooks/mutations/use-create-stations.mutation";
+import { useUpdateStation } from "@/entities/stations/hooks/mutations/use-update-stations.mutation";
+import { useDeleteStations } from "@/entities/stations/hooks/mutations/use-delete-stations.mutation";
+import type { StationData } from "@/entities/stations/api/post/create-stations.api";
+import type { UpdateStationData } from "@/entities/stations/api/patch/update-stations.api";
 
 export default function StationsPage() {
   const [searchTerm, setSearchTerm] = useState("");

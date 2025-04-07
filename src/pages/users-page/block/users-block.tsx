@@ -54,10 +54,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useAddUser } from "@/entities/users/api/post/use-add-user";
-import { useGetUsers } from "@/entities/users/api/get/use-get-users";
-import { useUpdateUsers } from "@/entities/users/api/patch/use-update-user";
-import { useDeleteUser } from "@/entities/users/api/delete/use-delete-user";
+import { useAddUser } from "@/entities/users/hooks/mutations/use-add-user.mutation";
+import { useGetUsers } from "@/entities/users/hooks/query/use-get-users.query";
+import { useUpdateUsers } from "@/entities/users/hooks/mutations/use-update-user.mutation";
+import { useDeleteUser } from "@/entities/users/hooks/mutations/use-delete-user.mutation";
 import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 
 const roles = ["ADMIN", "USER"];
