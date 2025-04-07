@@ -27,7 +27,7 @@ import { ru } from "date-fns/locale";
 import { usePopupStore } from "@/shared/model/popup-store";
 import { AddWagonPopup } from "@/entities/wagon/ui/add-wagon-popup";
 import { useNavigate, useParams } from "react-router-dom";
-import { useGetApplication } from "@/entities/applications/api/use-get-application";
+import { useGetApplication } from "@/entities/applications/hooks/query/use-get-application.query";
 import { WagonRegistry } from "../contracts-inner-page/blocks/wagon-registry";
 import { Layout } from "@/shared/ui/layout";
 

@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/pagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGetUserContracts } from "@/entities/contracts/api/get/use-get-user-contracts";
+import { useGetUserContracts } from "@/entities/contracts/hooks/query/use-get-user-contracts.query";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 

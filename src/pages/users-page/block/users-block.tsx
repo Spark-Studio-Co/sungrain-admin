@@ -58,7 +58,7 @@ import { useAddUser } from "@/entities/users/api/post/use-add-user";
 import { useGetUsers } from "@/entities/users/api/get/use-get-users";
 import { useUpdateUsers } from "@/entities/users/api/patch/use-update-user";
 import { useDeleteUser } from "@/entities/users/api/delete/use-delete-user";
-import { useGetCompanies } from "@/entities/companies/api/use-get-company";
+import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 
 const roles = ["ADMIN", "USER"];
 

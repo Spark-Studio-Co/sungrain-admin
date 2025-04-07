@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthData } from "@/entities/auth/model/use-auth-store";
-import { useLogin } from "@/entities/auth/api/post/use-login";
+import { useLogin } from "@/entities/auth/hooks/mutation/use-login.mutation";
 
 export default function LoginForm() {
   const navigate = useNavigate();

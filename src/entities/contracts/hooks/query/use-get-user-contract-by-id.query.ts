@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getUserContractById } from "./get-user-contract-by-id";
+import { getUserContractById } from "../../api/get/get-user-contract-by-id.api";
 
 export const useGetUserContractById = (id: string | number) => {
   return useQuery({

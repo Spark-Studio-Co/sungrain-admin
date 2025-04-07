@@ -30,7 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { CultureData } from "@/entities/cultures/api/create-cultures.api";
+import type { CultureData } from "@/entities/cultures/api/post/create-cultures.api";
 import { useFetchCultures } from "@/entities/cultures/api/use-get-cultures";
 import { useCreateCultures } from "@/entities/cultures/api/use-create-culture";
 import { useUpdateCulture } from "@/entities/cultures/api/use-update-culture";

@@ -32,11 +32,11 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { useGetContractsId } from "@/entities/contracts/api/get/use-get-contract-id";
-import { useCreateApplication } from "@/entities/applications/api/use-create-application";
-import { useUpdateApplication } from "@/entities/applications/api/use-update-application";
-import { useUploadApplicationFiles } from "@/entities/applications/api/use-upload-application-files";
-import { useDeleteApplicationFile } from "@/entities/applications/api/use-delete-application-file";
+import { useGetContractsId } from "@/entities/contracts/hooks/query/use-get-contract-id.query";
+import { useCreateApplication } from "@/entities/applications/hooks/mutations/use-create-application.mutation";
+import { useUpdateApplication } from "@/entities/applications/hooks/mutations/use-update-application.mutation";
+import { useUploadApplicationFiles } from "@/entities/applications/hooks/mutations/use-upload-application-files.mutation";
+import { useDeleteApplicationFile } from "@/entities/applications/hooks/mutations/use-delete-application-file.mutation";
 import { useFetchCultures } from "@/entities/cultures/api/use-get-cultures";
 
 interface ApplicationDialogProps {

@@ -58,9 +58,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useGetApplication } from "@/entities/applications/api/use-get-application";
-import { useUploadApplicationFiles } from "@/entities/applications/api/use-upload-application-files";
-import { useDeleteApplicationFile } from "@/entities/applications/api/use-delete-application-file";
+import { useGetApplication } from "@/entities/applications/hooks/query/use-get-application.query";
+import { useUploadApplicationFiles } from "@/entities/applications/hooks/mutations/use-upload-application-files.mutation";
+import { useDeleteApplicationFile } from "@/entities/applications/hooks/mutations/use-delete-application-file.mutation";
 import { WagonRegistry } from "@/pages/contracts-inner-page/blocks/wagon-registry";
 import { Progress } from "@/components/ui/progress";
 import {

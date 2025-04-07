@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { addCompany, Company } from "./create-company.api";
+import { deleteCompany } from "../../api/delete/delete-company.api";
 
-export const useCreateCompany = () => {
+export const useDeleteCompany = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Company) => addCompany(data),
+    mutationFn: (name: string) => deleteCompany(name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["companies"] });
     },

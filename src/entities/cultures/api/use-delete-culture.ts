@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteCulture } from "./delete-cultures.api";
+import { deleteCulture } from "./delete/delete-cultures.api";
 
 export const useDeleteCulture = () => {
   const queryClient = useQueryClient();

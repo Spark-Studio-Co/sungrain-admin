@@ -47,8 +47,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useGetApplications } from "@/entities/applications/api/use-get-applications";
-import { useDeleteApplication } from "@/entities/applications/api/use-delete-application";
+import { useGetApplications } from "@/entities/applications/hooks/query/use-get-applications.query";
+import { useDeleteApplication } from "@/entities/applications/hooks/mutations/use-delete-application.mutation";
 import { ApplicationDialog } from "@/pages/application-page/blocks/application-dialog";
 
 interface ApplicationBlockProps {

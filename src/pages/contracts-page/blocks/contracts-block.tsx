@@ -41,13 +41,13 @@ import {
 } from "@/components/ui/pagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGetContracts } from "@/entities/contracts/api/get/use-get-contracts";
+import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contracts.query";
 import { useContractDialogStore } from "@/entities/contracts/model/use-contract-dialog";
 import { AddContractDialog } from "@/entities/contracts/ui/add-contract-popup";
 import { useNavigate } from "react-router-dom";
 import { useExportTable } from "@/entities/table/api/get/use-export-table";
-import { useGetUserContracts } from "@/entities/contracts/api/get/use-get-user-contracts";
-import { useDeleteContract } from "@/entities/contracts/api/delete/use-delete-contract";
+import { useGetUserContracts } from "@/entities/contracts/hooks/query/use-get-user-contracts.query";
+import { useDeleteContract } from "@/entities/contracts/hooks/mutations/use-delete-contract.mutations";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -62,11 +62,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { useGetCompanies } from "@/entities/companies/api/use-get-company";
-import { useCreateCompany } from "@/entities/companies/api/use-create-company";
+import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
+import { useCreateCompany } from "@/entities/companies/hooks/mutations/use-create-company.mutation";
 import { useGetUsers } from "@/entities/users/api/get/use-get-users";
-import { useUpdateCompanies } from "@/entities/companies/api/use-update-company";
-import { useDeleteCompany } from "@/entities/companies/api/use-delete-company";
+import { useUpdateCompanies } from "@/entities/companies/hooks/mutations/use-update-company.mutation";
+import { useDeleteCompany } from "@/entities/companies/hooks/mutations/use-delete-company.mutation";
 import { MultiSelect } from "@/components/ui/multi-select";
 
 export default function CompaniesPage() {

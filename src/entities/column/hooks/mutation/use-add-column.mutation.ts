@@ -1,5 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AddColumnRequest, addColumnToTable } from "./create-column";
+import {
+  AddColumnRequest,
+  addColumnToTable,
+} from "../../api/patch/create-column.api";
 
 export const useAddColumn = () => {
   const queryClient = useQueryClient();

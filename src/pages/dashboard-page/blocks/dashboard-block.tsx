@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Link, useNavigate } from "react-router-dom";
-import { useGetContracts } from "@/entities/contracts/api/get/use-get-contracts";
+import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contracts.query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { useMemo } from "react";

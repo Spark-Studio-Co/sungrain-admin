@@ -42,7 +42,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetReceivers } from "@/entities/receiver/api/get/use-get-receiver";
 import { useFetchStations } from "@/entities/stations/use-get-stations";
-import { useGetCompanies } from "@/entities/companies/api/use-get-company";
+import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 import { format } from "date-fns";
 import {
   Popover,

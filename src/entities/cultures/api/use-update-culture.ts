@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CultureData } from "./create-cultures.api";
-import { updateCulture } from "./update-culture.api";
+import { CultureData } from "./post/create-cultures.api";
+import { updateCulture } from "./patch/update-culture.api";
 
 export const useUpdateCulture = () => {
   const queryClient = useQueryClient();

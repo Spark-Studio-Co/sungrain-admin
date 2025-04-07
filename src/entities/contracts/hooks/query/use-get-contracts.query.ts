@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getContracts } from "./get-contracts";
+import { getContracts } from "../../api/get/get-contracts.api";
 
 export const useGetContracts = (params?: { page?: number; limit?: number }) => {
   return useQuery({

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getApplication } from "./get-application.api";
+import { getApplication } from "../../api/get/get-application.api";
 
 export const useGetApplication = (applicationId: string) => {
   return useQuery({
