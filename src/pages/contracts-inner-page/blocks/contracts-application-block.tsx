@@ -60,6 +60,11 @@ export const ApplicationBlock = ({
   contractId,
   onSelectApplication,
 }: ApplicationBlockProps) => {
+  const [isAdmin] = useState<boolean | null>(() => {
+    const storedAdminStatus = localStorage.getItem("isAdmin");
+    return storedAdminStatus ? JSON.parse(storedAdminStatus) : null;
+  });
+
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -160,13 +165,15 @@ export const ApplicationBlock = ({
                 </CardDescription>
               </div>
             </div>
-            <Button
-              onClick={() => setIsAddDialogOpen(true)}
-              className="gap-2 bg-blue-500 hover:bg-blue-600"
-            >
-              <Plus className="h-4 w-4" />
-              Добавить заявку
-            </Button>
+            {isAdmin && (
+              <Button
+                onClick={() => setIsAddDialogOpen(true)}
+                className="gap-2 bg-blue-500 hover:bg-blue-600"
+              >
+                <Plus className="h-4 w-4" />
+                Добавить заявку
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -195,6 +202,7 @@ export const ApplicationBlock = ({
                     <TableHead>Общая сумма</TableHead>
                     <TableHead>Документы</TableHead>
                     <TableHead>Вагоны</TableHead>
+
                     <TableHead className="text-right">Действия</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -324,40 +332,30 @@ export const ApplicationBlock = ({
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div
-                            className="flex items-center justify-end gap-2"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={(e) =>
-                                handleEditApplication(application, e)
-                              }
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={(e) => handleDeleteClick(application, e)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="gap-1"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onSelectApplication(application.id.toString());
-                              }}
-                            >
-                              Подробнее <ChevronRight className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          {isAdmin && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) =>
+                                  handleEditApplication(application, e)
+                                }
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) =>
+                                  handleDeleteClick(application, e)
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))

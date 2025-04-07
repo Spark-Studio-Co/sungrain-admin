@@ -62,6 +62,51 @@ import { useGetCompanies } from "@/entities/companies/api/use-get-company";
 
 const roles = ["ADMIN", "USER"];
 
+export function CompanyDisplay() {
+  // This is using the data structure you provided in your message
+  const userData = [
+    {
+      id: 1,
+      email: "ruslanmakhmatov@gmail.com",
+      password: "$2b$10$p23xwNsYXQVDZ/xX6ESqceyDPYebJD83CkZ6PxuljLVDC6cmjvV52",
+      full_name: "Ruslan Makhmatov",
+      role: "ADMIN",
+      created_at: "03.04.2025",
+      companies: [
+        {
+          id: 1,
+          userId: 1,
+          companyId: 1,
+          company: {
+            id: 1,
+            name: "OOO TEST",
+          },
+        },
+      ],
+    },
+  ];
+
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Company Information</CardTitle>
+        <CardDescription>User's associated company</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-2">
+          <Building className="h-5 w-5 text-muted-foreground" />
+          <span className="font-medium">
+            {userData[0].companies[0].company.name}
+          </span>
+        </div>
+        <div className="mt-2 text-sm text-muted-foreground">
+          User: {userData[0].full_name} ({userData[0].email})
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
@@ -144,16 +189,24 @@ export default function UsersPage() {
   const handleEditUser = () => {
     if (!editingUser) return;
 
+    const userData = {
+      name: editingUser.name,
+      password: editingUser.password,
+      email: editingUser.email,
+      full_name: editingUser.full_name,
+      role: editingUser.role,
+      companyId: editingUser.companyId || undefined,
+    };
+
+    // Add password to update data only if it's provided
+    if (editingUser.password) {
+      userData.password = editingUser.password;
+    }
+
     updateUserMutation.mutate(
       {
         id: editingUser.id,
-        data: {
-          name: editingUser.name,
-          email: editingUser.email,
-          full_name: editingUser.full_name,
-          role: editingUser.role,
-          companyId: editingUser.companyId || undefined,
-        },
+        data: userData,
       },
       {
         onSuccess: () => {
@@ -573,6 +626,20 @@ export default function UsersPage() {
                   value={editingUser.email}
                   onChange={(e) =>
                     setEditingUser({ ...editingUser, email: e.target.value })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-password" className="text-right">
+                  Пароль
+                </Label>
+                <Input
+                  id="edit-password"
+                  type="password"
+                  placeholder="Оставьте пустым, чтобы не менять"
+                  onChange={(e) =>
+                    setEditingUser({ ...editingUser, password: e.target.value })
                   }
                   className="col-span-3"
                 />

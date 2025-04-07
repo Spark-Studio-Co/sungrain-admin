@@ -61,6 +61,12 @@ const navigationItems = [
     isAdmin: true,
   },
   {
+    title: "Контракты",
+    icon: FileIcon,
+    url: "/contracts",
+    isAdmin: false,
+  },
+  {
     title: "Финансы",
     icon: CoinsIcon,
     url: "/admin/finance",

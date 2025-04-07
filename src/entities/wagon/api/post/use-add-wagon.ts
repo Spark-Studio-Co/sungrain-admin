@@ -9,6 +9,7 @@ export const useAddWagon = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wagons"] });
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
     },
     onError: (error) => {
       console.error("Ошибка при добавлении вагона:", error);

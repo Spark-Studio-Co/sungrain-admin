@@ -17,6 +17,7 @@ import SenderPage from "./pages/sender-page/sender-page";
 import StationsPage from "./pages/stations-page/stations-page";
 import CompaniesPage from "./pages/companies-page/companies-page";
 import ApplicationPage from "./pages/application-page/application-page";
+import UserContractsPage from "./pages/contracts-user-page/contracts-user-page";
 
 function App() {
   const { token } = useAuthData();
@@ -44,13 +45,20 @@ function App() {
     };
 
     fetchAdminStatus();
-  }, [token, isAdmin]);
+  }, [token]);
 
-  return (
-    <QueryClientProvider client={reactQueryClient}>
-      <Routes>
-        {/* {token ? (
-          isAdmin ? ( */}
+  const renderRoutes = () => {
+    if (!token) {
+      return (
+        <>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </>
+      );
+    }
+
+    if (isAdmin) {
+      return (
         <>
           <Route path="/" element={<Navigate to="/admin" replace />} />
           <Route path="/admin" element={<DashboardPage />} />
@@ -72,20 +80,21 @@ function App() {
           <Route path="/admin/companies" element={<CompaniesPage />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </>
-        {/* ) : ( */}
-        {/* <>
-          <Route path="/contracts" element={<ContractsPage />} />
-          <Route path="/contracts/:id" element={<ContractsInnerPage />} />
-          <Route path="*" element={<Navigate to="/contracts" replace />} />
-        </> */}
-        {/* ) */}
-        {/* ) : ( */}
-        <>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </>
-        {/* )} */}
-      </Routes>
+      );
+    }
+
+    return (
+      <>
+        <Route path="/contracts" element={<UserContractsPage />} />
+        <Route path="/contracts/:id" element={<ContractsInnerPage />} />
+        <Route path="*" element={<Navigate to="/contracts" replace />} />
+      </>
+    );
+  };
+
+  return (
+    <QueryClientProvider client={reactQueryClient}>
+      <Routes>{renderRoutes()}</Routes>
     </QueryClientProvider>
   );
 }

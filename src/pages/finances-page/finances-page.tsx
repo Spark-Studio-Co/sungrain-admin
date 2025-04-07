@@ -482,7 +482,7 @@ export default function FinancesPage() {
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Фильтр по статусу" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="w-full">
                     <SelectItem value="all">Все статусы</SelectItem>
                     <SelectItem value="paid">Оплачен</SelectItem>
                     <SelectItem value="pending">Ожидает оплаты</SelectItem>

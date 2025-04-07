@@ -36,6 +36,10 @@ export default function ApplicationPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("details");
   const { open } = usePopupStore("addWagon");
+  const [isAdmin] = useState<boolean | null>(() => {
+    const storedAdminStatus = localStorage.getItem("isAdmin");
+    return storedAdminStatus ? JSON.parse(storedAdminStatus) : null;
+  });
 
   const {
     data: application,
@@ -230,7 +234,6 @@ export default function ApplicationPage() {
                       </div>
                     </div>
                   </div>
-
                   <div className="space-y-4">
                     <div>
                       <h3 className="text-sm font-medium text-muted-foreground mb-2">
@@ -266,7 +269,6 @@ export default function ApplicationPage() {
           <TabsContent value="wagons" className="mt-4">
             <WagonRegistry
               wagons={application.wagons || []}
-              isAdmin={true}
               onAddWagon={open}
               onUpdateWagon={(wagonId, data) => {
                 // Implement wagon update logic
@@ -291,10 +293,12 @@ export default function ApplicationPage() {
                       Управление документами по заявке
                     </CardDescription>
                   </div>
-                  <Button className="gap-2">
-                    <Upload className="h-4 w-4" />
-                    Загрузить документ
-                  </Button>
+                  {isAdmin && (
+                    <Button className="gap-2">
+                      <Upload className="h-4 w-4" />
+                      Загрузить документ
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>

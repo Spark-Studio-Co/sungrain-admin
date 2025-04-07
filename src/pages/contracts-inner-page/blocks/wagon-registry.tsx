@@ -70,7 +70,6 @@ import { format } from "date-fns";
 
 interface WagonRegistryProps {
   wagons: any[];
-  isAdmin: boolean;
   onAddWagon: () => void;
   onUpdateWagon?: (wagonId: string | number, data: any) => Promise<void>;
   onDeleteWagon?: (wagonId: string | number) => Promise<void>;
@@ -78,11 +77,15 @@ interface WagonRegistryProps {
 
 export const WagonRegistry = ({
   wagons,
-  isAdmin,
   onAddWagon,
   onUpdateWagon,
   onDeleteWagon,
 }: WagonRegistryProps) => {
+  const [isAdmin] = useState<boolean | null>(() => {
+    const storedAdminStatus = localStorage.getItem("isAdmin");
+    return storedAdminStatus ? JSON.parse(storedAdminStatus) : null;
+  });
+
   const [editingWagon, setEditingWagon] = useState<any>(null);
   const [deletingWagon, setDeletingWagon] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState(false);

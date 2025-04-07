@@ -227,7 +227,7 @@ export const ApplicationDialog = ({
       let applicationId;
 
       if (application) {
-        const result = await updateMutation.mutateAsync({
+        await updateMutation.mutateAsync({
           id: application.id,
           data: {
             price_per_ton: Number(formData.price_per_ton),
@@ -239,13 +239,12 @@ export const ApplicationDialog = ({
         });
         applicationId = application.id;
       } else {
-        // Create new application
         const result = await createMutation.mutateAsync({
           price_per_ton: Number(formData.price_per_ton),
           currency: formData.currency,
           volume: Number(formData.volume),
           culture: formData.culture,
-          contractId: contractId,
+          contractId: contractId as any,
         });
         applicationId = result.id;
       }
