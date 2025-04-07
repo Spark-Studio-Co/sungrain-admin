@@ -211,10 +211,8 @@ export const ApplicationDialog = ({
     }
   };
 
-  // Update the handleSubmit function to include currency in the data
   const handleSubmit = async () => {
     try {
-      // For creating/updating basic application data
       const formDataObj = new FormData();
 
       formDataObj.append("currency", formData.currency);
@@ -223,7 +221,6 @@ export const ApplicationDialog = ({
       formDataObj.append("culture", formData.culture);
       formDataObj.append("contractId", contractId);
 
-      // First, create or update the application
       let applicationId;
 
       if (application) {

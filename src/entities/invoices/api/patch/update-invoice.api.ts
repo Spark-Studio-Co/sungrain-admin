@@ -1,8 +1,8 @@
 import { apiClient } from "@/shared/api/apiClient";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface UpdateInvoiceParams {
   id: number | string;
+  applicationId: number | string;
   data: {
     name?: string;
     number?: string;
@@ -13,7 +13,15 @@ interface UpdateInvoiceParams {
   };
 }
 
-export const updateInvoice = async ({ id, data }: UpdateInvoiceParams) => {
-  const response = await apiClient.patch(`/invoice/${id}`, data);
+export const updateInvoice = async ({
+  id,
+  applicationId,
+  data,
+}: UpdateInvoiceParams) => {
+  const response = await apiClient.patch(
+    `/application/update-invoice/${applicationId}/${id}`,
+    data
+  );
+
   return response.data;
 };

@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Select,
   SelectContent,
@@ -7,7 +6,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import { useState } from "react";
 import {
   ArrowLeft,
@@ -248,7 +246,6 @@ export const ApplicationDetail = ({
     }
   };
 
-  // Handle invoice creation
   const handleCreateInvoice = async () => {
     if (!newInvoice.name || !newInvoice.amount || !newInvoice.file) {
       return;
@@ -258,7 +255,6 @@ export const ApplicationDetail = ({
       const invoiceData = {
         applicationId,
         name: newInvoice.name,
-        number: newInvoice.number || newInvoice.name,
         date: newInvoice.date || format(new Date(), "yyyy-MM-dd"),
         amount: Number.parseFloat(newInvoice.amount),
         status: newInvoice.status,
@@ -290,12 +286,10 @@ export const ApplicationDetail = ({
     }
   };
 
-  // Handle opening the edit invoice dialog
   const handleEditInvoice = (invoice: any) => {
     setEditingInvoice({
       ...invoice,
       name: invoice.name || "",
-      number: invoice.number || "",
       date: invoice.date || "",
       amount: invoice.amount?.toString() || "",
       status: invoice.status || "pending",
@@ -305,16 +299,15 @@ export const ApplicationDetail = ({
     setIsEditInvoiceDialogOpen(true);
   };
 
-  // Handle updating an invoice
   const handleUpdateInvoice = async () => {
     if (!editingInvoice || !editingInvoice.id) return;
 
     try {
       const invoiceData: any = {
         id: editingInvoice.id,
+        applicationId: applicationId,
         data: {
           name: editingInvoice.name,
-          number: editingInvoice.number,
           date: editingInvoice.date || format(new Date(), "yyyy-MM-dd"),
           amount: Number.parseFloat(editingInvoice.amount),
           status: editingInvoice.status,
@@ -347,16 +340,19 @@ export const ApplicationDetail = ({
     if (!deletingInvoice || !deletingInvoice.id) return;
 
     try {
-      await deleteInvoiceMutation.mutateAsync(deletingInvoice.id, {
-        onSuccess: () => {
-          setIsDeleteInvoiceDialogOpen(false);
-          setDeletingInvoice(null);
-          refetchInvoices();
-        },
-        onError: (error: any) => {
-          console.error("Invoice deletion failed:", error);
-        },
-      });
+      await deleteInvoiceMutation.mutateAsync(
+        { applicationId: applicationId, id: deletingInvoice.id },
+        {
+          onSuccess: () => {
+            setIsDeleteInvoiceDialogOpen(false);
+            setDeletingInvoice(null);
+            refetchInvoices();
+          },
+          onError: (error: any) => {
+            console.error("Invoice deletion failed:", error);
+          },
+        }
+      );
     } catch (error) {
       console.error("Error deleting invoice:", error);
     }
@@ -1125,8 +1121,6 @@ export const ApplicationDetail = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Invoice Creation Dialog */}
       <Dialog open={isInvoiceDialogOpen} onOpenChange={setIsInvoiceDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -1326,8 +1320,6 @@ export const ApplicationDetail = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Edit Invoice Dialog */}
       <Dialog
         open={isEditInvoiceDialogOpen}
         onOpenChange={setIsEditInvoiceDialogOpen}
@@ -1351,7 +1343,6 @@ export const ApplicationDetail = ({
                 className="col-span-3"
               />
             </div>
-
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-invoice-number" className="text-right">
                 Номер
@@ -1521,7 +1512,7 @@ export const ApplicationDetail = ({
             <AlertDialogAction
               onClick={handleDeleteInvoice}
               disabled={deleteInvoiceMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-white hover:bg-destructive/90"
             >
               {deleteInvoiceMutation.isPending ? (
                 <>
