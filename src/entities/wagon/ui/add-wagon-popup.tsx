@@ -49,7 +49,6 @@ export const AddWagonPopup = ({
   applicationId,
 }: AddWagonPopupProps) => {
   const { isOpen, close } = usePopupStore("addWagon");
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [newWagon, setNewWagon] = useState({
     number: "",
@@ -234,7 +233,7 @@ export const AddWagonPopup = ({
 
               <div className="space-y-2">
                 <Label htmlFor="capacity" className="font-medium">
-                  Вес по документам, кг <span className="text-red-500">*</span>
+                  Вес по документам, т. <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="capacity"
@@ -249,7 +248,7 @@ export const AddWagonPopup = ({
 
               <div className="space-y-2">
                 <Label htmlFor="real_weight" className="font-medium">
-                  Фактический вес, кг
+                  Фактический вес, т.
                 </Label>
                 <Input
                   id="real_weight"

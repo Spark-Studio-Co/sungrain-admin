@@ -43,7 +43,7 @@ interface ApplicationDialogProps {
   isOpen: boolean;
   onClose: (shouldRefresh: boolean) => void;
   contractId: string;
-  application?: any; // For editing existing application
+  application?: any;
 }
 
 export const ApplicationDialog = ({
@@ -61,9 +61,11 @@ export const ApplicationDialog = ({
   // Also update the formData state to include currency from contractData
   const [formData, setFormData] = useState({
     currency: contractData?.currency || "",
+
     price_per_ton: application?.price_per_ton || "",
     volume: application?.volume || "",
     culture: application?.culture || "",
+    comment: application?.comment || "",
     contractId: contractId,
   });
 
@@ -97,10 +99,7 @@ export const ApplicationDialog = ({
     }
 
     // Otherwise use default documents
-    return [
-      { name: "Счет на оплату", number: "", date: "" },
-      { name: "Акт выполненных работ", number: "", date: "" },
-    ];
+    return [];
   });
 
   const createMutation = useCreateApplication();
@@ -230,6 +229,7 @@ export const ApplicationDialog = ({
             price_per_ton: Number(formData.price_per_ton),
             volume: Number(formData.volume),
             culture: formData.culture,
+            comment: formData.comment,
             currency: formData.currency,
             contractId: contractId,
           },
@@ -240,6 +240,7 @@ export const ApplicationDialog = ({
           price_per_ton: Number(formData.price_per_ton),
           currency: formData.currency,
           volume: Number(formData.volume),
+          comment: formData.comment,
           culture: formData.culture,
           contractId: contractId as any,
         });
@@ -393,6 +394,19 @@ export const ApplicationDialog = ({
                     </svg>
                   </div>
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="comment" className="font-medium">
+                  Комментарий
+                </Label>
+                <Input
+                  id="comment"
+                  name="comment"
+                  type="text"
+                  value={formData.comment}
+                  onChange={handleInputChange}
+                  placeholder="Введите комментарий"
+                />
               </div>
 
               <div className="space-y-2">

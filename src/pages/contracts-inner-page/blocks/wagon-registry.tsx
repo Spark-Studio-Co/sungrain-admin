@@ -470,7 +470,7 @@ export const WagonRegistry = ({
 
                   <div className="space-y-2">
                     <Label htmlFor="edit-capacity" className="font-medium">
-                      Вес по документам, кг{" "}
+                      Вес по документам, т.{" "}
                       <span className="text-red-500">*</span>
                     </Label>
                     <Input
@@ -489,7 +489,7 @@ export const WagonRegistry = ({
 
                   <div className="space-y-2">
                     <Label htmlFor="edit-real_weight" className="font-medium">
-                      Фактический вес, кг
+                      Фактический вес, т.
                     </Label>
                     <Input
                       id="edit-real_weight"

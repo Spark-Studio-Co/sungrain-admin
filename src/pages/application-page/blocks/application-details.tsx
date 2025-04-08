@@ -23,6 +23,7 @@ import {
   Receipt,
   CreditCard,
   Pencil,
+  MessageSquare,
 } from "lucide-react";
 import {
   Card,
@@ -85,6 +86,8 @@ import { useGetInvoices } from "@/entities/invoices/hooks/query/use-get-invoices
 import { useCreateInvoice } from "@/entities/invoices/hooks/mutations/use-create-invoice.mutation";
 import { useUpdateInvoice } from "@/entities/invoices/hooks/mutations/use-update-invoice.mutation";
 import { useDeleteInvoice } from "@/entities/invoices/hooks/mutations/use-delete-invoice.mutation";
+import { WagonDetails } from "@/pages/contracts-inner-page/blocks/wagon-details";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ApplicationDetailProps {
   applicationId: string;
@@ -126,6 +129,17 @@ export const ApplicationDetail = ({
     useState(false);
   const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const [deletingInvoice, setDeletingInvoice] = useState<any>(null);
+
+  // Comments state
+  const [comments, setComments] = useState<
+    Array<{
+      id: string;
+      text: string;
+      author: string;
+      created_at: string;
+    }>
+  >([]);
+  const [newComment, setNewComment] = useState("");
 
   const {
     data: applicationData,
@@ -181,6 +195,8 @@ export const ApplicationDetail = ({
     const link = document.createElement("a");
     link.href = fileUrl;
     link.setAttribute("download", fileName);
+    link.setAttribute("target", "_blank");
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -356,6 +372,22 @@ export const ApplicationDetail = ({
     } catch (error) {
       console.error("Error deleting invoice:", error);
     }
+  };
+
+  // Handle adding a comment
+  const handleAddComment = () => {
+    if (!newComment.trim()) return;
+
+    // In a real app, you would call an API to save the comment
+    const newCommentObj = {
+      id: Date.now().toString(),
+      text: newComment,
+      author: "Текущий пользователь",
+      created_at: new Date().toISOString(),
+    };
+
+    setComments([...comments, newCommentObj]);
+    setNewComment("");
   };
 
   // Handle wagon update
@@ -550,15 +582,14 @@ export const ApplicationDetail = ({
           </div>
         </CardContent>
       </Card>
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="details">Детали заявки</TabsTrigger>
+          <TabsTrigger value="wagons-details">Детали вагонов</TabsTrigger>
           <TabsTrigger value="documents">Документы</TabsTrigger>
           <TabsTrigger value="wagons">Вагоны</TabsTrigger>
           <TabsTrigger value="invoices">Счета</TabsTrigger>
         </TabsList>
-
         <TabsContent value="details" className="mt-4">
           <Card>
             <CardHeader>
@@ -670,6 +701,10 @@ export const ApplicationDetail = ({
                           {application?.contract?.crop || "Не указана"}
                         </span>
                       </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm">Комментарий:</span>
+                        <span>{application?.comment || "Не указана"}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -677,7 +712,12 @@ export const ApplicationDetail = ({
             </CardContent>
           </Card>
         </TabsContent>
-
+        <TabsContent value="wagons-details" className="mt-4">
+          <WagonDetails
+            wagons={application?.wagons}
+            handleFileDownload={handleFileDownload}
+          />
+        </TabsContent>
         <TabsContent value="documents" className="mt-4">
           <Card>
             <CardHeader className="pb-2">
@@ -795,7 +835,6 @@ export const ApplicationDetail = ({
             onDeleteWagon={handleDeleteWagon}
           />
         </TabsContent>
-
         <TabsContent value="invoices" className="mt-4">
           <Card>
             <CardHeader className="pb-2">
@@ -962,6 +1001,72 @@ export const ApplicationDetail = ({
                       application?.contract?.currency ||
                       "₸"}
                   </span>
+                </div>
+              </div>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="comments" className="mt-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between w-full">
+                <div>
+                  <CardTitle>Комментарии</CardTitle>
+                  <CardDescription>
+                    Обсуждение и комментарии по заявке
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {comments.length > 0 ? (
+                  <div className="space-y-4">
+                    {comments.map((comment) => (
+                      <div
+                        key={comment.id}
+                        className="bg-muted/30 p-4 rounded-md"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="font-medium">{comment.author}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatDate(comment.created_at)}
+                          </div>
+                        </div>
+                        <p className="text-sm">{comment.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 border rounded-md bg-muted/10">
+                    <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">
+                      Комментарии отсутствуют
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+            <CardFooter className="border-t pt-4">
+              <div className="w-full space-y-4">
+                <div className="flex flex-col gap-4">
+                  <Label htmlFor="comment">Добавить комментарий</Label>
+                  <Textarea
+                    id="comment"
+                    placeholder="Напишите комментарий..."
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    className="min-h-[80px] resize-none"
+                  />
+                  <Button
+                    className="gap-2 self-end"
+                    disabled={!newComment.trim()}
+                    onClick={handleAddComment}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Отправить
+                  </Button>
                 </div>
               </div>
             </CardFooter>
