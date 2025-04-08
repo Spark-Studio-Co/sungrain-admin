@@ -21,7 +21,6 @@ export const addContract = async (data: AddContractRequest | FormData) => {
     });
     return response.data;
   } else {
-    // Handle regular JSON data
     const response = await apiClient.post("/contract/add-data", data);
     return response.data;
   }

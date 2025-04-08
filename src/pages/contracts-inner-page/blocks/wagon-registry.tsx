@@ -127,10 +127,7 @@ export const WagonRegistry = ({
         }))
       );
     } else {
-      setDocuments([
-        { name: "Паспорт качества", number: "", date: "" },
-        { name: "ЭПД", number: "", date: "" },
-      ]);
+      setDocuments([]);
     }
   };
 
@@ -316,11 +313,13 @@ export const WagonRegistry = ({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
                   <TableHead>№ вагона</TableHead>
-                  <TableHead>Г/П, кг</TableHead>
+                  <TableHead>Вес по документам, т.</TableHead>
+                  <TableHead>
+                    Фактический вес, т<div className=""></div>
+                  </TableHead>
                   <TableHead>Собственник</TableHead>
-                  <TableHead>Дата отправления</TableHead>
+                  <TableHead>Дата прихода</TableHead>
                   <TableHead>Дата отгрузки</TableHead>
                   <TableHead>Статус</TableHead>
                   {isAdmin && (
@@ -337,10 +336,12 @@ export const WagonRegistry = ({
                         wagon.status === "shipped" ? "bg-green-50" : ""
                       }
                     >
-                      <TableCell>{wagon.id}</TableCell>
                       <TableCell>{wagon.number}</TableCell>
                       <TableCell>
                         {wagon.capacity?.toLocaleString() || "Не указана"}
+                      </TableCell>
+                      <TableCell>
+                        {wagon.real_weight.toLocaleString() || "Не указана"}
                       </TableCell>
                       <TableCell>{wagon.owner || "Не указан"}</TableCell>
                       <TableCell>
@@ -549,7 +550,7 @@ export const WagonRegistry = ({
                       htmlFor="edit-date_of_departure"
                       className="font-medium"
                     >
-                      Дата отправления
+                      Дата прихода
                     </Label>
                     <Popover>
                       <PopoverTrigger asChild>

@@ -3,7 +3,7 @@ import { getContractById } from "../../api/get/get-contract-by-id.api";
 
 export const useGetContractsId = (id: string) => {
   return useQuery({
-    queryKey: ["contracts", id],
+    queryKey: ["all-contracts", id],
     queryFn: () => getContractById(id),
   });
 };

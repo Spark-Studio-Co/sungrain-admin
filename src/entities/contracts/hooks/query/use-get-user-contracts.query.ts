@@ -6,7 +6,7 @@ export const useGetUserContracts = (params?: {
   limit?: number;
 }) => {
   return useQuery({
-    queryKey: ["contracts", Number(params?.page), Number(params?.limit)],
+    queryKey: ["user-contracts", Number(params?.page), Number(params?.limit)],
     queryFn: () => getUserContracts(params || {}),
   });
 };

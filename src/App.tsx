@@ -16,8 +16,8 @@ import ReceiverPage from "./pages/receiver-page/receiver-page";
 import SenderPage from "./pages/sender-page/sender-page";
 import StationsPage from "./pages/stations-page/stations-page";
 import CompaniesPage from "./pages/companies-page/companies-page";
-import ApplicationPage from "./pages/application-page/application-page";
 import UserContractsPage from "./pages/contracts-user-page/contracts-user-page";
+import ApplicationPage from "./pages/application-page/application-page";
 
 function App() {
   const { token } = useAuthData();

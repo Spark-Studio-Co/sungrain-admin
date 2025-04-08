@@ -43,6 +43,7 @@ export const DashboardBlock = () => {
 
     return contractsData.data.map((contract: any) => ({
       id: contract.id || `${Math.floor(Math.random() * 1000)}-2024`,
+      unk: contract.unk,
       crop: contract.crop || "Не указано",
       sender: contract.sender || "Не указано",
       receiver: contract.receiver || "Не указано",
@@ -166,7 +167,7 @@ export const DashboardBlock = () => {
                     recentContracts.map((contract: any) => (
                       <TableRow key={contract.id}>
                         <TableCell className="font-medium">
-                          {contract.id}
+                          {contract.unk}
                         </TableCell>
                         <TableCell>{contract.crop}</TableCell>
                         <TableCell>

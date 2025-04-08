@@ -70,10 +70,7 @@ export const AddWagonPopup = ({
       file?: File;
       fileName?: string;
     }>
-  >([
-    { name: "Паспорт качества", number: "", date: "" },
-    { name: "ЭПД", number: "", date: "" },
-  ]);
+  >([]);
 
   const mutation = useAddWagon();
 
@@ -102,11 +99,17 @@ export const AddWagonPopup = ({
     }
     formData.append("capacity", capacity.toString());
 
-    // Only add real_weight if it has a value
+    // Add real_weight (use capacity as fallback if not provided)
     if (newWagon.real_weight) {
       const realWeight = Number.parseInt(newWagon.real_weight, 10);
       if (!isNaN(realWeight)) {
         formData.append("real_weight", realWeight.toString());
+      }
+    } else {
+      // If real_weight is not provided, use capacity value
+      const capacity = Number.parseInt(newWagon.capacity, 10);
+      if (!isNaN(capacity)) {
+        formData.append("real_weight", capacity.toString());
       }
     }
 
@@ -162,10 +165,7 @@ export const AddWagonPopup = ({
           date_of_unloading: "",
         });
         setFiles([]);
-        setDocuments([
-          { name: "Паспорт качества", number: "", date: "" },
-          { name: "ЭПД", number: "", date: "" },
-        ]);
+        setDocuments([]);
       },
     });
   };
@@ -286,10 +286,10 @@ export const AddWagonPopup = ({
                     setNewWagon({ ...newWagon, status: value })
                   }
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger>
                     <SelectValue placeholder="Выберите статус" />
                   </SelectTrigger>
-                  <SelectContent className="w-full">
+                  <SelectContent>
                     <SelectItem value="at_elevator">На элеваторе</SelectItem>
                     <SelectItem value="in_transit">В пути</SelectItem>
                     <SelectItem value="shipped">Отгружен</SelectItem>
@@ -342,9 +342,10 @@ export const AddWagonPopup = ({
                   </PopoverContent>
                 </Popover>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="date_of_unloading" className="font-medium">
-                  Дата отгрузки
+                  Дата выгрузки
                 </Label>
                 <Popover>
                   <PopoverTrigger asChild>

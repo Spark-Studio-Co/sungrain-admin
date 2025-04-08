@@ -216,7 +216,7 @@ export const WagonDetails = ({
                           </TableRow>
                           <TableRow>
                             <TableCell className="font-medium">
-                              Дата отправления
+                              Дата прихода
                             </TableCell>
                             <TableCell>
                               {wagon.date_of_departure

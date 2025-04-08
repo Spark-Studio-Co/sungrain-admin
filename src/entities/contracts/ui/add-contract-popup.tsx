@@ -1,7 +1,5 @@
 "use client";
 
-import type React from "react";
-
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,17 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Loader2,
-  Upload,
-  X,
-  FileText,
-  File,
-  Info,
-  Plus,
-  Trash2,
-  CalendarIcon,
-} from "lucide-react";
+import { Loader2, Upload, X, Plus, CalendarIcon } from "lucide-react";
 import { useAddContract } from "../api/post/use-create-contract";
 import { useState } from "react";
 import { useContractDialogStore } from "../model/use-contract-dialog";
@@ -52,25 +40,13 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 
 export const AddContractDialog = () => {
-  // Use Zustand store for dialog state
   const { isAddDialogOpen, setDialogOpen } = useContractDialogStore();
-  const { data: cultures, isLoading: culturesLoading } = useFetchCultures();
-  const { data: sendersData, isLoading: sendersLoading } = useGetSenders(
-    1,
-    100
-  );
-  const { data: receiversData, isLoading: receiversLoading } = useGetReceivers(
-    1,
-    100
-  );
-  const { data: stationsData, isLoading: stationsLoading } = useFetchStations(
-    1,
-    100
-  );
+  const { data: cultures } = useFetchCultures();
+  const { data: sendersData } = useGetSenders(1, 100);
+  const { data: receiversData } = useGetReceivers(1, 100);
+  const { data: stationsData } = useFetchStations(1, 100);
   const { data: companiesData, isLoading: isCompaniesLoading } =
-    useGetCompanies(1, 100); // Get all companies for dropdown
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
+    useGetCompanies(1, 100);
 
   const [newContract, setNewContract] = useState({
     number: "",
@@ -87,7 +63,6 @@ export const AddContractDialog = () => {
   });
 
   const [files, setFiles] = useState<File[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
 
   const [documents, setDocuments] = useState<
     Array<{
@@ -97,10 +72,7 @@ export const AddContractDialog = () => {
       file?: File;
       fileName?: string;
     }>
-  >([
-    { name: "Паспорт качества", number: "", date: "" },
-    { name: "ЭПД", number: "", date: "" },
-  ]);
+  >([]);
 
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([null, null]);
 
@@ -123,10 +95,7 @@ export const AddContractDialog = () => {
         currency: "USD",
       });
       setFiles([]);
-      setDocuments([
-        { name: "Паспорт качества", number: "", date: "" },
-        { name: "ЭПД", number: "", date: "" },
-      ]);
+      setDocuments([]);
       fileInputRefs.current = [null, null];
     }
   }, [isAddDialogOpen]);
@@ -183,54 +152,6 @@ export const AddContractDialog = () => {
         setDialogOpen(false);
       },
     });
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files);
-      setFiles((prev) => [...prev, ...newFiles]);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const newFiles = Array.from(e.dataTransfer.files);
-      setFiles((prev) => [...prev, ...newFiles]);
-    }
-  };
-
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const getFileIcon = (fileName: string) => {
-    const extension = fileName.split(".").pop()?.toLowerCase();
-
-    switch (extension) {
-      case "pdf":
-        return <FileText className="h-5 w-5 text-red-500" />;
-      case "doc":
-      case "docx":
-        return <FileText className="h-5 w-5 text-blue-500" />;
-      case "xls":
-      case "xlsx":
-        return <FileText className="h-5 w-5 text-green-500" />;
-      default:
-        return <File className="h-5 w-5 text-gray-500" />;
-    }
   };
 
   return (
@@ -547,11 +468,10 @@ export const AddContractDialog = () => {
           </TabsContent>
           <TabsContent value="documents" className="space-y-4">
             <div className="space-y-6">
-              {/* Document Management UI */}
               <div className="bg-amber-50 p-6 rounded-md">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-semibold text-amber-700 uppercase text-sm">
-                    ДОКУМЕНТЫ ВАГОНА
+                    ДОКУМЕНТЫ КОНТРАКТА
                   </h3>
                   <Button
                     variant="outline"

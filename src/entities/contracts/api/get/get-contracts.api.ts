@@ -17,7 +17,7 @@ export const getContracts = async ({
   limit?: number;
 }) => {
   const response = await apiClient.get("/contract", {
-    params: { page, limit }, // ✅ Attach query params
+    params: { page, limit },
   });
   return response.data;
 };
