@@ -18,6 +18,7 @@ import StationsPage from "./pages/stations-page/stations-page";
 import CompaniesPage from "./pages/companies-page/companies-page";
 import UserContractsPage from "./pages/contracts-user-page/contracts-user-page";
 import ApplicationPage from "./pages/application-page/application-page";
+import OwnerPage from "./pages/owner-page/owner-page";
 
 function App() {
   const { token } = useAuthData();
@@ -75,6 +76,7 @@ function App() {
             element={<AgricultureManagementPage />}
           />
           <Route path="/admin/sender" element={<SenderPage />} />
+          <Route path="/admin/owner" element={<OwnerPage />} />
           <Route path="/admin/receiver" element={<ReceiverPage />} />
           <Route path="/admin/stations" element={<StationsPage />} />
           <Route path="/admin/companies" element={<CompaniesPage />} />

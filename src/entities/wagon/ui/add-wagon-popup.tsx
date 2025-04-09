@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,6 +38,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { useAddWagon } from "../hooks/mutations/use-add-wagon.mutation";
+import { useGetOwners } from "@/entities/owner/hooks/query/use-get-owners.query";
 
 interface AddWagonPopupProps {
   contractId: string;
@@ -72,6 +73,13 @@ export const AddWagonPopup = ({
   >([]);
 
   const mutation = useAddWagon();
+
+  // Fetch owners for dropdown
+  const {
+    data: ownersData,
+    isLoading: isLoadingOwners,
+    isError: isErrorOwners,
+  } = useGetOwners();
 
   // Check if all documents have files and update status accordingly
   useEffect(() => {
@@ -265,14 +273,39 @@ export const AddWagonPopup = ({
                 <Label htmlFor="owner" className="font-medium">
                   Собственник
                 </Label>
-                <Input
-                  id="owner"
+                <Select
                   value={newWagon.owner}
-                  onChange={(e) =>
-                    setNewWagon({ ...newWagon, owner: e.target.value })
+                  onValueChange={(value) =>
+                    setNewWagon({ ...newWagon, owner: value })
                   }
-                  placeholder="Введите собственника"
-                />
+                >
+                  <SelectTrigger id="owner" className="w-full">
+                    <SelectValue placeholder="Выберите собственника" />
+                  </SelectTrigger>
+
+                  <SelectContent className="w-full">
+                    {isLoadingOwners ? (
+                      <SelectItem value="loading" disabled>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Загрузка собственников...
+                      </SelectItem>
+                    ) : isErrorOwners ? (
+                      <SelectItem value="error" disabled>
+                        Ошибка загрузки собственников
+                      </SelectItem>
+                    ) : ownersData && ownersData.data.length > 0 ? (
+                      ownersData.data.map((owner: any) => (
+                        <SelectItem key={owner.id} value={owner.owner}>
+                          {owner.owner}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="empty" disabled>
+                        Нет доступных собственников
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -285,7 +318,7 @@ export const AddWagonPopup = ({
                     setNewWagon({ ...newWagon, status: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Выберите статус" />
                   </SelectTrigger>
                   <SelectContent>

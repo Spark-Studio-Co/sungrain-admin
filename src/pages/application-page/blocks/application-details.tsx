@@ -11,7 +11,7 @@ import {
   ArrowLeft,
   FileText,
   Package,
-  DollarSign,
+  Coins as DollarSign,
   Calendar,
   Upload,
   Download,
@@ -453,9 +453,7 @@ export const ApplicationDetail = ({
               <FileText className="h-6 w-6 text-blue-500" />
             </div>
             <div>
-              <CardTitle className="text-xl">
-                Заявка #{application?.id}
-              </CardTitle>
+              <CardTitle className="text-xl">Заявка по договору</CardTitle>
               <CardDescription className="flex items-center gap-1 mt-1">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 {application?.created_at
@@ -584,11 +582,11 @@ export const ApplicationDetail = ({
       </Card>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="details">Детали заявки</TabsTrigger>
-          <TabsTrigger value="wagons-details">Детали вагонов</TabsTrigger>
           <TabsTrigger value="documents">Документы</TabsTrigger>
+          <TabsTrigger value="wagons-details">Детали вагонов</TabsTrigger>
           <TabsTrigger value="wagons">Вагоны</TabsTrigger>
           <TabsTrigger value="invoices">Счета</TabsTrigger>
+          <TabsTrigger value="details">Детали заявки</TabsTrigger>
         </TabsList>
         <TabsContent value="details" className="mt-4">
           <Card>
@@ -607,11 +605,7 @@ export const ApplicationDetail = ({
                     </h3>
                     <div className="bg-muted/50 p-4 rounded-md space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-sm">ID заявки:</span>
-                        <span className="font-medium">{application?.id}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Дата создания:</span>
+                        <span className="text-sm">Дата</span>
                         <span>
                           {application?.created_at
                             ? formatDate(application?.created_at)
@@ -683,12 +677,7 @@ export const ApplicationDetail = ({
                       Информация о договоре
                     </h3>
                     <div className="bg-muted/50 p-4 rounded-md space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm">ID договора:</span>
-                        <span className="font-medium">
-                          {application?.contract?.id || contractId}
-                        </span>
-                      </div>
+                      <div className="flex justify-between"></div>
                       <div className="flex justify-between">
                         <span className="text-sm">Номер договора:</span>
                         <span>

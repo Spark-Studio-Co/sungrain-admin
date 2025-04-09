@@ -1,12 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { useState, useMemo } from "react";
+import { AlertCircle, Package, BarChart3 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { AddWagonPopup } from "@/entities/wagon/ui/add-wagon-popup";
 import { usePopupStore } from "@/shared/model/popup-store";
 import { useGetUserContractById } from "@/entities/contracts/hooks/query/use-get-user-contract-by-id.query";
@@ -17,8 +24,6 @@ import { useUpdateWagon } from "@/entities/wagon/hooks/mutations/use-update-wago
 import { useDeleteWagon } from "@/entities/wagon/hooks/mutations/use-delete-wagon.mutation";
 import { ContractHeader } from "./contract-header";
 import { WagonDetails } from "./wagon-details";
-import { WagonRegistry } from "./wagon-registry";
-import { ShippingDocuments } from "./shipping-document";
 import { ApplicationDetail } from "@/pages/application-page/blocks/application-details";
 import { ApplicationBlock } from "./contracts-application-block";
 import { useParams } from "react-router-dom";
@@ -98,6 +103,33 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           : [];
       })
       .filter(Boolean) || [];
+
+  // Calculate volume usage from applications
+  const volumeStats = useMemo(() => {
+    if (!contractData || !contractData.applications) {
+      return {
+        totalVolume: 0,
+        usedVolume: 0,
+        percentUsed: 0,
+        remainingVolume: 0,
+      };
+    }
+
+    const totalVolume = contractData.total_volume || 0;
+    const usedVolume = contractData.applications.reduce(
+      (sum: number, app: any) => sum + (app.volume || 0),
+      0
+    );
+    const percentUsed = totalVolume > 0 ? (usedVolume / totalVolume) * 100 : 0;
+    const remainingVolume = Math.max(0, totalVolume - usedVolume);
+
+    return {
+      totalVolume,
+      usedVolume,
+      percentUsed,
+      remainingVolume,
+    };
+  }, [contractData]);
 
   const handleDownload = () => {
     if (!contractData?.files || contractData.files.length === 0) {
@@ -216,6 +248,65 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           getCompanyName={getCompanyName}
           handleDownload={handleDownload}
         />
+
+        {/* Volume Usage Card */}
+        <Card className="bg-blue-50 border-blue-100">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-100 rounded-full">
+                <Package className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Использование объема</CardTitle>
+                <CardDescription>
+                  Общий объем договора:{" "}
+                  {volumeStats.totalVolume.toLocaleString()} тонн
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>
+                    Использовано: {volumeStats.usedVolume.toLocaleString()} тонн
+                  </span>
+                  <span>
+                    Осталось: {volumeStats.remainingVolume.toLocaleString()}{" "}
+                    тонн
+                  </span>
+                </div>
+                <Progress
+                  value={volumeStats.percentUsed}
+                  className="h-2.5"
+                  indicatorClassName={
+                    volumeStats.percentUsed > 90
+                      ? "bg-red-500"
+                      : volumeStats.percentUsed > 70
+                      ? "bg-amber-500"
+                      : "bg-green-500"
+                  }
+                />
+                <div className="flex justify-between items-center text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    <span>
+                      {volumeStats.percentUsed.toFixed(1)}% использовано
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {volumeStats.applications?.length ||
+                      contractData.applications?.length ||
+                      0}{" "}
+                    заявок
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="details">Детали договора</TabsTrigger>
@@ -238,6 +329,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
               <ApplicationBlock
                 contractId={contractId}
                 onSelectApplication={handleSelectApplication}
+                volumeStats={volumeStats}
               />
             )}
           </TabsContent>

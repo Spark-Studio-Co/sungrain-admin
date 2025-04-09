@@ -229,7 +229,6 @@ export const ContractsBlock = () => {
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 )}
-
                 <div
                   id="export-menu"
                   className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10"
@@ -567,8 +566,6 @@ export const ContractsBlock = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>

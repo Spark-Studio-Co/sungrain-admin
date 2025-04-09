@@ -14,6 +14,7 @@ import {
   UserCheck,
   TrainFront,
   GlobeIcon,
+  TrainTrack,
 } from "lucide-react";
 
 import {
@@ -61,16 +62,16 @@ const navigationItems = [
     isAdmin: true,
   },
   {
+    title: "Собственники",
+    icon: TrainTrack,
+    url: "/admin/owner",
+    isAdmin: true,
+  },
+  {
     title: "Контракты",
     icon: FileIcon,
     url: "/contracts",
     isAdmin: false,
-  },
-  {
-    title: "Финансы",
-    icon: CoinsIcon,
-    url: "/admin/finance",
-    isAdmin: true,
   },
   {
     title: "Культуры",

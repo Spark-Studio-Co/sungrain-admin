@@ -33,6 +33,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Loader2,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,110 +52,86 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useCreateOwner } from "@/entities/owner/hooks/mutations/use-create-owner.mutation";
+import { useUpdateOwner } from "@/entities/owner/hooks/mutations/use-update-owner.mutation";
+import { useDeleteOwner } from "@/entities/owner/hooks/mutations/use-delete-owner.mutation";
+import { useGetOwners } from "@/entities/owner/hooks/query/use-get-owners.query";
 
-import { useFetchStations } from "@/entities/stations/hooks/query/use-get-stations.query";
-import { useCreateStation } from "@/entities/stations/hooks/mutations/use-create-stations.mutation";
-import { useUpdateStation } from "@/entities/stations/hooks/mutations/use-update-stations.mutation";
-import { useDeleteStations } from "@/entities/stations/hooks/mutations/use-delete-stations.mutation";
-import type { StationData } from "@/entities/stations/api/post/create-stations.api";
-import type { UpdateStationData } from "@/entities/stations/api/patch/update-stations.api";
-
-export default function StationsPage() {
+export default function OwnerPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
+  // Dialog states
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const [newStation, setNewStation] = useState<StationData>({
-    name: "",
-    code: "",
+  // Form state
+  const [newOwner, setNewOwner] = useState({
+    owner: "",
   });
 
-  const [editingStation, setEditingStation] = useState<any>(null);
-  const [deletingStation, setDeletingStation] = useState<any>(null);
+  const [editingOwner, setEditingOwner] = useState<any>(null);
+  const [deletingOwner, setDeletingOwner] = useState<any>(null);
 
-  const { data, isLoading, isError, error } = useFetchStations(page, limit);
-  const createMutation = useCreateStation();
-  const updateMutation = useUpdateStation();
-  const deleteMutation = useDeleteStations();
+  // Fetch owners using our real API hook
+  const {
+    data: ownersData,
+    isLoading,
+    isError,
+    error,
+  } = useGetOwners(page, limit, searchTerm);
+
+  // Mutations using our real API hooks
+  const createMutation = useCreateOwner();
+  const updateMutation = useUpdateOwner();
+  const deleteMutation = useDeleteOwner();
 
   // Extract pagination data
-  const totalItems = data?.total || 0;
-  const lastPage = data?.lastPage || 1;
-  const currentPage = data?.page || 1;
+  const totalItems = ownersData?.total || 0;
+  const currentPage = ownersData?.page || 1;
+  const lastPage = ownersData?.lastPage || 1;
+  const owners = ownersData?.data || [];
 
-  const filteredStations = Array.isArray(data?.data)
-    ? data.data.filter((station) => {
-        return (
-          !searchTerm ||
-          station.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          station.code.includes(searchTerm)
-        );
-      })
-    : [];
-
+  // Handlers
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     setPage(1); // Reset to first page when searching
   };
 
-  const handleAddStation = () => {
-    createMutation.mutate(newStation, {
-      onSuccess: () => {
-        setNewStation({
-          name: "",
-          code: "",
-        });
-        setIsAddDialogOpen(false);
-      },
+  const handleAddOwner = () => {
+    createMutation.mutate(newOwner);
+    setNewOwner({ owner: "" });
+    setIsAddDialogOpen(false);
+  };
+
+  const handleEditOwner = () => {
+    if (!editingOwner) return;
+
+    updateMutation.mutate({
+      id: editingOwner.id,
+      data: { owner: editingOwner.owner },
     });
+    setIsEditDialogOpen(false);
   };
 
-  // Update the handleEditStation function to match your API
-  const handleEditStation = () => {
-    if (!editingStation) return;
+  const handleDeleteOwner = () => {
+    if (!deletingOwner) return;
 
-    const updateData: UpdateStationData = {
-      code: editingStation.code,
-      name: editingStation.name,
-    };
-
-    updateMutation.mutate(
-      {
-        id: editingStation.id,
-        data: updateData,
-      },
-      {
-        onSuccess: () => {
-          setIsEditDialogOpen(false);
-        },
-      }
-    );
+    deleteMutation.mutate(deletingOwner.id);
+    setIsDeleteDialogOpen(false);
   };
 
-  const handleDeleteStation = () => {
-    if (!deletingStation) return;
-
-    deleteMutation.mutate(Number(deletingStation.id), {
-      onSuccess: () => {
-        setIsDeleteDialogOpen(false);
-      },
-    });
-  };
-
-  const openEditDialog = (station: any) => {
-    setEditingStation({
-      ...station,
-      originalName: station.name,
+  const openEditDialog = (owner: any) => {
+    setEditingOwner({
+      ...owner,
     });
     setIsEditDialogOpen(true);
   };
 
-  const openDeleteDialog = (station: any) => {
-    setDeletingStation(station);
+  const openDeleteDialog = (owner: any) => {
+    setDeletingOwner(owner);
     setIsDeleteDialogOpen(true);
   };
 
@@ -176,7 +153,7 @@ export default function StationsPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold tracking-tight">
-            УПРАВЛЕНИЕ СТАНЦИЯМИ
+            УПРАВЛЕНИЕ СОБСТВЕННИКАМИ
           </h1>
         </div>
 
@@ -195,7 +172,7 @@ export default function StationsPage() {
           <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Поиск станций..."
+              placeholder="Поиск собственников..."
               value={searchTerm}
               onChange={handleSearchChange}
               className="pl-10"
@@ -204,24 +181,24 @@ export default function StationsPage() {
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setIsAddDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Добавить станцию
+              Добавить собственника
             </Button>
           </div>
         </div>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>Станции</CardTitle>
+            <CardTitle>Собственники вагонов</CardTitle>
             <CardDescription>
-              Управление списком станций отправления и назначения для контрактов
+              Управление списком собственников вагонов
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Название</TableHead>
-                  <TableHead>Код</TableHead>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Имя</TableHead>
                   <TableHead className="text-right">Действия</TableHead>
                 </TableRow>
               </TableHeader>
@@ -232,36 +209,36 @@ export default function StationsPage() {
                     .map((_, index) => (
                       <TableRow key={`skeleton-${index}`}>
                         <TableCell>
+                          <Skeleton className="h-6 w-12" />
+                        </TableCell>
+                        <TableCell>
                           <Skeleton className="h-6 w-24" />
                         </TableCell>
                         <TableCell>
-                          <Skeleton className="h-6 w-16" />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Skeleton className="h-6 w-20 ml-auto" />
+                          <Skeleton className="h-6 w-24" />
                         </TableCell>
                       </TableRow>
                     ))
-                ) : filteredStations.length > 0 ? (
-                  filteredStations.map((station) => (
-                    <TableRow key={station.id}>
+                ) : owners.length > 0 ? (
+                  owners.map((owner) => (
+                    <TableRow key={owner.id}>
+                      <TableCell>{owner.id}</TableCell>
                       <TableCell className="font-medium">
-                        {station.name}
+                        {owner.owner}
                       </TableCell>
-                      <TableCell>{station.code}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
                             variant="outline"
                             size="icon"
-                            onClick={() => openEditDialog(station)}
+                            onClick={() => openEditDialog(owner)}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="destructive"
                             size="icon"
-                            onClick={() => openDeleteDialog(station)}
+                            onClick={() => openDeleteDialog(owner)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -272,7 +249,7 @@ export default function StationsPage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={3} className="h-24 text-center">
-                      Станции не найдены.
+                      Собственники не найдены.
                     </TableCell>
                   </TableRow>
                 )}
@@ -354,108 +331,73 @@ export default function StationsPage() {
         </Card>
       </div>
 
-      {/* Add Dialog */}
+      {/* Add Owner Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Добавить новую станцию</DialogTitle>
+            <DialogTitle>Добавить нового собственника</DialogTitle>
             <DialogDescription>
-              Заполните информацию о новой станции
+              Введите имя нового собственника вагонов
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Название
+          <div className="py-4">
+            <div className="space-y-2">
+              <Label htmlFor="owner" className="font-medium">
+                Имя собственника <span className="text-destructive">*</span>
               </Label>
               <Input
-                id="name"
-                value={newStation.name}
+                id="owner"
+                value={newOwner.owner}
                 onChange={(e) =>
-                  setNewStation({
-                    ...newStation,
-                    name: e.target.value,
-                  })
+                  setNewOwner({ ...newOwner, owner: e.target.value })
                 }
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="code" className="text-right">
-                Код
-              </Label>
-              <Input
-                id="code"
-                value={newStation.code}
-                onChange={(e) =>
-                  setNewStation({
-                    ...newStation,
-                    code: e.target.value,
-                  })
-                }
-                className="col-span-3"
+                placeholder="Имя"
               />
             </div>
           </div>
           <DialogFooter>
             <Button
-              onClick={handleAddStation}
-              disabled={createMutation.isPending}
+              type="submit"
+              onClick={handleAddOwner}
+              disabled={createMutation.isPending || !newOwner.owner.trim()}
             >
               {createMutation.isPending ? (
                 <>
-                  <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Добавление...
                 </>
               ) : (
-                "Добавить"
+                "Добавить собственника"
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
-      {editingStation && (
+      {/* Edit Owner Dialog */}
+      {editingOwner && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[550px]">
+          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Редактировать станцию</DialogTitle>
+              <DialogTitle>Редактировать собственника</DialogTitle>
               <DialogDescription>
-                Редактирование станции: {editingStation.originalName}
+                Редактирование собственника: {editingOwner.owner}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-name" className="text-right">
-                  Название
+            <div className="py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-owner" className="font-medium">
+                  Имя собственника <span className="text-destructive">*</span>
                 </Label>
                 <Input
-                  id="edit-name"
-                  value={editingStation.name}
+                  id="edit-owner"
+                  value={editingOwner.owner}
                   onChange={(e) =>
-                    setEditingStation({
-                      ...editingStation,
-                      name: e.target.value,
+                    setEditingOwner({
+                      ...editingOwner,
+                      owner: e.target.value,
                     })
                   }
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-code" className="text-right">
-                  Код
-                </Label>
-                <Input
-                  id="edit-code"
-                  value={editingStation.code}
-                  onChange={(e) =>
-                    setEditingStation({
-                      ...editingStation,
-                      code: e.target.value,
-                    })
-                  }
-                  className="col-span-3"
                 />
               </div>
             </div>
@@ -467,12 +409,15 @@ export default function StationsPage() {
                 Отмена
               </Button>
               <Button
-                onClick={handleEditStation}
-                disabled={updateMutation.isPending}
+                type="submit"
+                onClick={handleEditOwner}
+                disabled={
+                  updateMutation.isPending || !editingOwner.owner.trim()
+                }
               >
                 {updateMutation.isPending ? (
                   <>
-                    <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Сохранение...
                   </>
                 ) : (
@@ -488,18 +433,20 @@ export default function StationsPage() {
       )}
 
       {/* Delete Confirmation Dialog */}
-      {deletingStation && (
+      {deletingOwner && (
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Удалить станцию</DialogTitle>
+              <DialogTitle>Удалить собственника</DialogTitle>
               <DialogDescription>
-                Вы уверены, что хотите удалить станцию "{deletingStation.name}"?
+                Вы уверены, что хотите удалить собственника "
+                {deletingOwner.owner}"?
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
               <p className="text-muted-foreground">
-                Это действие нельзя отменить. Станция будет удалена из системы.
+                Это действие нельзя отменить. Собственник будет удален из
+                системы.
               </p>
             </div>
             <DialogFooter>
@@ -511,12 +458,12 @@ export default function StationsPage() {
               </Button>
               <Button
                 variant="destructive"
-                onClick={handleDeleteStation}
+                onClick={handleDeleteOwner}
                 disabled={deleteMutation.isPending}
               >
                 {deleteMutation.isPending ? (
                   <>
-                    <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Удаление...
                   </>
                 ) : (

@@ -1,6 +1,12 @@
 "use client";
 
-import { Download, FileText, Package, ShieldCheck } from "lucide-react";
+import {
+  Download,
+  FileText,
+  Package,
+  ShieldCheck,
+  TrainFront,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,12 +19,11 @@ import { Badge } from "@/components/ui/badge";
 import {
   Building2,
   Calendar,
-  Truck,
   MapPin,
   User,
   RefreshCw,
   Train,
-  DollarSign,
+  Coins as DollarSign,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -135,9 +140,7 @@ export const ContractHeader = ({
           <div className="flex items-start space-x-3">
             <Calendar className="h-5 w-5 text-primary mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Дата создания
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">Дата</p>
               <p>
                 {contractData?.created_at
                   ? formatDate(contractData.created_at)
@@ -146,7 +149,7 @@ export const ContractHeader = ({
             </div>
           </div>
           <div className="flex items-start space-x-3">
-            <Truck className="h-5 w-5 text-primary mt-0.5" />
+            <TrainFront className="h-5 w-5 text-primary mt-0.5" />
             <div>
               <p className="text-sm font-medium text-muted-foreground">
                 Грузоотправитель

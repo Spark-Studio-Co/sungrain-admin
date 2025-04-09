@@ -1,11 +1,11 @@
 import { apiClient } from "@/shared/api/apiClient";
 
 export interface UpdateStationData {
-  id: number;
+  code: any;
   name: string;
 }
 
-export const updateStation = async (data: UpdateStationData) => {
-  const response = await apiClient.patch(`/stations/${data.id}`, data);
+export const updateStation = async (id: any, data: UpdateStationData) => {
+  const response = await apiClient.patch(`/stations/${id}`, data);
   return response.data;
 };

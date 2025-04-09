@@ -6,16 +6,15 @@ import { useState } from "react";
 import {
   FileText,
   Plus,
-  ChevronRight,
   Package,
-  Truck,
-  DollarSign,
+  Coins as DollarSign,
   Calendar,
   Search,
   Loader2,
   Pencil,
   Trash2,
   AlertCircle,
+  TrainFront,
 } from "lucide-react";
 import {
   Card,
@@ -193,8 +192,7 @@ export const ApplicationBlock = ({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Дата создания</TableHead>
+                    <TableHead>Дата</TableHead>
                     <TableHead>Объем (т)</TableHead>
                     <TableHead>Культура</TableHead>
                     <TableHead>Цена за тонну</TableHead>
@@ -202,8 +200,11 @@ export const ApplicationBlock = ({
                     <TableHead>Общая сумма</TableHead>
                     <TableHead>Документы</TableHead>
                     <TableHead>Вагоны</TableHead>
-
-                    <TableHead className="text-right">Действия</TableHead>
+                    {isAdmin && (
+                      <>
+                        <TableHead className="text-right">Действия</TableHead>
+                      </>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -327,7 +328,7 @@ export const ApplicationBlock = ({
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Truck className="h-4 w-4 text-amber-500" />
+                            <TrainFront className="h-4 w-4 text-amber-500" />
                             <span>{application.wagons?.length || 0}</span>
                           </div>
                         </TableCell>

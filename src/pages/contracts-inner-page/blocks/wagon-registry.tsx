@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  Truck,
   Building2,
   CheckCircle2,
   Circle,
@@ -14,6 +13,7 @@ import {
   X,
   CalendarIcon,
   Loader2,
+  TrainFront,
 } from "lucide-react";
 import {
   Card,
@@ -288,7 +288,7 @@ export const WagonRegistry = ({
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
               <div className="p-2 bg-amber-50 rounded-full">
-                <Truck className="h-6 w-6 text-amber-500" />
+                <TrainFront className="h-6 w-6 text-amber-500" />
               </div>
               <div>
                 <CardTitle>Реестр вагонов</CardTitle>
@@ -374,7 +374,7 @@ export const WagonRegistry = ({
                           {wagon.status === "shipped" ? (
                             <CheckCircle2 className="h-3.5 w-3.5" />
                           ) : wagon.status === "in_transit" ? (
-                            <Truck className="h-3.5 w-3.5" />
+                            <TrainFront className="h-3.5 w-3.5" />
                           ) : wagon.status === "at_elevator" ? (
                             <Building2 className="h-3.5 w-3.5" />
                           ) : (

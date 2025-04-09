@@ -5,7 +5,7 @@ import {
   ArrowLeft,
   FileText,
   Package,
-  DollarSign,
+  Coins as DollarSign,
   Calendar,
   Upload,
   Download,
@@ -202,11 +202,7 @@ export default function ApplicationPage() {
                       </h3>
                       <div className="bg-muted/50 p-4 rounded-md space-y-3">
                         <div className="flex justify-between">
-                          <span className="text-sm">ID заявки:</span>
-                          <span className="font-medium">{application.id}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">Дата создания:</span>
+                          <span className="text-sm">Дата:</span>
                           <span>
                             {application.created_at
                               ? formatDate(application.created_at)
@@ -240,12 +236,6 @@ export default function ApplicationPage() {
                         Информация о договоре
                       </h3>
                       <div className="bg-muted/50 p-4 rounded-md space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-sm">ID договора:</span>
-                          <span className="font-medium">
-                            {application.contract?.id || id}
-                          </span>
-                        </div>
                         <div className="flex justify-between">
                           <span className="text-sm">Номер договора:</span>
                           <span>
@@ -310,7 +300,9 @@ export default function ApplicationPage() {
                         <div className="col-span-3">Наименование</div>
                         <div className="col-span-2">Номер</div>
                         <div className="col-span-3">Дата документа</div>
-                        <div className="col-span-3">Действия</div>
+                        <>
+                          <div className="col-span-3">Действия</div>
+                        </>
                       </div>
                       {application.files.map((file: any, index: number) => (
                         <div

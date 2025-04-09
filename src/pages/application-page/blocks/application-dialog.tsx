@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useEffect } from "react";
 import {
   Loader2,
@@ -12,6 +11,7 @@ import {
   Plus,
   Trash2,
   DollarSign,
+  AlertCircle,
 } from "lucide-react";
 import {
   Dialog,
@@ -38,6 +38,7 @@ import { useUpdateApplication } from "@/entities/applications/hooks/mutations/us
 import { useUploadApplicationFiles } from "@/entities/applications/hooks/mutations/use-upload-application-files.mutation";
 import { useDeleteApplicationFile } from "@/entities/applications/hooks/mutations/use-delete-application-file.mutation";
 import { useFetchCultures } from "@/entities/cultures/hooks/query/use-get-cultures.query";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ApplicationDialogProps {
   isOpen: boolean;
@@ -52,7 +53,8 @@ export const ApplicationDialog = ({
   contractId,
   application,
 }: ApplicationDialogProps) => {
-  const { data: contractData } = useGetContractsId(contractId);
+  const { data: contractData, isLoading: isContractLoading } =
+    useGetContractsId(contractId);
   const { data: culturesData, isLoading: isCulturesLoading } = useFetchCultures(
     1,
     100
@@ -61,7 +63,6 @@ export const ApplicationDialog = ({
   // Also update the formData state to include currency from contractData
   const [formData, setFormData] = useState({
     currency: contractData?.currency || "",
-
     price_per_ton: application?.price_per_ton || "",
     volume: application?.volume || "",
     culture: application?.culture || "",
@@ -72,6 +73,10 @@ export const ApplicationDialog = ({
   const [totalAmount, setTotalAmount] = useState(
     application?.total_amount || 0
   );
+
+  // State for volume validation
+  const [volumeError, setVolumeError] = useState("");
+
   // Update the useState for documents to properly initialize from application files if they exist
   // Replace the current documents state initialization with this:
 
@@ -114,12 +119,48 @@ export const ApplicationDialog = ({
         culture: application.culture,
       }));
     }
-  }, [application, formData.culture]);
+
+    // Set currency from contract data when it loads
+    if (contractData?.currency && !formData.currency) {
+      setFormData((prev) => ({
+        ...prev,
+        currency: contractData.currency,
+      }));
+    }
+  }, [application, formData.culture, contractData, formData.currency]);
 
   // Calculate total amount when price or volume changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const numValue = Number.parseFloat(value);
+
+    // Check volume against contract volume
+    if (name === "volume") {
+      const contractVolume = Number(contractData?.total_volume) || 0;
+      const currentApplicationVolume = Number(application?.volume) || 0;
+
+      // Сумма volume всех заявок, кроме редактируемой
+      const usedVolume = (contractData?.applications || [])
+        .filter((app: any) => app.id !== application?.id)
+        .reduce((sum: number, app: any) => sum + (Number(app.volume) || 0), 0);
+
+      // Доступный объем по договору
+      const availableVolume = Math.max(0, contractVolume - usedVolume);
+
+      // Если редактируем, добавляем обратно текущую заявку
+      const maxAllowedVolume = Math.max(
+        0,
+        availableVolume + currentApplicationVolume
+      );
+
+      if (numValue > maxAllowedVolume) {
+        setVolumeError(
+          `Объем не может превышать ${maxAllowedVolume.toLocaleString()} тонн (доступно по договору)`
+        );
+      } else {
+        setVolumeError("");
+      }
+    }
 
     setFormData((prev) => ({
       ...prev,
@@ -190,8 +231,6 @@ export const ApplicationDialog = ({
   const handleDeleteDocument = async (index: number) => {
     const doc = documents[index];
 
-    console.log(doc);
-
     if (application?.id && doc.number) {
       try {
         await deleteFileMutation.mutateAsync({
@@ -211,6 +250,11 @@ export const ApplicationDialog = ({
   };
 
   const handleSubmit = async () => {
+    // Check if volume exceeds contract volume
+    if (volumeError) {
+      return;
+    }
+
     try {
       const formDataObj = new FormData();
 
@@ -247,21 +291,17 @@ export const ApplicationDialog = ({
         applicationId = result.id;
       }
 
-      // Then handle file uploads if there are any
       const docsWithFiles = documents.filter((doc) => doc.file);
 
       if (docsWithFiles.length > 0) {
-        // Create the files_info array with the required structure
         const filesInfo = docsWithFiles.map((doc) => ({
           name: doc.name,
           number: doc.number || "",
           date: doc.date || "",
         }));
 
-        // Get all files
         const files = docsWithFiles.map((doc) => doc.file as File);
 
-        // Use the upload files mutation
         await uploadFilesMutation.mutateAsync({
           applicationId: applicationId,
           files: files,
@@ -269,11 +309,9 @@ export const ApplicationDialog = ({
         });
       }
 
-      // Close dialog and refresh data
       onClose(true);
     } catch (error) {
       console.error("Error saving application:", error);
-      // You could add toast notification here for error feedback
     }
   };
 
@@ -322,7 +360,15 @@ export const ApplicationDialog = ({
                   value={formData.volume}
                   onChange={handleInputChange}
                   placeholder="Введите объем в тоннах"
+                  className={
+                    volumeError
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : ""
+                  }
                 />
+                {volumeError && (
+                  <p className="text-red-500 text-xs mt-1">{volumeError}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -377,22 +423,6 @@ export const ApplicationDialog = ({
                       </>
                     )}
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4 opacity-50"
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </div>
                 </div>
               </div>
               <div className="space-y-2">
@@ -421,8 +451,6 @@ export const ApplicationDialog = ({
               </div>
             </div>
           </div>
-
-          {/* Documents Section */}
           <div className="bg-amber-50 p-3 rounded-md">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-semibold text-amber-700 uppercase text-sm">
@@ -437,147 +465,161 @@ export const ApplicationDialog = ({
                 <Plus className="h-4 w-4 mr-1" /> Добавить документ
               </Button>
             </div>
-
             <div className="bg-white p-4 rounded-md border border-amber-100">
-              <div className="grid grid-cols-12 gap-2 mb-2 text-sm font-medium text-muted-foreground">
-                <div className="col-span-1">№</div>
-                <div className="col-span-3">Наименование</div>
-                <div className="col-span-2">Номер</div>
-                <div className="col-span-3">Дата документа</div>
-                <div className="col-span-2">Загрузить файл</div>
-                <div className="col-span-1"></div>
-              </div>
-
-              {documents.map((doc, index) => (
-                <div
-                  key={index}
-                  className="grid grid-cols-12 gap-2 mb-3 items-center"
-                >
-                  <div className="col-span-1 text-center">{index + 1}</div>
-                  <div className="col-span-3">
-                    <Input
-                      value={doc.name}
-                      onChange={(e) =>
-                        updateDocument(index, "name", e.target.value)
-                      }
-                      placeholder="Название документа"
-                      className="border-dashed"
-                    />
+              {documents.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-12 gap-2 mb-2 text-sm font-medium text-muted-foreground">
+                    <div className="col-span-1">№</div>
+                    <div className="col-span-3">Наименование</div>
+                    <div className="col-span-2">Номер</div>
+                    <div className="col-span-3">Дата документа</div>
+                    <div className="col-span-2">Загрузить файл</div>
+                    <div className="col-span-1"></div>
                   </div>
-                  <div className="col-span-2">
-                    <Input
-                      value={doc.number}
-                      onChange={(e) =>
-                        updateDocument(index, "number", e.target.value)
-                      }
-                      placeholder="№ документа"
-                      className="border-dashed"
-                    />
-                  </div>
-                  <div className="col-span-3">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal border-dashed",
-                            !doc.date && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {doc.date ? (
-                            format(new Date(doc.date), "dd.MM.yyyy")
-                          ) : (
-                            <span>Выберите дату</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={doc.date ? new Date(doc.date) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              updateDocument(
-                                index,
-                                "date",
-                                format(date, "yyyy-MM-dd")
-                              );
-                            }
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="col-span-2">
-                    <div className="relative">
-                      <input
-                        type="file"
-                        id={`file-${index}`}
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            handleFileUpload(index, e.target.files[0]);
+                  {documents.map((doc, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-12 gap-2 mb-3 items-center"
+                    >
+                      <div className="col-span-1 text-center">{index + 1}</div>
+                      <div className="col-span-3">
+                        <Input
+                          value={doc.name}
+                          onChange={(e) =>
+                            updateDocument(index, "name", e.target.value)
                           }
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="w-full border-dashed text-green-600 hover:bg-green-50"
-                        onClick={() =>
-                          document.getElementById(`file-${index}`)?.click()
-                        }
-                      >
-                        <Upload className="h-4 w-4 mr-1" />
-                        {doc.fileName || doc.location
-                          ? "Заменить"
-                          : "Загрузить"}
-                      </Button>
-                    </div>
-                    {(doc.fileName || doc.location) && (
-                      <div className="flex items-center mt-1 text-xs text-muted-foreground">
-                        <FileText className="h-3 w-3 mr-1" />
-                        <span className="truncate max-w-[120px]">
-                          {doc.fileName || "Документ"}
-                        </span>
+                          placeholder="Название документа"
+                          className="border-dashed"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          value={doc.number}
+                          onChange={(e) =>
+                            updateDocument(index, "number", e.target.value)
+                          }
+                          placeholder="№ документа"
+                          className="border-dashed"
+                        />
+                      </div>
+                      <div className="col-span-3">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal border-dashed",
+                                !doc.date && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {doc.date ? (
+                                format(new Date(doc.date), "dd.MM.yyyy")
+                              ) : (
+                                <span>Выберите дату</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={
+                                doc.date ? new Date(doc.date) : undefined
+                              }
+                              onSelect={(date) => {
+                                if (date) {
+                                  updateDocument(
+                                    index,
+                                    "date",
+                                    format(date, "yyyy-MM-dd")
+                                  );
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div className="col-span-2">
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id={`file-${index}`}
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleFileUpload(index, e.target.files[0]);
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-dashed text-green-600 hover:bg-green-50"
+                            onClick={() =>
+                              document.getElementById(`file-${index}`)?.click()
+                            }
+                          >
+                            <Upload className="h-4 w-4 mr-1" />
+                            {doc.fileName || doc.location
+                              ? "Заменить"
+                              : "Загрузить"}
+                          </Button>
+                        </div>
+                        {(doc.fileName || doc.location) && (
+                          <div className="flex items-center mt-1 text-xs text-muted-foreground">
+                            <FileText className="h-3 w-3 mr-1" />
+                            <span className="truncate max-w-[120px]">
+                              {doc.fileName || "Документ"}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 w-5 p-0 ml-1"
+                              onClick={() => removeFile(index)}
+                            >
+                              <X className="h-3 w-3 text-red-500" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="col-span-1 flex justify-center">
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="h-5 w-5 p-0 ml-1"
-                          onClick={() => removeFile(index)}
+                          className="h-8 w-8 p-0 text-red-500 hover:bg-red-50"
+                          onClick={() => {
+                            const doc = documents[index];
+                            if (application?.id && doc.number && !doc.file) {
+                              handleDeleteDocument(index);
+                            } else {
+                              removeDocumentRow(index);
+                            }
+                          }}
                         >
-                          <X className="h-3 w-3 text-red-500" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    )}
-                  </div>
-                  <div className="col-span-1 flex justify-center">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-red-500 hover:bg-red-50"
-                      onClick={() => {
-                        const doc = documents[index];
-                        if (application?.id && doc.number && !doc.file) {
-                          console.log(doc);
-                          handleDeleteDocument(index);
-                        } else {
-                          console.log(doc);
-
-                          removeDocumentRow(index);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  <FileText className="h-10 w-10 mx-auto mb-2 text-amber-300" />
+                  <p>Нет прикрепленных документов</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={addDocumentRow}
+                    className="mt-2 text-amber-600 border-amber-300 hover:bg-amber-100"
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Добавить документ
+                  </Button>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -598,7 +640,8 @@ export const ApplicationDialog = ({
               updateMutation.isPending ||
               !formData.price_per_ton ||
               !formData.volume ||
-              !formData.culture
+              !formData.culture ||
+              !!volumeError
             }
             className="gap-2"
           >
