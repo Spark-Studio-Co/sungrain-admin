@@ -204,7 +204,7 @@ export const ContractsBlock = () => {
               </CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
-              {isAdmin && (
+              {isAdmin && !isLoading && (
                 <Button
                   onClick={() =>
                     useContractDialogStore.getState().setDialogOpen(true)
@@ -214,7 +214,7 @@ export const ContractsBlock = () => {
                 </Button>
               )}
               <div className="relative">
-                {isAdmin && (
+                {isAdmin && !isLoading && (
                   <Button
                     variant="outline"
                     className="gap-2"

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Coins,
   Download,
   FileText,
   Package,
@@ -217,12 +218,23 @@ export const ContractHeader = ({
               </p>
             </div>
           </div>
+          <div className="flex items-start space-x-3">
+            <Coins className="h-5 w-5 text-primary mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Ориентировачная стоимость
+              </p>
+              <p>
+                {contractData?.estimated_cost?.toLocaleString("de-DE")}{" "}
+                {contractData?.currency}
+              </p>
+            </div>
+          </div>
         </div>
         <Button
           variant="outline"
           className="gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
           onClick={() => {
-            // Use the internal download function but also call the prop function for compatibility
             handleDownloadFile();
             handleDownload();
           }}

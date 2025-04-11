@@ -8,7 +8,6 @@ import {
   SunIcon,
   FileIcon,
   LogOut,
-  CoinsIcon,
   WheatIcon,
   Handshake,
   UserCheck,

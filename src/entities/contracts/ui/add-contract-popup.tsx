@@ -55,11 +55,12 @@ export const AddContractDialog = () => {
     crop: "",
     sender: "",
     receiver: "",
+    estimated_cost: 0,
     departure_station: "",
     destination_station: "",
     companyId: undefined,
     total_volume: "",
-    currency: "USD", // Default currency
+    currency: "USD",
   });
 
   const [files, setFiles] = useState<File[]>([]);
@@ -88,6 +89,7 @@ export const AddContractDialog = () => {
         crop: "",
         sender: "",
         receiver: "",
+        estimated_cost: 0,
         departure_station: "",
         destination_station: "",
         companyId: undefined,
@@ -115,6 +117,10 @@ export const AddContractDialog = () => {
     formData.append("destination_station", newContract.destination_station);
     formData.append("companyId", Number(newContract.companyId) as any);
     formData.append("total_volume", Number(newContract.total_volume) as any);
+    formData.append(
+      "estimated_cost",
+      Number(newContract.estimated_cost) as any
+    );
     formData.append("currency", newContract.currency);
 
     // Add documents info
@@ -188,7 +194,6 @@ export const AddContractDialog = () => {
                     }
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="unk" className="font-medium">
                     УНК
@@ -204,7 +209,6 @@ export const AddContractDialog = () => {
                     }
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="name" className="font-medium">
                     Название
@@ -220,8 +224,22 @@ export const AddContractDialog = () => {
                     }
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="estimated_cost" className="font-medium">
+                    Ориентировачная стоимость
+                  </Label>
+                  <Input
+                    id="estimated_cost"
+                    value={newContract.estimated_cost}
+                    onChange={(e) =>
+                      setNewContract({
+                        ...newContract,
+                        estimated_cost: Number(e.target.value),
+                      })
+                    }
+                  />
+                </div>
               </div>
-
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="company" className="font-medium">

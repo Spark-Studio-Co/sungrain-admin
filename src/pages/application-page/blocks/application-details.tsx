@@ -1,4 +1,5 @@
 "use client";
+
 import {
   Select,
   SelectContent,
@@ -11,7 +12,7 @@ import {
   ArrowLeft,
   FileText,
   Package,
-  Coins as DollarSign,
+  DollarSign,
   Calendar,
   Upload,
   Download,
@@ -23,7 +24,6 @@ import {
   Receipt,
   CreditCard,
   Pencil,
-  MessageSquare,
 } from "lucide-react";
 import {
   Card,
@@ -87,7 +87,6 @@ import { useCreateInvoice } from "@/entities/invoices/hooks/mutations/use-create
 import { useUpdateInvoice } from "@/entities/invoices/hooks/mutations/use-update-invoice.mutation";
 import { useDeleteInvoice } from "@/entities/invoices/hooks/mutations/use-delete-invoice.mutation";
 import { WagonDetails } from "@/pages/contracts-inner-page/blocks/wagon-details";
-import { Textarea } from "@/components/ui/textarea";
 
 interface ApplicationDetailProps {
   applicationId: string;
@@ -95,9 +94,21 @@ interface ApplicationDetailProps {
   onBack: () => void;
 }
 
+// Define the required shipping documents
+const requiredShippingDocuments = [
+  { id: "tlg", name: "ТЛГ + инструкция" },
+  { id: "ikr", name: "ИКР" },
+  { id: "invoice", name: "Счет-фактура" },
+  { id: "quality", name: "Паспорта качества" },
+  { id: "transit", name: "Коды транзитные" },
+  { id: "st1", name: "СТ-1" },
+  { id: "rgp", name: "РГП" },
+  { id: "phyto", name: "Фито" },
+  { id: "ds", name: "ДС" },
+];
+
 export const ApplicationDetail = ({
   applicationId,
-  contractId,
   onBack,
 }: ApplicationDetailProps) => {
   const [isAdmin] = useState<boolean | null>(() => {
@@ -141,6 +152,10 @@ export const ApplicationDetail = ({
   >([]);
   const [newComment, setNewComment] = useState("");
 
+  // State for shipping document upload dialog
+  const [isShippingDocUploadOpen, setIsShippingDocUploadOpen] = useState(false);
+  const [selectedShippingDoc, setSelectedShippingDoc] = useState<any>(null);
+
   const {
     data: applicationData,
     isLoading,
@@ -177,6 +192,21 @@ export const ApplicationDetail = ({
 
   const paymentProgress =
     totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
+
+  // Get the list of uploaded document names to check shipping document status
+  const uploadedDocumentNames = application?.files
+    ? application.files.map((file: any) => file.name?.toLowerCase())
+    : [];
+
+  // Check if a shipping document is uploaded
+  const isDocumentUploaded = (docName: string) => {
+    if (!uploadedDocumentNames.length) return false;
+
+    // Check if any uploaded document name contains the shipping document name
+    return uploadedDocumentNames.some(
+      (name: string) => name && name.includes(docName.toLowerCase())
+    );
+  };
 
   const formatDate = (dateString: string) => {
     try {
@@ -243,6 +273,49 @@ export const ApplicationDetail = ({
       refetch();
     } catch (error) {
       console.error("Error uploading document:", error);
+    }
+  };
+
+  // Handle shipping document upload
+  const handleShippingDocUpload = async () => {
+    if (!newDocument.file || !selectedShippingDoc) return;
+
+    try {
+      const filesInfo = [
+        {
+          name: selectedShippingDoc.name,
+          number: newDocument.number || "",
+          date: newDocument.date || "",
+        },
+      ];
+
+      await uploadFilesMutation.mutateAsync(
+        {
+          applicationId,
+          files: [newDocument.file],
+          filesInfo,
+        },
+        {
+          onSuccess: () => {
+            console.log("✅ Shipping document uploaded successfully!");
+            refetch();
+            setIsShippingDocUploadOpen(false);
+            setSelectedShippingDoc(null);
+          },
+          onError: (error) => {
+            console.error("Upload failed:", error);
+          },
+        }
+      );
+
+      setNewDocument({
+        name: "",
+        number: "",
+        date: "",
+        file: null,
+      });
+    } catch (error) {
+      console.error("Error uploading shipping document:", error);
     }
   };
 
@@ -409,6 +482,18 @@ export const ApplicationDetail = ({
       console.error("Failed to delete wagon:", error);
       throw error;
     }
+  };
+
+  // Open shipping document upload dialog
+  const openShippingDocUpload = (doc: any) => {
+    setSelectedShippingDoc(doc);
+    setNewDocument({
+      name: doc.name,
+      number: "",
+      date: "",
+      file: null,
+    });
+    setIsShippingDocUploadOpen(true);
   };
 
   if (isLoading) {
@@ -581,13 +666,86 @@ export const ApplicationDetail = ({
         </CardContent>
       </Card>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="details">Детали заявки</TabsTrigger>
           <TabsTrigger value="documents">Документы</TabsTrigger>
+          <TabsTrigger value="shipping-docs">
+            Документы для отгрузки
+          </TabsTrigger>
           <TabsTrigger value="wagons-details">Детали вагонов</TabsTrigger>
           <TabsTrigger value="wagons">Вагоны</TabsTrigger>
           <TabsTrigger value="invoices">Счета</TabsTrigger>
-          <TabsTrigger value="details">Детали заявки</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="shipping-docs" className="mt-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between w-full">
+                <div>
+                  <CardTitle>Документы для отгрузки</CardTitle>
+                  <CardDescription>
+                    Статус документов, необходимых для отгрузки
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="border-2 border-dashed border-green-600 rounded-md overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-white">
+                    <TableRow>
+                      <TableHead className="text-center font-bold text-base border-b-2 border-r-2 border-dashed border-green-600 py-3">
+                        Наименование
+                      </TableHead>
+                      <TableHead className="text-center font-bold text-base border-b-2 border-dashed border-green-600 py-3">
+                        Статус
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {requiredShippingDocuments.map((doc) => {
+                      const isUploaded = isDocumentUploaded(doc.name);
+                      return (
+                        <TableRow key={doc.id}>
+                          <TableCell className="font-medium border-r-2 border-dashed border-green-600 py-3">
+                            {doc.name}
+                          </TableCell>
+                          <TableCell className="text-center py-3">
+                            <div className="flex justify-center items-center">
+                              {isUploaded ? (
+                                <div className="bg-green-100 text-green-700 font-bold px-4 py-1 rounded-full">
+                                  +
+                                </div>
+                              ) : (
+                                <div className="flex gap-2 items-center">
+                                  <div className="bg-yellow-100 text-yellow-700 font-bold px-4 py-1 rounded-full">
+                                    -
+                                  </div>
+                                  {isAdmin && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="ml-2"
+                                      onClick={() => openShippingDocUpload(doc)}
+                                    >
+                                      <Upload className="h-4 w-4 mr-1" />
+                                      Загрузить
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="details" className="mt-4">
           <Card>
             <CardHeader>
@@ -692,7 +850,7 @@ export const ApplicationDetail = ({
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm">Комментарий:</span>
-                        <span>{application?.comment || "Не указана"}</span>
+                        <span>{application?.comment || "Не указан"}</span>
                       </div>
                     </div>
                   </div>
@@ -995,72 +1153,6 @@ export const ApplicationDetail = ({
             </CardFooter>
           </Card>
         </TabsContent>
-
-        <TabsContent value="comments" className="mt-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between w-full">
-                <div>
-                  <CardTitle>Комментарии</CardTitle>
-                  <CardDescription>
-                    Обсуждение и комментарии по заявке
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {comments.length > 0 ? (
-                  <div className="space-y-4">
-                    {comments.map((comment) => (
-                      <div
-                        key={comment.id}
-                        className="bg-muted/30 p-4 rounded-md"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="font-medium">{comment.author}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatDate(comment.created_at)}
-                          </div>
-                        </div>
-                        <p className="text-sm">{comment.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 border rounded-md bg-muted/10">
-                    <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-muted-foreground">
-                      Комментарии отсутствуют
-                    </p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-            <CardFooter className="border-t pt-4">
-              <div className="w-full space-y-4">
-                <div className="flex flex-col gap-4">
-                  <Label htmlFor="comment">Добавить комментарий</Label>
-                  <Textarea
-                    id="comment"
-                    placeholder="Напишите комментарий..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="min-h-[80px] resize-none"
-                  />
-                  <Button
-                    className="gap-2 self-end"
-                    disabled={!newComment.trim()}
-                    onClick={handleAddComment}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    Отправить
-                  </Button>
-                </div>
-              </div>
-            </CardFooter>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {/* Document Upload Dialog */}
@@ -1215,6 +1307,146 @@ export const ApplicationDetail = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Shipping Document Upload Dialog */}
+      <Dialog
+        open={isShippingDocUploadOpen}
+        onOpenChange={setIsShippingDocUploadOpen}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Загрузить документ для отгрузки</DialogTitle>
+            <DialogDescription>
+              Загрузите файл документа "{selectedShippingDoc?.name}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="shipping-doc-number" className="text-right">
+                Номер
+              </Label>
+              <Input
+                id="shipping-doc-number"
+                value={newDocument.number}
+                onChange={(e) =>
+                  setNewDocument({ ...newDocument, number: e.target.value })
+                }
+                className="col-span-3"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="shipping-doc-date" className="text-right">
+                Дата
+              </Label>
+              <div className="col-span-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="shipping-doc-date"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !newDocument.date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {newDocument.date ? (
+                        formatDate(newDocument.date)
+                      ) : (
+                        <span>Выберите дату</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={
+                        newDocument.date
+                          ? new Date(newDocument.date)
+                          : undefined
+                      }
+                      onSelect={(date) => {
+                        if (date) {
+                          setNewDocument({
+                            ...newDocument,
+                            date: format(date, "yyyy-MM-dd"),
+                          });
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="shipping-doc-file" className="text-right">
+                Файл <span className="text-red-500">*</span>
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="shipping-doc-file"
+                  type="file"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setNewDocument({
+                        ...newDocument,
+                        file: e.target.files[0],
+                      });
+                    }
+                  }}
+                />
+                {newDocument.file && (
+                  <div className="flex items-center mt-2 text-sm">
+                    <FileText className="h-4 w-4 mr-2 text-blue-500" />
+                    <span className="truncate max-w-[300px]">
+                      {newDocument.file.name}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 ml-2"
+                      onClick={() =>
+                        setNewDocument({ ...newDocument, file: null })
+                      }
+                    >
+                      <X className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsShippingDocUploadOpen(false)}
+            >
+              Отмена
+            </Button>
+            <Button
+              type="submit"
+              onClick={handleShippingDocUpload}
+              disabled={uploadFilesMutation.isPending || !newDocument.file}
+            >
+              {uploadFilesMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Загрузка...
+                </>
+              ) : (
+                "Загрузить"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invoice Dialogs */}
       <Dialog open={isInvoiceDialogOpen} onOpenChange={setIsInvoiceDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -1414,6 +1646,7 @@ export const ApplicationDetail = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       <Dialog
         open={isEditInvoiceDialogOpen}
         onOpenChange={setIsEditInvoiceDialogOpen}
@@ -1555,7 +1788,6 @@ export const ApplicationDetail = ({
               />
             </div>
           </div>
-
           <DialogFooter>
             <Button
               variant="outline"

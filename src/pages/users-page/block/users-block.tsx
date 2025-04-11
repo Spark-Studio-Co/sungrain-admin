@@ -54,58 +54,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useAddUser } from "@/entities/users/hooks/mutations/use-add-user.mutation";
+import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 import { useGetUsers } from "@/entities/users/hooks/query/use-get-users.query";
+import { useAddUser } from "@/entities/users/hooks/mutations/use-add-user.mutation";
 import { useUpdateUsers } from "@/entities/users/hooks/mutations/use-update-user.mutation";
 import { useDeleteUser } from "@/entities/users/hooks/mutations/use-delete-user.mutation";
-import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 
 const roles = ["ADMIN", "USER"];
-
-export function CompanyDisplay() {
-  // This is using the data structure you provided in your message
-  const userData = [
-    {
-      id: 1,
-      email: "ruslanmakhmatov@gmail.com",
-      password: "$2b$10$p23xwNsYXQVDZ/xX6ESqceyDPYebJD83CkZ6PxuljLVDC6cmjvV52",
-      full_name: "Ruslan Makhmatov",
-      role: "ADMIN",
-      created_at: "03.04.2025",
-      companies: [
-        {
-          id: 1,
-          userId: 1,
-          companyId: 1,
-          company: {
-            id: 1,
-            name: "OOO TEST",
-          },
-        },
-      ],
-    },
-  ];
-
-  return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Company Information</CardTitle>
-        <CardDescription>User's associated company</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center gap-2">
-          <Building className="h-5 w-5 text-muted-foreground" />
-          <span className="font-medium">
-            {userData[0].companies[0].company.name}
-          </span>
-        </div>
-        <div className="mt-2 text-sm text-muted-foreground">
-          User: {userData[0].full_name} ({userData[0].email})
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -121,7 +76,7 @@ export default function UsersPage() {
     password: "",
     full_name: "",
     role: "USER",
-    companyId: "",
+    companies: [] as string[],
   });
   const [editingUser, setEditingUser] = useState<any>(null);
   const [deletingUser, setDeletingUser] = useState<any>(null);
@@ -169,7 +124,7 @@ export default function UsersPage() {
       password: newUser.password,
       full_name: newUser.full_name,
       role: newUser.role,
-      ...(newUser.companyId && { companyId: newUser.companyId }),
+      ...(newUser.companies.length > 0 && { companyId: newUser.companies }),
     };
 
     addUserMutation.mutate(userData, {
@@ -179,7 +134,7 @@ export default function UsersPage() {
           password: "",
           full_name: "",
           role: "USER",
-          companyId: "",
+          companies: [],
         });
         setIsAddDialogOpen(false);
       },
@@ -191,14 +146,12 @@ export default function UsersPage() {
 
     const userData = {
       name: editingUser.name,
-      password: editingUser.password,
       email: editingUser.email,
       full_name: editingUser.full_name,
       role: editingUser.role,
-      companyId: editingUser.companyId || undefined,
+      companyId: editingUser.companies || [],
     };
 
-    // Add password to update data only if it's provided
     if (editingUser.password) {
       userData.password = editingUser.password;
     }
@@ -227,9 +180,13 @@ export default function UsersPage() {
   };
 
   const openEditDialog = (user: any) => {
+    // Ensure companies is an array
+    const companies = user.companies?.map((c: any) => c.company.id) || [];
+
     setEditingUser({
       ...user,
       status: user.status === "ACTIVE" ? "Активен" : "Неактивен",
+      companies,
     });
     setIsEditDialogOpen(true);
   };
@@ -362,51 +319,80 @@ export default function UsersPage() {
                     </Select>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="company" className="text-right">
-                      Компания
+                    <Label htmlFor="companies" className="text-right">
+                      Компании
                     </Label>
                     <div className="col-span-3">
                       {isCompaniesLoading ? (
                         <Skeleton className="h-10 w-full" />
                       ) : (
-                        <Select
-                          value={newUser.companyId}
-                          onValueChange={(value) =>
-                            setNewUser({ ...newUser, companyId: value })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Выберите компанию" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Не выбрано</SelectItem>
-                            {companiesData?.data?.map((company: any) => (
-                              <SelectItem key={company.id} value={company.id}>
-                                {company.name}
+                        <div className="space-y-4">
+                          <Select
+                            onValueChange={(value) => {
+                              if (value === "none") return;
+                              if (!newUser.companies.includes(value)) {
+                                setNewUser({
+                                  ...newUser,
+                                  companies: [...newUser.companies, value],
+                                });
+                              }
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Добавить компанию" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">
+                                Выберите компанию
                               </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                              {companiesData?.data?.map((company: any) => (
+                                <SelectItem key={company.id} value={company.id}>
+                                  {company.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          {newUser.companies.length > 0 && (
+                            <div className="space-y-2">
+                              {newUser.companies.map((companyId) => {
+                                const company = companiesData?.data?.find(
+                                  (c: any) => c.id === companyId
+                                );
+                                return (
+                                  <div
+                                    key={companyId}
+                                    className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Building className="h-4 w-4 text-muted-foreground" />
+                                      <span className="text-sm">
+                                        {company?.name}
+                                      </span>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => {
+                                        setNewUser({
+                                          ...newUser,
+                                          companies: newUser.companies.filter(
+                                            (id) => id !== companyId
+                                          ),
+                                        });
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                    </Button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
-                  {newUser.companyId && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <div className="col-span-1"></div>
-                      <div className="col-span-3">
-                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                          <Building className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">
-                            {
-                              companiesData?.data?.find(
-                                (c: any) => c.id === newUser.companyId
-                              )?.name
-                            }
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
                 <DialogFooter>
                   <Button
@@ -491,14 +477,30 @@ export default function UsersPage() {
                             <Building className="h-4 w-4 text-muted-foreground" />
                             <span>OOO TEST</span>
                           </div>
-                        ) : user.company ? (
-                          <div className="flex items-center gap-2">
-                            <Building className="h-4 w-4 text-muted-foreground" />
-                            <span>{user.company.name}</span>
+                        ) : user.companies && user.companies.length > 0 ? (
+                          <div className="flex flex-col gap-1">
+                            {user.companies
+                              .slice(0, 2)
+                              .map((companyRelation: any, index: number) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center gap-2"
+                                >
+                                  <Building className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-sm">
+                                    {companyRelation.company.name}
+                                  </span>
+                                </div>
+                              ))}
+                            {user.companies.length > 2 && (
+                              <span className="text-xs text-muted-foreground ml-6">
+                                +{user.companies.length - 2} еще
+                              </span>
+                            )}
                           </div>
                         ) : (
                           <span className="text-muted-foreground text-sm">
-                            Не указана
+                            Не указаны
                           </span>
                         )}
                       </TableCell>
@@ -684,51 +686,84 @@ export default function UsersPage() {
                 </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-company" className="text-right">
-                  Компания
+                <Label htmlFor="edit-companies" className="text-right">
+                  Компании
                 </Label>
                 <div className="col-span-3">
                   {isCompaniesLoading ? (
                     <Skeleton className="h-10 w-full" />
                   ) : (
-                    <Select
-                      value={editingUser.companyId || ""}
-                      onValueChange={(value) =>
-                        setEditingUser({ ...editingUser, companyId: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Выберите компанию" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Не выбрано</SelectItem>
-                        {companiesData?.data?.map((company: any) => (
-                          <SelectItem key={company.id} value={company.id}>
-                            {company.name}
+                    <div className="space-y-4">
+                      <Select
+                        onValueChange={(value) => {
+                          if (value === "none") return;
+                          if (!editingUser.companies.includes(value)) {
+                            setEditingUser({
+                              ...editingUser,
+                              companies: [
+                                ...(editingUser.companies || []),
+                                value,
+                              ],
+                            });
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Добавить компанию" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">
+                            Выберите компанию
                           </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          {companiesData?.data?.map((company: any) => (
+                            <SelectItem key={company.id} value={company.id}>
+                              {company.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {editingUser.companies &&
+                        editingUser.companies.length > 0 && (
+                          <div className="space-y-2">
+                            {editingUser.companies.map((companyId: string) => {
+                              const company = companiesData?.data?.find(
+                                (c: any) => c.id === companyId
+                              );
+                              return (
+                                <div
+                                  key={companyId}
+                                  className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Building className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm">
+                                      {company?.name}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      setEditingUser({
+                                        ...editingUser,
+                                        companies: editingUser.companies.filter(
+                                          (id: string) => id !== companyId
+                                        ),
+                                      });
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                    </div>
                   )}
                 </div>
               </div>
-              {editingUser.companyId && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <div className="col-span-1"></div>
-                  <div className="col-span-3">
-                    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
-                      <Building className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        {
-                          companiesData?.data?.find(
-                            (c: any) => c.id === editingUser.companyId
-                          )?.name
-                        }
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
             <DialogFooter>
               <Button

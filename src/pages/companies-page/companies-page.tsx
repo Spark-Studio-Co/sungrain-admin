@@ -239,7 +239,6 @@ export default function CompaniesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Название</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead className="text-right">Действия</TableHead>
                 </TableRow>
               </TableHeader>
@@ -265,22 +264,6 @@ export default function CompaniesPage() {
                     <TableRow key={company.id}>
                       <TableCell className="font-medium">
                         {company.name}
-                      </TableCell>
-                      <TableCell>
-                        {company.users && company.users.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            <Badge
-                              variant="outline"
-                              className="whitespace-nowrap"
-                            >
-                              {company.users.length} пользователей
-                            </Badge>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">
-                            Нет пользователей
-                          </span>
-                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -525,7 +508,6 @@ export default function CompaniesPage() {
                 Детальная информация о компании: {viewingCompany.name}
               </DialogDescription>
             </DialogHeader>
-
             <div className="space-y-6 py-4">
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-1 space-y-4">
@@ -534,44 +516,6 @@ export default function CompaniesPage() {
                     <h3 className="text-lg font-semibold">
                       {viewingCompany.name}
                     </h3>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <div className="border rounded-md p-4">
-                    {viewingCompany.users && viewingCompany.users.length > 0 ? (
-                      <div className="space-y-2">
-                        {viewingCompany.users.map((userId: string) => {
-                          const user = usersData?.data?.find(
-                            (u: any) => u.id === userId
-                          );
-                          return (
-                            <div
-                              key={userId}
-                              className="flex items-center gap-3 p-3 bg-muted/50 rounded-md"
-                            >
-                              <Badge
-                                variant="outline"
-                                className="h-8 w-8 rounded-full p-0 flex items-center justify-center text-sm"
-                              >
-                                {user?.name.charAt(0) || "?"}
-                              </Badge>
-                              <div className="flex flex-col">
-                                <span className="font-medium">
-                                  {user?.name || "Unknown User"}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  {user?.email || ""}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-center text-muted-foreground py-4">
-                        Нет пользователей в компании
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

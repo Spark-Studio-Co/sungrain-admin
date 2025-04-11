@@ -24,6 +24,19 @@ import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contra
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { useMemo } from "react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 
 export const DashboardBlock = () => {
   const navigate = useNavigate();
@@ -117,7 +130,121 @@ export const DashboardBlock = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Volume Charts */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Объем по контрактам</CardTitle>
+            <CardDescription>
+              Распределение объема по последним контрактам
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-80">
+            {isLoading ? (
+              <div className="h-full w-full flex items-center justify-center">
+                <Skeleton className="h-full w-full" />
+              </div>
+            ) : recentContracts.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={recentContracts}
+                  margin={{
+                    top: 20,
+                    right: 30,
+                    left: 20,
+                    bottom: 60,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="number"
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                    interval={0}
+                  />
+                  <YAxis name="Объем (т)" />
+                  <Tooltip
+                    formatter={(value) => [
+                      `${value.toLocaleString()} т`,
+                      "Объем",
+                    ]}
+                    labelFormatter={(label) => `Контракт: ${label}`}
+                  />
+                  <Bar dataKey="volume" fill="#3b82f6" name="Объем (т)" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+                Нет данных для отображения
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Распределение объема</CardTitle>
+            <CardDescription>
+              Процентное соотношение объемов контрактов
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-80">
+            {isLoading ? (
+              <div className="h-full w-full flex items-center justify-center">
+                <Skeleton className="h-full w-full" />
+              </div>
+            ) : recentContracts.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={recentContracts}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="volume"
+                    nameKey="number"
+                    label={({ number, volume, percent }) =>
+                      `${number}: ${(percent * 100).toFixed(0)}%`
+                    }
+                  >
+                    {recentContracts.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={`hsl(${index * 45}, 70%, 60%)`}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value) => [
+                      `${value.toLocaleString()} т`,
+                      "Объем",
+                    ]}
+                    labelFormatter={(name) => `Контракт: ${name}`}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+                Нет данных для отображения
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
       <Tabs defaultValue="contracts" className="space-y-4">
+        <div className="flex space-x-4 border-b">
+          <div
+            className="cursor-pointer px-4 py-2 border-b-2 border-primary"
+            data-state="active"
+          >
+            Контракты
+          </div>
+        </div>
         <TabsContent value="contracts" className="space-y-4">
           <Card>
             <CardHeader>
@@ -205,6 +332,54 @@ export const DashboardBlock = () => {
                 </Link>
               </Button>
             </CardFooter>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="volume-analysis" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Детальный анализ объемов</CardTitle>
+              <CardDescription>
+                Подробная информация о распределении объемов по контрактам
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-96">
+              {isLoading ? (
+                <div className="h-full w-full flex items-center justify-center">
+                  <Skeleton className="h-full w-full" />
+                </div>
+              ) : recentContracts.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={recentContracts}
+                    margin={{
+                      top: 20,
+                      right: 30,
+                      left: 20,
+                      bottom: 60,
+                    }}
+                    layout="vertical"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="number" type="category" width={100} />
+                    <Tooltip
+                      formatter={(value) => [
+                        `${value.toLocaleString()} т`,
+                        "Объем",
+                      ]}
+                      labelFormatter={(label) => `Контракт: ${label}`}
+                    />
+                    <Legend />
+                    <Bar dataKey="volume" fill="#10b981" name="Объем (т)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+                  Нет данных для отображения
+                </div>
+              )}
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
