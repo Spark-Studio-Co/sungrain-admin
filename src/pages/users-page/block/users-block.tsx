@@ -1,8 +1,12 @@
 "use client";
 
+import { DialogTrigger } from "@/components/ui/dialog";
+
+import { DialogFooter } from "@/components/ui/dialog";
+
 import type React from "react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -15,10 +19,8 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -61,6 +63,9 @@ import { useAddUser } from "@/entities/users/hooks/mutations/use-add-user.mutati
 import { useUpdateUsers } from "@/entities/users/hooks/mutations/use-update-user.mutation";
 import { useDeleteUser } from "@/entities/users/hooks/mutations/use-delete-user.mutation";
 import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contracts.query";
+import { useGetUserContracts } from "@/entities/contracts/hooks/query/use-get-user-contracts.query";
+import { useGetUserById } from "@/entities/users/hooks/query/use-get-user-by-id.query";
+import { useQueryClient } from "@tanstack/react-query";
 
 const roles = ["ADMIN", "USER"];
 
@@ -71,6 +76,9 @@ export default function UsersPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [isContractsLoadingInDialog, setIsContractsLoadingInDialog] =
+    useState(true);
 
   // Form state
   const [newUser, setNewUser] = useState({
@@ -84,6 +92,7 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [deletingUser, setDeletingUser] = useState<any>(null);
   const [filteredContracts, setFilteredContracts] = useState<any[]>([]);
+  const [userFilteredContracts, setUserFilteredContracts] = useState<any[]>([]);
 
   // API hooks
   const {
@@ -102,6 +111,72 @@ export default function UsersPage() {
 
   const { data: contractsData, isLoading: isContractsLoading } =
     useGetContracts({ page: 1, limit: 1000 }); // Get all contracts
+  const { data: userContractsData } = useGetUserContracts(
+    editingUser?.id || ""
+  );
+  const { data: userDetailData, isLoading: isUserDetailLoading } =
+    useGetUserById(selectedUserId || 0);
+
+  const queryClient = useQueryClient();
+
+  // Log when editingUser changes
+  useEffect(() => {
+    if (editingUser) {
+      console.log("Editing user state updated:", {
+        id: editingUser.id,
+        email: editingUser.email,
+        full_name: editingUser.full_name,
+        role: editingUser.role,
+        companies: editingUser.companies,
+        contractIds: editingUser.contractIds,
+        contractDetails: editingUser.contractDetails,
+      });
+    }
+  }, [editingUser]);
+
+  // Update editing user when user details are fetched
+  useEffect(() => {
+    if (userDetailData && selectedUserId) {
+      console.log("User detail data received:", userDetailData);
+
+      // Ensure companies is an array
+      const companies =
+        userDetailData.companies?.map((c: any) => c.company.id) || [];
+      console.log("Extracted company IDs:", companies);
+
+      // Get contract details from userContracts if available
+      const contractIds =
+        userDetailData.userContracts?.map((c: any) => c.contract_id) || [];
+      console.log("Extracted contract IDs from userContracts:", contractIds);
+
+      // Store contract details for display
+      const contractDetails =
+        userDetailData.userContracts?.map((uc: any) => uc.contract) || [];
+      console.log(
+        "Contract details for display from userContracts:",
+        contractDetails
+      );
+
+      const editUserData = {
+        ...userDetailData,
+        status: userDetailData.status === "ACTIVE" ? "Активен" : "Неактивен",
+        companies,
+        contractIds,
+        contractDetails, // Add contract details for display
+      };
+
+      console.log("Setting editingUser state to:", editUserData);
+      setEditingUser(editUserData);
+
+      // Filter contracts for the first company if available
+      if (companies.length > 0) {
+        console.log("Filtering contracts for company ID:", companies[0]);
+        const filtered = filterContractsByCompany(companies[0]);
+        console.log("Filtered contracts:", filtered);
+        setFilteredContracts(filtered);
+      }
+    }
+  }, [userDetailData, selectedUserId]);
 
   // Extract pagination data
   const totalItems = usersData?.total || 0;
@@ -164,7 +239,13 @@ export default function UsersPage() {
   };
 
   const handleEditUser = () => {
-    if (!editingUser) return;
+    if (!editingUser) {
+      console.error("Cannot edit user: editingUser is null or undefined");
+      return;
+    }
+
+    console.log("Starting user edit process...");
+    console.log("Original editing user data:", editingUser);
 
     // Validate all required fields
     if (
@@ -174,22 +255,43 @@ export default function UsersPage() {
       !editingUser.companies ||
       editingUser.companies.length === 0
     ) {
+      console.error("Validation failed for user edit:", {
+        email: !editingUser.email.trim() ? "Missing email" : "Email OK",
+        full_name: !editingUser.full_name?.trim()
+          ? "Missing full name"
+          : "Full name OK",
+        role: !editingUser.role ? "Missing role" : "Role OK",
+        companies: !editingUser.companies
+          ? "Missing companies"
+          : "Companies array exists",
+        companiesLength: editingUser.companies
+          ? editingUser.companies.length
+          : "N/A",
+      });
       return;
     }
 
+    // Make sure companyIds is an array with all company IDs
     const userData = {
       name: editingUser.name,
       email: editingUser.email,
       full_name: editingUser.full_name,
       role: editingUser.role,
-      companies: editingUser.companies || [],
-      contractsId: editingUser.contractsId || [],
+      companyIds: editingUser.companies || [], // Send all company IDs as an array
+      contractIds: editingUser.contractIds || [],
     };
 
     // Add password to update data only if it's provided
     if (editingUser.password) {
       userData.password = editingUser.password;
+      console.log("Password included in update data");
+    } else {
+      console.log("No password change requested");
     }
+
+    console.log("Prepared user data for update:", userData);
+    console.log("Company IDs being sent:", userData.companyIds);
+    console.log("Contract IDs being sent:", userData.contractIds);
 
     updateUserMutation.mutate(
       {
@@ -197,8 +299,17 @@ export default function UsersPage() {
         data: userData,
       },
       {
-        onSuccess: () => {
+        onSuccess: (response) => {
+          console.log("User update successful:", response);
           setIsEditDialogOpen(false);
+        },
+        onError: (error) => {
+          console.error("Failed to update user:", error);
+          console.error("Error details:", {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+          });
         },
       }
     );
@@ -212,29 +323,6 @@ export default function UsersPage() {
         setIsDeleteDialogOpen(false);
       },
     });
-  };
-
-  const openEditDialog = (user: any) => {
-    // Ensure companies is an array
-    const companies = user.companies?.map((c: any) => c.company.id) || [];
-
-    // Ensure contractsId is an array
-    const contractsId = user.contracts?.map((c: any) => c.id) || [];
-
-    setEditingUser({
-      ...user,
-      status: user.status === "ACTIVE" ? "Активен" : "Неактивен",
-      companies,
-      contractsId,
-    });
-
-    // Filter contracts for the first company if available
-    if (companies.length > 0) {
-      const filtered = filterContractsByCompany(companies[0]);
-      setFilteredContracts(filtered);
-    }
-
-    setIsEditDialogOpen(true);
   };
 
   // Add the missing openDeleteDialog function
@@ -264,19 +352,48 @@ export default function UsersPage() {
     );
   };
 
+  const filterUserContracts = (userId: string) => {
+    if (!contractsData?.data) {
+      console.log("No contracts data available to filter");
+      return [];
+    }
+
+    console.log("Filtering contracts for user ID:", userId);
+    console.log("Total contracts available:", contractsData.data.length);
+
+    // Filter contracts that belong to the user
+    const userContracts = contractsData.data.filter((contract: any) => {
+      // Check if the contract has users and if the current user is in that list
+      return (
+        contract.users && contract.users.some((user: any) => user.id === userId)
+      );
+    });
+
+    console.log("Found user contracts:", userContracts.length);
+    return userContracts;
+  };
+
   // Update filtered contracts when company selection changes
   const handleCompanyChange = (companyId: string, isEditMode = false) => {
     if (companyId === "none") return;
 
+    console.log("Company selection changed:", {
+      companyId,
+      isEditMode,
+    });
+
     // Add company to the appropriate state
     if (isEditMode) {
       if (!editingUser.companies.includes(companyId)) {
+        console.log("Adding company to editingUser:", companyId);
         setEditingUser({
           ...editingUser,
           companies: [...(editingUser.companies || []), companyId],
           // Clear contracts when company changes
-          contractsId: [],
+          contractIds: [],
         });
+      } else {
+        console.log("Company already in editingUser companies:", companyId);
       }
     } else {
       if (!newUser.companyId.includes(companyId)) {
@@ -291,8 +408,75 @@ export default function UsersPage() {
 
     // Filter contracts for the selected company
     const filtered = filterContractsByCompany(companyId);
+    console.log("Filtered contracts for company:", {
+      companyId,
+      filteredCount: filtered.length,
+      filtered,
+    });
     setFilteredContracts(filtered);
   };
+
+  // Modify the openEditDialog function to reset the loading state each time the dialog is opened
+  const openEditDialog = (user: any) => {
+    console.log("Opening edit dialog for user:", user);
+
+    // Set loading state to true when dialog opens
+    setIsContractsLoadingInDialog(true);
+
+    // Set basic user data initially
+    setEditingUser({
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name || "",
+      role: user.role || "USER",
+      companies: [],
+      contractIds: [],
+    });
+
+    // Set the selected user ID to trigger the fetch
+    setSelectedUserId(user.id);
+
+    // Invalidate queries to force refetch
+    queryClient.invalidateQueries({ queryKey: ["user", user.id] });
+    queryClient.invalidateQueries({ queryKey: ["userContracts", user.id] });
+
+    // Open the dialog
+    setIsEditDialogOpen(true);
+  };
+
+  // Add an effect to turn off loading after data is fetched
+  useEffect(() => {
+    // Reset loading state when dialog closes
+    if (!isEditDialogOpen) {
+      // Clear selected user ID when dialog closes
+      if (selectedUserId) {
+        setSelectedUserId(null);
+      }
+      return;
+    }
+
+    // When dialog is open and we have user data, turn off loading after a delay
+    if (userDetailData && selectedUserId && isContractsLoadingInDialog) {
+      const timer = setTimeout(() => {
+        setIsContractsLoadingInDialog(false);
+      }, 800);
+
+      return () => clearTimeout(timer);
+    }
+  }, [
+    userDetailData,
+    selectedUserId,
+    isContractsLoadingInDialog,
+    isEditDialogOpen,
+  ]);
+
+  // Also reset loading state when dialog is closed
+  useEffect(() => {
+    if (!isEditDialogOpen) {
+      // Reset editing user when dialog closes
+      setEditingUser(null);
+    }
+  }, [isEditDialogOpen]);
 
   return (
     <>
@@ -789,6 +973,12 @@ export default function UsersPage() {
                 Измените информацию о пользователе
               </DialogDescription>
             </DialogHeader>
+            {isUserDetailLoading && (
+              <div className="flex justify-center items-center py-4">
+                <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2" />
+                <span>Загрузка данных пользователя...</span>
+              </div>
+            )}
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-email" className="text-right">
@@ -798,9 +988,10 @@ export default function UsersPage() {
                   id="edit-email"
                   type="email"
                   value={editingUser.email}
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, email: e.target.value })
-                  }
+                  onChange={(e) => {
+                    console.log("Email changed:", e.target.value);
+                    setEditingUser({ ...editingUser, email: e.target.value });
+                  }}
                   className="col-span-3"
                 />
               </div>
@@ -812,9 +1003,13 @@ export default function UsersPage() {
                   id="edit-password"
                   type="password"
                   placeholder="Оставьте пустым, чтобы не менять"
-                  onChange={(e) =>
-                    setEditingUser({ ...editingUser, password: e.target.value })
-                  }
+                  onChange={(e) => {
+                    console.log("Password field changed");
+                    setEditingUser({
+                      ...editingUser,
+                      password: e.target.value,
+                    });
+                  }}
                   className="col-span-3"
                 />
               </div>
@@ -826,12 +1021,13 @@ export default function UsersPage() {
                   id="edit-full_name"
                   type="text"
                   value={editingUser.full_name || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    console.log("Full name changed:", e.target.value);
                     setEditingUser({
                       ...editingUser,
                       full_name: e.target.value,
-                    })
-                  }
+                    });
+                  }}
                   className="col-span-3 w-full"
                 />
               </div>
@@ -841,9 +1037,10 @@ export default function UsersPage() {
                 </Label>
                 <Select
                   value={editingUser.role}
-                  onValueChange={(value) =>
-                    setEditingUser({ ...editingUser, role: value })
-                  }
+                  onValueChange={(value) => {
+                    console.log("Role changed:", value);
+                    setEditingUser({ ...editingUser, role: value });
+                  }}
                 >
                   <SelectTrigger className="col-span-3 w-full">
                     <SelectValue placeholder="Выберите роль" />
@@ -908,6 +1105,10 @@ export default function UsersPage() {
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => {
+                                      console.log(
+                                        "Removing company:",
+                                        companyId
+                                      );
                                       setEditingUser({
                                         ...editingUser,
                                         companies: editingUser.companies.filter(
@@ -936,84 +1137,196 @@ export default function UsersPage() {
                     <Skeleton className="h-10 w-full" />
                   ) : (
                     <div className="space-y-4">
-                      {editingUser.companies &&
-                      editingUser.companies.length > 0 ? (
+                      {/* Display existing contracts if available */}
+                      {isUserDetailLoading || isContractsLoadingInDialog ? (
+                        <div className="space-y-2 mb-4">
+                          <div className="text-sm font-medium">
+                            Загрузка контрактов...
+                          </div>
+                          {Array(3)
+                            .fill(0)
+                            .map((_, index) => (
+                              <div key={index} className="p-2 rounded-md">
+                                <Skeleton className="h-6 w-full mb-1" />
+                                <Skeleton className="h-4 w-1/3" />
+                              </div>
+                            ))}
+                        </div>
+                      ) : (
                         <>
-                          <Select
-                            onValueChange={(value) => {
-                              if (value === "none") return;
-                              if (!editingUser.contractsId?.includes(value)) {
-                                setEditingUser({
-                                  ...editingUser,
-                                  contractsId: [
-                                    ...(editingUser.contractsId || []),
-                                    value,
-                                  ],
-                                });
-                              }
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Добавить контракт" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">
-                                Выберите контракт
-                              </SelectItem>
-                              {filteredContracts.map((contract: any) => (
-                                <SelectItem
-                                  key={contract.id}
-                                  value={contract.id}
-                                >
-                                  {contract.number} -{" "}
-                                  {contract.title || "Без названия"}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-
-                          {editingUser.contractsId &&
-                            editingUser.contractsId.length > 0 && (
-                              <div className="space-y-2">
-                                {editingUser.contractsId.map(
-                                  (contractId: string) => {
-                                    const contract = contractsData?.data?.find(
-                                      (c: any) => c.id === contractId
-                                    );
-                                    return (
-                                      <div
-                                        key={contractId}
-                                        className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          <FileText className="h-4 w-4 text-muted-foreground" />
-                                          <span className="text-sm">
-                                            {contract?.number} -{" "}
-                                            {contract?.title || "Без названия"}
-                                          </span>
-                                        </div>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() => {
-                                            setEditingUser({
-                                              ...editingUser,
-                                              contractsId:
-                                                editingUser.contractsId.filter(
-                                                  (id: string) =>
-                                                    id !== contractId
-                                                ),
-                                            });
-                                          }}
-                                        >
-                                          <Trash2 className="h-4 w-4 text-muted-foreground" />
-                                        </Button>
+                          {editingUser.contractDetails &&
+                            editingUser.contractDetails.length > 0 && (
+                              <div className="space-y-2 mb-4">
+                                <div className="text-sm font-medium">
+                                  Контракты пользователя:
+                                </div>
+                                {editingUser.contractDetails.map(
+                                  (contract: any) => (
+                                    <div
+                                      key={contract.id}
+                                      className="flex items-center justify-between p-2 bg-blue-50 rounded-md"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <FileText className="h-4 w-4 text-blue-500" />
+                                        <span className="text-sm">
+                                          {contract.number} -{" "}
+                                          {contract.name ||
+                                            contract.title ||
+                                            "Без названия"}
+                                        </span>
                                       </div>
-                                    );
-                                  }
+                                      <div className="text-xs text-muted-foreground">
+                                        {contract.crop && (
+                                          <span>Культура: {contract.crop}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )
                                 )}
                               </div>
                             )}
+
+                          {/* Display user filtered contracts */}
+                          {userContractsData &&
+                            userContractsData.length > 0 && (
+                              <div className="space-y-2 mb-4">
+                                <div className="text-sm font-medium">
+                                  Контракты пользователя:
+                                </div>
+                                {userContractsData.map((contract: any) => (
+                                  <div
+                                    key={contract.id}
+                                    className="flex items-center justify-between p-2 bg-blue-50 rounded-md"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <FileText className="h-4 w-4 text-blue-500" />
+                                      <span className="text-sm">
+                                        {contract.number} -{" "}
+                                        {contract.title || "Без названия"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                        </>
+                      )}
+
+                      {editingUser.companies &&
+                      editingUser.companies.length > 0 ? (
+                        <>
+                          {isContractsLoading || isContractsLoadingInDialog ? (
+                            <div className="space-y-4">
+                              <Skeleton className="h-10 w-full" />
+                              <div className="space-y-2">
+                                <div className="text-sm font-medium">
+                                  Доступные контракты:
+                                </div>
+                                {Array(2)
+                                  .fill(0)
+                                  .map((_, index) => (
+                                    <div key={index} className="p-2 rounded-md">
+                                      <Skeleton className="h-6 w-full" />
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <Select
+                                onValueChange={(value) => {
+                                  if (value === "none") return;
+                                  if (
+                                    !editingUser.contractIds?.includes(value)
+                                  ) {
+                                    console.log("Adding contract:", value);
+                                    setEditingUser({
+                                      ...editingUser,
+                                      contractIds: [
+                                        ...(editingUser.contractIds || []),
+                                        value,
+                                      ],
+                                    });
+                                  } else {
+                                    console.log(
+                                      "Contract already selected:",
+                                      value
+                                    );
+                                  }
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Добавить контракт" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">
+                                    Выберите контракт
+                                  </SelectItem>
+                                  {filteredContracts.map((contract: any) => (
+                                    <SelectItem
+                                      key={contract.id}
+                                      value={contract.id}
+                                    >
+                                      {contract.number} -{" "}
+                                      {contract.title || "Без названия"}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+
+                              {editingUser.contractIds &&
+                                editingUser.contractIds.length > 0 && (
+                                  <div className="space-y-2">
+                                    <div className="text-sm font-medium">
+                                      Выбранные контракты:
+                                    </div>
+                                    {editingUser.contractIds.map(
+                                      (contractId: string) => {
+                                        const contract =
+                                          contractsData?.data?.find(
+                                            (c: any) => c.id === contractId
+                                          );
+                                        return (
+                                          <div
+                                            key={contractId}
+                                            className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
+                                          >
+                                            <div className="flex items-center gap-2">
+                                              <FileText className="h-4 w-4 text-muted-foreground" />
+                                              <span className="text-sm">
+                                                {contract?.number} -{" "}
+                                                {contract?.title ||
+                                                  "Без названия"}
+                                              </span>
+                                            </div>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={() => {
+                                                console.log(
+                                                  "Removing contract:",
+                                                  contractId
+                                                );
+                                                setEditingUser({
+                                                  ...editingUser,
+                                                  contractIds:
+                                                    editingUser.contractIds.filter(
+                                                      (id: string) =>
+                                                        id !== contractId
+                                                    ),
+                                                });
+                                              }}
+                                            >
+                                              <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                            </Button>
+                                          </div>
+                                        );
+                                      }
+                                    )}
+                                  </div>
+                                )}
+                            </>
+                          )}
                         </>
                       ) : (
                         <div className="text-sm text-muted-foreground">
@@ -1029,7 +1342,14 @@ export default function UsersPage() {
             <DialogFooter>
               <Button
                 type="submit"
-                onClick={handleEditUser}
+                onClick={() => {
+                  console.log("Save button clicked");
+                  console.log(
+                    "Current editingUser state before save:",
+                    editingUser
+                  );
+                  handleEditUser();
+                }}
                 disabled={
                   updateUserMutation.isPending ||
                   !editingUser.email.trim() ||
