@@ -20,9 +20,11 @@ export const useUploadDocumentsForUpload = () => {
     mutationFn: (params: UploadDocumentsForUploadParams) =>
       uploadDocumentsForUpload(params),
     onSuccess: (_, variables) => {
-      // Invalidate he application query to refetch with the new documents
       queryClient.invalidateQueries({
         queryKey: ["application", variables.applicationId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["applications"],
       });
     },
   });

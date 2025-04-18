@@ -10,6 +10,7 @@ export const useUploadApplicationFiles = () => {
       queryClient.invalidateQueries({
         queryKey: ["application", variables.applicationId.toString()],
       });
+      queryClient.invalidateQueries({ queryKey: ["application"] });
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       queryClient.invalidateQueries({ queryKey: ["application-files"] });
     },

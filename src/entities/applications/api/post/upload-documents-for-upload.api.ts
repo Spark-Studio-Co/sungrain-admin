@@ -28,7 +28,7 @@ export const uploadDocumentsForUpload = async ({
   formData.append("files_info", JSON.stringify(filesInfo));
 
   const { data } = await apiClient.post(
-    `/create-for-upload-documents/${applicationId}`,
+    `/application/create-for-upload-documents/${applicationId}`,
     formData,
     {
       headers: {

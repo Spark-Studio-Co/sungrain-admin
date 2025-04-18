@@ -1,7 +1,5 @@
 "use client";
 
-import type React from "react";
-
 import {
   Select,
   SelectContent,
@@ -9,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   FileText,
@@ -26,10 +24,10 @@ import {
   Receipt,
   CreditCard,
   Pencil,
-  CheckCircle,
+  CheckCircle2,
   AlertCircle,
-  Eye,
-  Edit,
+  File,
+  FilePlus,
 } from "lucide-react";
 import {
   Card,
@@ -66,7 +64,6 @@ import {
 import { useGetApplication } from "@/entities/applications/hooks/query/use-get-application.query";
 import { useUploadApplicationFiles } from "@/entities/applications/hooks/mutations/use-upload-application-files.mutation";
 import { useDeleteApplicationFile } from "@/entities/applications/hooks/mutations/use-delete-application-file.mutation";
-import { useUploadDocumentsForUpload } from "@/entities/applications/hooks/mutations/use-upload-documents-for-upload.mutation";
 import { WagonRegistry } from "@/pages/contracts-inner-page/blocks/wagon-registry";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -77,7 +74,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,31 +84,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
 import { useGetInvoices } from "@/entities/invoices/hooks/query/use-get-invoices.query";
 import { useCreateInvoice } from "@/entities/invoices/hooks/mutations/use-create-invoice.mutation";
 import { useUpdateInvoice } from "@/entities/invoices/hooks/mutations/use-update-invoice.mutation";
 import { useDeleteInvoice } from "@/entities/invoices/hooks/mutations/use-delete-invoice.mutation";
 import { WagonDetails } from "@/pages/contracts-inner-page/blocks/wagon-details";
+import { useUploadDocumentsForUpload } from "@/entities/applications/hooks/mutations/use-upload-documents.mutation";
+import { apiClient } from "@/shared/api/apiClient";
+import { useDeleteUploadedDocuments } from "@/entities/applications/hooks/mutations/use-delete-upload-documents.mutation";
 
 interface ApplicationDetailProps {
   applicationId: string;
   contractId: string;
   onBack: () => void;
 }
-
-// Initial shipping document types
-const initialShippingDocuments = [
-  { id: "tlg", name: "ТЛГ + инструкция", required: true },
-  { id: "ikr", name: "ИКР", required: true },
-  { id: "invoice", name: "Счет-фактура", required: true },
-  { id: "quality", name: "Паспорта качества", required: true },
-  { id: "transit", name: "Коды транзитные", required: true },
-  { id: "st1", name: "СТ-1", required: false },
-  { id: "rgp", name: "РГП", required: false },
-  { id: "phyto", name: "Фито", required: false },
-  { id: "ds", name: "ДС", required: false },
-];
 
 export const ApplicationDetail = ({
   applicationId,
@@ -142,21 +127,15 @@ export const ApplicationDetail = ({
     file: null as File | null,
   });
 
-  // State for upload documents for upload dialog
-  const [isUploadForUploadDialogOpen, setIsUploadForUploadDialogOpen] =
-    useState(false);
-  const [newUploadDocument, setNewUploadDocument] = useState({
-    name: "",
-    number: "",
-    date: "",
-    file: null as File | null,
-  });
-
   const [isEditInvoiceDialogOpen, setIsEditInvoiceDialogOpen] = useState(false);
   const [isDeleteInvoiceDialogOpen, setIsDeleteInvoiceDialogOpen] =
     useState(false);
   const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const [deletingInvoice, setDeletingInvoice] = useState<any>(null);
+
+  // State for editing shipping document
+  const [isEditShippingDocOpen, setIsEditShippingDocOpen] = useState(false);
+  const [editingShippingDoc, setEditingShippingDoc] = useState<any>(null);
 
   // Comments state
   const [comments, setComments] = useState<
@@ -170,17 +149,17 @@ export const ApplicationDetail = ({
   const [newComment, setNewComment] = useState("");
 
   // State for shipping document upload dialog
-  const [isShippingDocUploadOpen, setIsShippingDocUploadOpen] = useState(false);
-  const [selectedShippingDoc, setSelectedShippingDoc] = useState<any>(null);
+  const [isCreateShippingDocOpen, setIsCreateShippingDocOpen] = useState(false);
+  const [newShippingDoc, setNewShippingDoc] = useState({
+    name: "",
+    number: "",
+    date: "",
+    file: null as File | null,
+  });
 
-  // State for shipping documents
-  const [shippingDocuments, setShippingDocuments] = useState(
-    initialShippingDocuments
-  );
-  const [isAddDocTypeDialogOpen, setIsAddDocTypeDialogOpen] = useState(false);
-  const [newDocType, setNewDocType] = useState({ name: "", required: false });
-  const [isEditDocTypeDialogOpen, setIsEditDocTypeDialogOpen] = useState(false);
-  const [editingDocType, setEditingDocType] = useState<any>(null);
+  // State for document deletion
+  const [isDeleteDocDialogOpen, setIsDeleteDocDialogOpen] = useState(false);
+  const [deletingDoc, setDeletingDoc] = useState<any>(null);
 
   const {
     data: applicationData,
@@ -202,10 +181,11 @@ export const ApplicationDetail = ({
 
   const updateWagonMutation = useUpdateWagon();
   const deleteWagonMutation = useDeleteWagon();
+  const deleteUploadedDocs = useDeleteUploadedDocuments();
   const uploadFilesMutation = useUploadApplicationFiles();
-  const uploadDocumentsForUploadMutation = useUploadDocumentsForUpload();
   const deleteFileByNumberMutation = useDeleteApplicationFile();
   const createInvoiceMutation = useCreateInvoice();
+  const uploadDocumentsForUploadMutation = useUploadDocumentsForUpload();
 
   const updateInvoiceMutation = useUpdateInvoice();
   const deleteInvoiceMutation = useDeleteInvoice();
@@ -220,36 +200,19 @@ export const ApplicationDetail = ({
   const paymentProgress =
     totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
 
-  // Get the list of uploaded document names to check shipping document status
-  const uploadedDocumentNames = application?.files
-    ? application.files.map((file: any) => file.name?.toLowerCase())
-    : [];
+  // Get shipping documents from documents_for_upload array
+  const shippingDocuments = application?.documents_for_upload || [];
 
-  // Check if a shipping document is uploaded
-  const isDocumentUploaded = (docName: string) => {
-    if (!uploadedDocumentNames.length) return false;
-
-    // Check if any uploaded document name contains the shipping document name
-    return uploadedDocumentNames.some(
-      (name: string) => name && name.includes(docName.toLowerCase())
-    );
-  };
-
-  // Calculate shipping documents completion percentage
-  const calculateDocumentsCompletion = () => {
-    if (!shippingDocuments.length) return 0;
-
-    const requiredDocs = shippingDocuments.filter((doc) => doc.required);
-    if (!requiredDocs.length) return 100;
-
-    const uploadedRequiredDocs = requiredDocs.filter((doc) =>
-      isDocumentUploaded(doc.name)
-    );
-
-    return Math.round(
-      (uploadedRequiredDocs.length / requiredDocs.length) * 100
-    );
-  };
+  // Update upload status when a shipping document is uploaded
+  useEffect(() => {
+    if (
+      shippingDocuments.length > 0 &&
+      shippingDocuments[0]?.id &&
+      shippingDocuments[0]?.files
+    ) {
+      updateUploadStatus(shippingDocuments[0].id, true);
+    }
+  }, [shippingDocuments.length]);
 
   const formatDate = (dateString: string) => {
     try {
@@ -265,14 +228,26 @@ export const ApplicationDetail = ({
       return;
     }
 
-    const link = document.createElement("a");
-    link.href = fileUrl;
-    link.setAttribute("download", fileName);
-    link.setAttribute("target", "_blank");
+    try {
+      const url = fileUrl.startsWith("http")
+        ? fileUrl
+        : `${process.env.NEXT_PUBLIC_API_URL || ""}${fileUrl}`;
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      console.log("Attempting to open and download file:", url);
+
+      // ✅ 1. Открываем файл в новой вкладке
+      window.open(url, "_blank");
+
+      // ✅ 2. Запускаем скачивание (создаём ссылку и эмулируем клик)
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", fileName || "download");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error in handleFileDownload:", error);
+    }
   };
 
   const handleDocumentUpload = async () => {
@@ -295,98 +270,8 @@ export const ApplicationDetail = ({
         },
         {
           onSuccess: () => {
-            console.log("✅ File uploaded successfully!");
-            setIsUploadDialogOpen(false);
-            setNewDocument({
-              name: "",
-              number: "",
-              date: "",
-              file: null,
-            });
-            // Refetch after a short delay to ensure the backend has processed the file
-            setTimeout(() => {
-              refetch();
-            }, 500);
-          },
-          onError: (error) => {
-            console.error("Upload failed:", error);
-          },
-        }
-      );
-    } catch (error) {
-      console.error("Error uploading document:", error);
-    }
-  };
-
-  // Handle document for upload upload
-  const handleDocumentForUploadUpload = async () => {
-    if (!newUploadDocument.file || !newUploadDocument.name) return;
-
-    try {
-      const filesInfo = [
-        {
-          name: newUploadDocument.name,
-          number: newUploadDocument.number || "",
-          date: newUploadDocument.date || "",
-        },
-      ];
-
-      await uploadDocumentsForUploadMutation.mutateAsync(
-        {
-          applicationId,
-          files: [newUploadDocument.file],
-          filesInfo,
-        },
-        {
-          onSuccess: () => {
-            console.log("✅ Document for upload uploaded successfully!");
-            setIsUploadForUploadDialogOpen(false);
-            setNewUploadDocument({
-              name: "",
-              number: "",
-              date: "",
-              file: null,
-            });
-            // Refetch after a short delay to ensure the backend has processed the file
-            setTimeout(() => {
-              refetch();
-            }, 500);
-          },
-          onError: (error) => {
-            console.error("Upload failed:", error);
-          },
-        }
-      );
-    } catch (error) {
-      console.error("Error uploading document for upload:", error);
-    }
-  };
-
-  // Handle shipping document upload
-  const handleShippingDocUpload = async () => {
-    if (!newDocument.file || !selectedShippingDoc) return;
-
-    try {
-      const filesInfo = [
-        {
-          name: selectedShippingDoc.name,
-          number: newDocument.number || "",
-          date: newDocument.date || "",
-        },
-      ];
-
-      await uploadFilesMutation.mutateAsync(
-        {
-          applicationId,
-          files: [newDocument.file],
-          filesInfo,
-        },
-        {
-          onSuccess: () => {
-            console.log("✅ Shipping document uploaded successfully!");
             refetch();
-            setIsShippingDocUploadOpen(false);
-            setSelectedShippingDoc(null);
+            setIsUploadDialogOpen(false);
           },
           onError: (error) => {
             console.error("Upload failed:", error);
@@ -394,28 +279,176 @@ export const ApplicationDetail = ({
         }
       );
 
+      setIsUploadDialogOpen(false);
       setNewDocument({
         name: "",
         number: "",
         date: "",
         file: null,
       });
+
+      refetch();
     } catch (error) {
-      console.error("Error uploading shipping document:", error);
+      console.error("Error uploading document:", error);
     }
   };
 
-  const handleDeleteDocument = async (docNumber?: string) => {
+  const handleCreateShippingDoc = async () => {
+    // Don't proceed if there's no file
+    if (!newShippingDoc.file || !newShippingDoc.name) {
+      console.warn("File and name are required for shipping document");
+      return;
+    }
+
     try {
-      if (docNumber) {
-        console.log(docNumber);
+      const filesInfo = [
+        {
+          name: newShippingDoc.name,
+          number: newShippingDoc.number || "",
+          date: newShippingDoc.date || "",
+          isForUpload: true,
+        },
+      ];
+
+      const response = await uploadDocumentsForUploadMutation.mutateAsync(
+        {
+          applicationId,
+          files: [newShippingDoc.file] as any,
+          filesInfo,
+        },
+        {
+          onSuccess: async (data) => {
+            refetch();
+            setIsCreateShippingDocOpen(false);
+
+            const documentId = data?.documentId;
+
+            if (documentId && newShippingDoc.file) {
+              await updateUploadStatus(documentId, true); // Only update status if we have a file
+            } else {
+              console.warn(
+                "No documentId returned from upload or no file provided"
+              );
+            }
+          },
+          onError: (error) => {
+            console.error("Upload failed:", error);
+          },
+        }
+      );
+
+      setNewShippingDoc({
+        name: "",
+        number: "",
+        date: "",
+        file: null,
+      });
+    } catch (error) {
+      console.error("Error creating shipping document:", error);
+    }
+  };
+
+  const handleEditShippingDocClick = (doc: any) => {
+    setEditingShippingDoc({
+      id: doc.id,
+      name: doc.name || "",
+      number: doc.number || "",
+      date: doc.date || "",
+      file: null,
+      originalFile: doc.files,
+    });
+    setIsEditShippingDocOpen(true);
+  };
+
+  const handleUpdateShippingDoc = async () => {
+    if (!editingShippingDoc || !editingShippingDoc.id) return;
+
+    try {
+      // If a new file was uploaded, use it; otherwise, keep the original
+      const hasNewFile = !!editingShippingDoc.file;
+
+      const filesInfo = [
+        {
+          id: editingShippingDoc.id,
+          name: editingShippingDoc.name,
+          number: editingShippingDoc.number || "",
+          date: editingShippingDoc.date || "",
+          isForUpload: true,
+        },
+      ];
+
+      // Only include files in the request if a new file was uploaded
+      const requestData: any = {
+        applicationId,
+        filesInfo,
+      };
+
+      if (hasNewFile) {
+        requestData.files = [editingShippingDoc.file];
+      }
+
+      await apiClient.patch(
+        `/application/${applicationId}/documents`,
+        requestData
+      );
+
+      setIsEditShippingDocOpen(false);
+      setEditingShippingDoc(null);
+      refetch();
+    } catch (error) {
+      console.error("Error updating shipping document:", error);
+    }
+  };
+
+  // Update upload status
+  const updateUploadStatus = async (
+    id: number | string,
+    isUploaded: boolean
+  ) => {
+    try {
+      const response = await apiClient.patch(`/${id}/upload-status`, {
+        isUploaded,
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error("Error updating upload status:", error);
+    }
+  };
+
+  const handleDeleteDocumentClick = (doc: any) => {
+    setDeletingDoc(doc);
+    setIsDeleteDocDialogOpen(true);
+  };
+
+  const handleDeleteDocument = async () => {
+    try {
+      // Check if this is a shipping document (from documents_for_upload)
+      const isShippingDoc = shippingDocuments.some(
+        (doc) => doc.id === deletingDoc.id
+      );
+
+      if (isShippingDoc) {
+        // Use deleteUploadedDocs for shipping documents with document ID
+        await deleteUploadedDocs.mutateAsync(
+          deletingDoc.id // Use document ID directly
+        );
+      } else {
+        // Use deleteFileByNumberMutation for regular documents
         await deleteFileByNumberMutation.mutateAsync({
           applicationId: application?.id || applicationId,
-          docNumber,
+          docNumber: deletingDoc.number,
         });
       }
 
+      setIsDeleteDocDialogOpen(false);
+      setDeletingDoc(null);
       refetch();
+
+      // If we deleted the last shipping document, update the upload status
+      if (isShippingDoc && shippingDocuments.length <= 1 && deletingDoc.id) {
+        updateUploadStatus(deletingDoc.id, false);
+      }
     } catch (error) {
       console.error("Error deleting document:", error);
     }
@@ -553,9 +586,11 @@ export const ApplicationDetail = ({
   const handleUpdateWagon = async (wagonId: string | number, data: any) => {
     try {
       await updateWagonMutation.mutateAsync({ id: wagonId, data });
+
       refetch();
     } catch (error) {
       console.error("Failed to update wagon:", error);
+
       throw error;
     }
   };
@@ -563,89 +598,13 @@ export const ApplicationDetail = ({
   const handleDeleteWagon = async (wagonId: string | number) => {
     try {
       await deleteWagonMutation.mutateAsync(wagonId);
+
       refetch();
     } catch (error) {
       console.error("Failed to delete wagon:", error);
+
       throw error;
     }
-  };
-
-  // Open shipping document upload dialog
-  const openShippingDocUpload = (doc: any) => {
-    setSelectedShippingDoc(doc);
-    setNewDocument({
-      name: doc.name,
-      number: "",
-      date: "",
-      file: null,
-    });
-    setIsShippingDocUploadOpen(true);
-  };
-
-  // Handle adding a new document type
-  const handleAddDocType = () => {
-    if (!newDocType.name.trim()) return;
-
-    const newId = `custom-${Date.now()}`;
-    const newDoc = {
-      id: newId,
-      name: newDocType.name,
-      required: newDocType.required,
-    };
-
-    setShippingDocuments([...shippingDocuments, newDoc]);
-    setNewDocType({ name: "", required: false });
-    setIsAddDocTypeDialogOpen(false);
-  };
-
-  // Handle editing a document type
-  const openEditDocType = (doc: any) => {
-    setEditingDocType({
-      id: doc.id,
-      name: doc.name,
-      required: doc.required,
-    });
-    setIsEditDocTypeDialogOpen(true);
-  };
-
-  const handleUpdateDocType = () => {
-    if (!editingDocType || !editingDocType.name.trim()) return;
-
-    const updatedDocs = shippingDocuments.map((doc) =>
-      doc.id === editingDocType.id ? editingDocType : doc
-    );
-
-    setShippingDocuments(updatedDocs);
-    setIsEditDocTypeDialogOpen(false);
-  };
-
-  // Handle deleting a document type
-  const handleDeleteDocType = (docId: string) => {
-    const updatedDocs = shippingDocuments.filter((doc) => doc.id !== docId);
-    setShippingDocuments(updatedDocs);
-  };
-
-  // Handle file drop for document upload
-  const handleFileDrop = (e: React.DragEvent<HTMLDivElement>, doc: any) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      setSelectedShippingDoc(doc);
-      setNewDocument({
-        name: doc.name,
-        number: "",
-        date: "",
-        file: file,
-      });
-      setIsShippingDocUploadOpen(true);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
   };
 
   if (isLoading) {
@@ -683,10 +642,10 @@ export const ApplicationDetail = ({
           Назад к списку заявок
         </Button>
       </div>
-      <Card>
-        <CardHeader className="pb-2">
+      <Card className="overflow-hidden border-blue-100 shadow-md">
+        <CardHeader className="pb-2 bg-gradient-to-r from-blue-50 to-blue-100">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-blue-50 rounded-full">
+            <div className="p-2 bg-blue-100 rounded-full">
               <FileText className="h-6 w-6 text-blue-500" />
             </div>
             <div>
@@ -700,7 +659,7 @@ export const ApplicationDetail = ({
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="flex items-start space-x-3">
               <Package className="h-5 w-5 text-blue-500 mt-0.5" />
@@ -776,7 +735,7 @@ export const ApplicationDetail = ({
           </div>
 
           {/* Payment Progress Bar */}
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg shadow-sm">
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5 text-blue-500" />
@@ -815,340 +774,213 @@ export const ApplicationDetail = ({
               </div>
             </div>
           </div>
+
+          {/* Shipping Documents Progress */}
+          <div className="mt-4 p-4 bg-amber-50 rounded-lg shadow-sm">
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-amber-500" />
+                <h3 className="font-medium">Документы для отгрузки</h3>
+              </div>
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 bg-white hover:bg-amber-100"
+                  onClick={() => setIsCreateShippingDocOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Создать документ
+                </Button>
+              )}
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>
+                  Загружено: {shippingDocuments.length}{" "}
+                  {shippingDocuments.length === 1 ? "документ" : "документов"}
+                </span>
+                <span className="flex items-center">
+                  {shippingDocuments.length > 0 ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 text-green-500 mr-1" />
+                      <span className="text-green-600 font-medium">
+                        Документы загружены
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="h-4 w-4 text-amber-500 mr-1" />
+                      <span className="text-amber-600 font-medium">
+                        Нет загруженных документов
+                      </span>
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="details">Детали заявки</TabsTrigger>
           <TabsTrigger value="documents">Документы</TabsTrigger>
           <TabsTrigger value="shipping-docs">
             Документы для отгрузки
           </TabsTrigger>
-          <TabsTrigger value="upload-docs">Документы для загрузки</TabsTrigger>
           <TabsTrigger value="wagons-details">Детали вагонов</TabsTrigger>
           <TabsTrigger value="wagons">Вагоны</TabsTrigger>
           <TabsTrigger value="invoices">Счета</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="upload-docs" className="mt-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between w-full">
-                <div>
-                  <CardTitle>Документы для загрузки</CardTitle>
-                  <CardDescription>
-                    Управление документами для загрузки
-                  </CardDescription>
-                </div>
-                {isAdmin && (
-                  <Button
-                    className="gap-2 bg-purple-500 hover:bg-purple-600"
-                    onClick={() => setIsUploadForUploadDialogOpen(true)}
-                  >
-                    <Upload className="h-4 w-4" />
-                    Загрузить документ
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              {application?.documents_for_upload &&
-              application.documents_for_upload.length > 0 ? (
-                <div className="bg-purple-50 p-3 rounded-md">
-                  <div className="bg-white p-4 rounded-md border border-purple-100">
-                    <div className="grid grid-cols-12 gap-2 mb-2 text-sm font-medium text-muted-foreground">
-                      <div className="col-span-1">№</div>
-                      <div className="col-span-3">Наименование</div>
-                      <div className="col-span-2">Номер</div>
-                      <div className="col-span-3">Дата документа</div>
-                      <div className="col-span-2">Файл</div>
-                      <div className="col-span-1"></div>
-                    </div>
-
-                    {application.documents_for_upload.map(
-                      (doc: any, index: number) => (
-                        <div
-                          key={index}
-                          className="grid grid-cols-12 gap-2 mb-3 items-center"
-                        >
-                          <div className="col-span-1 text-center">
-                            {index + 1}
-                          </div>
-                          <div className="col-span-3">
-                            <div className="truncate">
-                              {doc.name || `Документ ${index + 1}`}
-                            </div>
-                          </div>
-                          <div className="col-span-2">
-                            <div className="truncate">{doc.number || "—"}</div>
-                          </div>
-                          <div className="col-span-3">
-                            <div className="truncate">
-                              {doc.date ? formatDate(doc.date) : "—"}
-                            </div>
-                          </div>
-                          <div className="col-span-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="gap-1"
-                              onClick={() =>
-                                handleFileDownload(
-                                  doc.files?.path || doc.files?.location || "",
-                                  doc.name || `upload-doc-${index + 1}.pdf`
-                                )
-                              }
-                            >
-                              <Download className="h-4 w-4" />
-                              Скачать
-                            </Button>
-                          </div>
-                          <div className="col-span-1 flex justify-center">
-                            {isAdmin && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-red-500 hover:bg-red-50"
-                                onClick={() => {
-                                  handleDeleteDocument(doc.number);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12 border rounded-md bg-muted/10">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">
-                    Документы для загрузки не найдены
-                  </p>
-                  {isAdmin && (
-                    <Button
-                      variant="outline"
-                      className="mt-4 gap-2"
-                      onClick={() => setIsUploadForUploadDialogOpen(true)}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Добавить первый документ для загрузки
-                    </Button>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="shipping-docs" className="mt-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between w-full">
-                <div>
-                  <CardTitle>Документы для отгрузки</CardTitle>
-                  <CardDescription>
-                    Статус документов, необходимых для отгрузки
-                  </CardDescription>
+          <div className="mb-4 flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Документы для отгрузки</h2>
+            {isAdmin && (
+              <Button
+                className="gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
+                onClick={() => setIsCreateShippingDocOpen(true)}
+              >
+                <FilePlus className="h-4 w-4" />
+                Создать документ
+              </Button>
+            )}
+          </div>
+
+          {shippingDocuments.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {shippingDocuments.map((doc: any, index: number) => (
+                <Card
+                  key={doc.id || index}
+                  className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <CardHeader className="bg-white pb-3 border-b">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-gray-100 rounded-full">
+                          <File className="h-4 w-4 text-gray-700" />
+                        </div>
+                        <CardTitle className="text-base truncate max-w-[200px]">
+                          {doc.name}
+                        </CardTitle>
+                      </div>
+                      {isAdmin && (
+                        <div className="flex">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full hover:bg-blue-100 hover:text-blue-500 mr-1"
+                            onClick={() => handleEditShippingDocClick(doc)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full hover:bg-red-100 hover:text-red-500"
+                            onClick={() => handleDeleteDocumentClick(doc)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="space-y-2 text-sm">
+                      {doc.files && doc.files.originalname && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Файл:</span>
+                          <span className="font-medium truncate max-w-[180px]">
+                            {doc.files.originalname}
+                          </span>
+                        </div>
+                      )}
+                      {doc.files && doc.files.uploadedAt && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Загружен:
+                          </span>
+                          <span className="font-medium">
+                            {formatDate(doc.files.uploadedAt)}
+                          </span>
+                        </div>
+                      )}
+                      {doc.isUploaded !== undefined && (
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-muted-foreground">Статус:</span>
+                          <Badge
+                            variant="outline"
+                            className={
+                              doc.isUploaded
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                            }
+                          >
+                            {doc.isUploaded ? "Загружен" : "Ожидает загрузки"}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                  <CardFooter className="bg-white border-t flex justify-between">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-gray-700 hover:text-gray-800 hover:bg-gray-100"
+                      onClick={() => {
+                        const filePath =
+                          doc.files?.[0]?.path ||
+                          doc.files?.[0]?.location ||
+                          doc.location ||
+                          "";
+                        handleFileDownload(
+                          filePath,
+                          doc.name || `document-${index + 1}.pdf`
+                        );
+                      }}
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Скачать
+                    </Button>
+
+                    <Badge
+                      variant="outline"
+                      className="bg-green-100 text-green-700"
+                    >
+                      Для отгрузки
+                    </Badge>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="border-dashed border-2 border-gray-300 bg-white">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="p-3 bg-gray-100 rounded-full mb-4">
+                  <FileText className="h-8 w-8 text-gray-500" />
                 </div>
+                <h3 className="text-lg font-medium mb-2">
+                  Нет документов для отгрузки
+                </h3>
+                <p className="text-muted-foreground text-center mb-6 max-w-md">
+                  Здесь будут отображаться документы, необходимые для отгрузки.
+                  Вы можете создать их самостоятельно.
+                </p>
                 {isAdmin && (
                   <Button
-                    onClick={() => setIsAddDocTypeDialogOpen(true)}
-                    className="gap-2 bg-green-600 hover:bg-green-700"
+                    variant="outline"
+                    className="gap-2 border-gray-300 hover:bg-gray-100"
+                    onClick={() => setIsCreateShippingDocOpen(true)}
                   >
                     <Plus className="h-4 w-4" />
-                    Добавить тип документа
+                    Создать первый документ
                   </Button>
                 )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              {/* Progress indicator */}
-              <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-medium text-gray-700">
-                    Статус готовности документов
-                  </h3>
-                  <span className="text-sm font-medium">
-                    {calculateDocumentsCompletion()}% завершено
-                  </span>
-                </div>
-                <Progress
-                  value={calculateDocumentsCompletion()}
-                  className="h-2"
-                  color={
-                    calculateDocumentsCompletion() === 100 ? "bg-green-500" : ""
-                  }
-                />
-                <p className="text-sm text-gray-500 mt-2">
-                  {calculateDocumentsCompletion() === 100
-                    ? "Все необходимые документы загружены"
-                    : "Загрузите все необходимые документы для отгрузки"}
-                </p>
-              </div>
-
-              {/* Document cards grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {shippingDocuments.map((doc) => {
-                  const isUploaded = isDocumentUploaded(doc.name);
-                  return (
-                    <div
-                      key={doc.id}
-                      className={cn(
-                        "rounded-lg shadow-sm transition-all duration-200 hover:shadow-md",
-                        isUploaded
-                          ? "bg-green-50 border border-green-200"
-                          : "bg-white border border-gray-200 hover:border-red-200"
-                      )}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleFileDrop(e, doc)}
-                    >
-                      <div className="p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className={cn(
-                                "p-2 rounded-full",
-                                isUploaded ? "bg-green-100" : "bg-gray-100"
-                              )}
-                            >
-                              <FileText
-                                className={cn(
-                                  "h-5 w-5",
-                                  isUploaded
-                                    ? "text-green-600"
-                                    : "text-gray-500"
-                                )}
-                              />
-                            </div>
-                            <div>
-                              <h3 className="font-medium">{doc.name}</h3>
-                              <p className="text-xs text-gray-500">
-                                {doc.required
-                                  ? "Обязательный"
-                                  : "Необязательный"}
-                              </p>
-                            </div>
-                          </div>
-                          {isAdmin && (
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => openEditDocType(doc)}
-                              >
-                                <Edit className="h-4 w-4 text-gray-500" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => handleDeleteDocType(doc.id)}
-                              >
-                                <Trash2 className="h-4 w-4 text-red-500" />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {isUploaded ? (
-                              <>
-                                <CheckCircle className="h-5 w-5 text-green-600" />
-                                <span className="text-sm font-medium text-green-600">
-                                  Загружен
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <AlertCircle className="h-5 w-5 text-red-500" />
-                                <span className="text-sm font-medium text-red-500">
-                                  Не загружен
-                                </span>
-                              </>
-                            )}
-                          </div>
-
-                          {!isUploaded && isAdmin && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-1 border-dashed border-gray-300 hover:bg-gray-50"
-                              onClick={() => openShippingDocUpload(doc)}
-                            >
-                              <Upload className="h-3.5 w-3.5" />
-                              <span className="text-xs">Загрузить</span>
-                            </Button>
-                          )}
-
-                          {isUploaded && (
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
-                              >
-                                <Eye className="h-3.5 w-3.5" />
-                                <span className="text-xs">Просмотр</span>
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-1 text-green-600 border-green-200 hover:bg-green-50"
-                              >
-                                <Download className="h-3.5 w-3.5" />
-                                <span className="text-xs">Скачать</span>
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Drag & drop area */}
-                      {!isUploaded && (
-                        <div className="px-4 pb-4">
-                          <div
-                            className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center hover:bg-gray-50 transition-colors cursor-pointer"
-                            onClick={() => openShippingDocUpload(doc)}
-                          >
-                            <Upload className="h-6 w-6 mx-auto text-gray-400 mb-2" />
-                            <p className="text-sm text-gray-500">
-                              Перетащите файл сюда или нажмите для загрузки
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {shippingDocuments.length === 0 && (
-                <div className="text-center py-12 border rounded-md bg-muted/10">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">
-                    Документы для отгрузки не определены
-                  </p>
-                  {isAdmin && (
-                    <Button
-                      variant="outline"
-                      className="mt-4 gap-2"
-                      onClick={() => setIsAddDocTypeDialogOpen(true)}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Добавить первый тип документа
-                    </Button>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="details" className="mt-4">
@@ -1259,56 +1091,6 @@ export const ApplicationDetail = ({
                       </div>
                     </div>
                   </div>
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                        Документы договора
-                      </h3>
-                      <div className="bg-muted/50 p-4 rounded-md">
-                        {application?.contract?.files &&
-                        application.contract.files.length > 0 ? (
-                          <div className="space-y-3">
-                            {application.contract.files.map(
-                              (file: any, index: number) => (
-                                <div
-                                  key={index}
-                                  className="flex justify-between items-center"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <FileText className="h-4 w-4 text-blue-500" />
-                                    <span className="text-sm">
-                                      {file.name || `Документ ${index + 1}`}
-                                    </span>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="gap-1"
-                                    onClick={() =>
-                                      handleFileDownload(
-                                        file.location,
-                                        file.name ||
-                                          `contract-doc-${index + 1}.pdf`
-                                      )
-                                    }
-                                  >
-                                    <Download className="h-4 w-4" />
-                                    <span className="text-xs">Скачать</span>
-                                  </Button>
-                                </div>
-                              )
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-center py-3">
-                            <p className="text-sm text-muted-foreground">
-                              Документы договора не найдены
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </CardContent>
@@ -1380,12 +1162,14 @@ export const ApplicationDetail = ({
                             variant="ghost"
                             size="sm"
                             className="gap-1"
-                            onClick={() =>
+                            onClick={() => {
+                              const filePath =
+                                file.location || file.file || file.path || "";
                               handleFileDownload(
-                                file.location || file.file,
+                                filePath,
                                 file.name || `document-${index + 1}.pdf`
-                              )
-                            }
+                              );
+                            }}
                           >
                             <Download className="h-4 w-4" />
                             Скачать
@@ -1398,9 +1182,7 @@ export const ApplicationDetail = ({
                               variant="ghost"
                               size="sm"
                               className="h-8 w-8 p-0 text-red-500 hover:bg-red-50"
-                              onClick={() => {
-                                handleDeleteDocument(file.number);
-                              }}
+                              onClick={() => handleDeleteDocumentClick(file)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -1520,16 +1302,21 @@ export const ApplicationDetail = ({
                                 variant="ghost"
                                 size="sm"
                                 className="gap-1"
-                                onClick={() =>
+                                onClick={() => {
+                                  const filePath =
+                                    invoice.file_url ||
+                                    invoice.file ||
+                                    invoice.location ||
+                                    "";
                                   handleFileDownload(
-                                    invoice.file_url,
+                                    filePath,
                                     `invoice-${
                                       invoice.name ||
                                       invoice.number ||
                                       invoice.id
                                     }.pdf`
-                                  )
-                                }
+                                  );
+                                }}
                               >
                                 <Download className="h-4 w-4" />
                                 Скачать
@@ -1669,11 +1456,6 @@ export const ApplicationDetail = ({
                       ) : (
                         <span>Выберите дату</span>
                       )}
-                      {newDocument.date ? (
-                        formatDate(newDocument.date)
-                      ) : (
-                        <span>Выберите дату</span>
-                      )}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -1767,199 +1549,50 @@ export const ApplicationDetail = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Document For Upload Dialog */}
       <Dialog
-        open={isUploadForUploadDialogOpen}
-        onOpenChange={setIsUploadForUploadDialogOpen}
+        open={isCreateShippingDocOpen}
+        onOpenChange={setIsCreateShippingDocOpen}
       >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Загрузить документ для загрузки</DialogTitle>
+            <DialogTitle>Создать документ для отгрузки</DialogTitle>
             <DialogDescription>
-              Заполните информацию о документе и загрузите файл
+              Заполните информацию о новом документе для отгрузки
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="upload-doc-name" className="text-right">
+              <Label htmlFor="shipping-doc-name" className="text-right">
                 Название <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="upload-doc-name"
-                value={newUploadDocument.name}
+                id="shipping-doc-name"
+                value={newShippingDoc.name}
                 onChange={(e) =>
-                  setNewUploadDocument({
-                    ...newUploadDocument,
-                    name: e.target.value,
-                  })
+                  setNewShippingDoc({ ...newShippingDoc, name: e.target.value })
                 }
                 className="col-span-3"
+                placeholder="Введите название документа"
               />
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="upload-doc-number" className="text-right">
-                Номер
-              </Label>
-              <Input
-                id="upload-doc-number"
-                value={newUploadDocument.number}
-                onChange={(e) =>
-                  setNewUploadDocument({
-                    ...newUploadDocument,
-                    number: e.target.value,
-                  })
-                }
-                className="col-span-3"
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="upload-doc-date" className="text-right">
-                Дата
-              </Label>
-              <div className="col-span-3">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="upload-doc-date"
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !newUploadDocument.date && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newUploadDocument.date ? (
-                        formatDate(newUploadDocument.date)
-                      ) : (
-                        <span>Выберите дату</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={
-                        newUploadDocument.date
-                          ? new Date(newUploadDocument.date)
-                          : undefined
-                      }
-                      onSelect={(date) => {
-                        if (date) {
-                          setNewUploadDocument({
-                            ...newUploadDocument,
-                            date: format(date, "yyyy-MM-dd"),
-                          });
-                        }
-                      }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="upload-doc-file" className="text-right">
-                Файл <span className="text-red-500">*</span>
-              </Label>
-              <div className="col-span-3">
-                <Input
-                  id="upload-doc-file"
-                  type="file"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setNewUploadDocument({
-                        ...newUploadDocument,
-                        file: e.target.files[0],
-                      });
-                    }
-                  }}
-                />
-                {newUploadDocument.file && (
-                  <div className="flex items-center mt-2 text-sm">
-                    <FileText className="h-4 w-4 mr-2 text-blue-500" />
-                    <span className="truncate max-w-[300px]">
-                      {newUploadDocument.file.name}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 ml-2"
-                      onClick={() =>
-                        setNewUploadDocument({
-                          ...newUploadDocument,
-                          file: null,
-                        })
-                      }
-                    >
-                      <X className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsUploadForUploadDialogOpen(false)}
-            >
-              Отмена
-            </Button>
-            <Button
-              type="submit"
-              onClick={handleDocumentForUploadUpload}
-              disabled={
-                uploadDocumentsForUploadMutation.isPending ||
-                !newUploadDocument.name ||
-                !newUploadDocument.file
-              }
-            >
-              {uploadDocumentsForUploadMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Загрузка...
-                </>
-              ) : (
-                "Загрузить"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Shipping Document Upload Dialog */}
-      <Dialog
-        open={isShippingDocUploadOpen}
-        onOpenChange={setIsShippingDocUploadOpen}
-      >
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Загрузить документ для отгрузки</DialogTitle>
-            <DialogDescription>
-              Загрузите файл документа "{selectedShippingDoc?.name}"
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="shipping-doc-number" className="text-right">
                 Номер
               </Label>
               <Input
                 id="shipping-doc-number"
-                value={newDocument.number}
+                value={newShippingDoc.number}
                 onChange={(e) =>
-                  setNewDocument({ ...newDocument, number: e.target.value })
+                  setNewShippingDoc({
+                    ...newShippingDoc,
+                    number: e.target.value,
+                  })
                 }
                 className="col-span-3"
+                placeholder="Введите номер документа"
               />
             </div>
-
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="shipping-doc-date" className="text-right">
                 Дата
@@ -1972,12 +1605,12 @@ export const ApplicationDetail = ({
                       variant="outline"
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !newDocument.date && "text-muted-foreground"
+                        !newShippingDoc.date && "text-muted-foreground"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newDocument.date ? (
-                        formatDate(newDocument.date)
+                      {newShippingDoc.date ? (
+                        formatDate(newShippingDoc.date)
                       ) : (
                         <span>Выберите дату</span>
                       )}
@@ -1987,14 +1620,14 @@ export const ApplicationDetail = ({
                     <CalendarComponent
                       mode="single"
                       selected={
-                        newDocument.date
-                          ? new Date(newDocument.date)
+                        newShippingDoc.date
+                          ? new Date(newShippingDoc.date)
                           : undefined
                       }
                       onSelect={(date) => {
                         if (date) {
-                          setNewDocument({
-                            ...newDocument,
+                          setNewShippingDoc({
+                            ...newShippingDoc,
                             date: format(date, "yyyy-MM-dd"),
                           });
                         }
@@ -2005,7 +1638,6 @@ export const ApplicationDetail = ({
                 </Popover>
               </div>
             </div>
-
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="shipping-doc-file" className="text-right">
                 Файл <span className="text-red-500">*</span>
@@ -2016,18 +1648,18 @@ export const ApplicationDetail = ({
                   type="file"
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
-                      setNewDocument({
-                        ...newDocument,
+                      setNewShippingDoc({
+                        ...newShippingDoc,
                         file: e.target.files[0],
                       });
                     }
                   }}
                 />
-                {newDocument.file && (
+                {newShippingDoc.file && (
                   <div className="flex items-center mt-2 text-sm">
-                    <FileText className="h-4 w-4 mr-2 text-blue-500" />
+                    <FileText className="h-4 w-4 mr-2 text-amber-500" />
                     <span className="truncate max-w-[300px]">
-                      {newDocument.file.name}
+                      {newShippingDoc.file.name}
                     </span>
                     <Button
                       type="button"
@@ -2035,7 +1667,7 @@ export const ApplicationDetail = ({
                       size="sm"
                       className="h-6 w-6 p-0 ml-2"
                       onClick={() =>
-                        setNewDocument({ ...newDocument, file: null })
+                        setNewShippingDoc({ ...newShippingDoc, file: null })
                       }
                     >
                       <X className="h-4 w-4 text-red-500" />
@@ -2045,168 +1677,62 @@ export const ApplicationDetail = ({
               </div>
             </div>
           </div>
-
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setIsShippingDocUploadOpen(false)}
+              onClick={() => setIsCreateShippingDocOpen(false)}
             >
               Отмена
             </Button>
             <Button
               type="submit"
-              onClick={handleShippingDocUpload}
-              disabled={uploadFilesMutation.isPending || !newDocument.file}
+              onClick={handleCreateShippingDoc}
+              disabled={uploadDocumentsForUploadMutation.isPending}
+              className="bg-amber-500 hover:bg-amber-600"
             >
-              {uploadFilesMutation.isPending ? (
+              {uploadDocumentsForUploadMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Загрузка...
+                  Создание...
                 </>
               ) : (
-                "Загрузить"
+                "Создать документ"
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Add Document Type Dialog */}
-      <Dialog
-        open={isAddDocTypeDialogOpen}
-        onOpenChange={setIsAddDocTypeDialogOpen}
+      <AlertDialog
+        open={isDeleteDocDialogOpen}
+        onOpenChange={setIsDeleteDocDialogOpen}
       >
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Добавить тип документа</DialogTitle>
-            <DialogDescription>
-              Укажите название и требования для нового типа документа
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="doc-type-name" className="text-right">
-                Название <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="doc-type-name"
-                value={newDocType.name}
-                onChange={(e) =>
-                  setNewDocType({ ...newDocType, name: e.target.value })
-                }
-                className="col-span-3"
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="doc-type-required" className="text-right">
-                Обязательный
-              </Label>
-              <div className="col-span-3 flex items-center">
-                <input
-                  type="checkbox"
-                  id="doc-type-required"
-                  checked={newDocType.required}
-                  onChange={(e) =>
-                    setNewDocType({ ...newDocType, required: e.target.checked })
-                  }
-                  className="mr-2 h-4 w-4"
-                />
-                <span className="text-sm text-gray-600">
-                  Отметьте, если документ обязателен для отгрузки
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsAddDocTypeDialogOpen(false)}
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить документ</AlertDialogTitle>
+            <AlertDialogDescription>
+              Вы уверены, что хотите удалить документ "{deletingDoc?.name}"? Это
+              действие нельзя отменить.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteDocument}
+              disabled={deleteFileByNumberMutation.isPending}
+              className="bg-destructive text-white hover:bg-destructive/90"
             >
-              Отмена
-            </Button>
-            <Button
-              type="submit"
-              onClick={handleAddDocType}
-              disabled={!newDocType.name.trim()}
-            >
-              Добавить
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Document Type Dialog */}
-      <Dialog
-        open={isEditDocTypeDialogOpen}
-        onOpenChange={setIsEditDocTypeDialogOpen}
-      >
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Редактировать тип докумен��а</DialogTitle>
-            <DialogDescription>
-              Измените название и требования для типа документа
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-doc-type-name" className="text-right">
-                Название <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="edit-doc-type-name"
-                value={editingDocType?.name || ""}
-                onChange={(e) =>
-                  setEditingDocType({ ...editingDocType, name: e.target.value })
-                }
-                className="col-span-3"
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-doc-type-required" className="text-right">
-                Обязательный
-              </Label>
-              <div className="col-span-3 flex items-center">
-                <input
-                  type="checkbox"
-                  id="edit-doc-type-required"
-                  checked={editingDocType?.required || false}
-                  onChange={(e) =>
-                    setEditingDocType({
-                      ...editingDocType,
-                      required: e.target.checked,
-                    })
-                  }
-                  className="mr-2 h-4 w-4"
-                />
-                <span className="text-sm text-gray-600">
-                  Отметьте, если документ обязателен для отгрузки
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditDocTypeDialogOpen(false)}
-            >
-              Отмена
-            </Button>
-            <Button
-              type="submit"
-              onClick={handleUpdateDocType}
-              disabled={!editingDocType?.name?.trim()}
-            >
-              Сохранить
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Invoice Dialogs */}
+              {deleteFileByNumberMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Удаление...
+                </>
+              ) : (
+                "Удалить"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <Dialog open={isInvoiceDialogOpen} onOpenChange={setIsInvoiceDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -2406,7 +1932,6 @@ export const ApplicationDetail = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       <Dialog
         open={isEditInvoiceDialogOpen}
         onOpenChange={setIsEditInvoiceDialogOpen}
@@ -2576,8 +2101,6 @@ export const ApplicationDetail = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Delete Invoice Confirmation Dialog */}
       <AlertDialog
         open={isDeleteInvoiceDialogOpen}
         onOpenChange={setIsDeleteInvoiceDialogOpen}
@@ -2612,6 +2135,168 @@ export const ApplicationDetail = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Dialog
+        open={isEditShippingDocOpen}
+        onOpenChange={setIsEditShippingDocOpen}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Редактировать документ для отгрузки</DialogTitle>
+            <DialogDescription>
+              Измените информацию о документе для отгрузки
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-shipping-doc-name" className="text-right">
+                Название <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="edit-shipping-doc-name"
+                value={editingShippingDoc?.name || ""}
+                onChange={(e) =>
+                  setEditingShippingDoc({
+                    ...editingShippingDoc,
+                    name: e.target.value,
+                  })
+                }
+                className="col-span-3"
+                placeholder="Введите название документа"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-shipping-doc-number" className="text-right">
+                Номер
+              </Label>
+              <Input
+                id="edit-shipping-doc-number"
+                value={editingShippingDoc?.number || ""}
+                onChange={(e) =>
+                  setEditingShippingDoc({
+                    ...editingShippingDoc,
+                    number: e.target.value,
+                  })
+                }
+                className="col-span-3"
+                placeholder="Введите номер документа"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-shipping-doc-date" className="text-right">
+                Дата
+              </Label>
+              <div className="col-span-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="edit-shipping-doc-date"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !editingShippingDoc?.date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editingShippingDoc?.date ? (
+                        formatDate(editingShippingDoc.date)
+                      ) : (
+                        <span>Выберите дату</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={
+                        editingShippingDoc?.date
+                          ? new Date(editingShippingDoc.date)
+                          : undefined
+                      }
+                      onSelect={(date) => {
+                        if (date) {
+                          setEditingShippingDoc({
+                            ...editingShippingDoc,
+                            date: format(date, "yyyy-MM-dd"),
+                          });
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-shipping-doc-file" className="text-right">
+                Файл
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="edit-shipping-doc-file"
+                  type="file"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setEditingShippingDoc({
+                        ...editingShippingDoc,
+                        file: e.target.files[0],
+                      });
+                    }
+                  }}
+                />
+                {editingShippingDoc?.file ? (
+                  <div className="flex items-center mt-2 text-sm">
+                    <FileText className="h-4 w-4 mr-2 text-amber-500" />
+                    <span className="truncate max-w-[300px]">
+                      {editingShippingDoc.file.name}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 ml-2"
+                      onClick={() =>
+                        setEditingShippingDoc({
+                          ...editingShippingDoc,
+                          file: null,
+                        })
+                      }
+                    >
+                      <X className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                ) : editingShippingDoc?.originalFile?.originalname ? (
+                  <div className="flex items-center mt-2 text-sm">
+                    <FileText className="h-4 w-4 mr-2 text-gray-500" />
+                    <span className="truncate max-w-[300px]">
+                      {editingShippingDoc.originalFile.originalname} (текущий
+                      файл)
+                    </span>
+                  </div>
+                ) : null}
+                <p className="text-xs text-muted-foreground mt-2">
+                  Оставьте пустым, чтобы сохранить текущий файл
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditShippingDocOpen(false)}
+            >
+              Отмена
+            </Button>
+            <Button
+              type="submit"
+              onClick={handleUpdateShippingDoc}
+              className="bg-amber-500 hover:bg-amber-600"
+            >
+              Сохранить изменения
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
