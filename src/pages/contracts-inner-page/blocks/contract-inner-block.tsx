@@ -248,8 +248,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           getCompanyName={getCompanyName}
           handleDownload={handleDownload}
         />
-
-        {/* Volume Usage Card */}
         <Card className="bg-blue-50 border-blue-100">
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">

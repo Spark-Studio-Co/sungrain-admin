@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Building2,
   CheckCircle2,
@@ -91,6 +91,9 @@ export const WagonRegistry = ({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Add a separate state for tracking the unloading date
+  const [unloadingDate, setUnloadingDate] = useState<string | null>(null);
+
   // State for documents in the editing modal
   const [documents, setDocuments] = useState<
     Array<{
@@ -104,6 +107,13 @@ export const WagonRegistry = ({
     }>
   >([]);
 
+  // Update unloadingDate when editingWagon changes
+  useEffect(() => {
+    if (editingWagon) {
+      setUnloadingDate(editingWagon.date_of_unloading || null);
+    }
+  }, [editingWagon]);
+
   // Open edit dialog and set up editing state
   const handleEditWagon = (wagon: any) => {
     setEditingWagon({
@@ -113,6 +123,9 @@ export const WagonRegistry = ({
       date_of_departure: wagon.date_of_departure || "",
       date_of_unloading: wagon.date_of_unloading || "",
     });
+
+    // Initialize the unloading date
+    setUnloadingDate(wagon.date_of_unloading || null);
 
     // Set up documents for editing
     if (wagon.files && Array.isArray(wagon.files)) {
@@ -188,6 +201,27 @@ export const WagonRegistry = ({
     );
   };
 
+  // Handle unloading date change
+  const handleUnloadingDateChange = (date: Date | undefined) => {
+    if (date) {
+      const formattedDate = format(date, "yyyy-MM-dd");
+      setUnloadingDate(formattedDate);
+
+      // If the wagon has documents and a date is set, update status to shipped
+      if (
+        documents.length > 0 &&
+        documents.every((doc) => doc.file || doc.location)
+      ) {
+        setEditingWagon((prev) => ({
+          ...prev,
+          status: "shipped",
+        }));
+      }
+    } else {
+      setUnloadingDate(null);
+    }
+  };
+
   // Save wagon changes
   const handleSaveWagon = async () => {
     if (!editingWagon || !onUpdateWagon) return;
@@ -222,10 +256,8 @@ export const WagonRegistry = ({
         formData.append("date_of_departure", editingWagon.date_of_departure);
       }
 
-      // Add date_of_unloading as string
-      if (editingWagon.date_of_unloading) {
-        formData.append("date_of_unloading", editingWagon.date_of_unloading);
-      }
+      // Use the separate unloadingDate state instead of editingWagon.date_of_unloading
+      formData.append("date_of_unloading", unloadingDate || "");
 
       // Append files with proper files_info structure
       const filesInfo = documents
@@ -245,6 +277,12 @@ export const WagonRegistry = ({
         if (doc.file) {
           formData.append(`files`, doc.file);
         }
+      });
+
+      // Add this right before the await onUpdateWagon call
+      console.log("Updating wagon with data:", {
+        ...Object.fromEntries(formData.entries()),
+        date_of_unloading: unloadingDate,
       });
 
       await onUpdateWagon(editingWagon.id, formData);
@@ -607,13 +645,12 @@ export const WagonRegistry = ({
                           variant="outline"
                           className={cn(
                             "w-full justify-start text-left font-normal",
-                            !editingWagon.date_of_unloading &&
-                              "text-muted-foreground"
+                            !unloadingDate && "text-muted-foreground"
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {editingWagon.date_of_unloading ? (
-                            formatDate(editingWagon.date_of_unloading)
+                          {unloadingDate ? (
+                            formatDate(unloadingDate)
                           ) : (
                             <span>Выберите дату</span>
                           )}
@@ -623,23 +660,9 @@ export const WagonRegistry = ({
                         <Calendar
                           mode="single"
                           selected={
-                            editingWagon.date_of_unloading
-                              ? new Date(editingWagon.date_of_unloading)
-                              : undefined
+                            unloadingDate ? new Date(unloadingDate) : undefined
                           }
-                          onSelect={(date) => {
-                            if (date) {
-                              setEditingWagon({
-                                ...editingWagon,
-                                date_of_unloading: format(date, "yyyy-MM-dd"),
-                              });
-                            } else {
-                              setEditingWagon({
-                                ...editingWagon,
-                                date_of_unloading: "",
-                              });
-                            }
-                          }}
+                          onSelect={handleUnloadingDateChange}
                           initialFocus
                         />
                       </PopoverContent>

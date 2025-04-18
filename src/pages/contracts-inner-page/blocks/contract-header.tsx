@@ -213,8 +213,6 @@ export const ContractHeader = ({
                   {contractData?.total_volume || contractData?.totalVolume}
                 </span>
                 <span className="text-sm text-muted-foreground ml-1">тонн</span>
-                <DollarSign className="h-4 w-4 text-green-600 ml-2" />
-                <span className="text-green-600">{contractData?.currency}</span>
               </p>
             </div>
           </div>

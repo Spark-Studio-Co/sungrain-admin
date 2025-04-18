@@ -9,6 +9,7 @@ interface UpdateWagonDetailsParams {
     owner?: string;
     status?: string;
     date_of_departure?: string;
+    date_of_unloading?: string;
     contractId?: number;
   };
 }

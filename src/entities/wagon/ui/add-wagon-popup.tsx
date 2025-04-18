@@ -331,7 +331,7 @@ export const AddWagonPopup = ({
 
               <div className="space-y-2">
                 <Label htmlFor="date_of_departure" className="font-medium">
-                  Дата отправления
+                  Дата прихода
                 </Label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -377,7 +377,7 @@ export const AddWagonPopup = ({
 
               <div className="space-y-2">
                 <Label htmlFor="date_of_unloading" className="font-medium">
-                  Дата выгрузки
+                  Дата отгрузки
                 </Label>
                 <Popover>
                   <PopoverTrigger asChild>

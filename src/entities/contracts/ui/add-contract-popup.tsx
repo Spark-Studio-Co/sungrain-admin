@@ -19,7 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Upload, X, Plus, CalendarIcon } from "lucide-react";
+import {
+  Loader2,
+  Upload,
+  X,
+  Plus,
+  CalendarIcon,
+  CalendarPlus2Icon as CalendarIcon2,
+} from "lucide-react";
 import { useAddContract } from "../api/post/use-create-contract";
 import { useState } from "react";
 import { useContractDialogStore } from "../model/use-contract-dialog";
@@ -61,6 +68,7 @@ export const AddContractDialog = () => {
     companyId: undefined,
     total_volume: "",
     currency: "USD",
+    date: new Date().toISOString(),
   });
 
   const [files, setFiles] = useState<File[]>([]);
@@ -95,6 +103,7 @@ export const AddContractDialog = () => {
         companyId: undefined,
         total_volume: "",
         currency: "USD",
+        date: new Date().toISOString(),
       });
       setFiles([]);
       setDocuments([]);
@@ -106,7 +115,7 @@ export const AddContractDialog = () => {
     // Create FormData to send files along with contract data
     const formData = new FormData();
 
-    // Append each field separately
+    // Append each field separately (excluding ID)
     formData.append("number", newContract.number);
     formData.append("unk", newContract.unk);
     formData.append("name", newContract.name);
@@ -122,6 +131,7 @@ export const AddContractDialog = () => {
       Number(newContract.estimated_cost) as any
     );
     formData.append("currency", newContract.currency);
+    formData.append("date", newContract.date);
 
     // Add documents info
     const documentsInfo = documents
@@ -162,7 +172,7 @@ export const AddContractDialog = () => {
 
   return (
     <Dialog open={isAddDialogOpen} onOpenChange={setDialogOpen}>
-      <DialogContent className="sm:max-w-[950px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">Добавить новый контракт</DialogTitle>
           <DialogDescription>
@@ -181,7 +191,7 @@ export const AddContractDialog = () => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="number" className="font-medium">
-                    Номер контракта
+                    Номер контракта <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="number"
@@ -211,7 +221,7 @@ export const AddContractDialog = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="name" className="font-medium">
-                    Название
+                    Название <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="name"
@@ -223,6 +233,48 @@ export const AddContractDialog = () => {
                       })
                     }
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="date" className="font-medium">
+                    Дата контракта <span className="text-destructive">*</span>
+                  </Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="date"
+                      type="date"
+                      value={
+                        newContract.date
+                          ? new Date(newContract.date)
+                              .toISOString()
+                              .split("T")[0]
+                          : ""
+                      }
+                      onChange={(e) => {
+                        // Convert the date input value to a full ISO string
+                        const selectedDate = new Date(e.target.value);
+                        setNewContract({
+                          ...newContract,
+                          date: selectedDate.toISOString(),
+                        });
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      type="button"
+                      onClick={() => {
+                        // Set date to today with full ISO format
+                        const today = new Date().toISOString();
+                        setNewContract({
+                          ...newContract,
+                          date: today,
+                        });
+                      }}
+                      title="Установить сегодняшнюю дату"
+                    >
+                      <CalendarIcon2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="estimated_cost" className="font-medium">
@@ -243,7 +295,7 @@ export const AddContractDialog = () => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="company" className="font-medium">
-                    Компания
+                    Компания <span className="text-destructive">*</span>
                   </Label>
                   {isCompaniesLoading ? (
                     <Skeleton className="h-10 w-full" />
@@ -273,7 +325,7 @@ export const AddContractDialog = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="crop" className="font-medium">
-                    Культура
+                    Культура <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={newContract.crop}
@@ -304,7 +356,8 @@ export const AddContractDialog = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="total_volume" className="font-medium">
-                      Общий объем (тонн)
+                      Общий объем (тонн){" "}
+                      <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       className="w-full"
@@ -322,7 +375,7 @@ export const AddContractDialog = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="currency" className="font-medium">
-                      Валюта
+                      Валюта <span className="text-destructive">*</span>
                     </Label>
                     <Select
                       value={newContract.currency}
@@ -354,7 +407,7 @@ export const AddContractDialog = () => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="sender" className="font-medium">
-                    Грузоотправитель
+                    Грузоотправитель <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={newContract.sender}
@@ -386,7 +439,8 @@ export const AddContractDialog = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="departure_station" className="font-medium">
-                    Станция отправления
+                    Станция отправления{" "}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={newContract.departure_station}
@@ -420,7 +474,7 @@ export const AddContractDialog = () => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="receiver" className="font-medium">
-                    Грузополучатель
+                    Грузополучатель <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={newContract.receiver}
@@ -452,7 +506,8 @@ export const AddContractDialog = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="destination_station" className="font-medium">
-                    Станция назначения
+                    Станция назначения{" "}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={newContract.destination_station}

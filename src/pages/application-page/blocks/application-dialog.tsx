@@ -11,7 +11,6 @@ import {
   Plus,
   Trash2,
   DollarSign,
-  AlertCircle,
 } from "lucide-react";
 import {
   Dialog,
@@ -38,7 +37,6 @@ import { useUpdateApplication } from "@/entities/applications/hooks/mutations/us
 import { useUploadApplicationFiles } from "@/entities/applications/hooks/mutations/use-upload-application-files.mutation";
 import { useDeleteApplicationFile } from "@/entities/applications/hooks/mutations/use-delete-application-file.mutation";
 import { useFetchCultures } from "@/entities/cultures/hooks/query/use-get-cultures.query";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ApplicationDialogProps {
   isOpen: boolean;
@@ -107,8 +105,16 @@ export const ApplicationDialog = ({
     return [];
   });
 
-  const createMutation = useCreateApplication();
-  const updateMutation = useUpdateApplication();
+  const createMutation = useCreateApplication({
+    onSuccess: () => {
+      onClose(true);
+    },
+  });
+  const updateMutation = useUpdateApplication({
+    onSuccess: () => {
+      onClose(true);
+    },
+  });
   const uploadFilesMutation = useUploadApplicationFiles();
   const deleteFileMutation = useDeleteApplicationFile();
 
@@ -308,8 +314,6 @@ export const ApplicationDialog = ({
           filesInfo: filesInfo,
         });
       }
-
-      onClose(true);
     } catch (error) {
       console.error("Error saving application:", error);
     }

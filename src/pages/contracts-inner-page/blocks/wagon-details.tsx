@@ -331,7 +331,7 @@ export const WagonDetails = ({
                                       <TableCell className="flex items-center gap-2">
                                         <Calendar className="h-4 w-4 text-purple-500" />
                                         <span className="font-medium">
-                                          Дата отправления
+                                          Дата прихода
                                         </span>
                                       </TableCell>
                                       <TableCell>

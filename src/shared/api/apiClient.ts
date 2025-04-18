@@ -29,7 +29,7 @@ const refreshToken = async (refresh: string) => {
     return response.data.access_token;
   } catch (err) {
     console.error("❌ Refresh failed:", err);
-    useAuthData.getState().removeToken?.(); // Optional logout method
+    useAuthData.getState().removeToken?.();
     window.location.href = "/login"; // 🔁 Redirect
     throw err;
   }

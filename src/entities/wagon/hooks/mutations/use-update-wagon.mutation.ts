@@ -43,6 +43,7 @@ export const useUpdateWagon = () => {
           "owner",
           "status",
           "date_of_departure",
+          "date_of_unloading",
           "contractId",
         ];
         basicFields.forEach((field) => {

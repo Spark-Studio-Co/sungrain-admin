@@ -43,6 +43,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Building,
+  FileText,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -54,11 +55,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 import { useGetUsers } from "@/entities/users/hooks/query/use-get-users.query";
+import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 import { useAddUser } from "@/entities/users/hooks/mutations/use-add-user.mutation";
 import { useUpdateUsers } from "@/entities/users/hooks/mutations/use-update-user.mutation";
 import { useDeleteUser } from "@/entities/users/hooks/mutations/use-delete-user.mutation";
+import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contracts.query";
 
 const roles = ["ADMIN", "USER"];
 
@@ -76,10 +78,12 @@ export default function UsersPage() {
     password: "",
     full_name: "",
     role: "USER",
-    companies: [] as string[],
+    companyId: [] as string[],
+    contractIds: [] as string[],
   });
   const [editingUser, setEditingUser] = useState<any>(null);
   const [deletingUser, setDeletingUser] = useState<any>(null);
+  const [filteredContracts, setFilteredContracts] = useState<any[]>([]);
 
   // API hooks
   const {
@@ -95,6 +99,9 @@ export default function UsersPage() {
   const addUserMutation = useAddUser();
   const updateUserMutation = useUpdateUsers();
   const deleteUserMutation = useDeleteUser();
+
+  const { data: contractsData, isLoading: isContractsLoading } =
+    useGetContracts({ page: 1, limit: 1000 }); // Get all contracts
 
   // Extract pagination data
   const totalItems = usersData?.total || 0;
@@ -119,12 +126,26 @@ export default function UsersPage() {
   };
 
   const handleAddUser = () => {
+    // Validate all required fields
+    if (
+      !newUser.email.trim() ||
+      !newUser.password.trim() ||
+      !newUser.full_name.trim() ||
+      !newUser.role ||
+      newUser.companyId.length === 0
+    ) {
+      return;
+    }
+
     const userData = {
       email: newUser.email,
       password: newUser.password,
       full_name: newUser.full_name,
       role: newUser.role,
-      ...(newUser.companies.length > 0 && { companyId: newUser.companies }),
+      ...(newUser.companyId.length > 0 && { companyId: newUser.companyId }),
+      ...(newUser.contractIds.length > 0 && {
+        contractIds: newUser.contractIds,
+      }),
     };
 
     addUserMutation.mutate(userData, {
@@ -134,7 +155,8 @@ export default function UsersPage() {
           password: "",
           full_name: "",
           role: "USER",
-          companies: [],
+          companyId: [],
+          contractIds: [],
         });
         setIsAddDialogOpen(false);
       },
@@ -144,14 +166,27 @@ export default function UsersPage() {
   const handleEditUser = () => {
     if (!editingUser) return;
 
+    // Validate all required fields
+    if (
+      !editingUser.email.trim() ||
+      !editingUser.full_name?.trim() ||
+      !editingUser.role ||
+      !editingUser.companies ||
+      editingUser.companies.length === 0
+    ) {
+      return;
+    }
+
     const userData = {
       name: editingUser.name,
       email: editingUser.email,
       full_name: editingUser.full_name,
       role: editingUser.role,
-      companyId: editingUser.companies || [],
+      companies: editingUser.companies || [],
+      contractsId: editingUser.contractsId || [],
     };
 
+    // Add password to update data only if it's provided
     if (editingUser.password) {
       userData.password = editingUser.password;
     }
@@ -183,14 +218,26 @@ export default function UsersPage() {
     // Ensure companies is an array
     const companies = user.companies?.map((c: any) => c.company.id) || [];
 
+    // Ensure contractsId is an array
+    const contractsId = user.contracts?.map((c: any) => c.id) || [];
+
     setEditingUser({
       ...user,
       status: user.status === "ACTIVE" ? "Активен" : "Неактивен",
       companies,
+      contractsId,
     });
+
+    // Filter contracts for the first company if available
+    if (companies.length > 0) {
+      const filtered = filterContractsByCompany(companies[0]);
+      setFilteredContracts(filtered);
+    }
+
     setIsEditDialogOpen(true);
   };
 
+  // Add the missing openDeleteDialog function
   const openDeleteDialog = (user: any) => {
     setDeletingUser(user);
     setIsDeleteDialogOpen(true);
@@ -207,6 +254,44 @@ export default function UsersPage() {
   const handleLimitChange = (value: string) => {
     setLimit(Number(value));
     setPage(1); // Reset to first page when changing limit
+  };
+
+  const filterContractsByCompany = (companyId: string) => {
+    if (!contractsData?.data) return [];
+
+    return contractsData.data.filter(
+      (contract: any) => contract.companyId === companyId
+    );
+  };
+
+  // Update filtered contracts when company selection changes
+  const handleCompanyChange = (companyId: string, isEditMode = false) => {
+    if (companyId === "none") return;
+
+    // Add company to the appropriate state
+    if (isEditMode) {
+      if (!editingUser.companies.includes(companyId)) {
+        setEditingUser({
+          ...editingUser,
+          companies: [...(editingUser.companies || []), companyId],
+          // Clear contracts when company changes
+          contractsId: [],
+        });
+      }
+    } else {
+      if (!newUser.companyId.includes(companyId)) {
+        setNewUser({
+          ...newUser,
+          companyId: [...newUser.companyId, companyId],
+          // Clear contracts when company changes
+          contractIds: [],
+        });
+      }
+    }
+
+    // Filter contracts for the selected company
+    const filtered = filterContractsByCompany(companyId);
+    setFilteredContracts(filtered);
   };
 
   return (
@@ -284,7 +369,7 @@ export default function UsersPage() {
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="full_name" className="text-right">
-                      ФИО
+                      ФИО <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="full_name"
@@ -298,7 +383,7 @@ export default function UsersPage() {
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="role" className="text-right">
-                      Роль
+                      Роль <span className="text-destructive">*</span>
                     </Label>
                     <Select
                       value={newUser.role}
@@ -320,7 +405,7 @@ export default function UsersPage() {
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="companies" className="text-right">
-                      Компании
+                      Компании <span className="text-destructive">*</span>
                     </Label>
                     <div className="col-span-3">
                       {isCompaniesLoading ? (
@@ -328,15 +413,9 @@ export default function UsersPage() {
                       ) : (
                         <div className="space-y-4">
                           <Select
-                            onValueChange={(value) => {
-                              if (value === "none") return;
-                              if (!newUser.companies.includes(value)) {
-                                setNewUser({
-                                  ...newUser,
-                                  companies: [...newUser.companies, value],
-                                });
-                              }
-                            }}
+                            onValueChange={(value) =>
+                              handleCompanyChange(value, false)
+                            }
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Добавить компанию" />
@@ -353,9 +432,9 @@ export default function UsersPage() {
                             </SelectContent>
                           </Select>
 
-                          {newUser.companies.length > 0 && (
+                          {newUser.companyId.length > 0 && (
                             <div className="space-y-2">
-                              {newUser.companies.map((companyId) => {
+                              {newUser.companyId.map((companyId) => {
                                 const company = companiesData?.data?.find(
                                   (c: any) => c.id === companyId
                                 );
@@ -376,7 +455,7 @@ export default function UsersPage() {
                                       onClick={() => {
                                         setNewUser({
                                           ...newUser,
-                                          companies: newUser.companies.filter(
+                                          companyId: newUser.companyId.filter(
                                             (id) => id !== companyId
                                           ),
                                         });
@@ -393,13 +472,111 @@ export default function UsersPage() {
                       )}
                     </div>
                   </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="contracts" className="text-right">
+                      Контракты
+                    </Label>
+                    <div className="col-span-3">
+                      {isContractsLoading ? (
+                        <Skeleton className="h-10 w-full" />
+                      ) : (
+                        <div className="space-y-4">
+                          {newUser.companyId.length > 0 ? (
+                            <>
+                              <Select
+                                onValueChange={(value) => {
+                                  if (value === "none") return;
+                                  if (!newUser.contractIds.includes(value)) {
+                                    setNewUser({
+                                      ...newUser,
+                                      contractIds: [
+                                        ...newUser.contractIds,
+                                        value,
+                                      ],
+                                    });
+                                  }
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Добавить контракт" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">
+                                    Выберите контракт
+                                  </SelectItem>
+                                  {filteredContracts.map((contract: any) => (
+                                    <SelectItem
+                                      key={contract.id}
+                                      value={contract.id}
+                                    >
+                                      {contract.number} -{" "}
+                                      {contract.title || "Без названия"}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+
+                              {newUser.contractIds.length > 0 && (
+                                <div className="space-y-2">
+                                  {newUser.contractIds.map((contractId) => {
+                                    const contract = contractsData?.data?.find(
+                                      (c: any) => c.id === contractId
+                                    );
+                                    return (
+                                      <div
+                                        key={contractId}
+                                        className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <FileText className="h-4 w-4 text-muted-foreground" />
+                                          <span className="text-sm">
+                                            {contract?.number} -{" "}
+                                            {contract?.title || "Без названия"}
+                                          </span>
+                                        </div>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => {
+                                            setNewUser({
+                                              ...newUser,
+                                              contractIds:
+                                                newUser.contractIds.filter(
+                                                  (id) => id !== contractId
+                                                ),
+                                            });
+                                          }}
+                                        >
+                                          <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                        </Button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="text-sm text-muted-foreground">
+                              Сначала выберите компанию для отображения
+                              доступных контрактов
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button
                     type="submit"
                     onClick={handleAddUser}
                     disabled={
-                      addUserMutation.isPending || !newUser.email.trim()
+                      addUserMutation.isPending ||
+                      !newUser.email.trim() ||
+                      !newUser.password.trim() ||
+                      !newUser.full_name.trim() ||
+                      !newUser.role ||
+                      newUser.companyId.length === 0
                     }
                   >
                     {addUserMutation.isPending ? (
@@ -472,12 +649,7 @@ export default function UsersPage() {
                         <Badge variant="outline">{user.role}</Badge>
                       </TableCell>
                       <TableCell>
-                        {user.id === 1 ? (
-                          <div className="flex items-center gap-2">
-                            <Building className="h-4 w-4 text-muted-foreground" />
-                            <span>OOO TEST</span>
-                          </div>
-                        ) : user.companies && user.companies.length > 0 ? (
+                        {user.companies && user.companies.length > 0 ? (
                           <div className="flex flex-col gap-1">
                             {user.companies
                               .slice(0, 2)
@@ -620,7 +792,7 @@ export default function UsersPage() {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-email" className="text-right">
-                  Email
+                  Email <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="edit-email"
@@ -634,7 +806,7 @@ export default function UsersPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-password" className="text-right">
-                  Пароль
+                  Пароль <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="edit-password"
@@ -648,7 +820,7 @@ export default function UsersPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-full_name" className="text-right">
-                  ФИО
+                  ФИО <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="edit-full_name"
@@ -665,7 +837,7 @@ export default function UsersPage() {
               </div>
               <div className="grid grid-cols-4 w-full items-center gap-4">
                 <Label htmlFor="edit-role" className="text-right">
-                  Роль
+                  Роль <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={editingUser.role}
@@ -687,7 +859,7 @@ export default function UsersPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-companies" className="text-right">
-                  Компании
+                  Компании <span className="text-destructive">*</span>
                 </Label>
                 <div className="col-span-3">
                   {isCompaniesLoading ? (
@@ -695,18 +867,9 @@ export default function UsersPage() {
                   ) : (
                     <div className="space-y-4">
                       <Select
-                        onValueChange={(value) => {
-                          if (value === "none") return;
-                          if (!editingUser.companies.includes(value)) {
-                            setEditingUser({
-                              ...editingUser,
-                              companies: [
-                                ...(editingUser.companies || []),
-                                value,
-                              ],
-                            });
-                          }
-                        }}
+                        onValueChange={(value) =>
+                          handleCompanyChange(value, true)
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Добавить компанию" />
@@ -764,13 +927,116 @@ export default function UsersPage() {
                   )}
                 </div>
               </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-contracts" className="text-right">
+                  Контракты
+                </Label>
+                <div className="col-span-3">
+                  {isContractsLoading ? (
+                    <Skeleton className="h-10 w-full" />
+                  ) : (
+                    <div className="space-y-4">
+                      {editingUser.companies &&
+                      editingUser.companies.length > 0 ? (
+                        <>
+                          <Select
+                            onValueChange={(value) => {
+                              if (value === "none") return;
+                              if (!editingUser.contractsId?.includes(value)) {
+                                setEditingUser({
+                                  ...editingUser,
+                                  contractsId: [
+                                    ...(editingUser.contractsId || []),
+                                    value,
+                                  ],
+                                });
+                              }
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Добавить контракт" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">
+                                Выберите контракт
+                              </SelectItem>
+                              {filteredContracts.map((contract: any) => (
+                                <SelectItem
+                                  key={contract.id}
+                                  value={contract.id}
+                                >
+                                  {contract.number} -{" "}
+                                  {contract.title || "Без названия"}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          {editingUser.contractsId &&
+                            editingUser.contractsId.length > 0 && (
+                              <div className="space-y-2">
+                                {editingUser.contractsId.map(
+                                  (contractId: string) => {
+                                    const contract = contractsData?.data?.find(
+                                      (c: any) => c.id === contractId
+                                    );
+                                    return (
+                                      <div
+                                        key={contractId}
+                                        className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <FileText className="h-4 w-4 text-muted-foreground" />
+                                          <span className="text-sm">
+                                            {contract?.number} -{" "}
+                                            {contract?.title || "Без названия"}
+                                          </span>
+                                        </div>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => {
+                                            setEditingUser({
+                                              ...editingUser,
+                                              contractsId:
+                                                editingUser.contractsId.filter(
+                                                  (id: string) =>
+                                                    id !== contractId
+                                                ),
+                                            });
+                                          }}
+                                        >
+                                          <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                        </Button>
+                                      </div>
+                                    );
+                                  }
+                                )}
+                              </div>
+                            )}
+                        </>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">
+                          Сначала выберите компанию для отображения доступных
+                          контрактов
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <Button
                 type="submit"
                 onClick={handleEditUser}
                 disabled={
-                  updateUserMutation.isPending || !editingUser.email.trim()
+                  updateUserMutation.isPending ||
+                  !editingUser.email.trim() ||
+                  !editingUser.full_name?.trim() ||
+                  !editingUser.role ||
+                  !editingUser.companies ||
+                  editingUser.companies.length === 0
                 }
               >
                 {updateUserMutation.isPending ? (
