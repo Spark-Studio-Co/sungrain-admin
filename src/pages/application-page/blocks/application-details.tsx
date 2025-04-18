@@ -223,11 +223,6 @@ export const ApplicationDetail = ({
   };
 
   const handleFileDownload = (fileUrl: string, fileName: string) => {
-    if (!fileUrl) {
-      console.error("File URL is missing");
-      return;
-    }
-
     try {
       const url = fileUrl.startsWith("http")
         ? fileUrl
@@ -566,20 +561,18 @@ export const ApplicationDetail = ({
     }
   };
 
-  // Handle adding a comment
-  const handleAddComment = () => {
-    if (!newComment.trim()) return;
+  const getFilePath = (doc: any) => {
+    const files = doc.files;
 
-    // In a real app, you would call an API to save the comment
-    const newCommentObj = {
-      id: Date.now().toString(),
-      text: newComment,
-      author: "Текущий пользователь",
-      created_at: new Date().toISOString(),
-    };
+    if (Array.isArray(files)) {
+      return files[0]?.path || files[0]?.location || doc.location || "";
+    }
 
-    setComments([...comments, newCommentObj]);
-    setNewComment("");
+    if (typeof files === "object" && files !== null) {
+      return files.path || files.location || doc.location || "";
+    }
+
+    return doc.location || "";
   };
 
   // Handle wagon update
@@ -930,11 +923,7 @@ export const ApplicationDetail = ({
                       size="sm"
                       className="text-gray-700 hover:text-gray-800 hover:bg-gray-100"
                       onClick={() => {
-                        const filePath =
-                          doc.files?.[0]?.path ||
-                          doc.files?.[0]?.location ||
-                          doc.location ||
-                          "";
+                        const filePath = getFilePath(doc);
                         handleFileDownload(
                           filePath,
                           doc.name || `document-${index + 1}.pdf`
