@@ -85,21 +85,24 @@ export const ContractsBlock = () => {
   const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Only fetch all contracts if user is admin
   const {
     data: contracts = { data: [], total: 0, page: 1, totalPages: 1 },
-    isLoading,
-    isError,
-    error,
+    isLoading: isAllContractsLoading,
+    isError: isAllContractsError,
+    error: allContractsError,
   } = useGetContracts({
     page: currentPage,
     limit: itemsPerPage,
+    enabled: isAdmin, // Only fetch if user is admin
   });
 
+  // Always fetch user contracts
   const {
     data: userContracts = { data: [], total: 0, page: 1, totalPages: 1 },
-    isLoading: isUserLoading,
-    isError: isUserError,
-    error: userError,
+    isLoading: isUserContractsLoading,
+    isError: isUserContractsError,
+    error: userContractsError,
   } = useGetUserContracts({
     page: currentPage,
     limit: itemsPerPage,
@@ -108,26 +111,33 @@ export const ContractsBlock = () => {
   const { mutate: deleteContract, isPending: isDeleting } = useDeleteContract();
   const { mutate: updateContract, isPending: isUpdating } = useUpdateContract();
 
+  // Use the appropriate data source based on user role
+  const contractsToDisplay = isAdmin ? contracts.data : userContracts.data;
+  const isDataLoading = isAdmin
+    ? isAllContractsLoading
+    : isUserContractsLoading;
+  const isDataError = isAdmin ? isAllContractsError : isUserContractsError;
+  const dataError = isAdmin ? allContractsError : userContractsError;
+  const totalPages = isAdmin ? contracts.totalPages : userContracts.totalPages;
+  const totalItems = isAdmin ? contracts.total : userContracts.total;
+
+  // Filter contracts based on search term
   const filteredContracts = useMemo(() => {
-    if (!contracts || !contracts.data) return [];
+    if (!contractsToDisplay || !Array.isArray(contractsToDisplay)) return [];
 
     if (searchTerm) {
-      return contracts.data.filter((contract: any) =>
+      return contractsToDisplay.filter((contract: any) =>
         Object.values(contract).some(
           (value) =>
             value &&
-            value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+            typeof value === "string" &&
+            value.toLowerCase().includes(searchTerm.toLowerCase())
         )
       );
     }
 
-    return contracts.data;
-  }, [contracts, searchTerm]);
-
-  const contractsToDisplay = isAdmin ? contracts.data : userContracts.data;
-  const isDataLoading = isAdmin ? isLoading : isUserLoading;
-  const isDataError = isAdmin ? isError : isUserError;
-  const dataError = isAdmin ? error : userError;
+    return contractsToDisplay;
+  }, [contractsToDisplay, searchTerm]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -155,12 +165,12 @@ export const ContractsBlock = () => {
   };
 
   const getPageNumbers = () => {
-    const totalPages = contracts.totalPages || 1;
+    const totalPagesCount = totalPages || 1;
     const currentPageNum = currentPage;
 
     // If 5 or fewer pages, show all
-    if (totalPages <= 5) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    if (totalPagesCount <= 5) {
+      return Array.from({ length: totalPagesCount }, (_, i) => i + 1);
     }
 
     // Otherwise, show current page, 2 before and 2 after if possible
@@ -176,20 +186,20 @@ export const ContractsBlock = () => {
 
     // Add pages around current page
     const startPage = Math.max(2, currentPageNum - 1);
-    const endPage = Math.min(totalPages - 1, currentPageNum + 1);
+    const endPage = Math.min(totalPagesCount - 1, currentPageNum + 1);
 
     for (let i = startPage; i <= endPage; i++) {
       pages.push(i);
     }
 
     // Add ellipsis if needed
-    if (currentPageNum < totalPages - 2) {
+    if (currentPageNum < totalPagesCount - 2) {
       pages.push(-2); // -2 represents ellipsis
     }
 
     // Always include last page
-    if (totalPages > 1) {
-      pages.push(totalPages);
+    if (totalPagesCount > 1) {
+      pages.push(totalPagesCount);
     }
 
     return pages;
@@ -298,11 +308,13 @@ export const ContractsBlock = () => {
                 СТРАНИЦА КОНТРАКТЫ
               </CardTitle>
               <CardDescription className="mt-1">
-                Управление контрактами и грузоперевозками
+                {isAdmin
+                  ? "Управление контрактами и грузоперевозками"
+                  : "Ваши контракты и грузоперевозки"}
               </CardDescription>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
-              {isAdmin && !isLoading && (
+              {isAdmin && !isDataLoading && (
                 <Button
                   onClick={() =>
                     useContractDialogStore.getState().setDialogOpen(true)
@@ -312,7 +324,7 @@ export const ContractsBlock = () => {
                 </Button>
               )}
               <div className="relative">
-                {isAdmin && !isLoading && (
+                {isAdmin && !isDataLoading && (
                   <Button
                     variant="outline"
                     className="gap-2"
@@ -617,7 +629,9 @@ export const ContractsBlock = () => {
                         colSpan={isAdmin ? 12 : 11}
                         className="h-24 text-center"
                       >
-                        Контракты не найдены.
+                        {isAdmin
+                          ? "Контракты не найдены."
+                          : "У вас нет доступных контрактов."}
                       </TableCell>
                     </TableRow>
                   )}
@@ -627,80 +641,67 @@ export const ContractsBlock = () => {
           </div>
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-muted-foreground mb-4 sm:mb-0">
-              Всего контрактов:
-              {isDataLoading
-                ? "..."
-                : (isAdmin ? contracts.total : userContracts.total) || 0}
+              Всего контрактов: {isDataLoading ? "..." : totalItems || 0}
+              {!isAdmin && " (только ваши контракты)"}
             </div>
-            {!isDataLoading &&
-              (isAdmin ? contracts.totalPages : userContracts.totalPages) >
-                1 && (
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (currentPage > 1) {
-                            handlePageChange(currentPage - 1);
-                          }
-                        }}
-                        className={
-                          currentPage === 1
-                            ? "pointer-events-none opacity-50"
-                            : ""
+            {!isDataLoading && totalPages > 1 && (
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage > 1) {
+                          handlePageChange(currentPage - 1);
                         }
-                      />
+                      }}
+                      className={
+                        currentPage === 1
+                          ? "pointer-events-none opacity-50"
+                          : ""
+                      }
+                    />
+                  </PaginationItem>
+
+                  {getPageNumbers().map((pageNum, index) => (
+                    <PaginationItem key={index}>
+                      {pageNum < 0 ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          href="#"
+                          isActive={pageNum === currentPage}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handlePageChange(pageNum);
+                          }}
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      )}
                     </PaginationItem>
+                  ))}
 
-                    {getPageNumbers().map((pageNum, index) => (
-                      <PaginationItem key={index}>
-                        {pageNum < 0 ? (
-                          <PaginationEllipsis />
-                        ) : (
-                          <PaginationLink
-                            href="#"
-                            isActive={pageNum === currentPage}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handlePageChange(pageNum);
-                            }}
-                          >
-                            {pageNum}
-                          </PaginationLink>
-                        )}
-                      </PaginationItem>
-                    ))}
-
-                    <PaginationItem>
-                      <PaginationNext
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (
-                            currentPage <
-                              (isAdmin
-                                ? contracts.totalPages
-                                : userContracts.totalPages) ||
-                            1
-                          ) {
-                            handlePageChange(currentPage + 1);
-                          }
-                        }}
-                        className={
-                          currentPage ===
-                          ((isAdmin
-                            ? contracts.totalPages
-                            : userContracts.totalPages) || 1)
-                            ? "pointer-events-none opacity-50"
-                            : ""
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage < totalPages || 1) {
+                          handlePageChange(currentPage + 1);
                         }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              )}
+                      }}
+                      className={
+                        currentPage === (totalPages || 1)
+                          ? "pointer-events-none opacity-50"
+                          : ""
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -836,7 +837,6 @@ export const ContractsBlock = () => {
                       <Calendar className="h-4 w-4" />
                     </Button>
                   </div>
-                  {/* Date calculator buttons removed as requested */}
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="edit-sender" className="text-sm font-medium">
