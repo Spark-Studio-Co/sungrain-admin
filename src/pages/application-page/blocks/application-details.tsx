@@ -223,25 +223,58 @@ export const ApplicationDetail = ({
   };
 
   const handleFileDownload = (fileUrl: string, fileName: string) => {
+    if (!fileUrl) {
+      console.error("File URL is missing");
+      return;
+    }
+
     try {
+      // Check if the URL is relative or absolute
       const url = fileUrl.startsWith("http")
         ? fileUrl
         : `${process.env.NEXT_PUBLIC_API_URL || ""}${fileUrl}`;
 
-      console.log("Attempting to open and download file:", url);
+      console.log("Attempting to download file:", url);
 
-      // ✅ 1. Открываем файл в новой вкладке
-      window.open(url, "_blank");
+      // For URLs with encoding issues, try to open in a new tab
+      if (url.includes("%") || /[а-яА-Я]/.test(url) || url.includes("+")) {
+        window.open(url, "_blank");
+        console.log("Opening file in new tab due to special characters in URL");
+        return;
+      }
 
-      // ✅ 2. Запускаем скачивание (создаём ссылку и эмулируем клик)
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", fileName || "download");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Create a fetch request to check if the file exists and is accessible
+      fetch(url, { method: "HEAD" })
+        .then((response) => {
+          if (response.ok) {
+            // File exists, create download link
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", fileName);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            console.log("File download initiated");
+          } else {
+            // File doesn't exist or isn't accessible, open in new tab
+            window.open(url, "_blank");
+            console.log("Opening file in new tab as direct download failed");
+          }
+        })
+        .catch((error) => {
+          console.error("Error checking file:", error);
+          // On error, try opening in new tab
+          window.open(url, "_blank");
+          console.log("Opening file in new tab as fallback");
+        });
     } catch (error) {
       console.error("Error in handleFileDownload:", error);
+      // Final fallback - try to open in new tab
+      try {
+        window.open(fileUrl, "_blank");
+      } catch (e) {
+        console.error("Failed to open file in new tab:", e);
+      }
     }
   };
 
@@ -288,111 +321,15 @@ export const ApplicationDetail = ({
     }
   };
 
-  const handleCreateShippingDoc = async () => {
-    // Don't proceed if there's no file
-    if (!newShippingDoc.file || !newShippingDoc.name) {
-      console.warn("File and name are required for shipping document");
-      return;
-    }
-
-    try {
-      const filesInfo = [
-        {
-          name: newShippingDoc.name,
-          number: newShippingDoc.number || "",
-          date: newShippingDoc.date || "",
-          isForUpload: true,
-        },
-      ];
-
-      const response = await uploadDocumentsForUploadMutation.mutateAsync(
-        {
-          applicationId,
-          files: [newShippingDoc.file] as any,
-          filesInfo,
-        },
-        {
-          onSuccess: async (data) => {
-            refetch();
-            setIsCreateShippingDocOpen(false);
-
-            const documentId = data?.documentId;
-
-            if (documentId && newShippingDoc.file) {
-              await updateUploadStatus(documentId, true); // Only update status if we have a file
-            } else {
-              console.warn(
-                "No documentId returned from upload or no file provided"
-              );
-            }
-          },
-          onError: (error) => {
-            console.error("Upload failed:", error);
-          },
-        }
-      );
-
-      setNewShippingDoc({
-        name: "",
-        number: "",
-        date: "",
-        file: null,
-      });
-    } catch (error) {
-      console.error("Error creating shipping document:", error);
-    }
-  };
-
   const handleEditShippingDocClick = (doc: any) => {
     setEditingShippingDoc({
       id: doc.id,
       name: doc.name || "",
       number: doc.number || "",
       date: doc.date || "",
-      file: null,
-      originalFile: doc.files,
+      isUploaded: doc.isUploaded || false,
     });
     setIsEditShippingDocOpen(true);
-  };
-
-  const handleUpdateShippingDoc = async () => {
-    if (!editingShippingDoc || !editingShippingDoc.id) return;
-
-    try {
-      // If a new file was uploaded, use it; otherwise, keep the original
-      const hasNewFile = !!editingShippingDoc.file;
-
-      const filesInfo = [
-        {
-          id: editingShippingDoc.id,
-          name: editingShippingDoc.name,
-          number: editingShippingDoc.number || "",
-          date: editingShippingDoc.date || "",
-          isForUpload: true,
-        },
-      ];
-
-      // Only include files in the request if a new file was uploaded
-      const requestData: any = {
-        applicationId,
-        filesInfo,
-      };
-
-      if (hasNewFile) {
-        requestData.files = [editingShippingDoc.file];
-      }
-
-      await apiClient.patch(
-        `/application/${applicationId}/documents`,
-        requestData
-      );
-
-      setIsEditShippingDocOpen(false);
-      setEditingShippingDoc(null);
-      refetch();
-    } catch (error) {
-      console.error("Error updating shipping document:", error);
-    }
   };
 
   // Update upload status
@@ -401,13 +338,27 @@ export const ApplicationDetail = ({
     isUploaded: boolean
   ) => {
     try {
-      const response = await apiClient.patch(`/${id}/upload-status`, {
-        isUploaded,
-      });
+      console.log(
+        `Updating status for document ${id} to ${
+          isUploaded ? "uploaded" : "pending"
+        }`
+      );
 
+      const response = await apiClient.patch(
+        `/application/${id}/upload-status`,
+        {
+          isUploaded,
+        }
+      );
+
+      // Refresh the data to show updated status
+      await refetch();
+
+      console.log("Status update successful:", response.data);
       return response.data;
     } catch (error) {
       console.error("Error updating upload status:", error);
+      throw error;
     }
   };
 
@@ -561,18 +512,20 @@ export const ApplicationDetail = ({
     }
   };
 
-  const getFilePath = (doc: any) => {
-    const files = doc.files;
+  // Handle adding a comment
+  const handleAddComment = () => {
+    if (!newComment.trim()) return;
 
-    if (Array.isArray(files)) {
-      return files[0]?.path || files[0]?.location || doc.location || "";
-    }
+    // In a real app, you would call an API to save the comment
+    const newCommentObj = {
+      id: Date.now().toString(),
+      text: newComment,
+      author: "Текущий пользователь",
+      created_at: new Date().toISOString(),
+    };
 
-    if (typeof files === "object" && files !== null) {
-      return files.path || files.location || doc.location || "";
-    }
-
-    return doc.location || "";
+    setComments([...comments, newCommentObj]);
+    setNewComment("");
   };
 
   // Handle wagon update
@@ -775,17 +728,6 @@ export const ApplicationDetail = ({
                 <FileText className="h-5 w-5 text-amber-500" />
                 <h3 className="font-medium">Документы для отгрузки</h3>
               </div>
-              {isAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 bg-white hover:bg-amber-100"
-                  onClick={() => setIsCreateShippingDocOpen(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Создать документ
-                </Button>
-              )}
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
@@ -830,15 +772,6 @@ export const ApplicationDetail = ({
         <TabsContent value="shipping-docs" className="mt-4">
           <div className="mb-4 flex justify-between items-center">
             <h2 className="text-2xl font-bold">Документы для отгрузки</h2>
-            {isAdmin && (
-              <Button
-                className="gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
-                onClick={() => setIsCreateShippingDocOpen(true)}
-              >
-                <FilePlus className="h-4 w-4" />
-                Создать документ
-              </Button>
-            )}
           </div>
 
           {shippingDocuments.length > 0 ? (
@@ -880,6 +813,7 @@ export const ApplicationDetail = ({
                       )}
                     </div>
                   </CardHeader>
+
                   <CardContent className="pt-4">
                     <div className="space-y-2 text-sm">
                       {doc.files && doc.files.originalname && (
@@ -900,46 +834,87 @@ export const ApplicationDetail = ({
                           </span>
                         </div>
                       )}
-                      {doc.isUploaded !== undefined && (
-                        <div className="flex justify-between items-center mt-2">
-                          <span className="text-muted-foreground">Статус:</span>
-                          <Badge
-                            variant="outline"
-                            className={
-                              doc.isUploaded
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
-                            }
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-muted-foreground">Статус:</span>
+                        <Badge
+                          id={`status-badge-${doc.id}`}
+                          variant="outline"
+                          className={
+                            doc.isUploaded
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }
+                        >
+                          {doc.isUploaded ? "Загружен" : "Ожидает загрузки"}
+                        </Badge>
+                      </div>
+
+                      {isAdmin && (
+                        <div className="mt-4 pt-3 border-t border-gray-100">
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            variant={doc.isUploaded ? "outline" : "default"}
+                            onClick={() => {
+                              updateUploadStatus(doc.id, true)
+                                .then(() => {
+                                  alert(
+                                    `Статус документа "${
+                                      doc.name
+                                    }" изменен на "${
+                                      newStatus
+                                        ? "Загружен"
+                                        : "Ожидает загрузки"
+                                    }"`
+                                  );
+                                })
+                                .catch((error) => {
+                                  console.error(
+                                    "Error updating status:",
+                                    error
+                                  );
+                                  alert(
+                                    "Ошибка при обновлении статуса. Пожалуйста, попробуйте снова."
+                                  );
+                                });
+                            }}
+                            id={`status-btn-${doc.id}`}
                           >
-                            {doc.isUploaded ? "Загружен" : "Ожидает загрузки"}
-                          </Badge>
+                            {doc.isUploaded ? (
+                              <>
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                Изменить на "Ожидает загрузки"
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="h-4 w-4 mr-2" />
+                                Изменить на "Загружен"
+                              </>
+                            )}
+                          </Button>
                         </div>
                       )}
                     </div>
                   </CardContent>
-                  <CardFooter className="bg-white border-t flex justify-between">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-gray-700 hover:text-gray-800 hover:bg-gray-100"
-                      onClick={() => {
-                        const filePath = getFilePath(doc);
-                        handleFileDownload(
-                          filePath,
-                          doc.name || `document-${index + 1}.pdf`
-                        );
-                      }}
-                    >
-                      <Download className="h-4 w-4 mr-1" />
-                      Скачать
-                    </Button>
 
+                  <CardFooter className="bg-white border-t flex justify-between">
                     <Badge
                       variant="outline"
-                      className="bg-green-100 text-green-700"
+                      className="bg-amber-100 text-amber-600"
                     >
                       Для отгрузки
                     </Badge>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditShippingDocClick(doc)}
+                        className="gap-1"
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Редактировать
+                      </Button>
+                    )}
                   </CardFooter>
                 </Card>
               ))}
@@ -1539,154 +1514,111 @@ export const ApplicationDetail = ({
         </DialogContent>
       </Dialog>
       <Dialog
-        open={isCreateShippingDocOpen}
-        onOpenChange={setIsCreateShippingDocOpen}
+        open={isEditShippingDocOpen}
+        onOpenChange={setIsEditShippingDocOpen}
       >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Создать документ для отгрузки</DialogTitle>
+            <DialogTitle>Изменить статус документа</DialogTitle>
             <DialogDescription>
-              Заполните информацию о новом документе для отгрузки
+              Управление статусом документа для отгрузки
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="shipping-doc-name" className="text-right">
-                Название <span className="text-red-500">*</span>
+              <Label htmlFor="edit-shipping-doc-name" className="text-right">
+                Название
               </Label>
-              <Input
-                id="shipping-doc-name"
-                value={newShippingDoc.name}
-                onChange={(e) =>
-                  setNewShippingDoc({ ...newShippingDoc, name: e.target.value })
-                }
-                className="col-span-3"
-                placeholder="Введите название документа"
-              />
+              <div className="col-span-3">
+                <p className="text-sm font-medium">
+                  {editingShippingDoc?.name || ""}
+                </p>
+              </div>
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="shipping-doc-number" className="text-right">
+              <Label htmlFor="edit-shipping-doc-number" className="text-right">
                 Номер
               </Label>
-              <Input
-                id="shipping-doc-number"
-                value={newShippingDoc.number}
-                onChange={(e) =>
-                  setNewShippingDoc({
-                    ...newShippingDoc,
-                    number: e.target.value,
-                  })
-                }
-                className="col-span-3"
-                placeholder="Введите номер документа"
-              />
+              <div className="col-span-3">
+                <p className="text-sm">
+                  {editingShippingDoc?.number || "Не указан"}
+                </p>
+              </div>
             </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="shipping-doc-date" className="text-right">
+              <Label htmlFor="edit-shipping-doc-date" className="text-right">
                 Дата
               </Label>
               <div className="col-span-3">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="shipping-doc-date"
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !newShippingDoc.date && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newShippingDoc.date ? (
-                        formatDate(newShippingDoc.date)
-                      ) : (
-                        <span>Выберите дату</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={
-                        newShippingDoc.date
-                          ? new Date(newShippingDoc.date)
-                          : undefined
-                      }
-                      onSelect={(date) => {
-                        if (date) {
-                          setNewShippingDoc({
-                            ...newShippingDoc,
-                            date: format(date, "yyyy-MM-dd"),
-                          });
-                        }
-                      }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <p className="text-sm">
+                  {editingShippingDoc?.date
+                    ? formatDate(editingShippingDoc.date)
+                    : "Не указана"}
+                </p>
               </div>
             </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="shipping-doc-file" className="text-right">
-                Файл <span className="text-red-500">*</span>
+              <Label htmlFor="edit-shipping-doc-status" className="text-right">
+                Статус <span className="text-red-500">*</span>
               </Label>
               <div className="col-span-3">
-                <Input
-                  id="shipping-doc-file"
-                  type="file"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setNewShippingDoc({
-                        ...newShippingDoc,
-                        file: e.target.files[0],
-                      });
-                    }
+                <Select
+                  value={
+                    editingShippingDoc?.isUploaded ? "uploaded" : "pending"
+                  }
+                  onValueChange={(value) => {
+                    setEditingShippingDoc({
+                      ...editingShippingDoc,
+                      isUploaded: value === "uploaded",
+                    });
                   }}
-                />
-                {newShippingDoc.file && (
-                  <div className="flex items-center mt-2 text-sm">
-                    <FileText className="h-4 w-4 mr-2 text-amber-500" />
-                    <span className="truncate max-w-[300px]">
-                      {newShippingDoc.file.name}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 ml-2"
-                      onClick={() =>
-                        setNewShippingDoc({ ...newShippingDoc, file: null })
-                      }
-                    >
-                      <X className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
-                )}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Выберите статус" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="uploaded">Загружен</SelectItem>
+                    <SelectItem value="pending">Ожидает загрузки</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setIsCreateShippingDocOpen(false)}
+              onClick={() => setIsEditShippingDocOpen(false)}
             >
               Отмена
             </Button>
             <Button
               type="submit"
-              onClick={handleCreateShippingDoc}
-              disabled={uploadDocumentsForUploadMutation.isPending}
+              onClick={() => {
+                if (editingShippingDoc && editingShippingDoc.id) {
+                  updateUploadStatus(
+                    editingShippingDoc.id,
+                    editingShippingDoc.isUploaded
+                  )
+                    .then(() => {
+                      setIsEditShippingDocOpen(false);
+                      alert(
+                        `Статус документа "${editingShippingDoc.name}" успешно обновлен`
+                      );
+                    })
+                    .catch((error) => {
+                      console.error("Error updating status:", error);
+                      alert(
+                        "Ошибка при обновлении статуса. Пожалуйста, попробуйте снова."
+                      );
+                    });
+                }
+              }}
               className="bg-amber-500 hover:bg-amber-600"
             >
-              {uploadDocumentsForUploadMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Создание...
-                </>
-              ) : (
-                "Создать документ"
-              )}
+              Сохранить статус
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2124,168 +2056,6 @@ export const ApplicationDetail = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <Dialog
-        open={isEditShippingDocOpen}
-        onOpenChange={setIsEditShippingDocOpen}
-      >
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Редактировать документ для отгрузки</DialogTitle>
-            <DialogDescription>
-              Измените информацию о документе для отгрузки
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-shipping-doc-name" className="text-right">
-                Название <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="edit-shipping-doc-name"
-                value={editingShippingDoc?.name || ""}
-                onChange={(e) =>
-                  setEditingShippingDoc({
-                    ...editingShippingDoc,
-                    name: e.target.value,
-                  })
-                }
-                className="col-span-3"
-                placeholder="Введите название документа"
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-shipping-doc-number" className="text-right">
-                Номер
-              </Label>
-              <Input
-                id="edit-shipping-doc-number"
-                value={editingShippingDoc?.number || ""}
-                onChange={(e) =>
-                  setEditingShippingDoc({
-                    ...editingShippingDoc,
-                    number: e.target.value,
-                  })
-                }
-                className="col-span-3"
-                placeholder="Введите номер документа"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-shipping-doc-date" className="text-right">
-                Дата
-              </Label>
-              <div className="col-span-3">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="edit-shipping-doc-date"
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !editingShippingDoc?.date && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {editingShippingDoc?.date ? (
-                        formatDate(editingShippingDoc.date)
-                      ) : (
-                        <span>Выберите дату</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={
-                        editingShippingDoc?.date
-                          ? new Date(editingShippingDoc.date)
-                          : undefined
-                      }
-                      onSelect={(date) => {
-                        if (date) {
-                          setEditingShippingDoc({
-                            ...editingShippingDoc,
-                            date: format(date, "yyyy-MM-dd"),
-                          });
-                        }
-                      }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-shipping-doc-file" className="text-right">
-                Файл
-              </Label>
-              <div className="col-span-3">
-                <Input
-                  id="edit-shipping-doc-file"
-                  type="file"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setEditingShippingDoc({
-                        ...editingShippingDoc,
-                        file: e.target.files[0],
-                      });
-                    }
-                  }}
-                />
-                {editingShippingDoc?.file ? (
-                  <div className="flex items-center mt-2 text-sm">
-                    <FileText className="h-4 w-4 mr-2 text-amber-500" />
-                    <span className="truncate max-w-[300px]">
-                      {editingShippingDoc.file.name}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 ml-2"
-                      onClick={() =>
-                        setEditingShippingDoc({
-                          ...editingShippingDoc,
-                          file: null,
-                        })
-                      }
-                    >
-                      <X className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
-                ) : editingShippingDoc?.originalFile?.originalname ? (
-                  <div className="flex items-center mt-2 text-sm">
-                    <FileText className="h-4 w-4 mr-2 text-gray-500" />
-                    <span className="truncate max-w-[300px]">
-                      {editingShippingDoc.originalFile.originalname} (текущий
-                      файл)
-                    </span>
-                  </div>
-                ) : null}
-                <p className="text-xs text-muted-foreground mt-2">
-                  Оставьте пустым, чтобы сохранить текущий файл
-                </p>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditShippingDocOpen(false)}
-            >
-              Отмена
-            </Button>
-            <Button
-              type="submit"
-              onClick={handleUpdateShippingDoc}
-              className="bg-amber-500 hover:bg-amber-600"
-            >
-              Сохранить изменения
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
