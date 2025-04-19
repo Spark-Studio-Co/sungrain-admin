@@ -1,80 +1,6 @@
 "use client";
 
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useState, useEffect } from "react";
-import {
-  ArrowLeft,
-  FileText,
-  Package,
-  DollarSign,
-  Calendar,
-  Upload,
-  Download,
-  Loader2,
-  Plus,
-  Trash2,
-  X,
-  CalendarIcon,
-  Receipt,
-  CreditCard,
-  Pencil,
-  CheckCircle2,
-  AlertCircle,
-  File,
-  FilePlus,
-} from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { usePopupStore } from "@/shared/model/popup-store";
-import { useUpdateWagon } from "@/entities/wagon/hooks/mutations/use-update-wagon.mutation";
-import { useDeleteWagon } from "@/entities/wagon/hooks/mutations/use-delete-wagon.mutation";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useGetApplication } from "@/entities/applications/hooks/query/use-get-application.query";
-import { useUploadApplicationFiles } from "@/entities/applications/hooks/mutations/use-upload-application-files.mutation";
-import { useDeleteApplicationFile } from "@/entities/applications/hooks/mutations/use-delete-application-file.mutation";
-import { WagonRegistry } from "@/pages/contracts-inner-page/blocks/wagon-registry";
-import { Progress } from "@/components/ui/progress";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -84,14 +10,88 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useGetInvoices } from "@/entities/invoices/hooks/query/use-get-invoices.query";
-import { useCreateInvoice } from "@/entities/invoices/hooks/mutations/use-create-invoice.mutation";
-import { useUpdateInvoice } from "@/entities/invoices/hooks/mutations/use-update-invoice.mutation";
-import { useDeleteInvoice } from "@/entities/invoices/hooks/mutations/use-delete-invoice.mutation";
-import { WagonDetails } from "@/pages/contracts-inner-page/blocks/wagon-details";
-import { useUploadDocumentsForUpload } from "@/entities/applications/hooks/mutations/use-upload-documents.mutation";
-import { apiClient } from "@/shared/api/apiClient";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useDeleteApplicationFile } from "@/entities/applications/hooks/mutations/use-delete-application-file.mutation";
 import { useDeleteUploadedDocuments } from "@/entities/applications/hooks/mutations/use-delete-upload-documents.mutation";
+import { useUploadApplicationFiles } from "@/entities/applications/hooks/mutations/use-upload-application-files.mutation";
+import { useUploadDocumentsForUpload } from "@/entities/applications/hooks/mutations/use-upload-documents.mutation";
+import { useGetApplication } from "@/entities/applications/hooks/query/use-get-application.query";
+import { useCreateInvoice } from "@/entities/invoices/hooks/mutations/use-create-invoice.mutation";
+import { useDeleteInvoice } from "@/entities/invoices/hooks/mutations/use-delete-invoice.mutation";
+import { useUpdateInvoice } from "@/entities/invoices/hooks/mutations/use-update-invoice.mutation";
+import { useGetInvoices } from "@/entities/invoices/hooks/query/use-get-invoices.query";
+import { useDeleteWagon } from "@/entities/wagon/hooks/mutations/use-delete-wagon.mutation";
+import { useUpdateWagon } from "@/entities/wagon/hooks/mutations/use-update-wagon.mutation";
+import { cn } from "@/lib/utils";
+import { WagonDetails } from "@/pages/contracts-inner-page/blocks/wagon-details";
+import { WagonRegistry } from "@/pages/contracts-inner-page/blocks/wagon-registry";
+import { apiClient } from "@/shared/api/apiClient";
+import { usePopupStore } from "@/shared/model/popup-store";
+import { format } from "date-fns";
+import {
+  AlertCircle,
+  ArrowLeft,
+  Calendar,
+  CalendarIcon,
+  CheckCircle2,
+  CreditCard,
+  DollarSign,
+  Download,
+  File,
+  FilePlus,
+  FileText,
+  Loader2,
+  Package,
+  Pencil,
+  Plus,
+  Receipt,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface ApplicationDetailProps {
   applicationId: string;
@@ -154,7 +154,6 @@ export const ApplicationDetail = ({
     name: "",
     number: "",
     date: "",
-    file: null as File | null,
   });
 
   // State for document deletion
@@ -728,6 +727,20 @@ export const ApplicationDetail = ({
                 <FileText className="h-5 w-5 text-amber-500" />
                 <h3 className="font-medium">Документы для отгрузки</h3>
               </div>
+              {isAdmin && (
+                <Button
+                  className="gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
+                  onClick={() => {
+                    // Show a notification that this functionality is disabled
+                    alert(
+                      "Функция загрузки документов отключена. Вы можете только изменять статус документов."
+                    );
+                  }}
+                >
+                  <FilePlus className="h-4 w-4" />
+                  Управление статусами
+                </Button>
+              )}
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
@@ -772,6 +785,15 @@ export const ApplicationDetail = ({
         <TabsContent value="shipping-docs" className="mt-4">
           <div className="mb-4 flex justify-between items-center">
             <h2 className="text-2xl font-bold">Документы для отгрузки</h2>
+            {isAdmin && (
+              <Button
+                className="gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
+                onClick={() => setIsCreateShippingDocOpen(true)}
+              >
+                <FilePlus className="h-4 w-4" />
+                Создать документ для отгрузки
+              </Button>
+            )}
           </div>
 
           {shippingDocuments.length > 0 ? (
@@ -856,7 +878,9 @@ export const ApplicationDetail = ({
                             className="w-full"
                             variant={doc.isUploaded ? "outline" : "default"}
                             onClick={() => {
-                              updateUploadStatus(doc.id, true)
+                              // Toggle status
+                              const newStatus = !doc.isUploaded;
+                              updateUploadStatus(doc.id, newStatus)
                                 .then(() => {
                                   alert(
                                     `Статус документа "${
@@ -2056,6 +2080,158 @@ export const ApplicationDetail = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Dialog
+        open={isCreateShippingDocOpen}
+        onOpenChange={setIsCreateShippingDocOpen}
+      >
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Создать документ для отгрузки</DialogTitle>
+            <DialogDescription>
+              Заполните информацию о новом документе для отгрузки
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="shipping-doc-name" className="text-right">
+                Название <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="shipping-doc-name"
+                value={newShippingDoc.name}
+                onChange={(e) =>
+                  setNewShippingDoc({ ...newShippingDoc, name: e.target.value })
+                }
+                className="col-span-3"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="shipping-doc-number" className="text-right">
+                Номер
+              </Label>
+              <Input
+                id="shipping-doc-number"
+                value={newShippingDoc.number}
+                onChange={(e) =>
+                  setNewShippingDoc({
+                    ...newShippingDoc,
+                    number: e.target.value,
+                  })
+                }
+                className="col-span-3"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="shipping-doc-date" className="text-right">
+                Дата
+              </Label>
+              <div className="col-span-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="shipping-doc-date"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !newShippingDoc.date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {newShippingDoc.date ? (
+                        formatDate(newShippingDoc.date)
+                      ) : (
+                        <span>Выберите дату</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={
+                        newShippingDoc.date
+                          ? new Date(newShippingDoc.date)
+                          : undefined
+                      }
+                      onSelect={(date) => {
+                        if (date) {
+                          setNewShippingDoc({
+                            ...newShippingDoc,
+                            date: format(date, "yyyy-MM-dd"),
+                          });
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateShippingDocOpen(false)}
+            >
+              Отмена
+            </Button>
+            <Button
+              type="submit"
+              onClick={() => {
+                if (!newShippingDoc.name) return;
+
+                // Create a simple object with just the required data
+                const documentData = {
+                  name: newShippingDoc.name,
+                  applicationId: applicationId,
+                };
+
+                // Add optional fields if they exist
+                if (newShippingDoc.number)
+                  documentData.number = newShippingDoc.number;
+                if (newShippingDoc.date)
+                  documentData.date = newShippingDoc.date;
+
+                // Send the document data
+                uploadDocumentsForUploadMutation.mutate(documentData, {
+                  onSuccess: () => {
+                    setIsCreateShippingDocOpen(false);
+                    setNewShippingDoc({
+                      name: "",
+                      number: "",
+                      date: "",
+                    });
+                    refetch();
+                    alert("Документ для отгрузки успешно создан");
+                  },
+                  onError: (error) => {
+                    console.error("Error creating shipping document:", error);
+                    alert(
+                      "Ошибка при создании документа. Пожалуйста, попробуйте снова."
+                    );
+                  },
+                });
+              }}
+              disabled={
+                uploadDocumentsForUploadMutation.isPending ||
+                !newShippingDoc.name
+              }
+              className="bg-amber-500 hover:bg-amber-600"
+            >
+              {uploadDocumentsForUploadMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Создание...
+                </>
+              ) : (
+                "Создать документ"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
