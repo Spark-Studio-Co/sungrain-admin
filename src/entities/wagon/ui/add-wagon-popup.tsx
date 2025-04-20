@@ -99,8 +99,8 @@ export const AddWagonPopup = ({
     formData.append("number", newWagon.number);
 
     // Make sure capacity is a valid number
-    const capacity = Number.parseInt(newWagon.capacity, 10);
-    if (isNaN(capacity)) {
+    const capacity = newWagon.capacity;
+    if (isNaN(capacity as any)) {
       alert("Пожалуйста, введите корректное значение для веса по документам");
       return;
     }
@@ -108,14 +108,14 @@ export const AddWagonPopup = ({
 
     // Add real_weight (use capacity as fallback if not provided)
     if (newWagon.real_weight) {
-      const realWeight = Number.parseInt(newWagon.real_weight, 10);
-      if (!isNaN(realWeight)) {
+      const realWeight = newWagon.real_weight;
+      if (!isNaN(realWeight as any)) {
         formData.append("real_weight", realWeight.toString());
       }
     } else {
       // If real_weight is not provided, use capacity value
-      const capacity = Number.parseInt(newWagon.capacity, 10);
-      if (!isNaN(capacity)) {
+      const capacity = newWagon.capacity;
+      if (!isNaN(capacity as any)) {
         formData.append("real_weight", capacity.toString());
       }
     }
@@ -152,10 +152,9 @@ export const AddWagonPopup = ({
 
     formData.append("files_info", JSON.stringify(filesInfo));
 
-    // Append actual files
     documents.forEach((doc) => {
       if (doc.file) {
-        formData.append(`files`, doc.file);
+        formData.append(`files`, doc.file); // 👈 you add all `doc.file`s, but order might mismatch
       }
     });
 
@@ -440,79 +439,40 @@ export const AddWagonPopup = ({
             </div>
 
             <div className="bg-white p-4 rounded-md border border-amber-100">
+              {/* Header */}
               <div className="grid grid-cols-12 gap-2 mb-2 text-sm font-medium text-muted-foreground">
-                <div className="col-span-1">№</div>
-                <div className="col-span-3">Наименование</div>
-                <div className="col-span-2">Номер</div>
-                <div className="col-span-3">Дата документа</div>
-                <div className="col-span-2">Загрузить файл</div>
-                <div className="col-span-1"></div>
+                <div className="col-span-1 text-center">№</div>
+                <div className="col-span-5">Наименование</div>
+                <div className="col-span-5">Файл</div>
+                <div className="col-span-1 text-center">Удалить</div>
               </div>
 
+              {/* Rows */}
               {documents.map((doc, index) => (
                 <div
                   key={index}
-                  className="grid grid-cols-12 gap-2 mb-3 items-center"
+                  className="grid grid-cols-12 gap-2 items-center bg-white p-3 mb-2 border rounded-md shadow-sm"
                 >
-                  <div className="col-span-1 text-center">{index + 1}</div>
-                  <div className="col-span-3">
+                  {/* № */}
+                  <div className="col-span-1 text-center font-medium text-gray-700">
+                    {index + 1}
+                  </div>
+
+                  {/* Название */}
+                  <div className="col-span-5">
                     <Input
                       value={doc.name}
                       onChange={(e) =>
                         updateDocument(index, "name", e.target.value)
                       }
                       placeholder="Название документа"
-                      className="border-dashed"
+                      className="w-full border-gray-300 focus:ring-1 focus:ring-primary"
                     />
                   </div>
-                  <div className="col-span-2">
-                    <Input
-                      value={doc.number}
-                      onChange={(e) =>
-                        updateDocument(index, "number", e.target.value)
-                      }
-                      placeholder="№ документа"
-                      className="border-dashed"
-                    />
-                  </div>
-                  <div className="col-span-3">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal border-dashed",
-                            !doc.date && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {doc.date ? (
-                            format(new Date(doc.date), "dd.MM.yyyy")
-                          ) : (
-                            <span>Выберите дату</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={doc.date ? new Date(doc.date) : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              updateDocument(
-                                index,
-                                "date",
-                                format(date, "yyyy-MM-dd")
-                              );
-                            }
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="col-span-2">
-                    <div className="relative">
+
+                  {/* File Upload */}
+                  <div className="col-span-5">
+                    <div className="flex items-center space-x-2">
                       <input
                         type="file"
                         id={`file-${index}`}
@@ -527,39 +487,44 @@ export const AddWagonPopup = ({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="w-full border-dashed text-green-600 hover:bg-green-50"
+                        className="border-dashed text-green-600 hover:bg-green-50"
                         onClick={() =>
                           document.getElementById(`file-${index}`)?.click()
                         }
                       >
                         <Upload className="h-4 w-4 mr-1" />
-                        Загрузить
+                        {doc.fileName || doc.location
+                          ? "Заменить"
+                          : "Загрузить"}
                       </Button>
+
+                      {(doc.fileName || doc.location) && (
+                        <div className="flex items-center text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">
+                          <FileText className="h-3 w-3 mr-1" />
+                          <span className="truncate max-w-[120px]">
+                            {doc.fileName}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 w-5 p-0 ml-1"
+                            onClick={() => removeFile(index)}
+                          >
+                            <X className="h-3 w-3 text-red-500" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                    {doc.fileName && (
-                      <div className="flex items-center mt-1 text-xs text-muted-foreground">
-                        <FileText className="h-3 w-3 mr-1" />
-                        <span className="truncate max-w-[120px]">
-                          {doc.fileName}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-5 w-5 p-0 ml-1"
-                          onClick={() => removeFile(index)}
-                        >
-                          <X className="h-3 w-3 text-red-500" />
-                        </Button>
-                      </div>
-                    )}
                   </div>
+
+                  {/* Удалить */}
                   <div className="col-span-1 flex justify-center">
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-red-500 hover:bg-red-50"
+                      size="icon"
+                      className="text-red-500 hover:bg-red-100"
                       onClick={() => removeDocumentRow(index)}
                     >
                       <Trash2 className="h-4 w-4" />

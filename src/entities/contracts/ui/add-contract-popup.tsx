@@ -125,7 +125,13 @@ export const AddContractDialog = () => {
     formData.append("departure_station", newContract.departure_station);
     formData.append("destination_station", newContract.destination_station);
     formData.append("companyId", Number(newContract.companyId) as any);
-    formData.append("total_volume", Number(newContract.total_volume) as any);
+
+    // Use parseFloat for total_volume to support decimal values
+    formData.append(
+      "total_volume",
+      Number.parseFloat(newContract.total_volume) as any
+    );
+
     formData.append(
       "estimated_cost",
       Number(newContract.estimated_cost) as any
@@ -282,6 +288,8 @@ export const AddContractDialog = () => {
                   </Label>
                   <Input
                     id="estimated_cost"
+                    type="number"
+                    step="0.01"
                     value={newContract.estimated_cost}
                     onChange={(e) =>
                       setNewContract({
@@ -362,7 +370,8 @@ export const AddContractDialog = () => {
                     <Input
                       className="w-full"
                       id="total_volume"
-                      type="number"
+                      type="string"
+                      step="0.01"
                       value={newContract.total_volume || ""}
                       onChange={(e) =>
                         setNewContract({
@@ -644,7 +653,7 @@ export const AddContractDialog = () => {
                           type="file"
                           id={`file-${index}`}
                           className="hidden"
-                          ref={(el) => (fileInputRefs.current[index] = el)}
+                          ref={(el: any) => (fileInputRefs.current[index] = el)}
                           onChange={(e) => {
                             if (e.target.files && e.target.files[0]) {
                               const file = e.target.files[0];

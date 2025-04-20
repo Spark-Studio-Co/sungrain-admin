@@ -11,6 +11,7 @@ import {
   Plus,
   Trash2,
   DollarSign,
+  CheckCircle,
 } from "lucide-react";
 import {
   Dialog,
@@ -87,6 +88,8 @@ export const ApplicationDialog = ({
       fileName?: string;
       id?: string | number;
       location?: string;
+      isUploading?: boolean;
+      isNew?: boolean;
     }>
   >(() => {
     // If we have an application with files, initialize from those
@@ -115,7 +118,61 @@ export const ApplicationDialog = ({
       onClose(true);
     },
   });
-  const uploadFilesMutation = useUploadApplicationFiles();
+  const uploadFilesMutation = useUploadApplicationFiles({
+    onSuccess: (data) => {
+      // Update documents with the newly uploaded files
+      if (data && Array.isArray(data)) {
+        setDocuments((prev) => {
+          const newDocs = [...prev];
+          // Find documents with isUploading flag and update them with server data
+          const uploadingDocs = newDocs.filter((doc) => doc.isUploading);
+
+          // Match uploaded files with their corresponding documents
+          data.forEach((uploadedFile, index) => {
+            if (index < uploadingDocs.length) {
+              const docIndex = newDocs.findIndex(
+                (doc) => doc === uploadingDocs[index]
+              );
+              if (docIndex !== -1) {
+                newDocs[docIndex] = {
+                  ...newDocs[docIndex],
+                  id: uploadedFile.id,
+                  location: uploadedFile.location || uploadedFile.file,
+                  isUploading: false,
+                  isNew: false,
+                };
+              }
+            }
+          });
+
+          return newDocs;
+        });
+
+        // Show success notification
+        setNotification({
+          type: "success",
+          message: "Документы успешно загружены",
+        });
+        setTimeout(() => setNotification(null), 3000);
+      }
+    },
+    onError: (error) => {
+      // Handle upload error
+      console.error("Error uploading files:", error);
+      setNotification({
+        type: "error",
+        message: "Ошибка при загрузке документов",
+      });
+      setTimeout(() => setNotification(null), 3000);
+
+      // Reset uploading state for documents
+      setDocuments((prev) =>
+        prev.map((doc) =>
+          doc.isUploading ? { ...doc, isUploading: false } : doc
+        )
+      );
+    },
+  });
   const deleteFileMutation = useDeleteApplicationFile();
 
   useEffect(() => {
@@ -198,7 +255,14 @@ export const ApplicationDialog = ({
   const handleFileUpload = (index: number, file: File) => {
     setDocuments((prev) =>
       prev.map((doc, i) =>
-        i === index ? { ...doc, file, fileName: file.name } : doc
+        i === index
+          ? {
+              ...doc,
+              file,
+              fileName: file.name,
+              isNew: true,
+            }
+          : doc
       )
     );
   };
@@ -206,7 +270,14 @@ export const ApplicationDialog = ({
   const removeFile = (index: number) => {
     setDocuments((prev) =>
       prev.map((doc, i) =>
-        i === index ? { ...doc, file: undefined, fileName: undefined } : doc
+        i === index
+          ? {
+              ...doc,
+              file: undefined,
+              fileName: undefined,
+              isNew: false,
+            }
+          : doc
       )
     );
   };
@@ -215,15 +286,66 @@ export const ApplicationDialog = ({
     setDocuments((prev) => [...prev, { name: "", number: "", date: "" }]);
   };
 
-  const removeDocumentRow = (index: number) => {
-    // If this is an existing document with an ID and we're in edit mode
+  // Notification state for all operations
+  const [notification, setNotification] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
+
+  const handleDeleteDocument = async (index: number) => {
     const doc = documents[index];
-    if (application?.id && doc.number && !doc.file) {
-      // For existing documents without new files, we need to delete from the server
-      handleDeleteDocument(index);
+
+    if (application?.id && doc.number) {
+      try {
+        // Show deletion in progress notification
+        setNotification({
+          type: "info",
+          message: `Удаление документа "${doc.name}"...`,
+        });
+
+        await deleteFileMutation.mutateAsync({
+          applicationId: application.id,
+          docNumber: doc.number,
+        });
+
+        // After successful deletion, remove the document from the local state
+        setDocuments((prev) => prev.filter((_, i) => i !== index));
+
+        // Show success notification
+        setNotification({
+          type: "success",
+          message: `Документ "${doc.name}" был успешно удален`,
+        });
+        setTimeout(() => setNotification(null), 3000);
+      } catch (error) {
+        console.error("Error deleting document:", error);
+        setNotification({
+          type: "error",
+          message: `Ошибка при удалении документа "${doc.name}"`,
+        });
+        setTimeout(() => setNotification(null), 3000);
+      }
     } else {
-      // For new documents or those with new files, just remove from state
-      setDocuments((prev) => prev.filter((_, i) => i !== index));
+      // If there's no application ID or document number, just remove from local state
+      removeDocumentRow(index);
+    }
+  };
+
+  // Update the removeDocumentRow function to not call handleDeleteDocument again
+  // This prevents duplicate API calls
+  const removeDocumentRow = (index: number) => {
+    const doc = documents[index];
+
+    // For new documents or those with new files, just remove from state
+    setDocuments((prev) => prev.filter((_, i) => i !== index));
+
+    // Show notification for client-side deletions
+    if (doc.name) {
+      setNotification({
+        type: "info",
+        message: `Документ "${doc.name}" был удален`,
+      });
+      setTimeout(() => setNotification(null), 3000);
     }
   };
 
@@ -233,25 +355,41 @@ export const ApplicationDialog = ({
     );
   };
 
-  // Add a function to handle document deletion
-  const handleDeleteDocument = async (index: number) => {
-    const doc = documents[index];
+  // Function to handle immediate file uploads
+  const handleUploadFiles = async () => {
+    const docsWithFiles = documents.filter((doc) => doc.file && doc.isNew);
 
-    if (application?.id && doc.number) {
-      try {
-        await deleteFileMutation.mutateAsync({
-          applicationId: application.id,
-          docNumber: doc.number,
-        });
+    if (docsWithFiles.length === 0 || !application?.id) return;
 
-        // Remove the document from the local state
-        removeDocumentRow(index);
-      } catch (error) {
-        console.error("Error deleting document:", error);
-      }
-    } else {
-      // If there's no application ID or document number, just remove from local state
-      removeDocumentRow(index);
+    try {
+      // Mark documents as uploading
+      setDocuments((prev) =>
+        prev.map((doc) =>
+          doc.file && doc.isNew ? { ...doc, isUploading: true } : doc
+        )
+      );
+
+      // Show uploading notification
+      setNotification({
+        type: "info",
+        message: "Загрузка документов...",
+      });
+
+      const filesInfo = docsWithFiles.map((doc) => ({
+        name: doc.name,
+        number: doc.number || "",
+        date: doc.date || "",
+      }));
+
+      const files = docsWithFiles.map((doc) => doc.file as File);
+
+      await uploadFilesMutation.mutateAsync({
+        applicationId: application.id,
+        files: files,
+        filesInfo: filesInfo,
+      });
+    } catch (error) {
+      console.error("Error uploading files:", error);
     }
   };
 
@@ -460,14 +598,37 @@ export const ApplicationDialog = ({
               <h3 className="font-semibold text-amber-700 uppercase text-sm">
                 ДОКУМЕНТЫ ЗАЯВКИ
               </h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={addDocumentRow}
-                className="text-amber-600 border-amber-300 hover:bg-amber-100"
-              >
-                <Plus className="h-4 w-4 mr-1" /> Добавить документ
-              </Button>
+              <div className="flex gap-2">
+                {application?.id &&
+                  documents.some((doc) => doc.file && doc.isNew) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUploadFiles}
+                      disabled={uploadFilesMutation.isPending}
+                      className="text-green-600 border-green-300 hover:bg-green-50"
+                    >
+                      {uploadFilesMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />{" "}
+                          Загрузка...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-1" /> Загрузить файлы
+                        </>
+                      )}
+                    </Button>
+                  )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addDocumentRow}
+                  className="text-amber-600 border-amber-300 hover:bg-amber-100"
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Добавить документ
+                </Button>
+              </div>
             </div>
             <div className="bg-white p-4 rounded-md border border-amber-100">
               {documents.length > 0 ? (
@@ -560,29 +721,50 @@ export const ApplicationDialog = ({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="w-full border-dashed text-green-600 hover:bg-green-50"
+                            className={cn(
+                              "w-full border-dashed",
+                              doc.isUploading
+                                ? "text-amber-600 hover:bg-amber-50"
+                                : "text-green-600 hover:bg-green-50"
+                            )}
                             onClick={() =>
                               document.getElementById(`file-${index}`)?.click()
                             }
+                            disabled={doc.isUploading}
                           >
-                            <Upload className="h-4 w-4 mr-1" />
-                            {doc.fileName || doc.location
-                              ? "Заменить"
-                              : "Загрузить"}
+                            {doc.isUploading ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />{" "}
+                                Загрузка...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-1" />
+                                {doc.fileName || doc.location
+                                  ? "Заменить"
+                                  : "Загрузить"}
+                              </>
+                            )}
                           </Button>
                         </div>
-                        {(doc.fileName || doc.location) && (
+                        {(doc.fileName || doc.location) && !doc.isUploading && (
                           <div className="flex items-center mt-1 text-xs text-muted-foreground">
                             <FileText className="h-3 w-3 mr-1" />
                             <span className="truncate max-w-[120px]">
                               {doc.fileName || "Документ"}
                             </span>
+                            {doc.isNew && (
+                              <span className="ml-1 text-amber-500 text-[10px]">
+                                (Не загружен)
+                              </span>
+                            )}
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
                               className="h-5 w-5 p-0 ml-1"
                               onClick={() => removeFile(index)}
+                              disabled={doc.isUploading}
                             >
                               <X className="h-3 w-3 text-red-500" />
                             </Button>
@@ -597,12 +779,18 @@ export const ApplicationDialog = ({
                           className="h-8 w-8 p-0 text-red-500 hover:bg-red-50"
                           onClick={() => {
                             const doc = documents[index];
-                            if (application?.id && doc.number && !doc.file) {
+                            if (
+                              application?.id &&
+                              doc.number &&
+                              !doc.file &&
+                              !doc.isNew
+                            ) {
                               handleDeleteDocument(index);
                             } else {
                               removeDocumentRow(index);
                             }
                           }}
+                          disabled={doc.isUploading}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -626,6 +814,28 @@ export const ApplicationDialog = ({
               )}
             </div>
           </div>
+          {notification && (
+            <div
+              className={cn(
+                "p-3 rounded-md text-sm flex items-center",
+                notification.type === "success" &&
+                  "bg-green-50 text-green-700 border border-green-200",
+                notification.type === "error" &&
+                  "bg-red-50 text-red-700 border border-red-200",
+                notification.type === "info" &&
+                  "bg-blue-50 text-blue-700 border border-blue-200"
+              )}
+            >
+              {notification.type === "success" && (
+                <CheckCircle className="h-4 w-4 mr-2" />
+              )}
+              {notification.type === "error" && <X className="h-4 w-4 mr-2" />}
+              {notification.type === "info" && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              {notification.message}
+            </div>
+          )}
         </div>
 
         <DialogFooter className="mt-6 pt-4 border-t">
@@ -642,6 +852,7 @@ export const ApplicationDialog = ({
             disabled={
               createMutation.isPending ||
               updateMutation.isPending ||
+              uploadFilesMutation.isPending ||
               !formData.price_per_ton ||
               !formData.volume ||
               !formData.culture ||

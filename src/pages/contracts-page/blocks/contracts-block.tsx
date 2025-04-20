@@ -34,6 +34,8 @@ import {
   Upload,
   X,
   File,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import {
   Pagination,
@@ -69,6 +71,23 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useUpdateContract } from "@/entities/contracts/hooks/mutations/use-update-contract.mutation";
+import { useFetchStations } from "@/entities/stations/hooks/query/use-get-stations.query";
+import { useGetReceivers } from "@/entities/receiver/hooks/query/use-get-receiver.query";
+import { useGetSenders } from "@/entities/sender/hooks/query/use-get-senders.query";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 export const ContractsBlock = () => {
   const isAdmin = localStorage.getItem("isAdmin") === "true";
@@ -84,6 +103,23 @@ export const ContractsBlock = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Dropdown states
+  const [openSender, setOpenSender] = useState(false);
+  const [openReceiver, setOpenReceiver] = useState(false);
+  const [openDepartureStation, setOpenDepartureStation] = useState(false);
+  const [openDestinationStation, setOpenDestinationStation] = useState(false);
+
+  // Fetch dropdown data
+  const { data: stationsData = { data: [], total: 0 } } = useFetchStations(
+    1,
+    100
+  );
+  const { data: receiversData = { data: [], total: 0 } } = useGetReceivers(
+    1,
+    100
+  );
+  const { data: sendersData = { data: [], total: 0 } } = useGetSenders(1, 100);
 
   // Only fetch all contracts if user is admin
   const {
@@ -249,6 +285,7 @@ export const ContractsBlock = () => {
         key !== "id" &&
         key !== "files" &&
         key !== "company" &&
+        key !== "wagons" && // Exclude wagons property
         contractToEdit[key] !== undefined &&
         contractToEdit[key] !== null
       ) {
@@ -256,9 +293,11 @@ export const ContractsBlock = () => {
       }
     });
 
-    // Add company ID if present
+    // Add company ID if present - ensure it's an integer
     if (contractToEdit.company && contractToEdit.company.id) {
-      formData.append("companyId", contractToEdit.company.id);
+      // Convert to integer using parseInt
+      const companyId = Number.parseInt(contractToEdit.company.id, 10);
+      formData.append("companyId", companyId.toString());
     }
 
     // Add new files
@@ -734,7 +773,7 @@ export const ContractsBlock = () => {
         </DialogContent>
       </Dialog>
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-5xl">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>Редактировать контракт</DialogTitle>
             <DialogDescription>
@@ -742,7 +781,7 @@ export const ContractsBlock = () => {
             </DialogDescription>
           </DialogHeader>
           {contractToEdit && (
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-4 py-4 overflow-y-auto pr-2 max-h-[calc(90vh-180px)]">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="edit-number" className="text-sm font-medium">
@@ -842,16 +881,56 @@ export const ContractsBlock = () => {
                   <label htmlFor="edit-sender" className="text-sm font-medium">
                     Грузоотправитель <span className="text-destructive">*</span>
                   </label>
-                  <Input
-                    id="edit-sender"
-                    value={contractToEdit.sender || ""}
-                    onChange={(e) =>
-                      setContractToEdit({
-                        ...contractToEdit,
-                        sender: e.target.value,
-                      })
-                    }
-                  />
+                  <Popover open={openSender} onOpenChange={setOpenSender}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openSender}
+                        className="w-full justify-between"
+                      >
+                        <span className="truncate">
+                          {contractToEdit.sender || "Выберите грузоотправителя"}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Поиск грузоо��правителя..." />
+                        <CommandList>
+                          <CommandEmpty>
+                            Грузоотправитель не найден.
+                          </CommandEmpty>
+                          <CommandGroup className="max-h-60 overflow-y-auto">
+                            {sendersData.data.map((sender: any) => (
+                              <CommandItem
+                                key={sender.id}
+                                value={sender.name}
+                                onSelect={(value) => {
+                                  setContractToEdit({
+                                    ...contractToEdit,
+                                    sender: value,
+                                  });
+                                  setOpenSender(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    contractToEdit.sender === sender.name
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                <span className="truncate">{sender.name}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
                   <label
@@ -860,16 +939,59 @@ export const ContractsBlock = () => {
                   >
                     Грузополучатель <span className="text-destructive">*</span>
                   </label>
-                  <Input
-                    id="edit-receiver"
-                    value={contractToEdit.receiver || ""}
-                    onChange={(e) =>
-                      setContractToEdit({
-                        ...contractToEdit,
-                        receiver: e.target.value,
-                      })
-                    }
-                  />
+                  <Popover open={openReceiver} onOpenChange={setOpenReceiver}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openReceiver}
+                        className="w-full justify-between"
+                      >
+                        <span className="truncate">
+                          {contractToEdit.receiver ||
+                            "Выберите грузополучателя"}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Поиск грузополучателя..." />
+                        <CommandList>
+                          <CommandEmpty>
+                            Грузополучатель не найден.
+                          </CommandEmpty>
+                          <CommandGroup className="max-h-60 overflow-y-auto">
+                            {receiversData.data.map((receiver: any) => (
+                              <CommandItem
+                                key={receiver.id}
+                                value={receiver.name}
+                                onSelect={(value) => {
+                                  setContractToEdit({
+                                    ...contractToEdit,
+                                    receiver: value,
+                                  });
+                                  setOpenReceiver(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    contractToEdit.receiver === receiver.name
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                <span className="truncate">
+                                  {receiver.name}
+                                </span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
                   <label
@@ -879,16 +1001,59 @@ export const ContractsBlock = () => {
                     Станция отправления{" "}
                     <span className="text-destructive">*</span>
                   </label>
-                  <Input
-                    id="edit-departure"
-                    value={contractToEdit.departure_station || ""}
-                    onChange={(e) =>
-                      setContractToEdit({
-                        ...contractToEdit,
-                        departure_station: e.target.value,
-                      })
-                    }
-                  />
+                  <Popover
+                    open={openDepartureStation}
+                    onOpenChange={setOpenDepartureStation}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openDepartureStation}
+                        className="w-full justify-between"
+                      >
+                        <span className="truncate">
+                          {contractToEdit.departure_station ||
+                            "Выберите станцию отправления"}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Поиск станции..." />
+                        <CommandList>
+                          <CommandEmpty>Станция не найдена.</CommandEmpty>
+                          <CommandGroup className="max-h-60 overflow-y-auto">
+                            {stationsData.data.map((station: any) => (
+                              <CommandItem
+                                key={station.id}
+                                value={station.name}
+                                onSelect={(value) => {
+                                  setContractToEdit({
+                                    ...contractToEdit,
+                                    departure_station: value,
+                                  });
+                                  setOpenDepartureStation(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    contractToEdit.departure_station ===
+                                      station.name
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                <span className="truncate">{station.name}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
                   <label
@@ -898,16 +1063,59 @@ export const ContractsBlock = () => {
                     Станция назначения{" "}
                     <span className="text-destructive">*</span>
                   </label>
-                  <Input
-                    id="edit-destination"
-                    value={contractToEdit.destination_station || ""}
-                    onChange={(e) =>
-                      setContractToEdit({
-                        ...contractToEdit,
-                        destination_station: e.target.value,
-                      })
-                    }
-                  />
+                  <Popover
+                    open={openDestinationStation}
+                    onOpenChange={setOpenDestinationStation}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openDestinationStation}
+                        className="w-full justify-between"
+                      >
+                        <span className="truncate">
+                          {contractToEdit.destination_station ||
+                            "Выберите станцию назначения"}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput placeholder="Поиск станции..." />
+                        <CommandList>
+                          <CommandEmpty>Станция не найдена.</CommandEmpty>
+                          <CommandGroup className="max-h-60 overflow-y-auto">
+                            {stationsData.data.map((station: any) => (
+                              <CommandItem
+                                key={station.id}
+                                value={station.name}
+                                onSelect={(value) => {
+                                  setContractToEdit({
+                                    ...contractToEdit,
+                                    destination_station: value,
+                                  });
+                                  setOpenDestinationStation(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    contractToEdit.destination_station ===
+                                      station.name
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                <span className="truncate">{station.name}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="edit-volume" className="text-sm font-medium">

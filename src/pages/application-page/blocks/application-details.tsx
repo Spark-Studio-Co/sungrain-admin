@@ -202,16 +202,15 @@ export const ApplicationDetail = ({
   // Get shipping documents from documents_for_upload array
   const shippingDocuments = application?.documents_for_upload || [];
 
-  // Update upload status when a shipping document is uploaded
-  useEffect(() => {
-    if (
-      shippingDocuments.length > 0 &&
-      shippingDocuments[0]?.id &&
-      shippingDocuments[0]?.files
-    ) {
-      updateUploadStatus(shippingDocuments[0].id, true);
-    }
-  }, [shippingDocuments.length]);
+  // useEffect(() => {
+  //   if (
+  //     shippingDocuments.length > 0 &&
+  //     shippingDocuments[0]?.id &&
+  //     shippingDocuments[0]?.files
+  //   ) {
+  //     updateUploadStatus(shippingDocuments[0].id, true);
+  //   }
+  // }, [shippingDocuments.length]);
 
   const formatDate = (dateString: string) => {
     try {
@@ -248,7 +247,7 @@ export const ApplicationDetail = ({
           if (response.ok) {
             // File exists, create download link
             const link = document.createElement("a");
-            link.href = url;
+            window.open(url, "_blank");
             link.setAttribute("download", fileName);
             document.body.appendChild(link);
             link.click();
@@ -1628,9 +1627,6 @@ export const ApplicationDetail = ({
                   )
                     .then(() => {
                       setIsEditShippingDocOpen(false);
-                      alert(
-                        `Статус документа "${editingShippingDoc.name}" успешно обновлен`
-                      );
                     })
                     .catch((error) => {
                       console.error("Error updating status:", error);
@@ -2204,7 +2200,6 @@ export const ApplicationDetail = ({
                       date: "",
                     });
                     refetch();
-                    alert("Документ для отгрузки успешно создан");
                   },
                   onError: (error) => {
                     console.error("Error creating shipping document:", error);

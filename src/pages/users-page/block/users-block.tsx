@@ -1,12 +1,9 @@
 "use client";
 
-import { DialogTrigger } from "@/components/ui/dialog";
-
-import { DialogFooter } from "@/components/ui/dialog";
-
 import type React from "react";
 
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -19,8 +16,10 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -65,7 +64,6 @@ import { useDeleteUser } from "@/entities/users/hooks/mutations/use-delete-user.
 import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contracts.query";
 import { useGetUserContracts } from "@/entities/contracts/hooks/query/use-get-user-contracts.query";
 import { useGetUserById } from "@/entities/users/hooks/query/use-get-user-by-id.query";
-import { useQueryClient } from "@tanstack/react-query";
 
 const roles = ["ADMIN", "USER"];
 

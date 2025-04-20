@@ -235,14 +235,14 @@ export const WagonRegistry = ({
       formData.append("number", editingWagon.number);
 
       // Make sure capacity is a valid number
-      const capacity = Number.parseInt(editingWagon.capacity, 10);
+      const capacity = Number.parseFloat(editingWagon.capacity);
       if (!isNaN(capacity)) {
         formData.append("capacity", capacity.toString());
       }
 
       // Only add real_weight if it has a value
       if (editingWagon.real_weight) {
-        const realWeight = Number.parseInt(editingWagon.real_weight, 10);
+        const realWeight = Number.parseFloat(editingWagon.real_weight);
         if (!isNaN(realWeight)) {
           formData.append("real_weight", realWeight.toString());
         }
@@ -260,24 +260,26 @@ export const WagonRegistry = ({
       formData.append("date_of_unloading", unloadingDate || "");
 
       // Append files with proper files_info structure
-      const filesInfo = documents
-        .filter((doc) => doc.file || doc.location)
-        .map((doc) => ({
-          id: doc.id,
-          name: doc.name,
-          number: doc.number,
-          date: doc.date,
-          location: doc.location,
-        }));
+      // Updated fix
+      const filesInfo: any[] = [];
 
-      formData.append("files_info", JSON.stringify(filesInfo));
-
-      // Append actual new files
       documents.forEach((doc) => {
-        if (doc.file) {
-          formData.append(`files`, doc.file);
+        if (doc.file || doc.location) {
+          filesInfo.push({
+            id: doc.id,
+            name: doc.name,
+            number: doc.number,
+            date: doc.date,
+            location: doc.location,
+          });
+
+          if (doc.file) {
+            formData.append("files", doc.file);
+          }
         }
       });
+
+      formData.append("files_info", JSON.stringify(filesInfo));
 
       // Add this right before the await onUpdateWagon call
       console.log("Updating wagon with data:", {
@@ -317,6 +319,25 @@ export const WagonRegistry = ({
     } catch (e) {
       return dateString;
     }
+  };
+
+  // Format number with decimal places for display
+  const formatNumber = (value: number | string | undefined) => {
+    if (value === undefined || value === null || value === "") {
+      return "Не указана";
+    }
+
+    const num = typeof value === "string" ? Number.parseFloat(value) : value;
+
+    if (isNaN(num)) {
+      return "Не указана";
+    }
+
+    // Format with up to 2 decimal places, but only if needed
+    return num.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
   };
 
   return (
@@ -375,12 +396,8 @@ export const WagonRegistry = ({
                       }
                     >
                       <TableCell>{wagon.number}</TableCell>
-                      <TableCell>
-                        {wagon.capacity?.toLocaleString() || "Не указана"}
-                      </TableCell>
-                      <TableCell>
-                        {wagon.real_weight.toLocaleString() || "Не указана"}
-                      </TableCell>
+                      <TableCell>{formatNumber(wagon.capacity)}</TableCell>
+                      <TableCell>{formatNumber(wagon.real_weight)}</TableCell>
                       <TableCell>{wagon.owner || "Не указан"}</TableCell>
                       <TableCell>
                         {wagon.date_of_departure
@@ -480,14 +497,12 @@ export const WagonRegistry = ({
                 Измените информацию о вагоне и документах
               </DialogDescription>
             </DialogHeader>
-
             <div className="space-y-6 py-4">
               {/* Wagon Information Section */}
               <div className="bg-blue-50 p-3 rounded-md">
                 <h3 className="font-semibold text-blue-700 mb-3 uppercase text-sm">
                   ИНФОРМАЦИЯ О ВАГОНЕ
                 </h3>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-4 rounded-md border border-blue-100">
                   <div className="space-y-2">
                     <Label htmlFor="edit-number" className="font-medium">
@@ -513,6 +528,8 @@ export const WagonRegistry = ({
                     </Label>
                     <Input
                       id="edit-capacity"
+                      type="number"
+                      step="0.01"
                       value={editingWagon.capacity}
                       onChange={(e) =>
                         setEditingWagon({
@@ -531,6 +548,7 @@ export const WagonRegistry = ({
                     <Input
                       id="edit-real_weight"
                       type="number"
+                      step="0.01"
                       value={editingWagon.real_weight}
                       onChange={(e) =>
                         setEditingWagon({
@@ -690,78 +708,34 @@ export const WagonRegistry = ({
                   <div className="grid grid-cols-12 gap-2 mb-2 text-sm font-medium text-muted-foreground">
                     <div className="col-span-1">№</div>
                     <div className="col-span-3">Наименование</div>
-                    <div className="col-span-2">Номер</div>
-                    <div className="col-span-3">Дата документа</div>
                     <div className="col-span-2">Загрузить файл</div>
                     <div className="col-span-1"></div>
                   </div>
-
                   {documents.map((doc, index) => (
                     <div
                       key={index}
-                      className="grid grid-cols-12 gap-2 mb-3 items-center"
+                      className="grid grid-cols-12 gap-4 mb-4 items-center rounded-md border border-gray-200 p-4 bg-white shadow-sm"
                     >
-                      <div className="col-span-1 text-center">{index + 1}</div>
-                      <div className="col-span-3">
+                      {/* Index */}
+                      <div className="col-span-1 text-center text-sm font-medium text-gray-700">
+                        {index + 1}
+                      </div>
+
+                      {/* Document name input */}
+                      <div className="col-span-4">
                         <Input
                           value={doc.name}
                           onChange={(e) =>
                             updateDocument(index, "name", e.target.value)
                           }
                           placeholder="Название документа"
-                          className="border-dashed"
+                          className="w-full border-gray-300 focus:ring-1 focus:ring-primary"
                         />
                       </div>
-                      <div className="col-span-2">
-                        <Input
-                          value={doc.number}
-                          onChange={(e) =>
-                            updateDocument(index, "number", e.target.value)
-                          }
-                          placeholder="№ документа"
-                          className="border-dashed"
-                        />
-                      </div>
-                      <div className="col-span-3">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full justify-start text-left font-normal border-dashed",
-                                !doc.date && "text-muted-foreground"
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {doc.date ? (
-                                formatDate(doc.date)
-                              ) : (
-                                <span>Выберите дату</span>
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={
-                                doc.date ? new Date(doc.date) : undefined
-                              }
-                              onSelect={(date) => {
-                                if (date) {
-                                  updateDocument(
-                                    index,
-                                    "date",
-                                    format(date, "yyyy-MM-dd")
-                                  );
-                                }
-                              }}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div className="col-span-2">
-                        <div className="relative">
+
+                      {/* Upload button and filename display */}
+                      <div className="col-span-5">
+                        <div className="flex items-center space-x-3">
                           <input
                             type="file"
                             id={`edit-file-${index}`}
@@ -776,7 +750,7 @@ export const WagonRegistry = ({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="w-full border-dashed text-green-600 hover:bg-green-50"
+                            className="text-green-600 border-dashed hover:bg-green-50"
                             onClick={() =>
                               document
                                 .getElementById(`edit-file-${index}`)
@@ -788,34 +762,37 @@ export const WagonRegistry = ({
                               ? "Заменить"
                               : "Загрузить"}
                           </Button>
+
+                          {(doc.fileName || doc.location) && (
+                            <div className="flex items-center text-sm text-gray-600 bg-gray-100 rounded px-2 py-1">
+                              <FileText className="h-4 w-4 mr-1" />
+                              <span className="truncate max-w-[140px]">
+                                {doc.fileName || "Документ"}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 w-5 p-0 ml-2"
+                                onClick={() => removeFile(index)}
+                              >
+                                <X className="h-3 w-3 text-red-500" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                        {(doc.fileName || doc.location) && (
-                          <div className="flex items-center mt-1 text-xs text-muted-foreground">
-                            <FileText className="h-3 w-3 mr-1" />
-                            <span className="truncate max-w-[120px]">
-                              {doc.fileName || "Документ"}
-                            </span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-5 w-5 p-0 ml-1"
-                              onClick={() => removeFile(index)}
-                            >
-                              <X className="h-3 w-3 text-red-500" />
-                            </Button>
-                          </div>
-                        )}
                       </div>
-                      <div className="col-span-1 flex justify-center">
+
+                      {/* Delete document row button */}
+                      <div className="col-span-2 flex justify-center">
                         <Button
                           type="button"
                           variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-red-500 hover:bg-red-50"
+                          size="icon"
+                          className="text-red-500 hover:bg-red-100"
                           onClick={() => removeDocumentRow(index)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-5 w-5" />
                         </Button>
                       </div>
                     </div>
