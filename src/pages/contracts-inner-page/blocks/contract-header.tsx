@@ -143,8 +143,8 @@ export const ContractHeader = ({
             <div>
               <p className="text-sm font-medium text-muted-foreground">Дата</p>
               <p>
-                {contractData?.created_at
-                  ? formatDate(contractData.created_at)
+                {contractData?.date
+                  ? formatDate(contractData.date)
                   : "Не указана"}
               </p>
             </div>

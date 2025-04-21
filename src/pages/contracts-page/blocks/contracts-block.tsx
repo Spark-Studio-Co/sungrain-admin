@@ -1143,7 +1143,7 @@ export const ContractsBlock = () => {
                   </label>
                   <Input
                     id="edit-estimated-cost"
-                    type="number"
+                    type="text"
                     value={contractToEdit.estimated_cost || ""}
                     onChange={(e) =>
                       setContractToEdit({

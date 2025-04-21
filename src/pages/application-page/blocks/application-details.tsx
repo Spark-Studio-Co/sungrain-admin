@@ -79,7 +79,7 @@ import {
   CreditCard,
   DollarSign,
   Download,
-  File,
+  type File,
   FilePlus,
   FileText,
   Loader2,
@@ -91,7 +91,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface ApplicationDetailProps {
   applicationId: string;
@@ -726,20 +726,6 @@ export const ApplicationDetail = ({
                 <FileText className="h-5 w-5 text-amber-500" />
                 <h3 className="font-medium">Документы для отгрузки</h3>
               </div>
-              {isAdmin && (
-                <Button
-                  className="gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
-                  onClick={() => {
-                    // Show a notification that this functionality is disabled
-                    alert(
-                      "Функция загрузки документов отключена. Вы можете только изменять статус документов."
-                    );
-                  }}
-                >
-                  <FilePlus className="h-4 w-4" />
-                  Управление статусами
-                </Button>
-              )}
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
@@ -796,152 +782,115 @@ export const ApplicationDetail = ({
           </div>
 
           {shippingDocuments.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {shippingDocuments.map((doc: any, index: number) => (
-                <Card
-                  key={doc.id || index}
-                  className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <CardHeader className="bg-white pb-3 border-b">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-2">
-                        <div className="p-2 bg-gray-100 rounded-full">
-                          <File className="h-4 w-4 text-gray-700" />
-                        </div>
-                        <CardTitle className="text-base truncate max-w-[200px]">
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>№</TableHead>
+                      <TableHead>Название</TableHead>
+                      <TableHead>Статус</TableHead>
+                      {isAdmin && (
+                        <TableHead className="text-right">Действия</TableHead>
+                      )}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {shippingDocuments.map((doc: any, index: number) => (
+                      <TableRow key={doc.id || index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell className="font-medium">
                           {doc.name}
-                        </CardTitle>
-                      </div>
-                      {isAdmin && (
-                        <div className="flex">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-full hover:bg-blue-100 hover:text-blue-500 mr-1"
-                            onClick={() => handleEditShippingDocClick(doc)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            id={`status-badge-${doc.id}`}
+                            variant="outline"
+                            className={
+                              doc.isUploaded
+                                ? "bg-green-100 text-green-700"
+                                : "bg-red-100 text-red-700"
+                            }
                           >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-full hover:bg-red-100 hover:text-red-500"
-                            onClick={() => handleDeleteDocumentClick(doc)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </CardHeader>
+                            {doc.isUploaded ? "Загружен" : "Ожидает загрузки"}
+                          </Badge>
+                        </TableCell>
 
-                  <CardContent className="pt-4">
-                    <div className="space-y-2 text-sm">
-                      {doc.files && doc.files.originalname && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Файл:</span>
-                          <span className="font-medium truncate max-w-[180px]">
-                            {doc.files.originalname}
-                          </span>
-                        </div>
-                      )}
-                      {doc.files && doc.files.uploadedAt && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            Загружен:
-                          </span>
-                          <span className="font-medium">
-                            {formatDate(doc.files.uploadedAt)}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-muted-foreground">Статус:</span>
-                        <Badge
-                          id={`status-badge-${doc.id}`}
-                          variant="outline"
-                          className={
-                            doc.isUploaded
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }
-                        >
-                          {doc.isUploaded ? "Загружен" : "Ожидает загрузки"}
-                        </Badge>
-                      </div>
-
-                      {isAdmin && (
-                        <div className="mt-4 pt-3 border-t border-gray-100">
-                          <Button
-                            size="sm"
-                            className="w-full"
-                            variant={doc.isUploaded ? "outline" : "default"}
-                            onClick={() => {
-                              // Toggle status
-                              const newStatus = !doc.isUploaded;
-                              updateUploadStatus(doc.id, newStatus)
-                                .then(() => {
-                                  alert(
-                                    `Статус документа "${
-                                      doc.name
-                                    }" изменен на "${
-                                      newStatus
-                                        ? "Загружен"
-                                        : "Ожидает загрузки"
-                                    }"`
-                                  );
-                                })
-                                .catch((error) => {
-                                  console.error(
-                                    "Error updating status:",
-                                    error
-                                  );
-                                  alert(
-                                    "Ошибка при обновлении статуса. Пожалуйста, попробуйте снова."
-                                  );
-                                });
-                            }}
-                            id={`status-btn-${doc.id}`}
-                          >
-                            {doc.isUploaded ? (
-                              <>
-                                <AlertCircle className="h-4 w-4 mr-2" />
-                                Изменить на "Ожидает загрузки"
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle2 className="h-4 w-4 mr-2" />
-                                Изменить на "Загружен"
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-
-                  <CardFooter className="bg-white border-t flex justify-between">
-                    <Badge
-                      variant="outline"
-                      className="bg-amber-100 text-amber-600"
-                    >
-                      Для отгрузки
-                    </Badge>
-                    {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditShippingDocClick(doc)}
-                        className="gap-1"
-                      >
-                        <Pencil className="h-4 w-4" />
-                        Редактировать
-                      </Button>
-                    )}
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
+                        {isAdmin && (
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  // Toggle status
+                                  const newStatus = !doc.isUploaded;
+                                  updateUploadStatus(doc.id, newStatus)
+                                    .then(() => {
+                                      alert(
+                                        `Статус документа "${
+                                          doc.name
+                                        }" изменен на "${
+                                          newStatus
+                                            ? "Загружен"
+                                            : "Ожидает загрузки"
+                                        }"`
+                                      );
+                                    })
+                                    .catch((error) => {
+                                      console.error(
+                                        "Error updating status:",
+                                        error
+                                      );
+                                      alert(
+                                        "Ошибка при обновлении статуса. Пожалуйста, попробуйте снова."
+                                      );
+                                    });
+                                }}
+                                id={`status-btn-${doc.id}`}
+                                className={
+                                  doc.isUploaded
+                                    ? "text-amber-600"
+                                    : "text-green-600"
+                                }
+                              >
+                                {doc.isUploaded ? (
+                                  <>
+                                    <AlertCircle className="h-4 w-4 mr-1" />
+                                    Ожидает
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                                    Загружен
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-blue-500 hover:bg-blue-50"
+                                onClick={() => handleEditShippingDocClick(doc)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 hover:bg-red-50"
+                                onClick={() => handleDeleteDocumentClick(doc)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           ) : (
             <Card className="border-dashed border-2 border-gray-300 bg-white">
               <CardContent className="flex flex-col items-center justify-center py-12">
@@ -1698,7 +1647,7 @@ export const ApplicationDetail = ({
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="invoice-number" className="text-right">
+              {/* <Label htmlFor="invoice-number" className="text-right">
                 Номер
               </Label>
               <Input
@@ -1708,7 +1657,7 @@ export const ApplicationDetail = ({
                   setNewInvoice({ ...newInvoice, number: e.target.value })
                 }
                 className="col-span-3"
-              />
+              /> */}
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">
@@ -1897,7 +1846,7 @@ export const ApplicationDetail = ({
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-invoice-number" className="text-right">
+              {/* <Label htmlFor="edit-invoice-number" className="text-right">
                 Номер
               </Label>
               <Input
@@ -1910,7 +1859,7 @@ export const ApplicationDetail = ({
                   })
                 }
                 className="col-span-3"
-              />
+              /> */}
             </div>
 
             <div className="grid grid-cols-4 items-center gap-4">

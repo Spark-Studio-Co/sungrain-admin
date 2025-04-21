@@ -376,8 +376,6 @@ export const ApplicationBlock = ({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Дата</TableHead>
                         <TableHead>Объем (т)</TableHead>
                         <TableHead>Культура</TableHead>
                         <TableHead>Цена за тонну</TableHead>
@@ -400,17 +398,6 @@ export const ApplicationBlock = ({
                               handleRowClick(application.id.toString())
                             }
                           >
-                            <TableCell className="font-medium">
-                              {application.id}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4 text-muted-foreground" />
-                                {application.created_at
-                                  ? formatDate(application.created_at)
-                                  : "Не указана"}
-                              </div>
-                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
                                 <Package className="h-4 w-4 text-muted-foreground" />

@@ -505,7 +505,7 @@ export default function UsersPage() {
               className="pl-10"
             />
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap border  gap-2">
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -513,7 +513,7 @@ export default function UsersPage() {
                   Добавить пользователя
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-[800px]">
                 <DialogHeader>
                   <DialogTitle>Добавить нового пользователя</DialogTitle>
                   <DialogDescription>
@@ -573,7 +573,7 @@ export default function UsersPage() {
                         setNewUser({ ...newUser, role: value })
                       }
                     >
-                      <SelectTrigger className="col-span-3">
+                      <SelectTrigger className="col-span-3 w-full">
                         <SelectValue placeholder="Выберите роль" />
                       </SelectTrigger>
                       <SelectContent>
@@ -599,8 +599,11 @@ export default function UsersPage() {
                               handleCompanyChange(value, false)
                             }
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Добавить компанию" />
+                            <SelectTrigger className="w-full">
+                              <SelectValue
+                                placeholder="Добавить компанию"
+                                className="w-full"
+                              />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="none">
@@ -679,7 +682,7 @@ export default function UsersPage() {
                                   }
                                 }}
                               >
-                                <SelectTrigger>
+                                <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Добавить контракт" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -775,7 +778,6 @@ export default function UsersPage() {
             </Dialog>
           </div>
         </div>
-
         <Card>
           <CardHeader className="pb-2">
             <CardTitle>Пользователи</CardTitle>

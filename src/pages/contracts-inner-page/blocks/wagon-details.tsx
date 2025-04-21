@@ -331,12 +331,25 @@ export const WagonDetails = ({
                                       <TableCell className="flex items-center gap-2">
                                         <Calendar className="h-4 w-4 text-purple-500" />
                                         <span className="font-medium">
-                                          Дата прихода
+                                          Дата отправки
                                         </span>
                                       </TableCell>
                                       <TableCell>
                                         {wagon.date_of_departure
                                           ? formatDate(wagon.date_of_departure)
+                                          : "Не указана"}
+                                      </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                      <TableCell className="flex items-center gap-2">
+                                        <Calendar className="h-4 w-4 text-purple-500" />
+                                        <span className="font-medium">
+                                          Дата отгрузки
+                                        </span>
+                                      </TableCell>
+                                      <TableCell>
+                                        {wagon.date_of_unloading
+                                          ? formatDate(wagon.date_of_unloading)
                                           : "Не указана"}
                                       </TableCell>
                                     </TableRow>

@@ -288,8 +288,7 @@ export const AddContractDialog = () => {
                   </Label>
                   <Input
                     id="estimated_cost"
-                    type="number"
-                    step="0.01"
+                    type="text"
                     value={newContract.estimated_cost}
                     onChange={(e) =>
                       setNewContract({

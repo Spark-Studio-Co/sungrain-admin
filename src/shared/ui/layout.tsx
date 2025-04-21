@@ -109,6 +109,22 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
     useAuthData();
   const [currentPath, setCurrentPath] = useState("");
 
+  const SIDEBAR_STORAGE_KEY = "sidebarOpen";
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    return saved === "false" ? false : true; // default to true
+  });
+  useEffect(() => {
+    const savedState = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    if (savedState !== null) {
+      setIsSidebarOpen(savedState === "true");
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, String(isSidebarOpen));
+  }, [isSidebarOpen]);
+
   // Update current path when component mounts and when location changes
   useEffect(() => {
     const updateCurrentPath = () => {
@@ -146,7 +162,7 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
   };
 
   return (
-    <SidebarProvider>
+    <SidebarProvider open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
       <div className="h-[100vh] flex w-full max-w-[8120px] pr-8">
         <Sidebar>
           <SidebarHeader>
@@ -219,7 +235,10 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
         </Sidebar>
         <SidebarInset className="flex flex-col flex-1">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
+            <SidebarTrigger
+              className="-ml-1"
+              onClick={() => setIsSidebarOpen((prev) => !prev)}
+            />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <h1 className="font-semibold">SUNGRAIN | ADMIN PANEL</h1>
           </header>
