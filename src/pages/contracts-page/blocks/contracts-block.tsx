@@ -88,6 +88,56 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { apiClient } from "@/shared/api/apiClient";
+import { useQueryClient } from "@tanstack/react-query";
+
+// File operations functions
+const uploadContractFiles = async (
+  contractId: string,
+  files: File[],
+  filesInfo: any[]
+) => {
+  const formData = new FormData();
+
+  // Append each file to the form data
+  files.forEach((file) => {
+    formData.append("files", file);
+  });
+
+  // Add files_info as JSON string
+  formData.append("files_info", JSON.stringify(filesInfo));
+
+  try {
+    const response = await apiClient.post(
+      `/contract/upload-files/${contractId}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error uploading files:", error);
+    throw error;
+  }
+};
+
+const deleteContractFiles = async (contractId: string, filesInfo: any[]) => {
+  try {
+    const response = await apiClient.patch(
+      `/contract/delete-files/${contractId}`,
+      {
+        files_info: filesInfo,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting files:", error);
+    throw error;
+  }
+};
 
 export const ContractsBlock = () => {
   const isAdmin = localStorage.getItem("isAdmin") === "true";
@@ -103,6 +153,9 @@ export const ContractsBlock = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+  const [isDeletingFiles, setIsDeletingFiles] = useState(false);
 
   // Dropdown states
   const [openSender, setOpenSender] = useState(false);
@@ -276,16 +329,18 @@ export const ContractsBlock = () => {
   const handleUpdateContract = async () => {
     if (!contractToEdit) return;
 
-    // Create FormData for file upload
+    // Create FormData for contract update
     const formData = new FormData();
 
-    // Add contract data (excluding ID)
+    // Add contract data (excluding ID and other unwanted properties)
     Object.keys(contractToEdit).forEach((key) => {
       if (
         key !== "id" &&
         key !== "files" &&
         key !== "company" &&
         key !== "wagons" && // Exclude wagons property
+        key !== "applications" && // Exclude applications property
+        key !== "filesToRemove" && // Exclude filesToRemove property
         contractToEdit[key] !== undefined &&
         contractToEdit[key] !== null
       ) {
@@ -300,38 +355,70 @@ export const ContractsBlock = () => {
       formData.append("companyId", companyId.toString());
     }
 
-    // Add new files
-    selectedFiles.forEach((file) => {
-      formData.append("files", file);
-    });
-
-    // Add file metadata
-    const filesInfo = selectedFiles.map((file) => ({
-      filename: file.name,
-      originalname: file.name,
-      mimetype: file.type,
-      size: file.size,
-    }));
-
-    if (filesInfo.length > 0) {
-      formData.append("files_info", JSON.stringify(filesInfo));
-    }
-
-    // Add files to remove
-    if (filesToRemove.length > 0) {
-      formData.append("filesToRemove", JSON.stringify(filesToRemove));
-    }
-
+    // Update the contract first
     updateContract(
       {
         id: contractToEdit.id,
         data: formData,
       },
       {
-        onSuccess: () => {
-          setEditDialogOpen(false);
-          setSelectedFiles([]);
-          setFilesToRemove([]);
+        onSuccess: async () => {
+          try {
+            // Handle file uploads if there are any new files
+            if (selectedFiles.length > 0) {
+              setIsUploadingFiles(true);
+              const filesInfo = selectedFiles.map((file) => ({
+                name: file.name,
+                originalname: file.name,
+                mimetype: file.type,
+                size: file.size,
+                status: "active",
+                currency: "USD",
+                price: 0,
+                volume: 0,
+              }));
+
+              await uploadContractFiles(
+                contractToEdit.id,
+                selectedFiles,
+                filesInfo
+              );
+            }
+
+            // Handle file deletions if there are any files to remove
+            if (filesToRemove.length > 0) {
+              setIsDeletingFiles(true);
+              const filesToDelete = contractToEdit.files
+                .filter((file: any) => filesToRemove.includes(file.id))
+                .map((file: any) => ({
+                  id: file.id,
+                  name: file.name || file.originalname,
+                  status: file.status || "active",
+                  currency: file.currency || "USD",
+                  price: file.price || 0,
+                  volume: file.volume || 0,
+                }));
+
+              await deleteContractFiles(contractToEdit.id, filesToDelete);
+            }
+
+            // Refresh the contracts data
+            queryClient.invalidateQueries({ queryKey: ["contracts"] });
+            queryClient.invalidateQueries({ queryKey: ["userContracts"] });
+
+            // Close the dialog and reset state
+            setEditDialogOpen(false);
+            setSelectedFiles([]);
+            setFilesToRemove([]);
+          } catch (error) {
+            console.error("Error handling files:", error);
+          } finally {
+            setIsUploadingFiles(false);
+            setIsDeletingFiles(false);
+          }
+        },
+        onError: (error) => {
+          console.error("Error updating contract:", error);
         },
       }
     );
@@ -897,7 +984,7 @@ export const ContractsBlock = () => {
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0">
                       <Command>
-                        <CommandInput placeholder="Поиск грузоо��правителя..." />
+                        <CommandInput placeholder="Поиск грузоотправителя..." />
                         <CommandList>
                           <CommandEmpty>
                             Грузоотправитель не найден.
@@ -1267,8 +1354,13 @@ export const ContractsBlock = () => {
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
               Отмена
             </Button>
-            <Button onClick={handleUpdateContract} disabled={isUpdating}>
-              {isUpdating ? "Сохранение..." : "Сохранить изменения"}
+            <Button
+              onClick={handleUpdateContract}
+              disabled={isUpdating || isUploadingFiles || isDeletingFiles}
+            >
+              {isUpdating || isUploadingFiles || isDeletingFiles
+                ? "Сохранение..."
+                : "Сохранить изменения"}
             </Button>
           </DialogFooter>
         </DialogContent>
