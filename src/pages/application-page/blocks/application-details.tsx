@@ -721,7 +721,7 @@ export const ApplicationDetail = ({
         </CardContent>
       </Card>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="details">Детали заявки</TabsTrigger>
           <TabsTrigger value="documents">Документы</TabsTrigger>
           <TabsTrigger value="wagons-details">Детали вагонов</TabsTrigger>
