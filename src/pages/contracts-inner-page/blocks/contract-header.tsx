@@ -48,14 +48,12 @@ export const ContractHeader = ({
     }
   };
 
-  const handleDownloadFile = () => {
-    if (!contractData?.files || contractData.files.length === 0) {
-      console.error("No files available for download");
-      return;
-    }
+  const handleOpenFile = () => {
+    if (!contractData?.files || contractData.files.length === 0) return;
 
     const file = contractData.files[0];
-    let fileUrl: string;
+
+    let fileUrl = "";
 
     if (typeof file === "string") {
       if (file.startsWith("http")) {
@@ -68,15 +66,11 @@ export const ContractHeader = ({
       fileUrl = file.location;
     } else if (file.url) {
       fileUrl = file.url;
-    } else {
-      console.error("File URL not found");
-      return;
     }
 
-    console.log("Redirecting to file:", fileUrl);
-
-    // ⬇️ Просто редиректим в новой вкладке
-    window.open(fileUrl, "_blank");
+    if (fileUrl) {
+      window.open(fileUrl, "_blank");
+    }
   };
 
   const file = contractData.files[0];
@@ -242,7 +236,7 @@ export const ContractHeader = ({
             variant="outline"
             className="gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
             onClick={() => {
-              handleDownloadFile();
+              handleOpenFile();
             }}
             disabled={!contractData?.files || contractData.files.length === 0}
           >
