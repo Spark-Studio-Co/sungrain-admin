@@ -228,27 +228,12 @@ export const WagonRegistry = ({
         updatedDocs.length > 0 &&
         updatedDocs.every((doc) => doc.file || doc.location);
 
-      // Update wagon status to shipped
-      setEditingWagon((prevWagon: any) => {
-        // Only set today's date if user hasn't manually set a date
-        const userSetDate =
-          prevWagon.date_of_unloading &&
-          prevWagon.date_of_unloading.trim() !== "";
-
-        return {
+      // Only update status to shipped, don't set any date automatically
+      if (allDocumentsHaveFiles) {
+        setEditingWagon((prevWagon: any) => ({
           ...prevWagon,
           status: "shipped",
-          // Set today's date only if no date was previously set by the user
-          date_of_unloading:
-            allDocumentsHaveFiles && !userSetDate
-              ? format(new Date(), "yyyy-MM-dd")
-              : prevWagon.date_of_unloading,
-        };
-      });
-
-      // Also update the unloadingDate state to match
-      if (allDocumentsHaveFiles && !unloadingDate) {
-        setUnloadingDate(format(new Date(), "yyyy-MM-dd"));
+        }));
       }
 
       return updatedDocs;
