@@ -932,6 +932,7 @@ export default function FinancesPage() {
                             <Input
                               id="price_per_ton_usd"
                               type="number"
+                              min={0}
                               value={newInvoice.price_per_ton_usd}
                               onChange={(e) => {
                                 const price = e.target.value;

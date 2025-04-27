@@ -35,11 +35,6 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Building,
-  Users,
-  Globe,
-  Mail,
-  Phone,
-  MapPin,
   Info,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -59,15 +54,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 import { useCreateCompany } from "@/entities/companies/hooks/mutations/use-create-company.mutation";
-import { useGetUsers } from "@/entities/users/hooks/query/use-get-users.query";
 import { useUpdateCompanies } from "@/entities/companies/hooks/mutations/use-update-company.mutation";
 import { useDeleteCompany } from "@/entities/companies/hooks/mutations/use-delete-company.mutation";
-import { MultiSelect } from "@/components/ui/multi-select";
 
 export default function CompaniesPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -96,7 +88,6 @@ export default function CompaniesPage() {
     isError,
     error,
   } = useGetCompanies(page, limit);
-  const { data: usersData, isLoading: usersLoading } = useGetUsers();
 
   // Mutations
   const createMutation = useCreateCompany();
@@ -129,6 +120,7 @@ export default function CompaniesPage() {
         setNewCompany({
           name: "",
         });
+
         setIsAddDialogOpen(false);
       },
     });
@@ -139,6 +131,7 @@ export default function CompaniesPage() {
 
     updateMutation.mutate(
       {
+        id: editingCompany.id as any,
         name: editingCompany.name,
       },
       {
@@ -429,8 +422,6 @@ export default function CompaniesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Edit Company Dialog */}
       {editingCompany && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
@@ -440,12 +431,10 @@ export default function CompaniesPage() {
                 Редактирование компании: {editingCompany.name}
               </DialogDescription>
             </DialogHeader>
-
             <Tabs defaultValue="info" className="w-full">
               <TabsList className="grid grid-cols-1 mb-4">
                 <TabsTrigger value="info">Информация</TabsTrigger>
               </TabsList>
-
               <TabsContent value="info" className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
@@ -520,7 +509,6 @@ export default function CompaniesPage() {
                 </div>
               </div>
             </div>
-
             <DialogFooter>
               <Button
                 variant="outline"

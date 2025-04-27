@@ -37,7 +37,6 @@ interface ContractHeaderProps {
 export const ContractHeader = ({
   contractData,
   getCompanyName,
-  handleDownload,
 }: ContractHeaderProps) => {
   // Format date
   const formatDate = (dateString: string) => {

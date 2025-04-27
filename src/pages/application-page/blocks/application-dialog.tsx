@@ -110,11 +110,51 @@ export const ApplicationDialog = ({
 
   const createMutation = useCreateApplication({
     onSuccess: () => {
+      // Reset form data
+      setFormData({
+        currency: contractData?.currency || "",
+        price_per_ton: "",
+        volume: "",
+        culture: "",
+        comment: "",
+        contractId: contractId,
+      });
+
+      // Reset documents
+      setDocuments([]);
+
+      // Reset total amount
+      setTotalAmount(0);
+
+      // Reset volume error
+      setVolumeError("");
+
+      // Close dialog with refresh flag
       onClose(true);
     },
   });
   const updateMutation = useUpdateApplication({
     onSuccess: () => {
+      // Reset form data
+      setFormData({
+        currency: contractData?.currency || "",
+        price_per_ton: "",
+        volume: "",
+        culture: "",
+        comment: "",
+        contractId: contractId,
+      });
+
+      // Reset documents
+      setDocuments([]);
+
+      // Reset total amount
+      setTotalAmount(0);
+
+      // Reset volume error
+      setVolumeError("");
+
+      // Close dialog with refresh flag
       onClose(true);
     },
   });
@@ -483,6 +523,7 @@ export const ApplicationDialog = ({
                 </Label>
                 <Input
                   id="price_per_ton"
+                  min={0}
                   name="price_per_ton"
                   type="number"
                   value={formData.price_per_ton}

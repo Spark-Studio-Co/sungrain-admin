@@ -1282,7 +1282,9 @@ export const ContractsBlock = () => {
                               <div className="flex items-center gap-2">
                                 <File className="h-4 w-4 text-muted-foreground" />
                                 <span className="text-sm">
-                                  {file.originalname}
+                                  {file.name ||
+                                    file.originalname ||
+                                    "Unnamed file"}
                                 </span>
                               </div>
                               <Button
