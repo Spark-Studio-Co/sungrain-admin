@@ -24,7 +24,6 @@ import {
   User,
   RefreshCw,
   Train,
-  Coins as DollarSign,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -49,20 +48,22 @@ export const ContractHeader = ({
     }
   };
 
-  // Add download logic
   const handleDownloadFile = () => {
     if (!contractData?.files || contractData.files.length === 0) {
       console.error("No files available for download");
       return;
     }
 
-    // Get the first file from the files array
     const file = contractData.files[0];
+    let fileUrl: string;
 
-    // Determine the file URL based on the data structure
-    let fileUrl;
     if (typeof file === "string") {
-      fileUrl = file;
+      if (file.startsWith("http")) {
+        fileUrl = file;
+      } else {
+        const backendUrl = "https://agro-pv-backend-production.up.railway.app";
+        fileUrl = `${backendUrl}/uploads/${file}`;
+      }
     } else if (file.location) {
       fileUrl = file.location;
     } else if (file.url) {
@@ -72,22 +73,29 @@ export const ContractHeader = ({
       return;
     }
 
-    // Create a filename for the download
-    const fileName = `contract-${
-      contractData?.number || contractData?.id || "download"
-    }.pdf`;
+    console.log("Redirecting to file:", fileUrl);
 
-    // Create a temporary link element
-    const link = document.createElement("a");
-    link.href = fileUrl;
-    link.setAttribute("download", fileName);
-    link.setAttribute("target", "_blank");
-
-    // Append to the document, click it, and remove it
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // ⬇️ Просто редиректим в новой вкладке
+    window.open(fileUrl, "_blank");
   };
+
+  const file = contractData.files[0];
+  let fileUrl: string;
+
+  if (typeof file === "string") {
+    if (file.startsWith("http")) {
+      fileUrl = file;
+    } else {
+      const backendUrl = "https://agro-pv-backend-production.up.railway.app";
+      fileUrl = `${backendUrl}/uploads/${file}`;
+    }
+  } else if (file.location) {
+    fileUrl = file.location;
+  } else if (file.url) {
+    fileUrl = file.url;
+  } else {
+    fileUrl = "";
+  }
 
   return (
     <Card>
@@ -229,18 +237,19 @@ export const ContractHeader = ({
             </div>
           </div>
         </div>
-        <Button
-          variant="outline"
-          className="gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
-          onClick={() => {
-            handleDownloadFile();
-            handleDownload();
-          }}
-          disabled={!contractData?.files || contractData.files.length === 0}
-        >
-          <Download className="h-4 w-4" />
-          Скачать договор
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+            onClick={() => {
+              handleDownloadFile();
+            }}
+            disabled={!contractData?.files || contractData.files.length === 0}
+          >
+            <Download className="h-4 w-4" />
+            Скачать договор
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

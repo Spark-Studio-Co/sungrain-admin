@@ -92,17 +92,17 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
       ? wagonContractsData
       : contractData?.wagons || [];
 
-  const renderedFiles =
-    wagons
-      ?.flatMap((wagon: any) => {
-        return wagon.files && wagon.files.length > 0
-          ? wagon.files.map((file: any) => ({
-              file,
-              wagonNumber: wagon.number,
-            }))
-          : [];
-      })
-      .filter(Boolean) || [];
+  // const renderedFiles =
+  //   wagons
+  //     ?.flatMap((wagon: any) => {
+  //       return wagon.files && wagon.files.length > 0
+  //         ? wagon.files.map((file: any) => ({
+  //             file,
+  //             wagonNumber: wagon.number,
+  //           }))
+  //         : [];
+  //     })
+  //     .filter(Boolean) || [];
 
   // Calculate volume usage from applications
   const volumeStats = useMemo(() => {

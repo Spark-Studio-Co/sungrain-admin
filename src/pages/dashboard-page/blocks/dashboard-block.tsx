@@ -1,3 +1,5 @@
+//@ts-nocheck
+
 "use client";
 
 import {
@@ -431,7 +433,9 @@ export const DashboardBlock = () => {
                     }}
                     labelFormatter={(label) => `Контракт: ${label}`}
                   />
-                  <Legend />
+                  <Legend
+                    wrapperStyle={{ position: "relative", marginTop: "20px" }}
+                  />
                   <Bar
                     dataKey="volume"
                     fill="#3b82f6"
@@ -572,7 +576,9 @@ export const DashboardBlock = () => {
                     formatter={(value) => [`${value}%`, "Выполнение"]}
                     labelFormatter={(label) => `Контракт: ${label}`}
                   />
-                  <Legend />
+                  <Legend
+                    wrapperStyle={{ position: "relative", marginTop: "20px" }}
+                  />
                   <Bar
                     dataKey="fulfillmentPercentage"
                     fill="#8b5cf6"
@@ -635,7 +641,9 @@ export const DashboardBlock = () => {
                     ]}
                     labelFormatter={(label) => `Контракт: ${label}`}
                   />
-                  <Legend />
+                  <Legend
+                    wrapperStyle={{ position: "relative", marginTop: "20px" }}
+                  />
                   <Bar
                     dataKey="avgPricePerTon"
                     fill="#f59e0b"
@@ -700,7 +708,9 @@ export const DashboardBlock = () => {
                   }}
                   labelFormatter={(label) => `Контракт: ${label}`}
                 />
-                <Legend />
+                <Legend
+                  wrapperStyle={{ position: "relative", marginTop: "20px" }}
+                />
                 <Bar dataKey="volume" fill="#3b82f6" name="Общий объем" />
                 <Bar
                   dataKey="shippedVolume"

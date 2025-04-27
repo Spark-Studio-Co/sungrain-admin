@@ -50,6 +50,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { deleteWagonFiles } from "@/entities/wagon/api/delete/delete-wagon-files.api";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import {
@@ -67,6 +68,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { apiClient } from "@/shared/api/apiClient";
 
 interface WagonRegistryProps {
   wagons: any[];
@@ -151,6 +153,7 @@ export const WagonRegistry = ({
 
   // Handle document changes in edit mode
   const updateDocument = (index: number, field: string, value: string) => {
+    console.log(`Updating document ${index}, field: ${field}, value: ${value}`);
     setDocuments((prev) =>
       prev.map((doc, i) => (i === index ? { ...doc, [field]: value } : doc))
     );
@@ -158,35 +161,100 @@ export const WagonRegistry = ({
 
   // Add a new document row
   const addDocumentRow = () => {
-    setDocuments((prev) => [...prev, { name: "", number: "", date: "" }]);
+    // Add a new document with a unique default name
+    setDocuments((prev) => [
+      ...prev,
+      {
+        name: `Документ ${prev.length + 1}`,
+        number: "",
+        date: "",
+      },
+    ]);
   };
 
   // Remove a document row
-  const removeDocumentRow = (index: number) => {
-    setDocuments((prev) => prev.filter((_, i) => i !== index));
+  const removeDocumentRow = async (index: number) => {
+    const docToRemove = documents[index];
+
+    // If the document has an ID, it exists on the server and needs to be deleted
+    if (editingWagon?.id) {
+      try {
+        // First remove from UI to make it feel responsive
+        setDocuments((prev) => prev.filter((_, i) => i !== index));
+
+        // Then delete from server
+        await deleteWagonFiles(editingWagon.id, [
+          {
+            id: docToRemove.id as any,
+            name: docToRemove.name,
+            number: docToRemove.number || "",
+            date: docToRemove.date || "",
+            location: docToRemove.location,
+          },
+        ]);
+
+        console.log(`Document ${docToRemove.name} deleted successfully`);
+      } catch (error) {
+        console.error("Error deleting document:", error);
+        // If server deletion fails, add the document back to the UI
+        setDocuments((prev) => {
+          const newDocs = [...prev];
+          newDocs.splice(index, 0, docToRemove);
+          return newDocs;
+        });
+      }
+    } else {
+      // If no ID, it's a new document that only exists locally
+      setDocuments((prev) => prev.filter((_, i) => i !== index));
+    }
   };
 
   // Handle file upload for a document
   const handleFileUpload = (index: number, file: File) => {
-    setDocuments((prev) =>
-      prev.map((doc, i) =>
-        i === index ? { ...doc, file, fileName: file.name } : doc
-      )
-    );
+    setDocuments((prev) => {
+      const updatedDocs = prev.map((doc, i) =>
+        i === index
+          ? {
+              ...doc,
+              file,
+              fileName: file.name,
+              name: doc.name || file.name,
+            }
+          : doc
+      );
 
-    // Check if all documents have files and update status if needed
-    const updatedDocs = [...documents];
-    updatedDocs[index] = { ...updatedDocs[index], file, fileName: file.name };
+      // Check if all documents have files after this update
+      const allDocumentsHaveFiles =
+        updatedDocs.length > 0 &&
+        updatedDocs.every((doc) => doc.file || doc.location);
 
-    if (
-      updatedDocs.length > 0 &&
-      updatedDocs.every((doc) => doc.file || doc.location)
-    ) {
-      setEditingWagon((prev: any) => ({ ...prev, status: "shipped" }));
-    }
+      // Update wagon status to shipped
+      setEditingWagon((prevWagon: any) => {
+        // Only set today's date if user hasn't manually set a date
+        const userSetDate =
+          prevWagon.date_of_unloading &&
+          prevWagon.date_of_unloading.trim() !== "";
+
+        return {
+          ...prevWagon,
+          status: "shipped",
+          // Set today's date only if no date was previously set by the user
+          date_of_unloading:
+            allDocumentsHaveFiles && !userSetDate
+              ? format(new Date(), "yyyy-MM-dd")
+              : prevWagon.date_of_unloading,
+        };
+      });
+
+      // Also update the unloadingDate state to match
+      if (allDocumentsHaveFiles && !unloadingDate) {
+        setUnloadingDate(format(new Date(), "yyyy-MM-dd"));
+      }
+
+      return updatedDocs;
+    });
   };
 
-  // Remove a file from a document
   const removeFile = (index: number) => {
     setDocuments((prev) =>
       prev.map((doc, i) =>
@@ -201,11 +269,16 @@ export const WagonRegistry = ({
     );
   };
 
-  // Handle unloading date change
   const handleUnloadingDateChange = (date: Date | undefined) => {
     if (date) {
       const formattedDate = format(date, "yyyy-MM-dd");
       setUnloadingDate(formattedDate);
+
+      // Also update the date in the editingWagon state
+      setEditingWagon((prev) => ({
+        ...prev,
+        date_of_unloading: formattedDate,
+      }));
 
       // If the wagon has documents and a date is set, update status to shipped
       if (
@@ -219,6 +292,11 @@ export const WagonRegistry = ({
       }
     } else {
       setUnloadingDate(null);
+      // Clear the date in the editingWagon state
+      setEditingWagon((prev) => ({
+        ...prev,
+        date_of_unloading: "",
+      }));
     }
   };
 
@@ -256,32 +334,66 @@ export const WagonRegistry = ({
         formData.append("date_of_departure", editingWagon.date_of_departure);
       }
 
-      // Use the separate unloadingDate state instead of editingWagon.date_of_unloading
-      formData.append("date_of_unloading", unloadingDate || "");
+      // Use the date from editingWagon state
+      if (editingWagon.date_of_unloading) {
+        formData.append("date_of_unloading", editingWagon.date_of_unloading);
+      } else {
+        formData.append("date_of_unloading", "");
+      }
 
-      // Append files with proper files_info structure
-      // Updated fix
-      const filesInfo: any[] = [];
+      // Handle file uploads separately using the new endpoint
+      const filesWithUploads = documents.filter((doc) => doc.file);
+      if (filesWithUploads.length > 0) {
+        const uploadFormData = new FormData();
 
-      documents.forEach((doc) => {
-        if (doc.file || doc.location) {
-          filesInfo.push({
-            id: doc.id,
-            name: doc.name,
-            number: doc.number,
-            date: doc.date,
-            location: doc.location,
-          });
+        // Prepare files_info array
+        const filesInfo = filesWithUploads.map((doc) => ({
+          name: doc.name,
+          number: doc.number || "",
+          date: doc.date || "",
+        }));
 
+        // Append each file to the form data
+        filesWithUploads.forEach((doc) => {
           if (doc.file) {
-            formData.append("files", doc.file);
+            uploadFormData.append("files", doc.file);
           }
+        });
+
+        // Add files_info as JSON string
+        uploadFormData.append("files_info", JSON.stringify(filesInfo));
+
+        try {
+          // Use the specific upload endpoint
+          await apiClient.post(
+            `/wagon/upload-files/${editingWagon.id}`,
+            uploadFormData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
+
+          console.log("Files uploaded successfully");
+        } catch (uploadError) {
+          console.error("Error uploading files:", uploadError);
         }
-      });
+      }
 
-      formData.append("files_info", JSON.stringify(filesInfo));
+      // Append files_info for existing files (without new uploads)
+      const existingFilesInfo = documents
+        .filter((doc) => !doc.file && doc.location)
+        .map((doc) => ({
+          id: doc.id,
+          name: doc.name,
+          number: doc.number || "",
+          date: doc.date || "",
+          location: doc.location,
+        }));
 
-      // Add this right before the await onUpdateWagon call
+      formData.append("files_info", JSON.stringify(existingFilesInfo));
+
       console.log("Updating wagon with data:", {
         ...Object.fromEntries(formData.entries()),
         date_of_unloading: unloadingDate,

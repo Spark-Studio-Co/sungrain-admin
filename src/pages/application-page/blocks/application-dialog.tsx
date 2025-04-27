@@ -753,11 +753,6 @@ export const ApplicationDialog = ({
                             <span className="truncate max-w-[120px]">
                               {doc.fileName || "Документ"}
                             </span>
-                            {doc.isNew && (
-                              <span className="ml-1 text-amber-500 text-[10px]">
-                                (Не загружен)
-                              </span>
-                            )}
                             <Button
                               type="button"
                               variant="ghost"
