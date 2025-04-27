@@ -475,7 +475,6 @@ export const WagonRegistry = ({
                     Фактический вес, т<div className=""></div>
                   </TableHead>
                   <TableHead>Собственник</TableHead>
-                  <TableHead>Дата прихода</TableHead>
                   <TableHead>Дата отгрузки</TableHead>
                   <TableHead>Статус</TableHead>
                   {isAdmin && (
@@ -496,11 +495,7 @@ export const WagonRegistry = ({
                       <TableCell>{formatNumber(wagon.capacity)}</TableCell>
                       <TableCell>{formatNumber(wagon.real_weight)}</TableCell>
                       <TableCell>{wagon.owner || "Не указан"}</TableCell>
-                      <TableCell>
-                        {wagon.date_of_departure
-                          ? formatDate(wagon.date_of_departure)
-                          : "Не указана"}
-                      </TableCell>
+
                       <TableCell>
                         {wagon.date_of_unloading
                           ? formatDate(wagon.date_of_unloading)
@@ -696,55 +691,6 @@ export const WagonRegistry = ({
                       </SelectContent>
                     </Select>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="edit-date_of_departure"
-                      className="font-medium"
-                    >
-                      Дата прихода
-                    </Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          id="edit-date_of_departure"
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !editingWagon.date_of_departure &&
-                              "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {editingWagon.date_of_departure ? (
-                            formatDate(editingWagon.date_of_departure)
-                          ) : (
-                            <span>Выберите дату</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={
-                            editingWagon.date_of_departure
-                              ? new Date(editingWagon.date_of_departure)
-                              : undefined
-                          }
-                          onSelect={(date) => {
-                            if (date) {
-                              setEditingWagon({
-                                ...editingWagon,
-                                date_of_departure: format(date, "yyyy-MM-dd"),
-                              });
-                            }
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-
                   <div className="space-y-2">
                     <Label
                       htmlFor="edit-date_of_unloading"

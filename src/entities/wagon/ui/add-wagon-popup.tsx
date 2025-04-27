@@ -327,53 +327,6 @@ export const AddWagonPopup = ({
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="date_of_departure" className="font-medium">
-                  Дата прихода
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !newWagon.date_of_departure && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newWagon.date_of_departure ? (
-                        format(
-                          new Date(newWagon.date_of_departure),
-                          "dd.MM.yyyy"
-                        )
-                      ) : (
-                        <span>Выберите дату</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={
-                        newWagon.date_of_departure
-                          ? new Date(newWagon.date_of_departure)
-                          : undefined
-                      }
-                      onSelect={(date) => {
-                        if (date) {
-                          setNewWagon({
-                            ...newWagon,
-                            date_of_departure: format(date, "yyyy-MM-dd"),
-                          });
-                        }
-                      }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="date_of_unloading" className="font-medium">
                   Дата отгрузки
@@ -497,7 +450,6 @@ export const AddWagonPopup = ({
                           ? "Заменить"
                           : "Загрузить"}
                       </Button>
-
                       {(doc.fileName || doc.location) && (
                         <div className="flex items-center text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">
                           <FileText className="h-3 w-3 mr-1" />

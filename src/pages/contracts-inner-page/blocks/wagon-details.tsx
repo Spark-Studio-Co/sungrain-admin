@@ -194,7 +194,6 @@ export const WagonDetails = ({
                     <TableHead>Владелец</TableHead>
                     <TableHead>Статус</TableHead>
                     <TableHead className="hidden md:table-cell">Вес</TableHead>
-                    <TableHead className="hidden md:table-cell">Дата</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -249,13 +248,7 @@ export const WagonDetails = ({
                               ? `${wagon.real_weight.toLocaleString()} т.`
                               : "-"}
                           </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {wagon.date_of_departure
-                              ? formatDate(wagon.date_of_departure)
-                              : "Не указана"}
-                          </TableCell>
                         </TableRow>
-
                         {isExpanded && (
                           <TableRow className="bg-muted/10">
                             <TableCell colSpan={6} className="p-0">
@@ -335,9 +328,7 @@ export const WagonDetails = ({
                                         </span>
                                       </TableCell>
                                       <TableCell>
-                                        {wagon.date_of_unloading
-                                          ? formatDate(wagon.date_of_unloading)
-                                          : "Не указана"}
+                                        {wagon.date_of_unloading}
                                       </TableCell>
                                     </TableRow>
                                     <TableRow>
