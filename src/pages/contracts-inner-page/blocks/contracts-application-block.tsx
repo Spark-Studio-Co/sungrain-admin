@@ -7,7 +7,6 @@ import {
   Plus,
   Package,
   DollarSign,
-  Calendar,
   Search,
   Loader2,
   Pencil,
@@ -119,25 +118,6 @@ export const ApplicationBlock = ({
     }
   };
 
-  // Filter applications based on search term
-  const filteredApplications = Array.isArray(applications)
-    ? applications.filter((app: any) => {
-        const searchLower = searchTerm.toLowerCase();
-        return (
-          app.id?.toString().includes(searchLower) ||
-          app.price_per_ton?.toString().includes(searchLower) ||
-          app.volume?.toString().includes(searchLower) ||
-          app.total_amount?.toString().includes(searchLower) ||
-          app.currency?.toLowerCase().includes(searchLower) ||
-          (app.created_at &&
-            formatDate(app.created_at).toLowerCase().includes(searchLower)) ||
-          (app.culture &&
-            (app.culture.toLowerCase().includes(searchLower) ||
-              getCultureName(app.culture).toLowerCase().includes(searchLower)))
-        );
-      })
-    : [];
-
   // Get culture name from code
   const getCultureName = (cultureCode: string) => {
     const cultures: Record<string, string> = {
@@ -150,6 +130,26 @@ export const ApplicationBlock = ({
     };
     return cultures[cultureCode] || cultureCode;
   };
+
+  // Filter applications based on search term
+  const filteredApplications = Array.isArray(applications)
+    ? applications.filter((app: any) => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          app.id?.toString().includes(searchLower) ||
+          app.name?.toLowerCase().includes(searchLower) ||
+          app.price_per_ton?.toString().includes(searchLower) ||
+          app.volume?.toString().includes(searchLower) ||
+          app.total_amount?.toString().includes(searchLower) ||
+          app.currency?.toLowerCase().includes(searchLower) ||
+          (app.created_at &&
+            formatDate(app.created_at).toLowerCase().includes(searchLower)) ||
+          (app.culture &&
+            (app.culture.toLowerCase().includes(searchLower) ||
+              getCultureName(app.culture).toLowerCase().includes(searchLower)))
+        );
+      })
+    : [];
 
   // Handle dialog close and refresh data
   const handleDialogClose = (shouldRefresh: boolean) => {
@@ -196,6 +196,7 @@ export const ApplicationBlock = ({
       // Create CSV header
       const headers = [
         "ID",
+        "Название",
         "Дата создания",
         "Объем (т)",
         "Культура",
@@ -209,6 +210,7 @@ export const ApplicationBlock = ({
       // Create CSV rows
       const rows = applications.map((app: any) => [
         app.id,
+        app.name || "",
         app.created_at ? formatDate(app.created_at) : "",
         app.volume || 0,
         getCultureName(app.culture) || "",
@@ -376,6 +378,7 @@ export const ApplicationBlock = ({
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead>Название</TableHead>
                         <TableHead>Объем (т)</TableHead>
                         <TableHead>Культура</TableHead>
                         <TableHead>Цена за тонну</TableHead>
@@ -398,6 +401,11 @@ export const ApplicationBlock = ({
                               handleRowClick(application.id.toString())
                             }
                           >
+                            <TableCell>
+                              <div className="font-medium truncate max-w-[150px]">
+                                {application.name || "Без названия"}
+                              </div>
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
                                 <Package className="h-4 w-4 text-muted-foreground" />
@@ -512,7 +520,7 @@ export const ApplicationBlock = ({
                       ) : (
                         <TableRow>
                           <TableCell
-                            colSpan={isAdmin ? 10 : 9}
+                            colSpan={isAdmin ? 11 : 10}
                             className="h-24 text-center"
                           >
                             {searchTerm ? (

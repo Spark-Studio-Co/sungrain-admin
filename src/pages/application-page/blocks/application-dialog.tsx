@@ -61,6 +61,7 @@ export const ApplicationDialog = ({
 
   // Also update the formData state to include currency from contractData
   const [formData, setFormData] = useState({
+    name: application?.name || "",
     currency: contractData?.currency || "",
     price_per_ton: application?.price_per_ton || "",
     volume: application?.volume || "",
@@ -112,6 +113,7 @@ export const ApplicationDialog = ({
     onSuccess: () => {
       // Reset form data
       setFormData({
+        name: "",
         currency: contractData?.currency || "",
         price_per_ton: "",
         volume: "",
@@ -137,6 +139,7 @@ export const ApplicationDialog = ({
     onSuccess: () => {
       // Reset form data
       setFormData({
+        name: "",
         currency: contractData?.currency || "",
         price_per_ton: "",
         volume: "",
@@ -454,6 +457,7 @@ export const ApplicationDialog = ({
         await updateMutation.mutateAsync({
           id: application.id,
           data: {
+            name: formData.name,
             price_per_ton: Number(formData.price_per_ton),
             volume: Number(formData.volume),
             culture: formData.culture,
@@ -465,6 +469,7 @@ export const ApplicationDialog = ({
         applicationId = application.id;
       } else {
         const result = await createMutation.mutateAsync({
+          name: formData.name,
           price_per_ton: Number(formData.price_per_ton),
           currency: formData.currency,
           volume: Number(formData.volume),
@@ -517,6 +522,20 @@ export const ApplicationDialog = ({
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-4 rounded-md border border-blue-100">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="font-medium">
+                  Название заявки <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Введите название заявки"
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="price_per_ton" className="font-medium">
                   Цена за тонну <span className="text-red-500">*</span>
@@ -889,6 +908,7 @@ export const ApplicationDialog = ({
               createMutation.isPending ||
               updateMutation.isPending ||
               uploadFilesMutation.isPending ||
+              !formData.name ||
               !formData.price_per_ton ||
               !formData.volume ||
               !formData.culture ||
