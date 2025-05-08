@@ -8,6 +8,7 @@ interface AuthState {
   requestId: string | null;
   role: string | null;
   userId: string | null;
+  tokenTimestamp: number | null; // Add timestamp for when token was saved
   saveToken: (token: string) => void;
   saveRefreshToken: (token: string) => void;
   removeToken: () => void;
@@ -28,17 +29,23 @@ const useAuthStore = create<AuthState>()(
       requestId: null,
       role: null,
       userId: null,
+      tokenTimestamp: null, // Track when token was saved
 
-      saveToken: (token: string) => set({ token }),
+      saveToken: (token: string) =>
+        set({
+          token,
+          tokenTimestamp: Date.now(), // Save current timestamp when token is saved
+        }),
+
       saveRefreshToken: (refreshToken: string) => {
         set({ refreshToken });
-        localStorage.setItem("refreshToken", refreshToken); // ✅ Save refreshToken to localStorage
+        localStorage.setItem("refreshToken", refreshToken);
       },
 
       removeToken: () => {
-        set({ token: null, refreshToken: null });
-        localStorage.removeItem("auth-storage"); // ✅ Ensure full removal
-        localStorage.removeItem("refreshToken"); // ✅ Remove refreshToken
+        set({ token: null, refreshToken: null, tokenTimestamp: null });
+        localStorage.removeItem("auth-storage");
+        localStorage.removeItem("refreshToken");
         reactQueryClient.resetQueries();
         reactQueryClient.clear();
       },
@@ -72,10 +79,11 @@ const useAuthStore = create<AuthState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         token: state.token,
-        refreshToken: state.refreshToken, // ✅ Persist refreshToken in LocalStorage
+        refreshToken: state.refreshToken,
         requestId: state.requestId,
         role: state.role,
         userId: state.userId,
+        tokenTimestamp: state.tokenTimestamp, // Persist the timestamp
       }),
     }
   )

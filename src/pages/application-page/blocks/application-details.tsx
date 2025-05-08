@@ -71,16 +71,14 @@ import { apiClient } from "@/shared/api/apiClient";
 import { usePopupStore } from "@/shared/model/popup-store";
 import { format } from "date-fns";
 import {
-  AlertCircle,
   ArrowLeft,
   Calendar,
   CalendarIcon,
   CheckCircle2,
   CreditCard,
-  Coins as DollarSign,
+  DollarSign,
   Download,
   type File,
-  FilePlus,
   FileText,
   Loader2,
   Package,
@@ -849,17 +847,22 @@ export const ApplicationDetail = ({
         </TabsContent>
         <TabsContent value="documents" className="mt-4">
           <Card>
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-2 ">
               <div className="flex items-center justify-between w-full">
-                <div>
-                  <CardTitle>Документы заявки</CardTitle>
-                  <CardDescription>
-                    Управление документами по заявке
-                  </CardDescription>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-200 rounded-full">
+                    <FileText className="h-5 w-5 text-amber-700" />
+                  </div>
+                  <div>
+                    <CardTitle>Документы заявки</CardTitle>
+                    <CardDescription>
+                      Управление документами по заявке
+                    </CardDescription>
+                  </div>
                 </div>
                 {isAdmin && (
                   <Button
-                    className="gap-2 bg-amber-500 hover:bg-amber-600"
+                    className="gap-2 bg-amber-500 hover:bg-amber-600 shadow-sm"
                     onClick={() => setIsUploadDialogOpen(true)}
                   >
                     <Upload className="h-4 w-4" />
@@ -868,83 +871,82 @@ export const ApplicationDetail = ({
                 )}
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               {application?.files && application.files.length > 0 ? (
-                <div className="bg-amber-50 p-3 rounded-md">
-                  <div className="bg-white p-4 rounded-md border border-amber-100">
-                    <div className="grid grid-cols-12 gap-2 mb-2 text-sm font-medium text-muted-foreground">
-                      <div className="col-span-1">№</div>
-                      <div className="col-span-3">Наименование</div>
-                      <div className="col-span-2">Номер</div>
-                      <div className="col-span-3">Дата документа</div>
-                      <div className="col-span-2">Файл</div>
-                      <div className="col-span-1"></div>
-                    </div>
-
-                    {application.files.map((file: any, index: number) => (
-                      <div
-                        key={index}
-                        className="grid grid-cols-12 gap-2 mb-3 items-center"
-                      >
-                        <div className="col-span-1 text-center">
-                          {index + 1}
-                        </div>
-                        <div className="col-span-3">
-                          <div className="truncate">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {application.files.map((file: any, index: number) => (
+                    <div
+                      key={index}
+                      className="bg-white border border-amber-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
+                    >
+                      <div className="bg-amber-50 p-3 border-b border-amber-100 flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-amber-600" />
+                          <span className="font-medium text-amber-800 truncate max-w-[180px]">
                             {file.name || `Документ ${index + 1}`}
-                          </div>
+                          </span>
                         </div>
-                        <div className="col-span-2">
-                          <div className="truncate">{file.number || "—"}</div>
-                        </div>
-                        <div className="col-span-3">
-                          <div className="truncate">
-                            {file.date ? formatDate(file.date) : "—"}
-                          </div>
-                        </div>
-                        <div className="col-span-2">
+                        {isAdmin && (
                           <Button
+                            type="button"
                             variant="ghost"
                             size="sm"
-                            className="gap-1"
-                            onClick={() => {
-                              const filePath =
-                                file.location || file.file || file.path || "";
-                              handleFileDownload(
-                                filePath,
-                                file.name || `document-${index + 1}.pdf`
-                              );
-                            }}
+                            className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 rounded-full"
+                            onClick={() => handleDeleteDocumentClick(file)}
                           >
-                            <Download className="h-4 w-4" />
-                            Скачать
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        </div>
-                        <div className="col-span-1 flex justify-center">
-                          {isAdmin && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-red-500 hover:bg-red-50"
-                              onClick={() => handleDeleteDocumentClick(file)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                      <div className="p-4 space-y-3">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">Номер:</span>
+                          <span className="font-medium">
+                            {file.number || "—"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">Дата:</span>
+                          <span className="font-medium">
+                            {file.date ? formatDate(file.date) : "—"}
+                          </span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full mt-2 gap-2 border-amber-200 text-amber-700 hover:bg-amber-50"
+                          onClick={() => {
+                            const filePath =
+                              file.location || file.file || file.path || "";
+                            handleFileDownload(
+                              filePath,
+                              file.name || `document-${index + 1}.pdf`
+                            );
+                          }}
+                        >
+                          <Download className="h-4 w-4" />
+                          Скачать документ
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
-                <div className="text-center py-12 border rounded-md bg-muted/10">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">Документы не найдены</p>
+                <div className="text-center py-16 border rounded-md bg-amber-50/50 border-amber-100">
+                  <div className="bg-amber-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                    <FileText className="h-8 w-8 text-amber-600" />
+                  </div>
+                  <h3 className="text-lg font-medium text-amber-800 mb-2">
+                    Документы не найдены
+                  </h3>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    К этой заявке еще не прикреплены документы. Добавьте первый
+                    документ, чтобы начать работу.
+                  </p>
                   {isAdmin && (
                     <Button
                       variant="outline"
-                      className="mt-4 gap-2"
+                      className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-100"
                       onClick={() => setIsUploadDialogOpen(true)}
                     >
                       <Plus className="h-4 w-4" />
@@ -954,6 +956,14 @@ export const ApplicationDetail = ({
                 </div>
               )}
             </CardContent>
+            {application?.files && application.files.length > 0 && (
+              <CardFooter className="bg-amber-50 border-t border-amber-100 py-3 px-6">
+                <div className="flex items-center gap-2 text-sm text-amber-700">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>Всего документов: {application.files.length}</span>
+                </div>
+              </CardFooter>
+            )}
           </Card>
         </TabsContent>
         <TabsContent value="wagons" className="mt-4">

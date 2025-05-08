@@ -36,6 +36,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useAuthData } from "@/entities/auth/model/use-auth-store";
 import { Link } from "react-router-dom";
+import { AuthProvider } from "./auth-provider";
 
 interface ILayout {
   children: React.ReactNode;
@@ -162,89 +163,91 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
   };
 
   return (
-    <SidebarProvider open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-      <div className="h-[100vh] flex w-full max-w-[8120px] pr-8">
-        <Sidebar>
-          <SidebarHeader>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton size="lg" asChild>
-                  <Link to="/">
-                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-sidebar-primary-foreground">
-                      <SunIcon className="size-4" />
-                    </div>
-                    <div className="flex flex-col gap-0.5 leading-none">
-                      <span className="font-semibold">SUNGRAIN</span>
-                    </div>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Навигации</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {navigationItems
-                    .filter((item) => item.isAdmin === isAdmin)
-                    .map((item) => {
-                      const active = isActive(item.url);
-                      return (
-                        <SidebarMenuItem key={item.title}>
-                          <SidebarMenuButton
-                            asChild
-                            isActive={active}
-                            className={
-                              active
-                                ? "bg-orange-100 text-orange-400 hover:bg-orange-200 hover:text-orange-700"
-                                : ""
-                            }
-                          >
-                            <a href={item.url}>
-                              <item.icon
-                                className={`size-4 ${
-                                  active ? "text-orange-600" : ""
-                                }`}
-                              />
-                              <span>{item.title}</span>
-                            </a>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      );
-                    })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-          <SidebarFooter>
-            <SidebarSeparator />
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={handleLogout}
-                  className="text-red-500 hover:text-red-600 hover:bg-red-100/10"
-                >
-                  <LogOut className="size-4" />
-                  <span>Выйти</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarFooter>
-          <SidebarRail />
-        </Sidebar>
-        <SidebarInset className="flex flex-col flex-1">
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger
-              className="-ml-1"
-              onClick={() => setIsSidebarOpen((prev) => !prev)}
-            />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <h1 className="font-semibold">SUNGRAIN | ADMIN PANEL</h1>
-          </header>
-          <main className="flex-1 overflow-auto p-4">{children}</main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+    <AuthProvider>
+      <SidebarProvider open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+        <div className="h-[100vh] flex w-full max-w-[8120px] pr-8">
+          <Sidebar>
+            <SidebarHeader>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton size="lg" asChild>
+                    <Link to="/">
+                      <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-sidebar-primary-foreground">
+                        <SunIcon className="size-4" />
+                      </div>
+                      <div className="flex flex-col gap-0.5 leading-none">
+                        <span className="font-semibold">SUNGRAIN</span>
+                      </div>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarHeader>
+            <SidebarContent>
+              <SidebarGroup>
+                <SidebarGroupLabel>Навигации</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {navigationItems
+                      .filter((item) => item.isAdmin === isAdmin)
+                      .map((item) => {
+                        const active = isActive(item.url);
+                        return (
+                          <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton
+                              asChild
+                              isActive={active}
+                              className={
+                                active
+                                  ? "bg-orange-100 text-orange-400 hover:bg-orange-200 hover:text-orange-700"
+                                  : ""
+                              }
+                            >
+                              <a href={item.url}>
+                                <item.icon
+                                  className={`size-4 ${
+                                    active ? "text-orange-600" : ""
+                                  }`}
+                                />
+                                <span>{item.title}</span>
+                              </a>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        );
+                      })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </SidebarContent>
+            <SidebarFooter>
+              <SidebarSeparator />
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={handleLogout}
+                    className="text-red-500 hover:text-red-600 hover:bg-red-100/10"
+                  >
+                    <LogOut className="size-4" />
+                    <span>Выйти</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarFooter>
+            <SidebarRail />
+          </Sidebar>
+          <SidebarInset className="flex flex-col flex-1">
+            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+              <SidebarTrigger
+                className="-ml-1"
+                onClick={() => setIsSidebarOpen((prev) => !prev)}
+              />
+              <Separator orientation="vertical" className="mr-2 h-4" />
+              <h1 className="font-semibold">SUNGRAIN | ADMIN PANEL</h1>
+            </header>
+            <main className="flex-1 overflow-auto p-4">{children}</main>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    </AuthProvider>
   );
 };
