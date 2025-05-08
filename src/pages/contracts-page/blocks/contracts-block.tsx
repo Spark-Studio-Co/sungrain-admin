@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -36,6 +36,9 @@ import {
   File,
   Check,
   ChevronsUpDown,
+  ChevronUp,
+  Filter,
+  CalendarIcon,
 } from "lucide-react";
 import {
   Pagination,
@@ -90,6 +93,15 @@ import {
 import { cn } from "@/lib/utils";
 import { apiClient } from "@/shared/api/apiClient";
 import { useQueryClient } from "@tanstack/react-query";
+import { Slider } from "@/components/ui/slider";
+import { Separator } from "@/components/ui/separator";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { format } from "date-fns";
 
 // File operations functions
 const uploadContractFiles = async (
@@ -163,6 +175,20 @@ export const ContractsBlock = () => {
   const [openDepartureStation, setOpenDepartureStation] = useState(false);
   const [openDestinationStation, setOpenDestinationStation] = useState(false);
 
+  // Add these new state variables after the existing state declarations (around line 109)
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    dateRange: {
+      from: null as Date | null,
+      to: null as Date | null,
+    },
+    cultures: [] as string[],
+    senders: [] as string[],
+    receivers: [] as string[],
+    volumeRange: [0, 10000] as [number, number],
+  });
+  const [availableCultures, setAvailableCultures] = useState<string[]>([]);
+
   // Fetch dropdown data
   const { data: stationsData = { data: [], total: 0 } } = useFetchStations(
     1,
@@ -210,12 +236,95 @@ export const ContractsBlock = () => {
   const totalPages = isAdmin ? contracts.totalPages : userContracts.totalPages;
   const totalItems = isAdmin ? contracts.total : userContracts.total;
 
-  // Filter contracts based on search term
+  // Add this useMemo to get unique cultures from contracts
+  // Add after the filteredContracts useMemo (around line 186)
+  // With this version that doesn't update state directly:
+  const availableCulturesData = useMemo(() => {
+    if (!contractsToDisplay || !Array.isArray(contractsToDisplay)) return [];
+
+    // Extract unique cultures
+    const cultures = new Set<string>();
+    contractsToDisplay.forEach((contract: any) => {
+      if (contract.crop) {
+        cultures.add(contract.crop);
+      }
+    });
+
+    return Array.from(cultures);
+  }, [contractsToDisplay]);
+
+  // Then update the state in a useEffect that depends on the memoized value:
+  useEffect(() => {
+    setAvailableCultures(availableCulturesData);
+  }, [availableCulturesData]);
+
+  // Add this new applyFilters function before the handleSearchChange function (around line 190)
+  const applyFilters = (contracts: any[]) => {
+    if (!contracts || !Array.isArray(contracts)) return [];
+
+    return contracts.filter((contract: any) => {
+      // Date range filter
+      if (filters.dateRange.from || filters.dateRange.to) {
+        const contractDate = contract.date ? new Date(contract.date) : null;
+        if (contractDate) {
+          if (filters.dateRange.from && contractDate < filters.dateRange.from) {
+            return false;
+          }
+          if (filters.dateRange.to) {
+            // Set time to end of day for the "to" date
+            const toDateEnd = new Date(filters.dateRange.to);
+            toDateEnd.setHours(23, 59, 59, 999);
+            if (contractDate > toDateEnd) {
+              return false;
+            }
+          }
+        }
+      }
+
+      // Culture filter
+      if (
+        filters.cultures.length > 0 &&
+        !filters.cultures.includes(contract.crop)
+      ) {
+        return false;
+      }
+
+      // Sender filter
+      if (
+        filters.senders.length > 0 &&
+        !filters.senders.includes(contract.sender)
+      ) {
+        return false;
+      }
+
+      // Receiver filter
+      if (
+        filters.receivers.length > 0 &&
+        !filters.receivers.includes(contract.receiver)
+      ) {
+        return false;
+      }
+
+      // Volume range filter
+      const volume = Number.parseFloat(contract.total_volume) || 0;
+      if (volume < filters.volumeRange[0] || volume > filters.volumeRange[1]) {
+        return false;
+      }
+
+      return true;
+    });
+  };
+
+  // Modify the filteredContracts useMemo to include filters (around line 165)
   const filteredContracts = useMemo(() => {
     if (!contractsToDisplay || !Array.isArray(contractsToDisplay)) return [];
 
+    // First, apply filters
+    const filteredByType = applyFilters(contractsToDisplay);
+
+    // Then apply search
     if (searchTerm) {
-      return contractsToDisplay.filter((contract: any) =>
+      return filteredByType.filter((contract: any) =>
         Object.values(contract).some(
           (value) =>
             value &&
@@ -225,12 +334,57 @@ export const ContractsBlock = () => {
       );
     }
 
-    return contractsToDisplay;
-  }, [contractsToDisplay, searchTerm]);
+    return filteredByType;
+  }, [contractsToDisplay, searchTerm, filters]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1);
+  };
+
+  // Add this function to handle toggling a filter item (after handleSearchChange)
+  const toggleFilterItem = (
+    type: "cultures" | "senders" | "receivers",
+    value: string
+  ) => {
+    setFilters((prev) => {
+      const currentItems = [...prev[type]];
+      const index = currentItems.indexOf(value);
+
+      if (index > -1) {
+        currentItems.splice(index, 1);
+      } else {
+        currentItems.push(value);
+      }
+
+      return {
+        ...prev,
+        [type]: currentItems,
+      };
+    });
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+
+  // Add this function to clear all filters
+  const clearFilters = () => {
+    setFilters({
+      dateRange: { from: null, to: null },
+      cultures: [],
+      senders: [],
+      receivers: [],
+      volumeRange: [0, 10000],
+    });
+  };
+
+  // Add this function to get the active filter count
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (filters.dateRange.from || filters.dateRange.to) count++;
+    if (filters.cultures.length) count++;
+    if (filters.senders.length) count++;
+    if (filters.receivers.length) count++;
+    if (filters.volumeRange[0] > 0 || filters.volumeRange[1] < 10000) count++;
+    return count;
   };
 
   const handlePageChange = (page: number) => {
@@ -482,22 +636,321 @@ export const ContractsBlock = () => {
               </div>
             </div>
           </div>
-          <div className="mt-4 relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Поиск контрактов..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="pl-10 w-full md:max-w-sm"
-            />
+          {/* Add this to modify the CardHeader div after the search input section (around line 254) */}
+          {/* Replace the search input section with this enhanced version including filters */}
+          <div className="mt-4 flex flex-col md:flex-row md:items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Поиск контрактов..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="pl-10 w-full"
+              />
+            </div>
+            <Button
+              variant="outline"
+              className="gap-2 whitespace-nowrap"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4" />
+              Фильтры
+              {getActiveFilterCount() > 0 && (
+                <span className="ml-1 rounded-full bg-primary w-5 h-5 flex items-center justify-center text-xs text-primary-foreground">
+                  {getActiveFilterCount()}
+                </span>
+              )}
+              {showFilters ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
           </div>
+
+          {showFilters && (
+            <div className="mt-4 p-4 border rounded-md bg-background shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-medium">Фильтры контрактов</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="h-8 px-2"
+                >
+                  <X className="h-4 w-4 mr-1" /> Сбросить все
+                </Button>
+              </div>
+
+              <Accordion
+                type="multiple"
+                defaultValue={["date", "cultures", "volume"]}
+              >
+                {/* Date Range Filter */}
+                <AccordionItem value="date">
+                  <AccordionTrigger>Период даты контракта</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm">С даты:</label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start text-left font-normal"
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {filters.dateRange.from ? (
+                                format(filters.dateRange.from, "dd.MM.yyyy")
+                              ) : (
+                                <span>Выберите дату</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={filters.dateRange.from || undefined}
+                              onSelect={(date) =>
+                                setFilters((prev) => ({
+                                  ...prev,
+                                  dateRange: { ...prev.dateRange, from: date },
+                                }))
+                              }
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm">По дату:</label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start text-left font-normal"
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {filters.dateRange.to ? (
+                                format(filters.dateRange.to, "dd.MM.yyyy")
+                              ) : (
+                                <span>Выберите дату</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={filters.dateRange.to || undefined}
+                              onSelect={(date) =>
+                                setFilters((prev) => ({
+                                  ...prev,
+                                  dateRange: { ...prev.dateRange, to: date },
+                                }))
+                              }
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      {(filters.dateRange.from || filters.dateRange.to) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2 h-8"
+                          onClick={() =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              dateRange: { from: null, to: null },
+                            }))
+                          }
+                        >
+                          <X className="h-3 w-3 mr-1" /> Сбросить даты
+                        </Button>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Culture Filter */}
+                <AccordionItem value="cultures">
+                  <AccordionTrigger>Культура</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="flex flex-wrap gap-2">
+                      {availableCultures.length > 0 ? (
+                        availableCultures.map((culture, idx) => (
+                          <Badge
+                            key={idx}
+                            variant={
+                              filters.cultures.includes(culture)
+                                ? "default"
+                                : "outline"
+                            }
+                            className="cursor-pointer"
+                            onClick={() =>
+                              toggleFilterItem("cultures", culture)
+                            }
+                          >
+                            {culture}
+                            {filters.cultures.includes(culture) && (
+                              <X className="h-3 w-3 ml-1" />
+                            )}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground text-sm">
+                          Нет доступных культур
+                        </span>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Sender Filter */}
+                <AccordionItem value="senders">
+                  <AccordionTrigger>Грузоотправитель</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                      {sendersData.data.length > 0 ? (
+                        sendersData.data.map((sender: any) => (
+                          <Badge
+                            key={sender.id}
+                            variant={
+                              filters.senders.includes(sender.name)
+                                ? "default"
+                                : "outline"
+                            }
+                            className="cursor-pointer"
+                            onClick={() =>
+                              toggleFilterItem("senders", sender.name)
+                            }
+                          >
+                            {sender.name}
+                            {filters.senders.includes(sender.name) && (
+                              <X className="h-3 w-3 ml-1" />
+                            )}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground text-sm">
+                          Нет данных о грузоотправителях
+                        </span>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Receiver Filter */}
+                <AccordionItem value="receivers">
+                  <AccordionTrigger>Грузополучатель</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                      {receiversData.data.length > 0 ? (
+                        receiversData.data.map((receiver: any) => (
+                          <Badge
+                            key={receiver.id}
+                            variant={
+                              filters.receivers.includes(receiver.name)
+                                ? "default"
+                                : "outline"
+                            }
+                            className="cursor-pointer"
+                            onClick={() =>
+                              toggleFilterItem("receivers", receiver.name)
+                            }
+                          >
+                            {receiver.name}
+                            {filters.receivers.includes(receiver.name) && (
+                              <X className="h-3 w-3 ml-1" />
+                            )}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground text-sm">
+                          Нет данных о грузополучателях
+                        </span>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Volume Range Filter */}
+                <AccordionItem value="volume">
+                  <AccordionTrigger>Объем (тонн)</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-6 px-1">
+                      <Slider
+                        defaultValue={[0, 10000]}
+                        value={filters.volumeRange}
+                        min={0}
+                        max={10000}
+                        step={100}
+                        onValueChange={(value) =>
+                          setFilters((prev) => ({
+                            ...prev,
+                            volumeRange: value as [number, number],
+                          }))
+                        }
+                      />
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">
+                          От:{" "}
+                          <span className="font-medium">
+                            {filters.volumeRange[0]}
+                          </span>{" "}
+                          т
+                        </span>
+                        <span className="text-sm">
+                          До:{" "}
+                          <span className="font-medium">
+                            {filters.volumeRange[1]}
+                          </span>{" "}
+                          т
+                        </span>
+                      </div>
+                      {(filters.volumeRange[0] > 0 ||
+                        filters.volumeRange[1] < 10000) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2 h-8"
+                          onClick={() =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              volumeRange: [0, 10000],
+                            }))
+                          }
+                        >
+                          <X className="h-3 w-3 mr-1" /> Сбросить диапазон
+                        </Button>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              {getActiveFilterCount() > 0 && (
+                <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                  <div className="text-sm">
+                    Активные фильтры:{" "}
+                    <span className="font-medium">
+                      {getActiveFilterCount()}
+                    </span>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={clearFilters}>
+                    <X className="h-4 w-4 mr-1" /> Сбросить все фильтры
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </CardHeader>
 
         <CardContent className="px-0 pb-0">
           {isDataError && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Ошибка</AlertTitle>
+              <AlertTitle>Ошибк��</AlertTitle>
               <AlertDescription>
                 Не удалось загрузить данные.{" "}
                 {dataError?.message || "Пожалуйста, попробуйте позже."}
@@ -570,7 +1023,7 @@ export const ContractsBlock = () => {
                             ))}
                         </TableRow>
                       ))
-                  ) : searchTerm ? (
+                  ) : searchTerm || getActiveFilterCount() > 0 ? (
                     filteredContracts.length > 0 ? (
                       filteredContracts.map((contract: any) => (
                         <TableRow
@@ -765,11 +1218,32 @@ export const ContractsBlock = () => {
               </Table>
             </div>
           </div>
+          {/* Add this to the "mt-4 flex flex-col sm:flex-row" div after the table (around line 517) */}
+          {/* Replace the existing div with info about total contracts with this: */}
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-muted-foreground mb-4 sm:mb-0">
-              Всего контрактов: {isDataLoading ? "..." : totalItems || 0}
-              {!isAdmin && " (только ваши контракты)"}
+            <div className="text-sm text-muted-foreground mb-4 sm:mb-0 flex flex-wrap items-center gap-2">
+              <span>
+                Всего контрактов: {isDataLoading ? "..." : totalItems || 0}
+                {!isAdmin && " (только ваши контракты)"}
+              </span>
+
+              {/* Show active filters summary */}
+              {getActiveFilterCount() > 0 && (
+                <>
+                  <Separator orientation="vertical" className="h-4" />
+                  <span>Отфильтровано: {filteredContracts.length}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="h-6 px-2 text-xs"
+                  >
+                    <X className="h-3 w-3 mr-1" /> Сбросить фильтры
+                  </Button>
+                </>
+              )}
             </div>
+
             {!isDataLoading && totalPages > 1 && (
               <Pagination>
                 <PaginationContent>
