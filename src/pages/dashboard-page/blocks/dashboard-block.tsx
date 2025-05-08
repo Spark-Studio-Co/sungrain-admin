@@ -45,7 +45,12 @@ import {
   Cell,
   Legend,
 } from "recharts";
-import { DollarSign, Percent, Building, ShieldCheck } from "lucide-react";
+import {
+  Coins as DollarSign,
+  Percent,
+  Building,
+  ShieldCheck,
+} from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 export const DashboardBlock = () => {

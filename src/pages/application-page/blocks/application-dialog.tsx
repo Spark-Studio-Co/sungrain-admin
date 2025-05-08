@@ -10,7 +10,7 @@ import {
   CalendarIcon,
   Plus,
   Trash2,
-  DollarSign,
+  Coins as DollarSign,
   CheckCircle,
 } from "lucide-react";
 import {

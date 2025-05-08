@@ -6,7 +6,7 @@ import {
   FileText,
   Plus,
   Package,
-  DollarSign,
+  Coins as DollarSign,
   Search,
   Loader2,
   Pencil,
