@@ -76,7 +76,7 @@ import {
   CalendarIcon,
   CheckCircle2,
   CreditCard,
-  DollarSign,
+  Coins as DollarSign,
   Download,
   type File,
   FileText,
