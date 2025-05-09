@@ -275,7 +275,169 @@ export const DashboardBlock = () => {
           </CardContent>
         </Card>
       </div>
+      <Tabs defaultValue="contracts" className="space-y-4">
+        <div className="flex space-x-4 border-b">
+          <div
+            className="cursor-pointer px-4 py-2 border-b-2 border-primary"
+            data-state="active"
+          >
+            Контракты
+          </div>
+        </div>
+        <TabsContent value="contracts" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Последние контракты</CardTitle>
+              <CardDescription>
+                Обзор недавно созданных и активных контрактов
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <div>
+                    <h4 className="font-medium">Ошибка загрузки данных</h4>
+                    <p className="text-sm">
+                      {error?.message || "Пожалуйста, попробуйте позже"}
+                    </p>
+                  </div>
+                </Alert>
+              )}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>№ Контракта</TableHead>
+                    <TableHead>Культура</TableHead>
+                    <TableHead>Объем (т)</TableHead>
+                    <TableHead>Отгружено (т)</TableHead>
+                    <TableHead>Выполнение</TableHead>
+                    <TableHead>Дата</TableHead>
+                    <TableHead className="text-right">Действия</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    Array(5)
+                      .fill(0)
+                      .map((_, index) => (
+                        <TableRow key={`skeleton-${index}`}>
+                          {Array(7)
+                            .fill(0)
+                            .map((_, cellIndex) => (
+                              <TableCell key={`cell-${index}-${cellIndex}`}>
+                                <Skeleton className="h-6 w-full" />
+                              </TableCell>
+                            ))}
+                        </TableRow>
+                      ))
+                  ) : recentContracts.length > 0 ? (
+                    recentContracts.map((contract: any) => (
+                      <TableRow key={contract.id}>
+                        <TableCell className="font-medium">
+                          {contract.number}
+                        </TableCell>
+                        <TableCell>{contract.crop}</TableCell>
+                        <TableCell>
+                          {contract.volume.toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          {contract.shippedVolume.toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress
+                              value={contract.fulfillmentPercentage}
+                              className="h-2 w-16"
+                            />
+                            <span className="text-xs">
+                              {contract.fulfillmentPercentage}%
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{contract.date}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              navigate(`/admin/contracts/${contract.id}`)
+                            }
+                          >
+                            Подробнее
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-4">
+                        Контракты не найдены
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+            <CardFooter>
+              <Button variant="outline" size="sm" className="ml-auto" asChild>
+                <Link to="/admin/contracts">
+                  Посмотреть все
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
 
+        <TabsContent value="volume-analysis" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Детальный анализ объемов</CardTitle>
+              <CardDescription>
+                Подробная информация о распределении объемов по контрактам
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-96">
+              {isLoading ? (
+                <div className="h-full w-full flex items-center justify-center">
+                  <Skeleton className="h-full w-full" />
+                </div>
+              ) : recentContracts.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={recentContracts}
+                    margin={{
+                      top: 20,
+                      right: 30,
+                      left: 20,
+                      bottom: 60,
+                    }}
+                    layout="vertical"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="number" type="category" width={100} />
+                    <Tooltip
+                      formatter={(value) => [
+                        `${value.toLocaleString()} т`,
+                        "Объем",
+                      ]}
+                      labelFormatter={(label) => `Контракт: ${label}`}
+                    />
+                    <Legend />
+                    <Bar dataKey="volume" fill="#10b981" name="Объем (т)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+                  Нет данных для отображения
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
       {/* Additional Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -731,169 +893,6 @@ export const DashboardBlock = () => {
           )}
         </CardContent>
       </Card>
-      <Tabs defaultValue="contracts" className="space-y-4">
-        <div className="flex space-x-4 border-b">
-          <div
-            className="cursor-pointer px-4 py-2 border-b-2 border-primary"
-            data-state="active"
-          >
-            Контракты
-          </div>
-        </div>
-        <TabsContent value="contracts" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Последние контракты</CardTitle>
-              <CardDescription>
-                Обзор недавно созданных и активных контрактов
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isError && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertCircle className="h-4 w-4" />
-                  <div>
-                    <h4 className="font-medium">Ошибка загрузки данных</h4>
-                    <p className="text-sm">
-                      {error?.message || "Пожалуйста, попробуйте позже"}
-                    </p>
-                  </div>
-                </Alert>
-              )}
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>№ Контракта</TableHead>
-                    <TableHead>Культура</TableHead>
-                    <TableHead>Объем (т)</TableHead>
-                    <TableHead>Отгружено (т)</TableHead>
-                    <TableHead>Выполнение</TableHead>
-                    <TableHead>Дата</TableHead>
-                    <TableHead className="text-right">Действия</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    Array(5)
-                      .fill(0)
-                      .map((_, index) => (
-                        <TableRow key={`skeleton-${index}`}>
-                          {Array(7)
-                            .fill(0)
-                            .map((_, cellIndex) => (
-                              <TableCell key={`cell-${index}-${cellIndex}`}>
-                                <Skeleton className="h-6 w-full" />
-                              </TableCell>
-                            ))}
-                        </TableRow>
-                      ))
-                  ) : recentContracts.length > 0 ? (
-                    recentContracts.map((contract: any) => (
-                      <TableRow key={contract.id}>
-                        <TableCell className="font-medium">
-                          {contract.number}
-                        </TableCell>
-                        <TableCell>{contract.crop}</TableCell>
-                        <TableCell>
-                          {contract.volume.toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          {contract.shippedVolume.toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Progress
-                              value={contract.fulfillmentPercentage}
-                              className="h-2 w-16"
-                            />
-                            <span className="text-xs">
-                              {contract.fulfillmentPercentage}%
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{contract.date}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              navigate(`/admin/contracts/${contract.id}`)
-                            }
-                          >
-                            Подробнее
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-4">
-                        Контракты не найдены
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-            <CardFooter>
-              <Button variant="outline" size="sm" className="ml-auto" asChild>
-                <Link to="/admin/contracts">
-                  Посмотреть все
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="volume-analysis" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Детальный анализ объемов</CardTitle>
-              <CardDescription>
-                Подробная информация о распределении объемов по контрактам
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-96">
-              {isLoading ? (
-                <div className="h-full w-full flex items-center justify-center">
-                  <Skeleton className="h-full w-full" />
-                </div>
-              ) : recentContracts.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={recentContracts}
-                    margin={{
-                      top: 20,
-                      right: 30,
-                      left: 20,
-                      bottom: 60,
-                    }}
-                    layout="vertical"
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="number" type="category" width={100} />
-                    <Tooltip
-                      formatter={(value) => [
-                        `${value.toLocaleString()} т`,
-                        "Объем",
-                      ]}
-                      labelFormatter={(label) => `Контракт: ${label}`}
-                    />
-                    <Legend />
-                    <Bar dataKey="volume" fill="#10b981" name="Объем (т)" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full w-full flex items-center justify-center text-muted-foreground">
-                  Нет данных для отображения
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 };

@@ -584,11 +584,11 @@ export const ApplicationDetail = ({
           Назад к списку заявок
         </Button>
       </div>
-      <Card className="overflow-hidden border-blue-100 shadow-md">
-        <CardHeader className="pb-2 bg-gradient-to-r from-blue-50 to-blue-100">
+      <Card className="overflow-hidden border-white-100 shadow-md">
+        <CardHeader className="pb-2 bg-gradient-to-r from-white-50 to-white-100">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-blue-100 rounded-full">
-              <FileText className="h-6 w-6 text-blue-500" />
+            <div className="p-2 bg-white-100 rounded-full">
+              <FileText className="h-6 w-6 text-white-500" />
             </div>
             <div>
               <CardTitle className="text-xl">Заявка по договору</CardTitle>
@@ -604,7 +604,7 @@ export const ApplicationDetail = ({
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="flex items-start space-x-3">
-              <Package className="h-5 w-5 text-blue-500 mt-0.5" />
+              <Package className="h-5 w-5 text-white-500 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   Объем
@@ -618,7 +618,7 @@ export const ApplicationDetail = ({
               </div>
             </div>
             <div className="flex items-start space-x-3">
-              <Package className="h-5 w-5 text-blue-500 mt-0.5" />
+              <Package className="h-5 w-5 text-white-500 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   Культура
@@ -644,7 +644,7 @@ export const ApplicationDetail = ({
               </div>
             </div>
             <div className="flex items-start space-x-3">
-              <DollarSign className="h-5 w-5 text-blue-500 mt-0.5" />
+              <DollarSign className="h-5 w-5 text-white-500 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   Цена за тонну:{" "}
@@ -677,17 +677,17 @@ export const ApplicationDetail = ({
           </div>
 
           {/* Payment Progress Bar */}
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg shadow-sm">
+          <div className="mt-4 p-4 bg-white-50 rounded-lg shadow-sm">
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-blue-500" />
+                <CreditCard className="h-5 w-5 text-white-500" />
                 <h3 className="font-medium">Статус оплаты</h3>
               </div>
               {isAdmin && (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2 bg-white hover:bg-blue-100"
+                  className="gap-2 bg-white hover:bg-white-100"
                   onClick={() => setIsInvoiceDialogOpen(true)}
                 >
                   <Plus className="h-4 w-4" />
@@ -850,8 +850,8 @@ export const ApplicationDetail = ({
             <CardHeader className="pb-2 ">
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-200 rounded-full">
-                    <FileText className="h-5 w-5 text-amber-700" />
+                  <div className="p-2 bg-white-200 rounded-full">
+                    <FileText className="h-5 w-5 text-white-700" />
                   </div>
                   <div>
                     <CardTitle>Документы заявки</CardTitle>
@@ -862,7 +862,7 @@ export const ApplicationDetail = ({
                 </div>
                 {isAdmin && (
                   <Button
-                    className="gap-2 bg-amber-500 hover:bg-amber-600 shadow-sm"
+                    className="gap-2 bg-white-500 hover:bg-white-600 shadow-sm"
                     onClick={() => setIsUploadDialogOpen(true)}
                   >
                     <Upload className="h-4 w-4" />
@@ -877,12 +877,12 @@ export const ApplicationDetail = ({
                   {application.files.map((file: any, index: number) => (
                     <div
                       key={index}
-                      className="bg-white border border-amber-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
+                      className="bg-white border border-white-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
                     >
-                      <div className="bg-amber-50 p-3 border-b border-amber-100 flex justify-between items-center">
+                      <div className="bg-white-50 p-3 border-b border-white-100 flex justify-between items-center">
                         <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-amber-600" />
-                          <span className="font-medium text-amber-800 truncate max-w-[180px]">
+                          <FileText className="h-4 w-4 text-white-600" />
+                          <span className="font-medium text-white-800 truncate max-w-[180px]">
                             {file.name || `Документ ${index + 1}`}
                           </span>
                         </div>
@@ -914,7 +914,7 @@ export const ApplicationDetail = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full mt-2 gap-2 border-amber-200 text-amber-700 hover:bg-amber-50"
+                          className="w-full mt-2 gap-2 border-white-200 text-white-700 hover:bg-white-50"
                           onClick={() => {
                             const filePath =
                               file.location || file.file || file.path || "";
@@ -932,11 +932,11 @@ export const ApplicationDetail = ({
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16 border rounded-md bg-amber-50/50 border-amber-100">
-                  <div className="bg-amber-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                    <FileText className="h-8 w-8 text-amber-600" />
+                <div className="text-center py-16 border rounded-md bg-white-50/50 border-white-100">
+                  <div className="bg-white-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                    <FileText className="h-8 w-8 text-white-600" />
                   </div>
-                  <h3 className="text-lg font-medium text-amber-800 mb-2">
+                  <h3 className="text-lg font-medium text-white-800 mb-2">
                     Документы не найдены
                   </h3>
                   <p className="text-muted-foreground mb-6 max-w-md mx-auto">
@@ -946,7 +946,7 @@ export const ApplicationDetail = ({
                   {isAdmin && (
                     <Button
                       variant="outline"
-                      className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-100"
+                      className="gap-2 border-white-300 text-white-700 hover:bg-white-100"
                       onClick={() => setIsUploadDialogOpen(true)}
                     >
                       <Plus className="h-4 w-4" />
@@ -957,8 +957,8 @@ export const ApplicationDetail = ({
               )}
             </CardContent>
             {application?.files && application.files.length > 0 && (
-              <CardFooter className="bg-amber-50 border-t border-amber-100 py-3 px-6">
-                <div className="flex items-center gap-2 text-sm text-amber-700">
+              <CardFooter className="bg-white-50 border-t border-white-100 py-3 px-6">
+                <div className="flex items-center gap-2 text-sm text-white-700">
                   <CheckCircle2 className="h-4 w-4" />
                   <span>Всего документов: {application.files.length}</span>
                 </div>
@@ -986,7 +986,7 @@ export const ApplicationDetail = ({
                 </div>
                 {isAdmin && (
                   <Button
-                    className="gap-2 bg-blue-500 hover:bg-blue-600"
+                    className="gap-2 bg-white-500 hover:bg-white-600"
                     onClick={() => setIsInvoiceDialogOpen(true)}
                   >
                     <Receipt className="h-4 w-4" />
@@ -1042,7 +1042,7 @@ export const ApplicationDetail = ({
                               className={
                                 invoice.status === "paid"
                                   ? "bg-green-100 text-green-800 hover:bg-green-100"
-                                  : "bg-amber-100 text-amber-800 hover:bg-amber-100"
+                                  : "bg-white-100 text-white-800 hover:bg-white-100"
                               }
                             >
                               {invoice.status === "paid"
@@ -1255,7 +1255,7 @@ export const ApplicationDetail = ({
                 />
                 {newDocument.file && (
                   <div className="flex items-center mt-2 text-sm">
-                    <FileText className="h-4 w-4 mr-2 text-blue-500" />
+                    <FileText className="h-4 w-4 mr-2 text-white-500" />
                     <span className="truncate max-w-[300px]">
                       {newDocument.file.name}
                     </span>
@@ -1404,7 +1404,7 @@ export const ApplicationDetail = ({
                     });
                 }
               }}
-              className="bg-amber-500 hover:bg-amber-600"
+              className="bg-white-500 hover:bg-white-600"
             >
               Сохранить статус
             </Button>
@@ -1591,7 +1591,7 @@ export const ApplicationDetail = ({
                 />
                 {newInvoice.file && (
                   <div className="flex items-center mt-2 text-sm">
-                    <FileText className="h-4 w-4 mr-2 text-blue-500" />
+                    <FileText className="h-4 w-4 mr-2 text-white-500" />
                     <span className="truncate max-w-[300px]">
                       {newInvoice.file.name}
                     </span>
@@ -1981,7 +1981,7 @@ export const ApplicationDetail = ({
                 uploadDocumentsForUploadMutation.isPending ||
                 !newShippingDoc.name
               }
-              className="bg-amber-500 hover:bg-amber-600"
+              className="bg-white-500 hover:bg-white-600"
             >
               {uploadDocumentsForUploadMutation.isPending ? (
                 <>
