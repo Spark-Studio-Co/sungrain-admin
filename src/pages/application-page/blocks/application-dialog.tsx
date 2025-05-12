@@ -1,5 +1,7 @@
 "use client";
 
+import { DialogFooter } from "@/components/ui/dialog";
+
 import type React from "react";
 import { useState, useEffect } from "react";
 import {
@@ -10,14 +12,13 @@ import {
   CalendarIcon,
   Plus,
   Trash2,
-  Coins as DollarSign,
+  DollarSign,
   CheckCircle,
 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -464,6 +465,7 @@ export const ApplicationDialog = ({
             comment: formData.comment,
             currency: formData.currency,
             contractId: contractId,
+            total_amount: totalAmount,
           },
         });
         applicationId = application.id;
@@ -476,6 +478,7 @@ export const ApplicationDialog = ({
           comment: formData.comment,
           culture: formData.culture,
           contractId: contractId as any,
+          total_amount: totalAmount,
         });
         applicationId = result.id;
       }
