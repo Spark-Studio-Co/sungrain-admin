@@ -21,11 +21,15 @@ import ApplicationPage from "./pages/application-page/application-page";
 import OwnerPage from "./pages/owner-page/owner-page";
 
 function App() {
-  const { token } = useAuthData();
+  const { token, removeToken } = useAuthData();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(() => {
     const storedAdminStatus = localStorage.getItem("isAdmin");
     return storedAdminStatus ? JSON.parse(storedAdminStatus) : null;
   });
+
+  useEffect(() => {
+    removeToken();
+  }, []);
 
   useEffect(() => {
     if (!token) {

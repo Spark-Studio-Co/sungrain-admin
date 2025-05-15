@@ -15,6 +15,7 @@ import {
   GlobeIcon,
   TrainTrack,
 } from "lucide-react";
+import { useAutoLogout } from "@/hooks/use-auto-logout";
 
 import {
   Sidebar,
@@ -108,6 +109,8 @@ const navigationItems = [
 export const Layout: React.FC<ILayout> = ({ children }) => {
   const { removeRole, removeRequestId, removeUserId, removeToken } =
     useAuthData();
+  useAutoLogout();
+
   const [currentPath, setCurrentPath] = useState("");
 
   const SIDEBAR_STORAGE_KEY = "sidebarOpen";

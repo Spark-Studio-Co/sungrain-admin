@@ -284,7 +284,7 @@ export default function ApplicationPage() {
                     </CardDescription>
                   </div>
                   {isAdmin && (
-                    <Button className="gap-2">
+                    <Button className="gap-2 !bg-primary">
                       <Upload className="h-4 w-4" />
                       Загрузить документ
                     </Button>

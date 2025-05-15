@@ -15,7 +15,7 @@ export const AddDocumentPopup = () => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button className="gap-2 !bg-primary">
           <Upload className="h-4 w-4" />
           Загрузить документ
         </Button>

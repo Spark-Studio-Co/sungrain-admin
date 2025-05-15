@@ -312,7 +312,6 @@ export const ApplicationBlock = ({
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon">

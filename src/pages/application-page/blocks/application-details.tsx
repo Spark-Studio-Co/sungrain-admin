@@ -862,7 +862,7 @@ export const ApplicationDetail = ({
                 </div>
                 {isAdmin && (
                   <Button
-                    className="gap-2 bg-white-500 hover:bg-white-600 shadow-sm"
+                    className="gap-2 !bg-primary shadow-sm"
                     onClick={() => setIsUploadDialogOpen(true)}
                   >
                     <Upload className="h-4 w-4" />
@@ -882,7 +882,7 @@ export const ApplicationDetail = ({
                       <div className="bg-white-50 p-3 border-b border-white-100 flex justify-between items-center">
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-white-600" />
-                          <span className="font-medium text-white-800 truncate max-w-[180px]">
+                          <span className="font-medium text-white-800  max-w-[180px]">
                             {file.name || `Документ ${index + 1}`}
                           </span>
                         </div>
