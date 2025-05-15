@@ -28,7 +28,11 @@ function App() {
   });
 
   useEffect(() => {
-    removeToken();
+    const tokenReset = sessionStorage.getItem("tokenReset");
+    if (!tokenReset) {
+      removeToken();
+      sessionStorage.setItem("tokenReset", "true");
+    }
   }, []);
 
   useEffect(() => {
