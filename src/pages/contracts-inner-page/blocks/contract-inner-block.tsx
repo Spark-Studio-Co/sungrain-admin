@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { AlertCircle, Package, BarChart3 } from "lucide-react";
+import { AlertCircle, Package, BarChart3, Truck } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -106,18 +106,18 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
 
   // Calculate volume usage from applications
   const volumeStats = useMemo(() => {
-    if (!contractData || !contractData.applications) {
+    if (!wagons || wagons.length === 0) {
       return {
-        totalVolume: 0,
+        totalVolume: contractData?.total_volume || 0,
         usedVolume: 0,
         percentUsed: 0,
-        remainingVolume: 0,
+        remainingVolume: contractData?.total_volume || 0,
       };
     }
 
-    const totalVolume = contractData.total_volume || 0;
-    const usedVolume = contractData.applications.reduce(
-      (sum: number, app: any) => sum + (app.volume || 0),
+    const totalVolume = contractData?.total_volume || 0;
+    const usedVolume = wagons.reduce(
+      (sum: number, wagon: any) => sum + (wagon.capacity || 0),
       0
     );
     const percentUsed = totalVolume > 0 ? (usedVolume / totalVolume) * 100 : 0;
@@ -129,7 +129,41 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
       percentUsed,
       remainingVolume,
     };
-  }, [contractData]);
+  }, [contractData, wagons]);
+
+  // Calculate wagon capacity statistics
+  const wagonCapacityStats = useMemo(() => {
+    if (!wagons || wagons.length === 0) {
+      return {
+        totalCapacity: 0,
+        totalRealWeight: 0,
+        capacityUtilization: 0,
+        wagonCount: 0,
+        averageUtilization: 0,
+      };
+    }
+
+    const wagonCount = wagons.length;
+    const totalCapacity = wagons.reduce(
+      (sum: number, wagon: any) => sum + (wagon.capacity || 0),
+      0
+    );
+    const totalRealWeight = wagons.reduce(
+      (sum: number, wagon: any) => sum + (wagon.capacity || 0),
+      0
+    );
+    const capacityUtilization =
+      totalCapacity > 0 ? (totalRealWeight / totalCapacity) * 100 : 0;
+    const averageUtilization = wagonCount > 0 ? capacityUtilization : 0;
+
+    return {
+      totalCapacity,
+      totalRealWeight,
+      capacityUtilization,
+      wagonCount,
+      averageUtilization,
+    };
+  }, [wagons]);
 
   const handleDownload = () => {
     if (!contractData?.files || contractData.files.length === 0) {
@@ -304,7 +338,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
             </div>
           </CardContent>
         </Card>
-
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="details">Детали договора</TabsTrigger>
@@ -314,6 +347,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
             <WagonDetails
               wagons={wagons}
               handleFileDownload={handleFileDownload}
+              capacityStats={wagonCapacityStats}
+              contractData={contractData}
             />
           </TabsContent>
           <TabsContent value="applications" className="mt-4">
