@@ -9,11 +9,11 @@ export const deleteApplicationFile = async ({
   applicationId,
   docNumber,
 }: DeleteApplicationFileParams) => {
+  const encodedDocNumber = encodeURIComponent(docNumber); // ← важно
+
   const response = await apiClient.delete(
-    `/application/delete-files/${applicationId}/number/${docNumber}`,
-    {
-      params: { application_id: applicationId, doc_number: docNumber },
-    }
+    `/application/delete-files/${applicationId}/number/${encodedDocNumber}`
   );
+
   return response.data;
 };

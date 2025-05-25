@@ -367,7 +367,7 @@ export const ApplicationDetail = ({
     try {
       // Check if this is a shipping document (from documents_for_upload)
       const isShippingDoc = shippingDocuments.some(
-        (doc) => doc.id === deletingDoc.id
+        (doc: any) => doc.id === deletingDoc.id
       );
 
       if (isShippingDoc) {
@@ -602,13 +602,11 @@ export const ApplicationDetail = ({
           </div>
         </CardHeader>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="flex items-start space-x-3">
-              <Package className="h-5 w-5 text-white-500 mt-0.5" />
+              <Package className="h-5 w-5 text-gray-500 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Объем
-                </p>
+                <p className="text-sm font-medium text-gray-500">Объем</p>
                 <p className="font-medium">
                   {application?.volume
                     ? application.volume.toLocaleString()
@@ -618,17 +616,12 @@ export const ApplicationDetail = ({
               </div>
             </div>
             <div className="flex items-start space-x-3">
-              <Package className="h-5 w-5 text-white-500 mt-0.5" />
+              <Package className="h-5 w-5 text-gray-500 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Культура
-                </p>
-                <Badge
-                  variant="outline"
-                  className="bg-green-50 text-green-700 mt-1"
-                >
+                <p className="text-sm font-medium text-gray-500">Культура</p>
+                <p className="font-medium">
                   {application?.culture === "wheat"
-                    ? "Пшеница"
+                    ? "Пшеница мягкая 5 класса"
                     : application?.culture === "barley"
                     ? "Ячмень"
                     : application?.culture === "corn"
@@ -640,38 +633,32 @@ export const ApplicationDetail = ({
                     : application?.culture === "rapeseed"
                     ? "Рапс"
                     : application?.culture || "Не указана"}
-                </Badge>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3">
-              <DollarSign className="h-5 w-5 text-white-500 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Цена за тонну:{" "}
-                  <span className="text-orange-400">
-                    {application.price_per_ton} {""}{" "}
-                    {application.contract?.currency}
-                  </span>
                 </p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <DollarSign className="h-5 w-5 text-green-500 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Общая сумма
+                <p className="text-sm font-medium text-gray-500">
+                  Цена за тонну
                 </p>
-                <Badge
-                  variant="outline"
-                  className="bg-green-50 text-green-700 font-medium mt-1"
-                >
+                <p className="font-medium text-green-600">
+                  {application.price_per_ton} {application.contract?.currency}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <DollarSign className="h-5 w-5 text-green-500 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-gray-500">Общая сумма</p>
+                <p className="font-medium ">
                   {application?.total_amount
                     ? application.total_amount.toLocaleString()
                     : 0}{" "}
                   {application?.currency ||
                     application?.contract?.currency ||
                     "₸"}
-                </Badge>
+                </p>
               </div>
             </div>
           </div>
@@ -796,7 +783,7 @@ export const ApplicationDetail = ({
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm">Общая сумма:</span>
-                        <span className="font-medium text-green-600">
+                        <span className="font-medium ">
                           {application?.total_amount
                             ? application.total_amount.toLocaleString()
                             : 0}{" "}
