@@ -17,8 +17,8 @@ import {
   ChevronUp,
   TrainFront,
   FileBox,
-  CalendarIcon,
-  X,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from "lucide-react";
 import {
   Card,
@@ -38,7 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { format, isAfter, isBefore, isValid, parseISO } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -48,12 +48,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface WagonDetailsProps {
   wagons: any[];
@@ -74,15 +69,9 @@ export const WagonDetails = ({
   const [expandedApplications, setExpandedApplications] = useState<string[]>(
     []
   );
-  const [selectedOwner, setSelectedOwner] = useState("all");
-  const [dateRange, setDateRange] = useState<{
-    from: Date | null;
-    to: Date | null;
-  }>({
-    from: null,
-    to: null,
-  });
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [dateSortOrder, setDateSortOrder] = useState<
+    "newest" | "oldest" | null
+  >(null);
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -93,42 +82,21 @@ export const WagonDetails = ({
     }
   };
 
-  // Format date for display in the date picker button
-  const formatDateRange = () => {
-    if (dateRange.from && dateRange.to) {
-      return `${format(dateRange.from, "dd.MM.yyyy")} - ${format(
-        dateRange.to,
-        "dd.MM.yyyy"
-      )}`;
+  // Parse date safely
+  const parseDate = (dateString: string | null | undefined) => {
+    if (!dateString) return null;
+    try {
+      const date = parseISO(dateString);
+      return isValid(date) ? date : null;
+    } catch (e) {
+      return null;
     }
-    if (dateRange.from) {
-      return `С ${format(dateRange.from, "dd.MM.yyyy")}`;
-    }
-    if (dateRange.to) {
-      return `До ${format(dateRange.to, "dd.MM.yyyy")}`;
-    }
-    return "Выберите даты";
-  };
-
-  // Clear date filter
-  const clearDateFilter = () => {
-    setDateRange({ from: null, to: null });
   };
 
   // Get unique statuses for filtering
   const statuses = Array.from(
     new Set(wagons?.map((wagon) => wagon.status) || [])
   );
-
-  // Get unique wagon owners for filtering
-  const wagonOwners = useMemo(() => {
-    const owners = new Set<string>();
-    wagons.forEach((wagon) => {
-      const owner = wagon.owner || "Не указан";
-      owners.add(owner);
-    });
-    return Array.from(owners).sort();
-  }, [wagons]);
 
   // Group wagons by application name
   const wagonsByApplication = useMemo(() => {
@@ -193,37 +161,13 @@ export const WagonDetails = ({
     return Object.values(groupedWagons);
   }, [wagons, contractData]);
 
-  // Check if a date is within the selected range
-  const isDateInRange = (dateString: string | null | undefined) => {
-    if (!dateString) return false;
-
-    try {
-      const date = parseISO(dateString);
-      if (!isValid(date)) return false;
-
-      const isAfterFrom =
-        !dateRange.from ||
-        isAfter(date, dateRange.from) ||
-        date.getTime() === dateRange.from.getTime();
-      const isBeforeTo =
-        !dateRange.to ||
-        isBefore(date, dateRange.to) ||
-        date.getTime() === dateRange.to.getTime();
-
-      return isAfterFrom && isBeforeTo;
-    } catch (e) {
-      return false;
-    }
-  };
-
-  // Filter wagons based on search term, active tab, owner, and date range
+  // Filter and sort wagons
   const filteredWagons = useMemo(() => {
     const searchLower = searchTerm.toLowerCase();
-    const hasDateFilter = dateRange.from || dateRange.to;
 
     return wagonsByApplication
       .map((group) => {
-        const filteredGroupWagons = group.wagons.filter((wagon) => {
+        let filteredGroupWagons = group.wagons.filter((wagon) => {
           const matchesSearch =
             wagon.number?.toLowerCase().includes(searchLower) ||
             wagon.owner?.toLowerCase().includes(searchLower) ||
@@ -240,15 +184,27 @@ export const WagonDetails = ({
             );
 
           const matchesTab = activeTab === "all" || wagon.status === activeTab;
-          const matchesOwner =
-            selectedOwner === "all" || wagon.owner === selectedOwner;
-          const matchesDateRange =
-            !hasDateFilter || isDateInRange(wagon.date_of_unloading);
 
-          return (
-            matchesSearch && matchesTab && matchesOwner && matchesDateRange
-          );
+          return matchesSearch && matchesTab;
         });
+
+        // Sort by date if sort order is specified
+        if (dateSortOrder) {
+          filteredGroupWagons = [...filteredGroupWagons].sort((a, b) => {
+            const dateA = parseDate(a.date_of_unloading);
+            const dateB = parseDate(b.date_of_unloading);
+
+            // Handle null dates (put them at the end)
+            if (!dateA && !dateB) return 0;
+            if (!dateA) return 1;
+            if (!dateB) return -1;
+
+            // Sort by date
+            return dateSortOrder === "newest"
+              ? dateB.getTime() - dateA.getTime()
+              : dateA.getTime() - dateB.getTime();
+          });
+        }
 
         return {
           ...group,
@@ -257,7 +213,7 @@ export const WagonDetails = ({
         };
       })
       .filter((group) => group.visible);
-  }, [wagonsByApplication, searchTerm, activeTab, selectedOwner, dateRange]);
+  }, [wagonsByApplication, searchTerm, activeTab, dateSortOrder]);
 
   // Get status display info
   const getStatusInfo = (status: string) => {
@@ -308,10 +264,13 @@ export const WagonDetails = ({
 
   // Expand all rows
   const expandAllRows = () => {
-    const allExpanded = wagons.reduce((acc, wagon) => {
-      acc[wagon.id || wagon.wagon_id] = true;
-      return acc;
-    }, {} as Record<string, boolean>);
+    const allExpanded = {};
+    filteredWagons.forEach((group) => {
+      group.wagons.forEach((wagon) => {
+        const wagonId = wagon.id || wagon.wagon_id;
+        allExpanded[wagonId] = true;
+      });
+    });
     setExpandedRows(allExpanded);
   };
 
@@ -321,9 +280,29 @@ export const WagonDetails = ({
   };
 
   // Check if all rows are expanded
-  const areAllRowsExpanded =
-    wagons.length > 0 &&
-    wagons.every((wagon) => expandedRows[wagon.id || wagon.wagon_id]);
+  const areAllRowsExpanded = useMemo(() => {
+    if (filteredWagons.length === 0) return false;
+
+    const allWagonIds = [];
+    filteredWagons.forEach((group) => {
+      group.wagons.forEach((wagon) => {
+        allWagonIds.push(wagon.id || wagon.wagon_id);
+      });
+    });
+
+    return (
+      allWagonIds.length > 0 && allWagonIds.every((id) => expandedRows[id])
+    );
+  }, [filteredWagons, expandedRows]);
+
+  // Toggle expand/collapse all
+  const toggleExpandAll = () => {
+    if (areAllRowsExpanded) {
+      collapseAllRows();
+    } else {
+      expandAllRows();
+    }
+  };
 
   // Get wagon capacity and real weight, handling different API response structures
   const getWagonData = (wagon) => {
@@ -369,23 +348,39 @@ export const WagonDetails = ({
 
   // Check if any filters are active
   const hasActiveFilters =
-    searchTerm ||
-    activeTab !== "all" ||
-    selectedOwner !== "all" ||
-    dateRange.from ||
-    dateRange.to;
+    searchTerm || activeTab !== "all" || dateSortOrder !== null;
 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          <div className="p-2 bg-amber-50 rounded-full">
-            <TrainFront className="h-6 w-6 text-amber-500" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-amber-50 rounded-full">
+              <TrainFront className="h-6 w-6 text-amber-500" />
+            </div>
+            <div>
+              <CardTitle>Детали вагонов</CardTitle>
+              <CardDescription>Подробная информация о вагонах</CardDescription>
+            </div>
           </div>
-          <div>
-            <CardTitle>Детали вагонов</CardTitle>
-            <CardDescription>Подробная информация о вагонах</CardDescription>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleExpandAll}
+            className="hidden sm:flex items-center gap-1"
+          >
+            {areAllRowsExpanded ? (
+              <>
+                <ChevronUpIcon className="h-4 w-4" />
+                Свернуть все
+              </>
+            ) : (
+              <>
+                <ChevronDownIcon className="h-4 w-4" />
+                Раскрыть все
+              </>
+            )}
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -403,92 +398,66 @@ export const WagonDetails = ({
                 />
               </div>
 
-              <Popover
-                open={isDatePickerOpen}
-                onOpenChange={setIsDatePickerOpen}
+              <ToggleGroup
+                type="single"
+                value={dateSortOrder || ""}
+                onValueChange={(value) =>
+                  setDateSortOrder((value as any) || null)
+                }
               >
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "justify-start text-left font-normal w-full sm:w-auto",
-                      (dateRange.from || dateRange.to) && "text-primary"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formatDateRange()}
-                    {(dateRange.from || dateRange.to) && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 ml-1 -mr-1 hover:bg-muted"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          clearDateFilter();
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    initialFocus
-                    mode="range"
-                    defaultMonth={dateRange.from || new Date()}
-                    selected={{ from: dateRange.from, to: dateRange.to }}
-                    onSelect={(range) => {
-                      setDateRange(range || { from: null, to: null });
-                      if (range?.to) {
-                        setIsDatePickerOpen(false);
-                      }
-                    }}
-                    numberOfMonths={2}
-                    locale={ru}
-                  />
-                </PopoverContent>
-              </Popover>
+                <ToggleGroupItem
+                  value="newest"
+                  aria-label="Сначала новые"
+                  className="gap-1"
+                >
+                  <Calendar className="h-4 w-4" />
+                  <span className="hidden sm:inline">Сначала новые</span>
+                  <ChevronDown className="h-3 w-3" />
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="oldest"
+                  aria-label="Сначала старые"
+                  className="gap-1"
+                >
+                  <Calendar className="h-4 w-4" />
+                  <span className="hidden sm:inline">Сначала старые</span>
+                  <ChevronUp className="h-3 w-3" />
+                </ToggleGroupItem>
+              </ToggleGroup>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleExpandAll}
+                className="sm:hidden"
+              >
+                {areAllRowsExpanded ? "Свернуть все" : "Раскрыть все"}
+              </Button>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2">
-              <select
-                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                value={selectedOwner}
-                onChange={(e) => setSelectedOwner(e.target.value)}
-              >
-                <option value="all">Все владельцы</option>
-                {wagonOwners.map((owner) => (
-                  <option key={owner} value={owner}>
-                    {owner}
-                  </option>
-                ))}
-              </select>
-
-              <Tabs
-                value={activeTab}
-                onValueChange={setActiveTab}
-                className="w-full sm:w-auto"
-              >
-                <TabsList className="grid grid-cols-2 h-9">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
+              <TabsList className="grid grid-cols-2 h-9">
+                <TabsTrigger
+                  value="all"
+                  className="text-xs sm:text-sm px-2 sm:px-3"
+                >
+                  Все ({totalWagons})
+                </TabsTrigger>
+                {statuses.map((status) => (
                   <TabsTrigger
-                    value="all"
+                    key={status}
+                    value={status}
                     className="text-xs sm:text-sm px-2 sm:px-3"
                   >
-                    Все ({totalWagons})
+                    {getStatusInfo(status).label} ({statusCounts[status]})
                   </TabsTrigger>
-                  {statuses.map((status) => (
-                    <TabsTrigger
-                      key={status}
-                      value={status}
-                      className="text-xs sm:text-sm px-2 sm:px-3"
-                    >
-                      {getStatusInfo(status).label} ({statusCounts[status]})
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            </div>
+                ))}
+              </TabsList>
+            </Tabs>
           </div>
 
           {filteredWagons?.length > 0 ? (
@@ -837,8 +806,7 @@ export const WagonDetails = ({
                   onClick={() => {
                     setSearchTerm("");
                     setActiveTab("all");
-                    setSelectedOwner("all");
-                    clearDateFilter();
+                    setDateSortOrder(null);
                   }}
                 >
                   Сбросить фильтры
