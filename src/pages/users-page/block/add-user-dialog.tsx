@@ -26,7 +26,7 @@ import { useAddUser } from "@/entities/users/hooks/mutations/use-add-user.mutati
 import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contracts.query";
 
-const roles = ["ADMIN", "USER"];
+const roles = ["ADMIN", "USER", "ACCOUNTANT"];
 
 interface AddUserDialogProps {
   isOpen: boolean;
@@ -63,9 +63,13 @@ export default function AddUserDialog({
       !newUser.email.trim() ||
       !newUser.password.trim() ||
       !newUser.full_name.trim() ||
-      !newUser.role ||
-      newUser.companyId.length === 0
+      !newUser.role
     ) {
+      return;
+    }
+
+    // For accountant role, company is not required
+    if (newUser.role !== "ACCOUNTANT" && newUser.companyId.length === 0) {
       return;
     }
 
@@ -133,6 +137,9 @@ export default function AddUserDialog({
       }));
     }
   };
+
+  // Check if company selection is required based on role
+  const isCompanyRequired = newUser.role !== "ACCOUNTANT";
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -214,7 +221,8 @@ export default function AddUserDialog({
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="companies" className="text-right">
-              Компании <span className="text-destructive">*</span>
+              Компании{" "}
+              {isCompanyRequired && <span className="text-destructive">*</span>}
             </Label>
             <div className="col-span-3">
               {isCompaniesLoading ? (
@@ -373,7 +381,7 @@ export default function AddUserDialog({
               !newUser.password.trim() ||
               !newUser.full_name.trim() ||
               !newUser.role ||
-              newUser.companyId.length === 0
+              (isCompanyRequired && newUser.companyId.length === 0)
             }
           >
             {addUserMutation.isPending ? (
