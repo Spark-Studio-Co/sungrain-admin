@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/shared/ui/layout";
 import {
   Card,
@@ -21,9 +21,26 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, Edit, Trash2, Save, AlertCircle } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Save,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   Dialog,
   DialogContent,
@@ -49,8 +66,23 @@ interface Receiver {
 
 export default function ReceiversPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearchTerm]);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -66,29 +98,30 @@ export default function ReceiversPage() {
   );
 
   // React Query hooks
-  const { data, isLoading, isError, error } = useGetReceivers(page, limit);
+  const { data, isLoading, isError, error } = useGetReceivers(
+    page,
+    limit,
+    debouncedSearchTerm
+  );
   const createMutation = useCreateReceiver();
   const updateMutation = useUpdateReceiver();
   const deleteMutation = useDeleteReceiver();
 
   // Extract pagination data
-  // const totalItems = data?.total || 0;
-  // const currentPage = data?.page || 1;
-  // const lastPage = Math.ceil(totalItems / limit) || 1;
+  const totalItems = data?.total || 0;
+  const currentPage = data?.page || 1;
+  const totalPages = data?.totalPages || 1;
 
-  const filteredReceivers = Array.isArray(data?.data)
-    ? data.data.filter((receiver) => {
-        return (
-          !searchTerm ||
-          receiver.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      })
-    : [];
+  // Use data directly without local filtering since search should be handled by API
+  const receivers = Array.isArray(data?.data) ? data.data : [];
 
   // Handlers
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    setPage(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
   };
 
   const handleAddReceiver = () => {
@@ -184,8 +217,11 @@ export default function ReceiversPage() {
               placeholder="Поиск грузополучателей..."
               value={searchTerm}
               onChange={handleSearchChange}
-              className="pl-10"
+              className="pl-10 pr-10"
             />
+            {searchTerm !== debouncedSearchTerm && (
+              <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground animate-spin" />
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setIsAddDialogOpen(true)}>
@@ -228,8 +264,8 @@ export default function ReceiversPage() {
                         </TableCell>
                       </TableRow>
                     ))
-                ) : filteredReceivers.length > 0 ? (
-                  filteredReceivers.map((receiver: any) => (
+                ) : receivers.length > 0 ? (
+                  receivers.map((receiver: any) => (
                     <TableRow key={receiver.id}>
                       <TableCell>{receiver.id}</TableCell>
                       <TableCell className="font-medium">
@@ -266,6 +302,104 @@ export default function ReceiversPage() {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage > 1) {
+                        handlePageChange(currentPage - 1);
+                      }
+                    }}
+                    className={
+                      currentPage <= 1 ? "pointer-events-none opacity-50" : ""
+                    }
+                  />
+                </PaginationItem>
+
+                {/* Page Numbers */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <PaginationItem key={pageNum}>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(pageNum);
+                        }}
+                        isActive={currentPage === pageNum}
+                      >
+                        {pageNum}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                })}
+
+                {totalPages > 5 && currentPage < totalPages - 2 && (
+                  <>
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(totalPages);
+                        }}
+                        isActive={currentPage === totalPages}
+                      >
+                        {totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
+                  </>
+                )}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage < totalPages) {
+                        handlePageChange(currentPage + 1);
+                      }
+                    }}
+                    className={
+                      currentPage >= totalPages
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+
+        {/* Info about pagination */}
+        {totalItems > 0 && (
+          <div className="text-center text-sm text-muted-foreground">
+            Показано {Math.min(limit, receivers.length)} из {totalItems} записей
+            (страница {currentPage} из {totalPages})
+          </div>
+        )}
       </div>
 
       {/* Add Dialog */}

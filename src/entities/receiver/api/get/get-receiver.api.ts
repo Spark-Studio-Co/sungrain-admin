@@ -15,10 +15,16 @@ export interface PaginatedReceiversResponse {
 
 export const getReceivers = async (
   page: number,
-  limit: number
+  limit: number,
+  search?: string
 ): Promise<PaginatedReceiversResponse> => {
+  const params: any = { page, limit };
+  if (search && search.trim()) {
+    params.search = search.trim();
+  }
+
   const response = await apiClient.get("/receiver", {
-    params: { page, limit },
+    params,
   });
   return response.data;
 };
