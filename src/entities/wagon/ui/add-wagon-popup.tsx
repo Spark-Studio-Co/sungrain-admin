@@ -61,7 +61,6 @@ export const AddWagonPopup = ({
     date_of_unloading: "",
   });
 
-  const [files, setFiles] = useState<File[]>([]);
   const [documents, setDocuments] = useState<
     Array<{
       name: string;
@@ -170,7 +169,6 @@ export const AddWagonPopup = ({
           date_of_departure: "",
           date_of_unloading: "",
         });
-        setFiles([]);
         setDocuments([]);
       },
     });
@@ -413,14 +411,48 @@ export const AddWagonPopup = ({
 
                   {/* Название */}
                   <div className="col-span-5">
-                    <Input
+                    <Select
                       value={doc.name}
-                      onChange={(e) =>
-                        updateDocument(index, "name", e.target.value)
-                      }
-                      placeholder="Название документа"
-                      className="w-full border-gray-300 focus:ring-1 focus:ring-primary"
-                    />
+                      onValueChange={(value) => {
+                        if (value === "custom") {
+                          // If custom is selected, clear the name to allow manual input
+                          updateDocument(index, "name", "");
+                        } else {
+                          updateDocument(index, "name", value);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-full border-gray-300 focus:ring-1 focus:ring-primary">
+                        <SelectValue placeholder="Выберите тип документа">
+                          {doc.name || "Выберите тип документа"}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ЖД накладная">
+                          ЖД накладная
+                        </SelectItem>
+                        <SelectItem value="Паспорт качества">
+                          Паспорт качества
+                        </SelectItem>
+                        <SelectItem value="custom">
+                          Другое (свое название)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Show input field if custom option is selected or if name doesn't match predefined options */}
+                    {doc.name &&
+                      doc.name !== "ЖД накладная" &&
+                      doc.name !== "Паспорт качества" && (
+                        <Input
+                          value={doc.name}
+                          onChange={(e) =>
+                            updateDocument(index, "name", e.target.value)
+                          }
+                          placeholder="Введите название документа"
+                          className="w-full border-gray-300 focus:ring-1 focus:ring-primary mt-2"
+                        />
+                      )}
                   </div>
 
                   {/* File Upload */}
@@ -446,11 +478,9 @@ export const AddWagonPopup = ({
                         }
                       >
                         <Upload className="h-4 w-4 mr-1" />
-                        {doc.fileName || doc.location
-                          ? "Заменить"
-                          : "Загрузить"}
+                        {doc.fileName ? "Заменить" : "Загрузить"}
                       </Button>
-                      {(doc.fileName || doc.location) && (
+                      {doc.fileName && (
                         <div className="flex items-center text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">
                           <FileText className="h-3 w-3 mr-1" />
                           <span className="truncate max-w-[120px]">

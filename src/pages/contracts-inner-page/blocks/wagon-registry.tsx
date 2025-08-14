@@ -260,7 +260,7 @@ export const WagonRegistry = ({
       setUnloadingDate(formattedDate);
 
       // Also update the date in the editingWagon state
-      setEditingWagon((prev) => ({
+      setEditingWagon((prev: any) => ({
         ...prev,
         date_of_unloading: formattedDate,
       }));
@@ -270,7 +270,7 @@ export const WagonRegistry = ({
         documents.length > 0 &&
         documents.every((doc) => doc.file || doc.location)
       ) {
-        setEditingWagon((prev) => ({
+        setEditingWagon((prev: any) => ({
           ...prev,
           status: "shipped",
         }));
@@ -278,7 +278,7 @@ export const WagonRegistry = ({
     } else {
       setUnloadingDate(null);
       // Clear the date in the editingWagon state
-      setEditingWagon((prev) => ({
+      setEditingWagon((prev: any) => ({
         ...prev,
         date_of_unloading: "",
       }));
@@ -505,10 +505,10 @@ export const WagonRegistry = ({
                         <Badge
                           variant={
                             wagon.status === "shipped"
-                              ? "success"
+                              ? "default"
                               : wagon.status === "in_transit"
-                              ? "warning"
-                              : "default"
+                              ? "secondary"
+                              : "outline"
                           }
                           className={`flex w-fit items-center gap-1 ${
                             wagon.status === "shipped"
@@ -766,14 +766,48 @@ export const WagonRegistry = ({
 
                       {/* Document name input */}
                       <div className="col-span-4">
-                        <Input
+                        <Select
                           value={doc.name}
-                          onChange={(e) =>
-                            updateDocument(index, "name", e.target.value)
-                          }
-                          placeholder="Название документа"
-                          className="w-full border-gray-300 focus:ring-1 focus:ring-primary"
-                        />
+                          onValueChange={(value) => {
+                            if (value === "custom") {
+                              // If custom is selected, clear the name to allow manual input
+                              updateDocument(index, "name", "");
+                            } else {
+                              updateDocument(index, "name", value);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-full border-gray-300 focus:ring-1 focus:ring-primary">
+                            <SelectValue placeholder="Выберите тип документа">
+                              {doc.name || "Выберите тип документа"}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ЖД накладная">
+                              ЖД накладная
+                            </SelectItem>
+                            <SelectItem value="Паспорт качества">
+                              Паспорт качества
+                            </SelectItem>
+                            <SelectItem value="custom">
+                              Другое (свое название)
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {/* Show input field if custom option is selected or if name doesn't match predefined options */}
+                        {doc.name &&
+                          doc.name !== "ЖД накладная" &&
+                          doc.name !== "Паспорт качества" && (
+                            <Input
+                              value={doc.name}
+                              onChange={(e) =>
+                                updateDocument(index, "name", e.target.value)
+                              }
+                              placeholder="Введите название документа"
+                              className="w-full border-gray-300 focus:ring-1 focus:ring-primary mt-2"
+                            />
+                          )}
                       </div>
 
                       {/* Upload button and filename display */}
