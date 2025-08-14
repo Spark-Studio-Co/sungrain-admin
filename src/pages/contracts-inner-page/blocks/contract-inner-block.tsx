@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { AlertCircle, Package, BarChart3, Truck } from "lucide-react";
+import { AlertCircle, Package, BarChart3 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { AddWagonPopup } from "@/entities/wagon/ui/add-wagon-popup";
-import { usePopupStore } from "@/shared/model/popup-store";
 import { useGetUserContractById } from "@/entities/contracts/hooks/query/use-get-user-contract-by-id.query";
 import { useGetContractsId } from "@/entities/contracts/hooks/query/use-get-contract-id.query";
 import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 import { useGetWagonContracts } from "@/entities/wagon/hooks/query/use-get-contract-wagon.query";
-import { useUpdateWagon } from "@/entities/wagon/hooks/mutations/use-update-wagon.mutation";
-import { useDeleteWagon } from "@/entities/wagon/hooks/mutations/use-delete-wagon.mutation";
 import { ContractHeader } from "./contract-header";
 import { WagonDetails } from "./wagon-details";
 import { ApplicationDetail } from "@/pages/application-page/blocks/application-details";
@@ -35,7 +32,6 @@ interface ContractInnerBlockProps {
 export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   const { id } = useParams();
   const isAdmin = localStorage.getItem("isAdmin") === "true";
-  const { open } = usePopupStore("addWagon");
   const [activeTab, setActiveTab] = useState("details");
   const [selectedApplicationId, setSelectedApplicationId] = useState<
     string | null
@@ -47,7 +43,9 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     isError,
     error,
     refetch,
-  } = useGetContractsId(contractId);
+  } = useGetContractsId(contractId, {
+    enabled: isAdmin,
+  });
 
   const {
     data: userContract,
@@ -55,7 +53,9 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     isError: isUserError,
     error: userError,
     refetch: userRefetch,
-  } = useGetUserContractById(contractId);
+  } = useGetUserContractById(contractId, {
+    enabled: !isAdmin,
+  });
 
   // Fetch wagon data using the useGetWagonContracts hook
   const {
@@ -63,15 +63,10 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     isLoading: isWagonsLoading,
     isError: isWagonsError,
     error: wagonsError,
-    refetch: refetchWagons,
   } = useGetWagonContracts(contractId);
 
   const { data: companiesData, isLoading: isCompaniesLoading } =
     useGetCompanies(1, 100);
-
-  // Add mutation hooks for updating and deleting wagons
-  const updateWagonMutation = useUpdateWagon();
-  const deleteWagonMutation = useDeleteWagon();
 
   const contractData = isAdmin ? contract : userContract;
   const isDataLoading = isAdmin ? isLoading : isUserLoading;
@@ -90,7 +85,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   const wagons =
     wagonContractsData?.length > 0
       ? wagonContractsData
-      : contractData?.wagons || [];
+      : (contractData as any)?.wagons || [];
 
   // const renderedFiles =
   //   wagons
@@ -108,14 +103,14 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   const volumeStats = useMemo(() => {
     if (!wagons || wagons.length === 0) {
       return {
-        totalVolume: contractData?.total_volume || 0,
+        totalVolume: (contractData as any)?.total_volume || 0,
         usedVolume: 0,
         percentUsed: 0,
-        remainingVolume: contractData?.total_volume || 0,
+        remainingVolume: (contractData as any)?.total_volume || 0,
       };
     }
 
-    const totalVolume = contractData?.total_volume || 0;
+    const totalVolume = (contractData as any)?.total_volume || 0;
     const usedVolume = wagons.reduce(
       (sum: number, wagon: any) => sum + (wagon.capacity || 0),
       0
@@ -166,21 +161,24 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   }, [wagons]);
 
   const handleDownload = () => {
-    if (!contractData?.files || contractData.files.length === 0) {
+    if (
+      !(contractData as any)?.files ||
+      (contractData as any).files.length === 0
+    ) {
       alert("Файл не найден!");
       return;
     }
 
     const fileUrl =
-      typeof contractData.files[0] === "string"
-        ? contractData.files[0]
-        : contractData.files[0].url;
+      typeof (contractData as any).files[0] === "string"
+        ? (contractData as any).files[0]
+        : (contractData as any).files[0].url;
 
     const link = document.createElement("a");
     link.href = fileUrl;
     link.setAttribute(
       "download",
-      `contract-${contractData.number || contractData.id}.pdf`
+      `contract-${(contractData as any).number || (contractData as any).id}.pdf`
     );
     document.body.appendChild(link);
     link.click();
@@ -274,6 +272,20 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     );
   }
 
+  if (!contractData) {
+    return (
+      <div className="container mx-auto py-6">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Контракт не найден</AlertTitle>
+          <AlertDescription>
+            Не удалось найти данные контракта.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="container mx-auto py-6 space-y-6">
@@ -309,17 +321,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                     тонн
                   </span>
                 </div>
-                <Progress
-                  value={volumeStats.percentUsed}
-                  className="h-2.5"
-                  indicatorClassName={
-                    volumeStats.percentUsed > 90
-                      ? "bg-red-500"
-                      : volumeStats.percentUsed > 70
-                      ? "bg-amber-500"
-                      : "bg-green-500"
-                  }
-                />
+                <Progress value={volumeStats.percentUsed} className="h-2.5" />
                 <div className="flex justify-between items-center text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <BarChart3 className="h-3.5 w-3.5" />
@@ -328,10 +330,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {volumeStats.applications?.length ||
-                      contractData.applications?.length ||
-                      0}{" "}
-                    заявок
+                    {(contractData as any)?.applications?.length || 0} заявок
                   </div>
                 </div>
               </div>
@@ -362,7 +361,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
               <ApplicationBlock
                 contractId={contractId}
                 onSelectApplication={handleSelectApplication}
-                volumeStats={volumeStats}
               />
             )}
           </TabsContent>

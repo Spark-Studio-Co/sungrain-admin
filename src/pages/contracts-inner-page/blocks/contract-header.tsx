@@ -61,9 +61,9 @@ export const ContractHeader = ({
         const backendUrl = "https://agro-pv-backend-production.up.railway.app";
         fileUrl = `${backendUrl}/uploads/${file}`;
       }
-    } else if (file.location) {
+    } else if (file?.location) {
       fileUrl = file.location;
-    } else if (file.url) {
+    } else if (file?.url) {
       fileUrl = file.url;
     }
 
@@ -72,22 +72,22 @@ export const ContractHeader = ({
     }
   };
 
-  const file = contractData.files[0];
-  let fileUrl: string;
+  const file = contractData?.files?.[0];
+  let fileUrl: string = "";
 
-  if (typeof file === "string") {
-    if (file.startsWith("http")) {
-      fileUrl = file;
-    } else {
-      const backendUrl = "https://agro-pv-backend-production.up.railway.app";
-      fileUrl = `${backendUrl}/uploads/${file}`;
+  if (file) {
+    if (typeof file === "string") {
+      if (file.startsWith("http")) {
+        fileUrl = file;
+      } else {
+        const backendUrl = "https://agro-pv-backend-production.up.railway.app";
+        fileUrl = `${backendUrl}/uploads/${file}`;
+      }
+    } else if (file?.location) {
+      fileUrl = file.location;
+    } else if (file?.url) {
+      fileUrl = file.url;
     }
-  } else if (file.location) {
-    fileUrl = file.location;
-  } else if (file.url) {
-    fileUrl = file.url;
-  } else {
-    fileUrl = "";
   }
 
   return (
