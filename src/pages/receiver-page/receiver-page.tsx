@@ -49,6 +49,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Import React Query hooks
 import { useCreateReceiver } from "@/entities/receiver/hooks/mutations/use-create-receiver.mutation";
@@ -68,7 +75,7 @@ export default function ReceiversPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit, setLimit] = useState(10);
 
   // Debounce search term
   useEffect(() => {
@@ -122,6 +129,19 @@ export default function ReceiversPage() {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit: string) => {
+    const newLimitNum = Number(newLimit);
+    setLimit(newLimitNum);
+
+    // If current page would be out of bounds with new limit, go to last valid page
+    const maxPage = Math.ceil(totalItems / newLimitNum);
+    if (page > maxPage) {
+      setPage(Math.max(1, maxPage));
+    } else {
+      setPage(1); // Reset to first page
+    }
   };
 
   const handleAddReceiver = () => {
@@ -395,9 +415,31 @@ export default function ReceiversPage() {
 
         {/* Info about pagination */}
         {totalItems > 0 && (
-          <div className="text-center text-sm text-muted-foreground">
-            Показано {Math.min(limit, receivers.length)} из {totalItems} записей
-            (страница {currentPage} из {totalPages})
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              Показано {Math.min(limit, receivers.length)} из {totalItems}{" "}
+              записей (страница {currentPage} из {totalPages})
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Записей на странице:
+              </span>
+              <Select
+                value={limit.toString()}
+                onValueChange={handleLimitChange}
+              >
+                <SelectTrigger className="w-[70px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         )}
       </div>

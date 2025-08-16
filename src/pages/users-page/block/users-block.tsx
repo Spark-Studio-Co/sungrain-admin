@@ -21,10 +21,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { useGetUsers } from "@/entities/users/hooks/query/use-get-users.query";
 import AddUserDialog from "./add-user-dialog";
 import UserTable from "./user-table";
-import Pagination from "./pagination";
 import EditUserDialog from "./edit-user-dialog";
 import DeleteUserDialog from "./delete-user-dialog";
 
@@ -69,8 +77,16 @@ export default function UsersBlock() {
   };
 
   const handleLimitChange = (value: string) => {
-    setLimit(Number(value));
-    setPage(1); // Reset to first page when changing limit
+    const newLimitNum = Number(value);
+    setLimit(newLimitNum);
+
+    // If current page would be out of bounds with new limit, go to last valid page
+    const maxPage = Math.ceil(totalItems / newLimitNum);
+    if (page > maxPage) {
+      setPage(Math.max(1, maxPage));
+    } else {
+      setPage(1); // Reset to first page
+    }
   };
 
   const openEditDialog = (user: any) => {
@@ -84,12 +100,9 @@ export default function UsersBlock() {
   };
 
   // Pagination handlers
-  const goToFirstPage = () => setPage(1);
-  const goToPreviousPage = () =>
-    setPage((prev) => (prev > 1 ? prev - 1 : prev));
-  const goToNextPage = () =>
-    setPage((prev) => (prev < lastPage ? prev + 1 : prev));
-  const goToLastPage = () => setPage(lastPage);
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
   return (
     <>
@@ -179,15 +192,127 @@ export default function UsersBlock() {
               </div>
             </div>
 
-            <Pagination
-              currentPage={currentPage}
-              lastPage={lastPage}
-              isLoading={isLoading}
-              onFirstPage={goToFirstPage}
-              onPreviousPage={goToPreviousPage}
-              onNextPage={goToNextPage}
-              onLastPage={goToLastPage}
-            />
+            {/* Pagination */}
+            {lastPage > 1 && (
+              <div className="flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage > 1) {
+                            handlePageChange(currentPage - 1);
+                          }
+                        }}
+                        className={
+                          currentPage <= 1
+                            ? "pointer-events-none opacity-50"
+                            : ""
+                        }
+                      />
+                    </PaginationItem>
+
+                    {/* Page Numbers */}
+                    {Array.from({ length: Math.min(5, lastPage) }, (_, i) => {
+                      let pageNum;
+                      if (lastPage <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= lastPage - 2) {
+                        pageNum = lastPage - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <PaginationItem key={pageNum}>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePageChange(pageNum);
+                            }}
+                            isActive={currentPage === pageNum}
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+
+                    {lastPage > 5 && currentPage < lastPage - 2 && (
+                      <>
+                        <PaginationItem>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                        <PaginationItem>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePageChange(lastPage);
+                            }}
+                            isActive={currentPage === lastPage}
+                          >
+                            {lastPage}
+                          </PaginationLink>
+                        </PaginationItem>
+                      </>
+                    )}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (currentPage < lastPage) {
+                            handlePageChange(currentPage + 1);
+                          }
+                        }}
+                        className={
+                          currentPage >= lastPage
+                            ? "pointer-events-none opacity-50"
+                            : ""
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+
+            {/* Info about pagination */}
+            {totalItems > 0 && (
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+                <div className="text-sm text-muted-foreground">
+                  Показано {Math.min(limit, filteredUsers.length)} из{" "}
+                  {totalItems} записей (страница {currentPage} из {lastPage})
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Записей на странице:
+                  </span>
+                  <Select
+                    value={limit.toString()}
+                    onValueChange={handleLimitChange}
+                  >
+                    <SelectTrigger className="w-[70px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
           </CardFooter>
         </Card>
       </div>

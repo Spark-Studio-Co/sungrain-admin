@@ -19,6 +19,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { Plus, Search, Edit, Trash2, Save, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,7 +54,7 @@ import { useDeleteCulture } from "@/entities/cultures/hooks/mutations/use-delete
 export const CulturesBlock = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [limit, setLimit] = useState(10);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -69,9 +84,23 @@ export const CulturesBlock = () => {
       );
     }) || [];
 
+  // Pagination calculations
+  const totalItems = data?.total || 0;
+  const totalPages = data?.totalPages || 1;
+  const currentPage = data?.page || 1;
+
   // Handlers
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (value: string) => {
+    setLimit(parseInt(value));
+    setPage(1); // Reset to first page when changing limit
   };
 
   const handleAddCulture = () => {
@@ -227,6 +256,83 @@ export const CulturesBlock = () => {
                     )}
                   </TableBody>
                 </Table>
+
+                {/* Pagination Info and Controls */}
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t">
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-muted-foreground">
+                      Показано{" "}
+                      {Math.min((currentPage - 1) * limit + 1, totalItems)}-
+                      {Math.min(currentPage * limit, totalItems)} из{" "}
+                      {totalItems} записей
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="limit-select" className="text-sm">
+                        Записей на странице:
+                      </Label>
+                      <Select
+                        value={limit.toString()}
+                        onValueChange={handleLimitChange}
+                      >
+                        <SelectTrigger id="limit-select" className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">5</SelectItem>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {totalPages > 1 && (
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            className={
+                              currentPage <= 1
+                                ? "pointer-events-none opacity-50"
+                                : "cursor-pointer"
+                            }
+                          />
+                        </PaginationItem>
+
+                        {Array.from(
+                          { length: Math.min(5, totalPages) },
+                          (_, i) => {
+                            const pageNumber = i + 1;
+                            return (
+                              <PaginationItem key={pageNumber}>
+                                <PaginationLink
+                                  onClick={() => handlePageChange(pageNumber)}
+                                  isActive={currentPage === pageNumber}
+                                  className="cursor-pointer"
+                                >
+                                  {pageNumber}
+                                </PaginationLink>
+                              </PaginationItem>
+                            );
+                          }
+                        )}
+
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            className={
+                              currentPage >= totalPages
+                                ? "pointer-events-none opacity-50"
+                                : "cursor-pointer"
+                            }
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

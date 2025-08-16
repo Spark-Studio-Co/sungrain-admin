@@ -29,10 +29,6 @@ import {
   Trash2,
   Save,
   AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Loader2,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -52,6 +48,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { useCreateOwner } from "@/entities/owner/hooks/mutations/use-create-owner.mutation";
 import { useUpdateOwner } from "@/entities/owner/hooks/mutations/use-update-owner.mutation";
 import { useDeleteOwner } from "@/entities/owner/hooks/mutations/use-delete-owner.mutation";
@@ -136,16 +141,21 @@ export default function OwnerPage() {
   };
 
   // Pagination handlers
-  const goToFirstPage = () => setPage(1);
-  const goToPreviousPage = () =>
-    setPage((prev) => (prev > 1 ? prev - 1 : prev));
-  const goToNextPage = () =>
-    setPage((prev) => (prev < lastPage ? prev + 1 : prev));
-  const goToLastPage = () => setPage(lastPage);
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
 
-  const handleLimitChange = (value: string) => {
-    setLimit(Number(value));
-    setPage(1); // Reset to first page when changing limit
+  const handleLimitChange = (newLimit: string) => {
+    const newLimitNum = Number(newLimit);
+    setLimit(newLimitNum);
+
+    // If current page would be out of bounds with new limit, go to last valid page
+    const maxPage = Math.ceil(totalItems / newLimitNum);
+    if (page > maxPage) {
+      setPage(Math.max(1, maxPage));
+    } else {
+      setPage(1); // Reset to first page
+    }
   };
 
   return (
@@ -256,79 +266,148 @@ export default function OwnerPage() {
               </TableBody>
             </Table>
           </CardContent>
-          <CardFooter className="flex items-center justify-between pt-4">
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <div>
-                Страница {currentPage} из {lastPage}
-              </div>
-              <div>|</div>
-              <div>
-                Всего: {totalItems}{" "}
-                {totalItems === 1
-                  ? "запись"
-                  : totalItems % 10 === 1 && totalItems % 100 !== 11
-                  ? "запись"
-                  : totalItems % 10 >= 2 &&
-                    totalItems % 10 <= 4 &&
-                    (totalItems % 100 < 10 || totalItems % 100 >= 20)
-                  ? "записи"
-                  : "записей"}
-              </div>
-              <div>|</div>
-              <div className="flex items-center space-x-2">
-                <span>Показывать:</span>
+          <CardFooter className="flex justify-between items-center">
+            <div className="text-sm text-muted-foreground">
+              Показано {ownersData?.data?.length || 0} из{" "}
+              {ownersData?.total || 0} записей
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  Записей на странице:
+                </span>
                 <Select
                   value={limit.toString()}
                   onValueChange={handleLimitChange}
                 >
-                  <SelectTrigger className="h-8 w-[70px]">
-                    <SelectValue placeholder={limit.toString()} />
+                  <SelectTrigger className="w-16 h-8">
+                    <SelectValue />
                   </SelectTrigger>
-                  <SelectContent side="top">
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
+                  <SelectContent>
+                    {[10, 20, 50, 100].map((limitOption) => (
+                      <SelectItem
+                        key={limitOption}
+                        value={limitOption.toString()}
+                      >
+                        {limitOption}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={goToFirstPage}
-                disabled={currentPage === 1 || isLoading}
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={goToPreviousPage}
-                disabled={currentPage === 1 || isLoading}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={goToNextPage}
-                disabled={currentPage === lastPage || isLoading}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={goToLastPage}
-                disabled={currentPage === lastPage || isLoading}
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
+
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => handlePageChange(page - 1)}
+                      className={
+                        page <= 1
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
+                    />
+                  </PaginationItem>
+
+                  {/* Page numbers */}
+                  {(() => {
+                    const totalPages = ownersData?.lastPage || 1;
+                    const currentPage = page;
+                    const pages = [];
+
+                    if (totalPages <= 7) {
+                      for (let i = 1; i <= totalPages; i++) {
+                        pages.push(i);
+                      }
+                    } else {
+                      if (currentPage <= 3) {
+                        pages.push(1, 2, 3, 4, 5, "...", totalPages);
+                      } else if (currentPage >= totalPages - 2) {
+                        pages.push(
+                          1,
+                          "...",
+                          totalPages - 4,
+                          totalPages - 3,
+                          totalPages - 2,
+                          totalPages - 1,
+                          totalPages
+                        );
+                      } else {
+                        pages.push(
+                          1,
+                          "...",
+                          currentPage - 1,
+                          currentPage,
+                          currentPage + 1,
+                          "...",
+                          totalPages
+                        );
+                      }
+                    }
+
+                    return pages.map((pageNum, index) => (
+                      <PaginationItem key={index}>
+                        {pageNum === "..." ? (
+                          <PaginationEllipsis />
+                        ) : (
+                          <PaginationLink
+                            onClick={() => handlePageChange(Number(pageNum))}
+                            isActive={currentPage === pageNum}
+                            className="cursor-pointer"
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        )}
+                      </PaginationItem>
+                    ));
+                  })()}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => handlePageChange(page + 1)}
+                      className={
+                        page >= (ownersData?.lastPage || 1)
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           </CardFooter>
         </Card>
+
+        {/* Info about pagination */}
+        {totalItems > 0 && (
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+            <div className="text-sm text-muted-foreground">
+              Показано {Math.min(limit, owners.length)} из {totalItems} записей
+              (страница {currentPage} из {lastPage})
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Записей на странице:
+              </span>
+              <Select
+                value={limit.toString()}
+                onValueChange={handleLimitChange}
+              >
+                <SelectTrigger className="w-[70px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add Owner Dialog */}
