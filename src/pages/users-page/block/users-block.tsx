@@ -286,20 +286,24 @@ export default function UsersBlock() {
 
             {/* Info about pagination */}
             {totalItems > 0 && (
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
-                <div className="text-sm text-muted-foreground">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
+                <div className="text-xs sm:text-sm text-muted-foreground">
                   Показано {Math.min(limit, filteredUsers.length)} из{" "}
-                  {totalItems} записей (страница {currentPage} из {lastPage})
+                  {totalItems} записей
+                  <span className="hidden sm:inline">
+                    {" "}
+                    (страница {currentPage} из {lastPage})
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    Записей на странице:
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                    На странице:
                   </span>
                   <Select
                     value={limit.toString()}
                     onValueChange={handleLimitChange}
                   >
-                    <SelectTrigger className="w-[70px]">
+                    <SelectTrigger className="w-[70px] h-8">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

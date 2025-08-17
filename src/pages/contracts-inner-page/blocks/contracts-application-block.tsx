@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useState } from "react";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 import {
   FileText,
   Plus,
@@ -278,19 +279,21 @@ export const ApplicationBlock = ({
     <>
       <Card>
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-3">
             <div className="flex items-center gap-2">
               <div className="p-2 bg-blue-50 rounded-full">
                 <FileText className="h-6 w-6 text-blue-500" />
               </div>
               <div>
-                <CardTitle>Заявки по договору</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg sm:text-xl">
+                  Заявки по договору
+                </CardTitle>
+                <CardDescription className="text-sm">
                   Управление заявками и отгрузками
                 </CardDescription>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -299,6 +302,7 @@ export const ApplicationBlock = ({
                       size="icon"
                       onClick={handleRefresh}
                       disabled={isRefreshing}
+                      className="h-9 w-9"
                     >
                       {isRefreshing ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -314,7 +318,7 @@ export const ApplicationBlock = ({
               </TooltipProvider>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon">
+                  <Button variant="outline" size="icon" className="h-9 w-9">
                     <SlidersHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -331,10 +335,12 @@ export const ApplicationBlock = ({
               {isAdmin && (
                 <Button
                   onClick={() => setIsAddDialogOpen(true)}
-                  className="gap-2 bg-blue-500 hover:bg-blue-600"
+                  className="gap-2 bg-blue-500 hover:bg-blue-600 w-full sm:w-auto"
+                  size="sm"
                 >
                   <Plus className="h-4 w-4" />
-                  Добавить заявку
+                  <span className="hidden xs:inline">Добавить заявку</span>
+                  <span className="xs:hidden">Добавить</span>
                 </Button>
               )}
             </div>
@@ -373,195 +379,372 @@ export const ApplicationBlock = ({
                   </AlertDescription>
                 </Alert>
               ) : (
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Название</TableHead>
-                        <TableHead>Объем (т)</TableHead>
-                        <TableHead>Культура</TableHead>
-                        <TableHead>Цена за тонну</TableHead>
-                        <TableHead>Валюта</TableHead>
-                        <TableHead>Общая сумма</TableHead>
-                        <TableHead>Документы</TableHead>
-                        <TableHead>Вагоны</TableHead>
-                        {isAdmin && (
-                          <TableHead className="text-right">Действия</TableHead>
-                        )}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredApplications.length > 0 ? (
-                        filteredApplications.map((application: any) => (
-                          <TableRow
-                            key={application.id}
-                            className="cursor-pointer hover:bg-muted/50"
-                            onClick={() =>
-                              handleRowClick(application.id.toString())
-                            }
-                          >
-                            <TableCell>
-                              <div className="font-medium truncate max-w-[150px]">
-                                {application.name || "Без названия"}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <Package className="h-4 w-4 text-muted-foreground" />
-                                {application.volume
-                                  ? application.volume.toLocaleString()
-                                  : 0}{" "}
-                                т
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className="bg-green-50 text-green-700"
-                              >
-                                {getCultureName(application.culture) ||
-                                  "Не указана"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <DollarSign className="h-4 w-4 text-green-500" />
-                                {application.price_per_ton
-                                  ? application.price_per_ton.toLocaleString()
-                                  : 0}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className="bg-blue-50 text-blue-700"
-                              >
-                                {application.currency ||
-                                  application.contract?.currency ||
-                                  "KZT"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className="bg-green-50 text-green-700 font-medium"
-                              >
-                                {application.total_amount
-                                  ? application.total_amount.toLocaleString()
-                                  : 0}{" "}
-                                {application.currency ||
-                                  application.contract?.currency ||
-                                  "₸"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <FileText className="h-4 w-4 text-blue-500" />
-                                <span>{application.files?.length || 0}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <TrainFront className="h-4 w-4 text-amber-500" />
-                                <span>{application.wagons?.length || 0}</span>
-                              </div>
-                            </TableCell>
-                            {isAdmin && (
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-1">
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          variant="outline"
-                                          size="icon"
-                                          className="h-8 w-8"
-                                          onClick={(e) =>
-                                            handleEditApplication(
-                                              application,
-                                              e
-                                            )
-                                          }
-                                        >
-                                          <Pencil className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Редактировать</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          variant="destructive"
-                                          size="icon"
-                                          className="h-8 w-8"
-                                          onClick={(e) =>
-                                            handleDeleteClick(application, e)
-                                          }
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Удалить</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Название</TableHead>
+                          <TableHead>Объем (т)</TableHead>
+                          <TableHead>Культура</TableHead>
+                          <TableHead>Цена за тонну</TableHead>
+                          <TableHead>Валюта</TableHead>
+                          <TableHead>Общая сумма</TableHead>
+                          <TableHead>Документы</TableHead>
+                          <TableHead>Вагоны</TableHead>
+                          {isAdmin && (
+                            <TableHead className="text-right">
+                              Действия
+                            </TableHead>
+                          )}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredApplications.length > 0 ? (
+                          filteredApplications.map((application: any) => (
+                            <TableRow
+                              key={application.id}
+                              className="cursor-pointer hover:bg-muted/50"
+                              onClick={() =>
+                                handleRowClick(application.id.toString())
+                              }
+                            >
+                              <TableCell>
+                                <div className="font-medium truncate max-w-[150px]">
+                                  {application.name || "Без названия"}
                                 </div>
                               </TableCell>
-                            )}
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell
-                            colSpan={isAdmin ? 11 : 10}
-                            className="h-24 text-center"
-                          >
-                            {searchTerm ? (
-                              <>
-                                <div className="flex flex-col items-center gap-2">
-                                  <Search className="h-8 w-8 text-muted-foreground" />
-                                  <p>
-                                    Заявки не найдены по запросу "{searchTerm}"
-                                  </p>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setSearchTerm("")}
-                                    className="mt-2"
-                                  >
-                                    Сбросить поиск
-                                  </Button>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <Package className="h-4 w-4 text-muted-foreground" />
+                                  {application.volume
+                                    ? formatNumber(application.volume)
+                                    : 0}{" "}
+                                  т
                                 </div>
-                              </>
-                            ) : (
-                              <>
-                                <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                                <p>Заявки не найдены</p>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="bg-green-50 text-green-700"
+                                >
+                                  {getCultureName(application.culture) ||
+                                    "Не указана"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <DollarSign className="h-4 w-4 text-green-500" />
+                                  {application.price_per_ton
+                                    ? formatCurrency(application.price_per_ton)
+                                    : 0}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="bg-blue-50 text-blue-700"
+                                >
+                                  {application.currency ||
+                                    application.contract?.currency ||
+                                    "KZT"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="bg-green-50 text-green-700 font-medium"
+                                >
+                                  {application.total_amount
+                                    ? formatCurrency(application.total_amount)
+                                    : 0}{" "}
+                                  {application.currency ||
+                                    application.contract?.currency ||
+                                    "₸"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <FileText className="h-4 w-4 text-blue-500" />
+                                  <span>{application.files?.length || 0}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <TrainFront className="h-4 w-4 text-amber-500" />
+                                  <span>{application.wagons?.length || 0}</span>
+                                </div>
+                              </TableCell>
+                              {isAdmin && (
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-1">
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                            onClick={(e) =>
+                                              handleEditApplication(
+                                                application,
+                                                e
+                                              )
+                                            }
+                                          >
+                                            <Pencil className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Редактировать</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="destructive"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                            onClick={(e) =>
+                                              handleDeleteClick(application, e)
+                                            }
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Удалить</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </div>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell
+                              colSpan={isAdmin ? 11 : 10}
+                              className="h-24 text-center"
+                            >
+                              {searchTerm ? (
+                                <>
+                                  <div className="flex flex-col items-center gap-2">
+                                    <Search className="h-8 w-8 text-muted-foreground" />
+                                    <p>
+                                      Заявки не найдены по запросу "{searchTerm}
+                                      "
+                                    </p>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setSearchTerm("")}
+                                      className="mt-2"
+                                    >
+                                      Сбросить поиск
+                                    </Button>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                                  <p>Заявки не найдены</p>
+                                  {isAdmin && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setIsAddDialogOpen(true)}
+                                      className="mt-2"
+                                    >
+                                      <Plus className="h-4 w-4 mr-1" /> Добавить
+                                      заявку
+                                    </Button>
+                                  )}
+                                </>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="md:hidden space-y-4">
+                    {filteredApplications.length > 0 ? (
+                      filteredApplications.map((application: any) => (
+                        <Card
+                          key={application.id}
+                          className="cursor-pointer hover:shadow-md transition-shadow"
+                          onClick={() =>
+                            handleRowClick(application.id.toString())
+                          }
+                        >
+                          <CardContent className="p-4">
+                            <div className="space-y-3">
+                              {/* Header */}
+                              <div className="flex items-center justify-between">
+                                <h3 className="font-medium text-sm">
+                                  {application.name || "Без названия"}
+                                </h3>
                                 {isAdmin && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setIsAddDialogOpen(true)}
-                                    className="mt-2"
-                                  >
-                                    <Plus className="h-4 w-4 mr-1" /> Добавить
-                                    заявку
-                                  </Button>
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={(e) =>
+                                        handleEditApplication(application, e)
+                                      }
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                      onClick={(e) =>
+                                        handleDeleteClick(application, e)
+                                      }
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
                                 )}
-                              </>
+                              </div>
+
+                              {/* Main Info */}
+                              <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div className="flex items-center gap-2">
+                                  <Package className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-muted-foreground">
+                                    Объем:
+                                  </span>
+                                </div>
+                                <div className="font-medium">
+                                  {application.volume
+                                    ? formatNumber(application.volume)
+                                    : 0}{" "}
+                                  т
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <span className="text-muted-foreground">
+                                    Культура:
+                                  </span>
+                                </div>
+                                <div>
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-green-50 text-green-700 text-xs"
+                                  >
+                                    {getCultureName(application.culture) ||
+                                      "Не указана"}
+                                  </Badge>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <DollarSign className="h-4 w-4 text-green-500" />
+                                  <span className="text-muted-foreground">
+                                    Цена:
+                                  </span>
+                                </div>
+                                <div className="font-medium">
+                                  {application.price_per_ton
+                                    ? formatCurrency(application.price_per_ton)
+                                    : 0}
+                                </div>
+                              </div>
+
+                              {/* Total Amount */}
+                              <div className="bg-green-50 rounded-lg p-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-green-700 font-medium">
+                                    Общая сумма:
+                                  </span>
+                                  <div className="text-green-700 font-medium">
+                                    {application.total_amount
+                                      ? formatCurrency(application.total_amount)
+                                      : 0}{" "}
+                                    {application.currency ||
+                                      application.contract?.currency ||
+                                      "₸"}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Additional Info */}
+                              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                <div className="flex items-center gap-3">
+                                  <div className="flex items-center gap-1">
+                                    <FileText className="h-4 w-4 text-blue-500" />
+                                    <span>
+                                      {application.files?.length || 0}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <TrainFront className="h-4 w-4 text-amber-500" />
+                                    <span>
+                                      {application.wagons?.length || 0}
+                                    </span>
+                                  </div>
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className="bg-blue-50 text-blue-700 text-xs"
+                                >
+                                  {application.currency ||
+                                    application.contract?.currency ||
+                                    "KZT"}
+                                </Badge>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        {searchTerm ? (
+                          <>
+                            <Search className="h-8 w-8 text-muted-foreground mb-2" />
+                            <p className="text-muted-foreground mb-4">
+                              Заявки не найдены по запросу "{searchTerm}"
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSearchTerm("")}
+                            >
+                              Сбросить поиск
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                            <p className="text-muted-foreground mb-4">
+                              Заявки не найдены
+                            </p>
+                            {isAdmin && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsAddDialogOpen(true)}
+                              >
+                                <Plus className="h-4 w-4 mr-1" /> Добавить
+                                заявку
+                              </Button>
                             )}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           )}

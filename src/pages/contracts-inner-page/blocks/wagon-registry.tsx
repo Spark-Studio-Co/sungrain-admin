@@ -430,11 +430,8 @@ export const WagonRegistry = ({
       return "Не указана";
     }
 
-    // Format with up to 2 decimal places, but only if needed
-    return num.toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    });
+    // Format with dot separators like 1.000.000
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
   return (

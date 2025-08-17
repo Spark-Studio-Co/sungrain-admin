@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { formatNumber } from "@/lib/utils";
 import {
   Search,
   Building2,
@@ -602,7 +603,7 @@ export const WagonDetails = ({
                                       </TableCell>
                                       <TableCell className="hidden md:table-cell">
                                         {realWeight
-                                          ? `${realWeight.toLocaleString()} т.`
+                                          ? `${formatNumber(realWeight)} т.`
                                           : "-"}
                                       </TableCell>
                                     </TableRow>
@@ -676,7 +677,9 @@ export const WagonDetails = ({
                                                       </span>
                                                       <span className="text-sm font-medium">
                                                         {capacity
-                                                          ? `${capacity.toLocaleString()} т.`
+                                                          ? `${formatNumber(
+                                                              capacity
+                                                            )} т.`
                                                           : "—"}
                                                       </span>
                                                     </div>
@@ -686,7 +689,9 @@ export const WagonDetails = ({
                                                       </span>
                                                       <span className="text-sm font-medium">
                                                         {realWeight
-                                                          ? `${realWeight.toLocaleString()} т.`
+                                                          ? `${formatNumber(
+                                                              realWeight
+                                                            )} т.`
                                                           : "—"}
                                                       </span>
                                                     </div>
@@ -708,10 +713,10 @@ export const WagonDetails = ({
                                                                 : ""
                                                             }
                                                           >
-                                                            {(
+                                                            {formatNumber(
                                                               realWeight -
-                                                              capacity
-                                                            ).toLocaleString()}{" "}
+                                                                capacity
+                                                            )}{" "}
                                                             т.
                                                           </span>
                                                         ) : (

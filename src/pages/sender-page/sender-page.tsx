@@ -195,8 +195,8 @@ export default function SenderPage() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold tracking-tight">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
             УПРАВЛЕНИЕ ГРУЗООТПРАВИТЕЛЯМИ
           </h1>
         </div>
@@ -223,9 +223,13 @@ export default function SenderPage() {
             />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => setIsAddDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Добавить грузоотправителя
+            <Button
+              onClick={() => setIsAddDialogOpen(true)}
+              className="text-xs sm:text-sm"
+            >
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden xs:inline">Добавить </span>
+              грузоотправителя
             </Button>
           </div>
         </div>
@@ -238,89 +242,84 @@ export default function SenderPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Название</TableHead>
-                  <TableHead className="text-right">Действия</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array(5)
-                    .fill(0)
-                    .map((_, index) => (
-                      <TableRow key={`skeleton-${index}`}>
-                        <TableCell>
-                          <Skeleton className="h-6 w-12" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-24" />
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Название</TableHead>
+                    <TableHead className="text-right">Действия</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    Array(5)
+                      .fill(0)
+                      .map((_, index) => (
+                        <TableRow key={`skeleton-${index}`}>
+                          <TableCell>
+                            <Skeleton className="h-6 w-12" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-6 w-24" />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Skeleton className="h-6 w-20 ml-auto" />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  ) : filteredSenders.length > 0 ? (
+                    filteredSenders.map((sender: any) => (
+                      <TableRow key={sender.id}>
+                        <TableCell>{sender.id}</TableCell>
+                        <TableCell className="font-medium">
+                          {sender.name}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Skeleton className="h-6 w-20 ml-auto" />
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => openEditDialog(sender)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              onClick={() => openDeleteDialog(sender)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
-                ) : filteredSenders.length > 0 ? (
-                  filteredSenders.map((sender: any) => (
-                    <TableRow key={sender.id}>
-                      <TableCell>{sender.id}</TableCell>
-                      <TableCell className="font-medium">
-                        {sender.name}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => openEditDialog(sender)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => openDeleteDialog(sender)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={3} className="h-24 text-center">
+                        Грузоотправители не найдены.
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">
-                      Грузоотправители не найдены.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
-          <CardFooter className="flex items-center justify-between pt-4">
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <div>
-                Страница {currentPage} из {lastPage}
+          <CardFooter className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                Показано {Math.min(limit, filteredSenders.length)} из{" "}
+                {totalItems} записей
+                <span className="hidden sm:inline">
+                  {" "}
+                  (страница {currentPage} из {lastPage})
+                </span>
               </div>
-              <div>|</div>
-              <div>
-                Всего: {totalItems}{" "}
-                {totalItems === 1
-                  ? "запись"
-                  : totalItems % 10 === 1 && totalItems % 100 !== 11
-                  ? "запись"
-                  : totalItems % 10 >= 2 &&
-                    totalItems % 10 <= 4 &&
-                    (totalItems % 100 < 10 || totalItems % 100 >= 20)
-                  ? "записи"
-                  : "записей"}
-              </div>
-              <div>|</div>
-              <div className="flex items-center space-x-2">
-                <span>Показывать:</span>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                  На странице:
+                </span>
                 <Select
                   value={limit.toString()}
                   onValueChange={handleLimitChange}
@@ -337,38 +336,42 @@ export default function SenderPage() {
                 </Select>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               <Button
                 variant="outline"
                 size="icon"
+                className="h-8 w-8"
                 onClick={goToFirstPage}
                 disabled={currentPage === 1 || isLoading}
               >
-                <ChevronsLeft className="h-4 w-4" />
+                <ChevronsLeft className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
+                className="h-8 w-8"
                 onClick={goToPreviousPage}
                 disabled={currentPage === 1 || isLoading}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
+                className="h-8 w-8"
                 onClick={goToNextPage}
                 disabled={currentPage === lastPage || isLoading}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
+                className="h-8 w-8"
                 onClick={goToLastPage}
                 disabled={currentPage === lastPage || isLoading}
               >
-                <ChevronsRight className="h-4 w-4" />
+                <ChevronsRight className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </CardFooter>

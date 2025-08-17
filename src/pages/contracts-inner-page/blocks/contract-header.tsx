@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { formatNumber } from "@/lib/utils";
 
 interface ContractHeaderProps {
   contractData: any;
@@ -224,7 +225,7 @@ export const ContractHeader = ({
                 Ориентировачная стоимость
               </p>
               <p>
-                {contractData?.estimated_cost?.toLocaleString("de-DE")}{" "}
+                {formatNumber(contractData?.estimated_cost)}{" "}
                 {contractData?.currency}
               </p>
             </div>

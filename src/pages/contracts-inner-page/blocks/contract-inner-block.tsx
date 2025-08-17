@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { formatNumber } from "@/lib/utils";
 import { AddWagonPopup } from "@/entities/wagon/ui/add-wagon-popup";
 import { useGetUserContractById } from "@/entities/contracts/hooks/query/use-get-user-contract-by-id.query";
 import { useGetContractsId } from "@/entities/contracts/hooks/query/use-get-contract-id.query";
@@ -303,8 +304,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
               <div>
                 <CardTitle className="text-lg">Использование объема</CardTitle>
                 <CardDescription>
-                  Общий объем договора:{" "}
-                  {volumeStats.totalVolume.toLocaleString()} тонн
+                  Общий объем договора: {formatNumber(volumeStats.totalVolume)}{" "}
+                  тонн
                 </CardDescription>
               </div>
             </div>
@@ -314,11 +315,10 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>
-                    Использовано: {volumeStats.usedVolume.toLocaleString()} тонн
+                    Использовано: {formatNumber(volumeStats.usedVolume)} тонн
                   </span>
                   <span>
-                    Осталось: {volumeStats.remainingVolume.toLocaleString()}{" "}
-                    тонн
+                    Осталось: {formatNumber(volumeStats.remainingVolume)} тонн
                   </span>
                 </div>
                 <Progress value={volumeStats.percentUsed} className="h-2.5" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { DialogFooter } from "@/components/ui/dialog";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 import type React from "react";
 import { useState, useEffect } from "react";
@@ -262,7 +263,9 @@ export const ApplicationDialog = ({
 
       if (numValue > maxAllowedVolume) {
         setVolumeError(
-          `Объем не может превышать ${maxAllowedVolume.toLocaleString()} тонн (доступно по договору)`
+          `Объем не может превышать ${formatNumber(
+            maxAllowedVolume
+          )} тонн (доступно по договору)`
         );
       } else {
         setVolumeError("");
@@ -648,7 +651,7 @@ export const ApplicationDialog = ({
                 <Label className="font-medium">Общая сумма</Label>
                 <div className="p-3 bg-muted rounded-md font-medium flex items-center">
                   <DollarSign className="h-4 w-4 text-green-500 mr-1" />
-                  <span>{totalAmount.toLocaleString()}</span>
+                  <span>{formatCurrency(totalAmount)}</span>
                   <span className="ml-1 text-green-600">
                     {contractData?.currency || "KZT"}
                   </span>

@@ -41,6 +41,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { formatCurrency } from "@/lib/utils";
 
 // Sample invoice data
 const invoices = [
@@ -1085,7 +1086,7 @@ export default function FinancesPage() {
                           <TableCell>{invoice.contract}</TableCell>
                           <TableCell>{invoice.date}</TableCell>
                           <TableCell>
-                            {invoice.amount.toLocaleString()} {invoice.currency}
+                            {formatCurrency(invoice.amount)} {invoice.currency}
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -1177,8 +1178,7 @@ export default function FinancesPage() {
                             <SelectContent>
                               {invoices.map((invoice) => (
                                 <SelectItem key={invoice.id} value={invoice.id}>
-                                  {invoice.id} (
-                                  {invoice.amount.toLocaleString()}{" "}
+                                  {invoice.id} ({formatCurrency(invoice.amount)}{" "}
                                   {invoice.currency})
                                 </SelectItem>
                               ))}
@@ -1283,7 +1283,7 @@ export default function FinancesPage() {
                           <TableCell>{payment.invoice}</TableCell>
                           <TableCell>{payment.date}</TableCell>
                           <TableCell>
-                            {payment.amount.toLocaleString()}{" "}
+                            {formatCurrency(payment.amount)}{" "}
                             {payment.details?.payment_currency || "RUB"}
                           </TableCell>
                           <TableCell>

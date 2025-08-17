@@ -29,6 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -608,9 +609,7 @@ export const ApplicationDetail = ({
               <div>
                 <p className="text-sm font-medium text-gray-500">Объем</p>
                 <p className="font-medium">
-                  {application?.volume
-                    ? application.volume.toLocaleString()
-                    : 0}{" "}
+                  {application?.volume ? formatNumber(application.volume) : 0}{" "}
                   тонн
                 </p>
               </div>
@@ -653,7 +652,7 @@ export const ApplicationDetail = ({
                 <p className="text-sm font-medium text-gray-500">Общая сумма</p>
                 <p className="font-medium ">
                   {application?.total_amount
-                    ? application.total_amount.toLocaleString()
+                    ? formatCurrency(application.total_amount)
                     : 0}{" "}
                   {application?.currency ||
                     application?.contract?.currency ||
@@ -685,13 +684,13 @@ export const ApplicationDetail = ({
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>
-                  Оплачено: {paidAmount.toLocaleString()}{" "}
+                  Оплачено: {formatCurrency(paidAmount)}{" "}
                   {application?.currency ||
                     application?.contract?.currency ||
                     "₸"}
                 </span>
                 <span>
-                  Всего: {totalAmount.toLocaleString()}{" "}
+                  Всего: {formatCurrency(totalAmount)}{" "}
                   {application?.currency ||
                     application?.contract?.currency ||
                     "₸"}
@@ -741,7 +740,7 @@ export const ApplicationDetail = ({
                         <span className="text-sm">Объем:</span>
                         <span>
                           {application?.volume
-                            ? application.volume.toLocaleString()
+                            ? formatNumber(application.volume)
                             : 0}{" "}
                           тонн
                         </span>
@@ -768,7 +767,7 @@ export const ApplicationDetail = ({
                         <span className="text-sm">Цена за тонну:</span>
                         <span>
                           {application?.price_per_ton
-                            ? application.price_per_ton.toLocaleString()
+                            ? formatCurrency(application.price_per_ton)
                             : 0}{" "}
                           {application?.contract?.currency}
                         </span>

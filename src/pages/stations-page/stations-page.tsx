@@ -221,67 +221,69 @@ export default function StationsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Название</TableHead>
-                  <TableHead>Код</TableHead>
-                  <TableHead className="text-right">Действия</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array(5)
-                    .fill(0)
-                    .map((_, index) => (
-                      <TableRow key={`skeleton-${index}`}>
-                        <TableCell>
-                          <Skeleton className="h-6 w-24" />
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Название</TableHead>
+                    <TableHead>Код</TableHead>
+                    <TableHead className="text-right">Действия</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    Array(5)
+                      .fill(0)
+                      .map((_, index) => (
+                        <TableRow key={`skeleton-${index}`}>
+                          <TableCell>
+                            <Skeleton className="h-6 w-24" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-6 w-16" />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Skeleton className="h-6 w-20 ml-auto" />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  ) : filteredStations.length > 0 ? (
+                    filteredStations.map((station) => (
+                      <TableRow key={station.id}>
+                        <TableCell className="font-medium">
+                          {station.name}
                         </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-16" />
-                        </TableCell>
+                        <TableCell>{station.code}</TableCell>
                         <TableCell className="text-right">
-                          <Skeleton className="h-6 w-20 ml-auto" />
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => openEditDialog(station)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              onClick={() => openDeleteDialog(station)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
-                ) : filteredStations.length > 0 ? (
-                  filteredStations.map((station) => (
-                    <TableRow key={station.id}>
-                      <TableCell className="font-medium">
-                        {station.name}
-                      </TableCell>
-                      <TableCell>{station.code}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => openEditDialog(station)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => openDeleteDialog(station)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={3} className="h-24 text-center">
+                        Станции не найдены.
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">
-                      Станции не найдены.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
           <CardFooter className="flex items-center justify-between pt-4">
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
@@ -415,21 +417,24 @@ export default function StationsPage() {
 
             {/* Info about pagination */}
             {(data?.total || 0) > 0 && (
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
-                <div className="text-sm text-muted-foreground">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
+                <div className="text-xs sm:text-sm text-muted-foreground">
                   Показано {Math.min(limit, data?.data?.length || 0)} из{" "}
-                  {data?.total || 0} записей (страница {currentPage} из{" "}
-                  {lastPage})
+                  {data?.total || 0} записей
+                  <span className="hidden sm:inline">
+                    {" "}
+                    (страница {currentPage} из {lastPage})
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    Записей на странице:
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                    На странице:
                   </span>
                   <Select
                     value={limit.toString()}
                     onValueChange={handleLimitChange}
                   >
-                    <SelectTrigger className="w-[70px]">
+                    <SelectTrigger className="w-[70px] h-8">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

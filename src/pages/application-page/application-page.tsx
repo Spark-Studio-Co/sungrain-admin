@@ -28,6 +28,7 @@ import { usePopupStore } from "@/shared/model/popup-store";
 import { AddWagonPopup } from "@/entities/wagon/ui/add-wagon-popup";
 import { useNavigate, useParams } from "react-router-dom";
 import { useGetApplication } from "@/entities/applications/hooks/query/use-get-application.query";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 import { WagonRegistry } from "../contracts-inner-page/blocks/wagon-registry";
 import { Layout } from "@/shared/ui/layout";
 
@@ -147,7 +148,7 @@ export default function ApplicationPage() {
                     Объем
                   </p>
                   <p className="font-medium">
-                    {application.volume.toLocaleString()} тонн
+                    {formatNumber(application.volume)} тонн
                   </p>
                 </div>
               </div>
@@ -158,7 +159,7 @@ export default function ApplicationPage() {
                     Цена за тонну
                   </p>
                   <p className="font-medium">
-                    {application.price_per_ton.toLocaleString()} ₸
+                    {formatCurrency(application.price_per_ton)}
                   </p>
                 </div>
               </div>
@@ -172,7 +173,7 @@ export default function ApplicationPage() {
                     variant="outline"
                     className="bg-green-50 text-green-700 font-medium mt-1"
                   >
-                    {application.total_amount.toLocaleString()} ₸
+                    {formatCurrency(application.total_amount)}
                   </Badge>
                 </div>
               </div>
@@ -211,20 +212,18 @@ export default function ApplicationPage() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm">Объем:</span>
-                          <span>
-                            {application.volume.toLocaleString()} тонн
-                          </span>
+                          <span>{formatNumber(application.volume)} тонн</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm">Цена за тонну:</span>
                           <span>
-                            {application.price_per_ton.toLocaleString()} ₸
+                            {formatCurrency(application.price_per_ton)}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm">Общая сумма:</span>
                           <span className="font-medium text-green-600">
-                            {application.total_amount.toLocaleString()} ₸
+                            {formatCurrency(application.total_amount)}
                           </span>
                         </div>
                       </div>

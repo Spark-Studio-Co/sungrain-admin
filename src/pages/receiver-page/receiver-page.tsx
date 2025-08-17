@@ -259,67 +259,69 @@ export default function ReceiversPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Название</TableHead>
-                  <TableHead className="text-right">Действия</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array(5)
-                    .fill(0)
-                    .map((_, index) => (
-                      <TableRow key={`skeleton-${index}`}>
-                        <TableCell>
-                          <Skeleton className="h-6 w-12" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-24" />
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Название</TableHead>
+                    <TableHead className="text-right">Действия</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    Array(5)
+                      .fill(0)
+                      .map((_, index) => (
+                        <TableRow key={`skeleton-${index}`}>
+                          <TableCell>
+                            <Skeleton className="h-6 w-12" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-6 w-24" />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Skeleton className="h-6 w-20 ml-auto" />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  ) : receivers.length > 0 ? (
+                    receivers.map((receiver: any) => (
+                      <TableRow key={receiver.id}>
+                        <TableCell>{receiver.id}</TableCell>
+                        <TableCell className="font-medium">
+                          {receiver.name}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Skeleton className="h-6 w-20 ml-auto" />
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => openEditDialog(receiver)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              onClick={() => openDeleteDialog(receiver)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
-                ) : receivers.length > 0 ? (
-                  receivers.map((receiver: any) => (
-                    <TableRow key={receiver.id}>
-                      <TableCell>{receiver.id}</TableCell>
-                      <TableCell className="font-medium">
-                        {receiver.name}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => openEditDialog(receiver)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => openDeleteDialog(receiver)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={3} className="h-24 text-center">
+                        Грузополучатели не найдены.
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">
-                      Грузополучатели не найдены.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
 
@@ -415,20 +417,24 @@ export default function ReceiversPage() {
 
         {/* Info about pagination */}
         {totalItems > 0 && (
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Показано {Math.min(limit, receivers.length)} из {totalItems}{" "}
-              записей (страница {currentPage} из {totalPages})
+              записей
+              <span className="hidden sm:inline">
+                {" "}
+                (страница {currentPage} из {totalPages})
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Записей на странице:
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                На странице:
               </span>
               <Select
                 value={limit.toString()}
                 onValueChange={handleLimitChange}
               >
-                <SelectTrigger className="w-[70px]">
+                <SelectTrigger className="w-[70px] h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

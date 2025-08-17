@@ -204,67 +204,69 @@ export default function OwnerPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Имя</TableHead>
-                  <TableHead className="text-right">Действия</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array(5)
-                    .fill(0)
-                    .map((_, index) => (
-                      <TableRow key={`skeleton-${index}`}>
-                        <TableCell>
-                          <Skeleton className="h-6 w-12" />
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Имя</TableHead>
+                    <TableHead className="text-right">Действия</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    Array(5)
+                      .fill(0)
+                      .map((_, index) => (
+                        <TableRow key={`skeleton-${index}`}>
+                          <TableCell>
+                            <Skeleton className="h-6 w-12" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-6 w-24" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-6 w-24" />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  ) : owners.length > 0 ? (
+                    owners.map((owner) => (
+                      <TableRow key={owner.id}>
+                        <TableCell>{owner.id}</TableCell>
+                        <TableCell className="font-medium">
+                          {owner.owner}
                         </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-24" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-24" />
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => openEditDialog(owner)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              onClick={() => openDeleteDialog(owner)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
-                ) : owners.length > 0 ? (
-                  owners.map((owner) => (
-                    <TableRow key={owner.id}>
-                      <TableCell>{owner.id}</TableCell>
-                      <TableCell className="font-medium">
-                        {owner.owner}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => openEditDialog(owner)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => openDeleteDialog(owner)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={3} className="h-24 text-center">
+                        Собственники не найдены.
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">
-                      Собственники не найдены.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
           <CardFooter className="flex justify-between items-center">
             <div className="text-sm text-muted-foreground">
@@ -272,129 +274,106 @@ export default function OwnerPage() {
               {ownersData?.total || 0} записей
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  Записей на странице:
-                </span>
-                <Select
-                  value={limit.toString()}
-                  onValueChange={handleLimitChange}
-                >
-                  <SelectTrigger className="w-16 h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[10, 20, 50, 100].map((limitOption) => (
-                      <SelectItem
-                        key={limitOption}
-                        value={limitOption.toString()}
-                      >
-                        {limitOption}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() => handlePageChange(page - 1)}
-                      className={
-                        page <= 1
-                          ? "pointer-events-none opacity-50"
-                          : "cursor-pointer"
-                      }
-                    />
-                  </PaginationItem>
-
-                  {/* Page numbers */}
-                  {(() => {
-                    const totalPages = ownersData?.lastPage || 1;
-                    const currentPage = page;
-                    const pages = [];
-
-                    if (totalPages <= 7) {
-                      for (let i = 1; i <= totalPages; i++) {
-                        pages.push(i);
-                      }
-                    } else {
-                      if (currentPage <= 3) {
-                        pages.push(1, 2, 3, 4, 5, "...", totalPages);
-                      } else if (currentPage >= totalPages - 2) {
-                        pages.push(
-                          1,
-                          "...",
-                          totalPages - 4,
-                          totalPages - 3,
-                          totalPages - 2,
-                          totalPages - 1,
-                          totalPages
-                        );
-                      } else {
-                        pages.push(
-                          1,
-                          "...",
-                          currentPage - 1,
-                          currentPage,
-                          currentPage + 1,
-                          "...",
-                          totalPages
-                        );
-                      }
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => handlePageChange(page - 1)}
+                    className={
+                      page <= 1
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
                     }
+                  />
+                </PaginationItem>
 
-                    return pages.map((pageNum, index) => (
-                      <PaginationItem key={index}>
-                        {pageNum === "..." ? (
-                          <PaginationEllipsis />
-                        ) : (
-                          <PaginationLink
-                            onClick={() => handlePageChange(Number(pageNum))}
-                            isActive={currentPage === pageNum}
-                            className="cursor-pointer"
-                          >
-                            {pageNum}
-                          </PaginationLink>
-                        )}
-                      </PaginationItem>
-                    ));
-                  })()}
+                {/* Page numbers */}
+                {(() => {
+                  const totalPages = ownersData?.lastPage || 1;
+                  const currentPage = page;
+                  const pages = [];
 
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() => handlePageChange(page + 1)}
-                      className={
-                        page >= (ownersData?.lastPage || 1)
-                          ? "pointer-events-none opacity-50"
-                          : "cursor-pointer"
-                      }
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
+                  if (totalPages <= 7) {
+                    for (let i = 1; i <= totalPages; i++) {
+                      pages.push(i);
+                    }
+                  } else {
+                    if (currentPage <= 3) {
+                      pages.push(1, 2, 3, 4, 5, "...", totalPages);
+                    } else if (currentPage >= totalPages - 2) {
+                      pages.push(
+                        1,
+                        "...",
+                        totalPages - 4,
+                        totalPages - 3,
+                        totalPages - 2,
+                        totalPages - 1,
+                        totalPages
+                      );
+                    } else {
+                      pages.push(
+                        1,
+                        "...",
+                        currentPage - 1,
+                        currentPage,
+                        currentPage + 1,
+                        "...",
+                        totalPages
+                      );
+                    }
+                  }
+
+                  return pages.map((pageNum, index) => (
+                    <PaginationItem key={index}>
+                      {pageNum === "..." ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          onClick={() => handlePageChange(Number(pageNum))}
+                          isActive={currentPage === pageNum}
+                          className="cursor-pointer"
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ));
+                })()}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => handlePageChange(page + 1)}
+                    className={
+                      page >= (ownersData?.lastPage || 1)
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </CardFooter>
         </Card>
 
         {/* Info about pagination */}
         {totalItems > 0 && (
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
-            <div className="text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Показано {Math.min(limit, owners.length)} из {totalItems} записей
-              (страница {currentPage} из {lastPage})
+              <span className="hidden sm:inline">
+                {" "}
+                (страница {currentPage} из {lastPage})
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Записей на странице:
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                На странице:
               </span>
               <Select
                 value={limit.toString()}
                 onValueChange={handleLimitChange}
               >
-                <SelectTrigger className="w-[70px]">
+                <SelectTrigger className="w-[70px] h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

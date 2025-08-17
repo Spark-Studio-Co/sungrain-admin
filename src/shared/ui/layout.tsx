@@ -168,7 +168,7 @@ export const Layout: React.FC<ILayout> = ({ children }) => {
   return (
     <AuthProvider>
       <SidebarProvider open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-        <div className="h-[100vh] flex w-full max-w-[8120px] pr-8">
+        <div className="h-[100vh] flex w-full max-w-[8120px] pr-2 sm:pr-8">
           <Sidebar>
             <SidebarHeader>
               <SidebarMenu>

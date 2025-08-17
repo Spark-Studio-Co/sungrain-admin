@@ -200,81 +200,86 @@ export const CulturesBlock = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Название</TableHead>
-                      <TableHead className="text-right">Действия</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      Array(5)
-                        .fill(0)
-                        .map((_, index) => (
-                          <TableRow key={`skeleton-${index}`}>
-                            <TableCell>
-                              <Skeleton className="h-6 w-24" />
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Название</TableHead>
+                        <TableHead className="text-right">Действия</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        Array(5)
+                          .fill(0)
+                          .map((_, index) => (
+                            <TableRow key={`skeleton-${index}`}>
+                              <TableCell>
+                                <Skeleton className="h-6 w-24" />
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Skeleton className="h-6 w-20 ml-auto" />
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      ) : filteredCultures.length > 0 ? (
+                        filteredCultures.map((culture) => (
+                          <TableRow key={culture.id}>
+                            <TableCell className="font-medium">
+                              {culture.name}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Skeleton className="h-6 w-20 ml-auto" />
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => openEditDialog(culture)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  onClick={() => openDeleteDialog(culture)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))
-                    ) : filteredCultures.length > 0 ? (
-                      filteredCultures.map((culture) => (
-                        <TableRow key={culture.id}>
-                          <TableCell className="font-medium">
-                            {culture.name}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => openEditDialog(culture)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="icon"
-                                onClick={() => openDeleteDialog(culture)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={2} className="h-24 text-center">
+                            Культуры не найдены.
                           </TableCell>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={2} className="h-24 text-center">
-                          Культуры не найдены.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
 
                 {/* Pagination Info and Controls */}
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t">
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4 border-t">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <div className="text-xs sm:text-sm text-muted-foreground">
                       Показано{" "}
                       {Math.min((currentPage - 1) * limit + 1, totalItems)}-
                       {Math.min(currentPage * limit, totalItems)} из{" "}
                       {totalItems} записей
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="limit-select" className="text-sm">
-                        Записей на странице:
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                      <Label
+                        htmlFor="limit-select"
+                        className="text-xs sm:text-sm whitespace-nowrap"
+                      >
+                        На странице:
                       </Label>
                       <Select
                         value={limit.toString()}
                         onValueChange={handleLimitChange}
                       >
-                        <SelectTrigger id="limit-select" className="w-20">
+                        <SelectTrigger id="limit-select" className="w-20 h-8">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
