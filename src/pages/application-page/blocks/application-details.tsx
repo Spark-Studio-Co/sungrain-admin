@@ -57,6 +57,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDeleteApplicationFile } from "@/entities/applications/hooks/mutations/use-delete-application-file.mutation";
 import { useDeleteUploadedDocuments } from "@/entities/applications/hooks/mutations/use-delete-upload-documents.mutation";
 import { useUploadApplicationFiles } from "@/entities/applications/hooks/mutations/use-upload-application-files.mutation";
+import { useUpdateApplicationFile } from "@/entities/applications/hooks/mutations/use-update-application-file.mutation";
 import { useUploadDocumentsForUpload } from "@/entities/applications/hooks/mutations/use-upload-documents.mutation";
 import { useGetApplication } from "@/entities/applications/hooks/query/use-get-application.query";
 import { useCreateInvoice } from "@/entities/invoices/hooks/mutations/use-create-invoice.mutation";
@@ -160,6 +161,10 @@ export const ApplicationDetail = ({
   const [isDeleteDocDialogOpen, setIsDeleteDocDialogOpen] = useState(false);
   const [deletingDoc, setDeletingDoc] = useState<any>(null);
 
+  // States for edit document dialog
+  const [isEditDocDialogOpen, setIsEditDocDialogOpen] = useState(false);
+  const [editingDocument, setEditingDocument] = useState<any>(null);
+
   const {
     data: applicationData,
     isLoading,
@@ -182,6 +187,7 @@ export const ApplicationDetail = ({
   const deleteWagonMutation = useDeleteWagon();
   const deleteUploadedDocs = useDeleteUploadedDocuments();
   const uploadFilesMutation = useUploadApplicationFiles();
+  const updateApplicationFileMutation = useUpdateApplicationFile();
   const deleteFileByNumberMutation = useDeleteApplicationFile();
   const createInvoiceMutation = useCreateInvoice();
   const uploadDocumentsForUploadMutation = useUploadDocumentsForUpload();
@@ -366,9 +372,35 @@ export const ApplicationDetail = ({
   };
 
   const handleEditDocumentClick = (doc: any) => {
-    // TODO: Implement document edit functionality
-    console.log("Edit document:", doc);
-    // This could open a modal or navigate to an edit page
+    setEditingDocument({
+      ...doc,
+      // Сохраняем оригинальные данные для возможности отмены
+      originalName: doc.name,
+      originalNumber: doc.number,
+      originalDate: doc.date,
+    });
+    setIsEditDocDialogOpen(true);
+  };
+
+  const handleUpdateDocument = async () => {
+    if (!editingDocument) return;
+
+    try {
+      await updateApplicationFileMutation.mutateAsync({
+        applicationId: applicationId,
+        fileNumber: editingDocument.number || editingDocument.originalNumber,
+        name: editingDocument.name,
+        number: editingDocument.number,
+        date: editingDocument.date,
+        file: editingDocument.file,
+      });
+
+      setIsEditDocDialogOpen(false);
+      setEditingDocument(null);
+      refetch(); // Обновляем данные
+    } catch (error) {
+      console.error("Error updating document:", error);
+    }
   };
 
   const handleDeleteDocument = async () => {
@@ -1994,6 +2026,171 @@ export const ApplicationDetail = ({
                 </>
               ) : (
                 "Создать документ"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Document Dialog */}
+      <Dialog open={isEditDocDialogOpen} onOpenChange={setIsEditDocDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Редактировать документ</DialogTitle>
+            <DialogDescription>
+              Измените информацию о документе и при необходимости загрузите
+              новый файл
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-doc-name" className="text-right">
+                Название <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="edit-doc-name"
+                value={editingDocument?.name || ""}
+                onChange={(e) =>
+                  setEditingDocument({
+                    ...editingDocument,
+                    name: e.target.value,
+                  })
+                }
+                className="col-span-3"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-doc-number" className="text-right">
+                Номер
+              </Label>
+              <Input
+                id="edit-doc-number"
+                value={editingDocument?.number || ""}
+                onChange={(e) =>
+                  setEditingDocument({
+                    ...editingDocument,
+                    number: e.target.value,
+                  })
+                }
+                className="col-span-3"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-doc-date" className="text-right">
+                Дата
+              </Label>
+              <div className="col-span-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="edit-doc-date"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !editingDocument?.date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editingDocument?.date ? (
+                        formatDate(editingDocument.date)
+                      ) : (
+                        <span>Выберите дату</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={
+                        editingDocument?.date
+                          ? new Date(editingDocument.date)
+                          : undefined
+                      }
+                      onSelect={(date) => {
+                        if (date) {
+                          setEditingDocument({
+                            ...editingDocument,
+                            date: format(date, "yyyy-MM-dd"),
+                          });
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-doc-file" className="text-right">
+                Новый файл
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="edit-doc-file"
+                  type="file"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setEditingDocument({
+                        ...editingDocument,
+                        file: e.target.files[0],
+                      });
+                    }
+                  }}
+                />
+                {editingDocument?.file && (
+                  <div className="flex items-center mt-2 text-sm">
+                    <FileText className="h-4 w-4 mr-2 text-blue-500" />
+                    <span className="truncate max-w-[300px]">
+                      {editingDocument.file.name}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 ml-2"
+                      onClick={() =>
+                        setEditingDocument({ ...editingDocument, file: null })
+                      }
+                    >
+                      <X className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Оставьте пустым, если не хотите заменять файл
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEditDocDialogOpen(false);
+                setEditingDocument(null);
+              }}
+            >
+              Отмена
+            </Button>
+            <Button
+              type="submit"
+              onClick={handleUpdateDocument}
+              disabled={
+                updateApplicationFileMutation.isPending ||
+                !editingDocument?.name
+              }
+            >
+              {updateApplicationFileMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Обновление...
+                </>
+              ) : (
+                "Обновить"
               )}
             </Button>
           </DialogFooter>
