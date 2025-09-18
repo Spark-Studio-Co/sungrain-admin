@@ -79,6 +79,7 @@ import {
   CreditCard,
   Coins as DollarSign,
   Download,
+  Edit,
   type File,
   FileText,
   Loader2,
@@ -362,6 +363,12 @@ export const ApplicationDetail = ({
   const handleDeleteDocumentClick = (doc: any) => {
     setDeletingDoc(doc);
     setIsDeleteDocDialogOpen(true);
+  };
+
+  const handleEditDocumentClick = (doc: any) => {
+    // TODO: Implement document edit functionality
+    console.log("Edit document:", doc);
+    // This could open a modal or navigate to an edit page
   };
 
   const handleDeleteDocument = async () => {
@@ -873,15 +880,26 @@ export const ApplicationDetail = ({
                           </span>
                         </div>
                         {isAdmin && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 rounded-full"
-                            onClick={() => handleDeleteDocumentClick(file)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-blue-500 hover:bg-blue-50 rounded-full"
+                              onClick={() => handleEditDocumentClick(file)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 rounded-full"
+                              onClick={() => handleDeleteDocumentClick(file)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         )}
                       </div>
                       <div className="p-4 space-y-3">

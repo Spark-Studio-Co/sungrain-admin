@@ -11,6 +11,7 @@ import {
   Download,
   Loader2,
   Plus,
+  Edit,
 } from "lucide-react";
 import {
   Card,
@@ -76,6 +77,12 @@ export default function ApplicationPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleFileEdit = (fileId: string, fileName: string) => {
+    // TODO: Implement file edit functionality
+    console.log("Edit file:", fileId, fileName);
+    // This could open a modal or navigate to an edit page
   };
 
   if (isLoading) {
@@ -325,20 +332,38 @@ export default function ApplicationPage() {
                             </div>
                           </div>
                           <div className="col-span-3">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="gap-1"
-                              onClick={() =>
-                                handleFileDownload(
-                                  file.location,
-                                  file.name || `document-${index + 1}.pdf`
-                                )
-                              }
-                            >
-                              <Download className="h-4 w-4" />
-                              Скачать
-                            </Button>
+                            <div className="flex gap-1">
+                              {isAdmin && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="gap-1"
+                                  onClick={() =>
+                                    handleFileEdit(
+                                      file.id || `file-${index}`,
+                                      file.name || `document-${index + 1}.pdf`
+                                    )
+                                  }
+                                >
+                                  <Edit className="h-4 w-4" />
+                                  Изменить
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="gap-1"
+                                onClick={() =>
+                                  handleFileDownload(
+                                    file.location,
+                                    file.name || `document-${index + 1}.pdf`
+                                  )
+                                }
+                              >
+                                <Download className="h-4 w-4" />
+                                Скачать
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
