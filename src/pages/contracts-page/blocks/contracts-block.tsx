@@ -579,35 +579,39 @@ export const ContractsBlock = () => {
   };
 
   return (
-    <div>
-      <Card className="border-none shadow-none">
-        <CardHeader className="px-0 pt-0">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      <Card className="border-0 sm:border shadow-none sm:shadow-sm">
+        <CardHeader className="px-2 sm:px-6 pt-2 sm:pt-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle className="text-2xl font-bold tracking-tight">
-                СТРАНИЦА КОНТРАКТЫ
+              <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight">
+                <span className="hidden sm:inline">СТРАНИЦА КОНТРАКТЫ</span>
+                <span className="sm:hidden">Контракты</span>
               </CardTitle>
-              <CardDescription className="mt-1">
+              <CardDescription className="mt-1 hidden sm:block">
                 {isAdmin
                   ? "Управление контрактами и грузоперевозками"
                   : "Ваши контракты и грузоперевозки"}
               </CardDescription>
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex flex-col gap-2 sm:flex-row w-full sm:w-auto">
               {isAdmin && !isDataLoading && (
                 <Button
                   onClick={() =>
                     useContractDialogStore.getState().setDialogOpen(true)
                   }
+                  className="w-full sm:w-auto"
                 >
-                  <Plus className="mr-2 h-4 w-4" /> Добавить контракт
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Добавить контракт</span>
+                  <span className="sm:hidden">Добавить</span>
                 </Button>
               )}
               <div className="relative">
                 {isAdmin && !isDataLoading && (
                   <Button
                     variant="outline"
-                    className="gap-2"
+                    className="gap-2 w-full sm:w-auto"
                     onClick={() =>
                       document
                         ?.getElementById("export-menu")
@@ -638,23 +642,24 @@ export const ContractsBlock = () => {
           </div>
           {/* Add this to modify the CardHeader div after the search input section (around line 254) */}
           {/* Replace the search input section with this enhanced version including filters */}
-          <div className="mt-4 flex flex-col md:flex-row md:items-center gap-4">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Поиск контрактов..."
+                placeholder="Поиск..."
                 value={searchTerm}
                 onChange={handleSearchChange}
-                className="pl-10 w-full"
+                className="pl-10 w-full h-10"
               />
             </div>
             <Button
               variant="outline"
-              className="gap-2 whitespace-nowrap"
+              className="gap-2 whitespace-nowrap w-full sm:w-auto"
               onClick={() => setShowFilters(!showFilters)}
             >
               <Filter className="h-4 w-4" />
-              Фильтры
+              <span className="hidden sm:inline">Фильтры</span>
+              <span className="sm:hidden">Фильтр</span>
               {getActiveFilterCount() > 0 && (
                 <span className="ml-1 rounded-full bg-primary w-5 h-5 flex items-center justify-center text-xs text-primary-foreground">
                   {getActiveFilterCount()}
@@ -857,7 +862,7 @@ export const ContractsBlock = () => {
           )}
         </CardHeader>
 
-        <CardContent className="px-0 pb-0">
+        <CardContent className="px-2 sm:px-6 pb-2 sm:pb-6">
           {isDataError && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
@@ -868,7 +873,8 @@ export const ContractsBlock = () => {
               </AlertDescription>
             </Alert>
           )}
-          <div className="rounded-md border bg-card shadow-sm">
+          {/* Desktop: Table View */}
+          <div className="hidden sm:block rounded-md border bg-card shadow-sm">
             <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
               <Table>
                 <TableHeader>
@@ -1129,10 +1135,309 @@ export const ContractsBlock = () => {
               </Table>
             </div>
           </div>
+
+          {/* Mobile: Card View */}
+          <div className="sm:hidden space-y-3">
+            {isDataLoading ? (
+              Array(5)
+                .fill(0)
+                .map((_, index) => (
+                  <Card key={`skeleton-${index}`} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                      <Skeleton className="h-4 w-full" />
+                      <div className="flex justify-between">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-20" />
+                      </div>
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                  </Card>
+                ))
+            ) : searchTerm || getActiveFilterCount() > 0 ? (
+              filteredContracts.length > 0 ? (
+                filteredContracts.map((contract: any) => (
+                  <Card
+                    key={contract.id}
+                    className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => handleRowClick(contract)}
+                  >
+                    <div className="space-y-3">
+                      {/* Header */}
+                      <div className="flex justify-between items-start">
+                        <div className="font-medium text-sm">
+                          № {contract.number}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {contract.date
+                            ? new Date(contract.date).toLocaleDateString()
+                            : "-"}
+                        </div>
+                      </div>
+
+                      {/* Title */}
+                      <div className="font-medium">{contract.name}</div>
+
+                      {/* Details */}
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Культура:
+                          </span>
+                          <span>{contract.crop || "-"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Объем:</span>
+                          <span className="font-medium">
+                            {contract.total_volume} т
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Отправитель:
+                          </span>
+                          <span className="text-right text-xs">
+                            {contract.sender || "-"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Получатель:
+                          </span>
+                          <span className="text-right text-xs">
+                            {contract.receiver || "-"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Маршрут:
+                          </span>
+                          <span className="text-right text-xs">
+                            {contract.departure_station || "-"} →{" "}
+                            {contract.destination_station || "-"}
+                          </span>
+                        </div>
+                        {contract.company?.name && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              Компания:
+                            </span>
+                            <span className="text-xs">
+                              {contract.company.name}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      {isAdmin && (
+                        <div className="flex justify-end pt-2 border-t">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  handleEditClick(e, contract);
+                                }}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Редактировать
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={(e) => handleDeleteClick(e, contract)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Удалить
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                ))
+              ) : (
+                <Card className="p-8">
+                  <div className="text-center text-muted-foreground">
+                    {searchTerm || getActiveFilterCount() > 0
+                      ? "Контракты не найдены"
+                      : isAdmin
+                      ? "Контракты не найдены."
+                      : "У вас нет доступных контрактов."}
+                  </div>
+                </Card>
+              )
+            ) : contractsToDisplay.length > 0 ? (
+              contractsToDisplay.map((contract: any) => (
+                <Card
+                  key={contract.id}
+                  className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => handleRowClick(contract)}
+                >
+                  <div className="space-y-3">
+                    {/* Header */}
+                    <div className="flex justify-between items-start">
+                      <div className="font-medium text-sm">
+                        № {contract.number}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {contract.date
+                          ? new Date(contract.date).toLocaleDateString()
+                          : "-"}
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <div className="font-medium">{contract.name}</div>
+
+                    {/* Details */}
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Культура:</span>
+                        <span>{contract.crop || "-"}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Объем:</span>
+                        <span className="font-medium">
+                          {contract.total_volume} т
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          Отправитель:
+                        </span>
+                        <span className="text-right text-xs">
+                          {contract.sender || "-"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          Получатель:
+                        </span>
+                        <span className="text-right text-xs">
+                          {contract.receiver || "-"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Маршрут:</span>
+                        <span className="text-right text-xs">
+                          {contract.departure_station || "-"} →{" "}
+                          {contract.destination_station || "-"}
+                        </span>
+                      </div>
+                      {contract.company?.name && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Компания:
+                          </span>
+                          <span className="text-xs">
+                            {contract.company.name}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    {isAdmin && (
+                      <div className="flex justify-end pt-2 border-t">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="h-8 w-8 p-0"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                handleEditClick(e, contract);
+                              }}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Редактировать
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={(e) => handleDeleteClick(e, contract)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Удалить
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ))
+            ) : (
+              <Card className="p-8">
+                <div className="text-center text-muted-foreground">
+                  {isAdmin
+                    ? "Контракты не найдены."
+                    : "У вас нет доступных контрактов."}
+                </div>
+              </Card>
+            )}
+          </div>
           {/* Add this to the "mt-4 flex flex-col sm:flex-row" div after the table (around line 517) */}
           {/* Replace the existing div with info about total contracts with this: */}
-          <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-muted-foreground mb-4 sm:mb-0 flex flex-wrap items-center gap-2">
+          {/* Mobile Pagination Controls */}
+          {!isDataLoading && totalPages > 1 && (
+            <div className="mt-4 sm:hidden flex items-center justify-between">
+              {/* Previous Button */}
+              <button
+                onClick={() => {
+                  if (currentPage > 1) {
+                    handlePageChange(currentPage - 1);
+                  }
+                }}
+                disabled={currentPage <= 1}
+                className="flex items-center px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Назад
+              </button>
+
+              {/* Page info */}
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-muted-foreground">
+                  {currentPage} из {totalPages || 1}
+                </span>
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={() => {
+                  if (currentPage < (totalPages || 1)) {
+                    handlePageChange(currentPage + 1);
+                  }
+                }}
+                disabled={currentPage >= (totalPages || 1)}
+                className="flex items-center px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Вперёд
+              </button>
+            </div>
+          )}
+
+          {/* Desktop Pagination and Info */}
+          <div className="mt-4 hidden sm:flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
               <span>
                 Всего контрактов: {isDataLoading ? "..." : totalItems || 0}
                 {!isAdmin && " (только ваши контракты)"}
@@ -1214,8 +1519,32 @@ export const ContractsBlock = () => {
               </Pagination>
             )}
           </div>
+
+          {/* Mobile Info */}
+          <div className="mt-4 sm:hidden text-center">
+            <div className="text-xs text-muted-foreground">
+              Всего: {isDataLoading ? "..." : totalItems || 0} контрактов
+              {!isAdmin && " (ваши)"}
+              {getActiveFilterCount() > 0 && (
+                <>
+                  {" | "}
+                  Отфильтровано: {filteredContracts.length}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="h-6 px-2 text-xs ml-2"
+                  >
+                    <X className="h-3 w-3 mr-1" /> Сбросить
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      <AddContractDialog />
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>

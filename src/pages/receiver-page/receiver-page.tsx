@@ -212,10 +212,13 @@ export default function ReceiversPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 px-3 sm:px-0">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold tracking-tight">
-            УПРАВЛЕНИЕ ГРУЗОПОЛУЧАТЕЛЯМИ
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight leading-tight">
+            <span className="hidden sm:inline">
+              УПРАВЛЕНИЕ ГРУЗОПОЛУЧАТЕЛЯМИ
+            </span>
+            <span className="sm:hidden">Грузополучатели</span>
           </h1>
         </div>
 
@@ -230,36 +233,43 @@ export default function ReceiversPage() {
           </Alert>
         )}
 
-        <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:gap-4">
           <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-5 w-5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Поиск грузополучателей..."
               value={searchTerm}
               onChange={handleSearchChange}
-              className="pl-10 pr-10"
+              className="pl-10 pr-10 h-12 sm:h-10 text-base sm:text-sm"
             />
             {searchTerm !== debouncedSearchTerm && (
-              <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground animate-spin" />
+              <Loader2 className="absolute right-3 top-1/2 h-5 w-5 sm:h-4 sm:w-4 -translate-y-1/2 text-muted-foreground animate-spin" />
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => setIsAddDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Добавить грузополучателя
+            <Button
+              onClick={() => setIsAddDialogOpen(true)}
+              className="w-full sm:w-auto py-3 sm:py-2 text-base sm:text-sm gap-3 sm:gap-2"
+            >
+              <Plus className="h-5 w-5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Добавить грузополучателя</span>
+              <span className="sm:hidden">Добавить</span>
             </Button>
           </div>
         </div>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Грузополучатели</CardTitle>
-            <CardDescription>
+          <CardHeader className="pb-3 px-4 sm:px-6 sm:pb-2">
+            <CardTitle className="text-lg sm:text-xl">
+              Грузополучатели
+            </CardTitle>
+            <CardDescription className="text-sm sm:text-sm mt-1">
               Управление списком грузополучателей для контрактов
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
+          <CardContent className="px-4 sm:px-6">
+            {/* Desktop Table View */}
+            <div className="hidden md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -322,13 +332,84 @@ export default function ReceiversPage() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+              {isLoading ? (
+                Array(5)
+                  .fill(0)
+                  .map((_, index) => (
+                    <Card key={`skeleton-${index}`} className="p-4">
+                      <div className="flex justify-between items-center">
+                        <div className="space-y-2 flex-1">
+                          <Skeleton className="h-5 w-16" />
+                          <Skeleton className="h-6 w-32" />
+                        </div>
+                        <div className="flex gap-2">
+                          <Skeleton className="h-9 w-9" />
+                          <Skeleton className="h-9 w-9" />
+                        </div>
+                      </div>
+                    </Card>
+                  ))
+              ) : receivers.length > 0 ? (
+                receivers.map((receiver: any) => (
+                  <Card
+                    key={receiver.id}
+                    className="p-4 border border-gray-200 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm text-muted-foreground mb-1">
+                          ID: {receiver.id}
+                        </div>
+                        <div className="font-semibold text-base break-words">
+                          {receiver.name}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-9 w-9"
+                          onClick={() => openEditDialog(receiver)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="h-9 w-9"
+                          onClick={() => openDeleteDialog(receiver)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              ) : (
+                <div className="text-center py-12">
+                  <div className="text-muted-foreground text-base">
+                    Грузополучатели не найдены.
+                  </div>
+                  <Button
+                    onClick={() => setIsAddDialogOpen(true)}
+                    className="mt-4 gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Добавить первого
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-center">
-            <Pagination>
+          <div className="flex justify-center px-2">
+            <Pagination className="mx-0 w-full justify-center">
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious
@@ -417,24 +498,27 @@ export default function ReceiversPage() {
 
         {/* Info about pagination */}
         {totalItems > 0 && (
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="text-xs sm:text-sm text-muted-foreground">
-              Показано {Math.min(limit, receivers.length)} из {totalItems}{" "}
-              записей
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-2 sm:px-0">
+            <div className="text-sm sm:text-sm text-muted-foreground">
+              Показано{" "}
+              <span className="font-medium">
+                {Math.min(limit, receivers.length)}
+              </span>{" "}
+              из <span className="font-medium">{totalItems}</span> записей
               <span className="hidden sm:inline">
                 {" "}
                 (страница {currentPage} из {totalPages})
               </span>
             </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-              <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-2">
+              <span className="text-sm sm:text-sm text-muted-foreground whitespace-nowrap font-medium">
                 На странице:
               </span>
               <Select
                 value={limit.toString()}
                 onValueChange={handleLimitChange}
               >
-                <SelectTrigger className="w-[70px] h-8">
+                <SelectTrigger className="w-[80px] h-10 sm:w-[70px] sm:h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -452,17 +536,19 @@ export default function ReceiversPage() {
 
       {/* Add Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Добавить нового грузополучателя</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg">
+              Добавить нового грузополучателя
+            </DialogTitle>
+            <DialogDescription className="text-sm">
               Заполните информацию о новом грузополучателе
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Название
+          <div className="grid gap-6 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-sm font-medium">
+                Название <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="name"
@@ -473,18 +559,27 @@ export default function ReceiversPage() {
                     name: e.target.value,
                   })
                 }
-                className="col-span-3"
+                className="h-12 sm:h-10 text-base sm:text-sm"
+                placeholder="Введите название грузополучателя"
               />
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-3 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setIsAddDialogOpen(false)}
+              className="w-full sm:w-auto order-2 sm:order-1"
+            >
+              Отмена
+            </Button>
             <Button
               onClick={handleAddReceiver}
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || !newReceiver.name.trim()}
+              className="w-full sm:w-auto order-1 sm:order-2 py-3 sm:py-2"
             >
               {createMutation.isPending ? (
                 <>
-                  <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Добавление...
                 </>
               ) : (
@@ -498,17 +593,19 @@ export default function ReceiversPage() {
       {/* Edit Dialog */}
       {editingReceiver && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[550px]">
+          <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Редактировать грузополучателя</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-lg">
+                Редактировать грузополучателя
+              </DialogTitle>
+              <DialogDescription className="text-sm">
                 Редактирование грузополучателя: {editingReceiver.name}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-name" className="text-right">
-                  Название
+            <div className="grid gap-6 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name" className="text-sm font-medium">
+                  Название <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="edit-name"
@@ -520,24 +617,29 @@ export default function ReceiversPage() {
                       name: e.target.value,
                     });
                   }}
-                  className="col-span-3"
+                  className="h-12 sm:h-10 text-base sm:text-sm"
+                  placeholder="Введите название грузополучателя"
                 />
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-3 sm:gap-0">
               <Button
                 variant="outline"
                 onClick={() => setIsEditDialogOpen(false)}
+                className="w-full sm:w-auto order-2 sm:order-1"
               >
                 Отмена
               </Button>
               <Button
                 onClick={handleEditReceiver}
-                disabled={updateMutation.isPending}
+                disabled={
+                  updateMutation.isPending || !editingReceiver.name.trim()
+                }
+                className="w-full sm:w-auto order-1 sm:order-2 py-3 sm:py-2"
               >
                 {updateMutation.isPending ? (
                   <>
-                    <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Сохранение...
                   </>
                 ) : (
@@ -555,24 +657,29 @@ export default function ReceiversPage() {
       {/* Delete Confirmation Dialog */}
       {deletingReceiver && (
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="w-[95vw] max-w-[450px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Удалить грузополучателя</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-lg text-red-600">
+                Удалить грузополучателя
+              </DialogTitle>
+              <DialogDescription className="text-sm">
                 Вы уверены, что хотите удалить грузополучателя "
-                {deletingReceiver.name}"?
+                <span className="font-medium">{deletingReceiver.name}</span>"?
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
-              <p className="text-muted-foreground">
-                Это действие нельзя отменить. Грузополучатель будет удален из
-                системы.
-              </p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-800 leading-relaxed">
+                  <strong>Внимание:</strong> Это действие нельзя отменить.
+                  Грузополучатель будет полностью удален из системы.
+                </p>
+              </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-3 sm:gap-0">
               <Button
                 variant="outline"
                 onClick={() => setIsDeleteDialogOpen(false)}
+                className="w-full sm:w-auto order-2 sm:order-1"
               >
                 Отмена
               </Button>
@@ -580,10 +687,11 @@ export default function ReceiversPage() {
                 variant="destructive"
                 onClick={handleDeleteReceiver}
                 disabled={deleteMutation.isPending}
+                className="w-full sm:w-auto order-1 sm:order-2 py-3 sm:py-2"
               >
                 {deleteMutation.isPending ? (
                   <>
-                    <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Удаление...
                   </>
                 ) : (

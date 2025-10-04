@@ -278,22 +278,22 @@ export const ApplicationBlock = ({
   return (
     <>
       <Card>
-        <CardHeader className="pb-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-blue-50 rounded-full">
-                <FileText className="h-6 w-6 text-blue-500" />
+        <CardHeader className="pb-3 px-3 sm:px-6 sm:pb-2">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full sm:gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 sm:p-2 bg-blue-50 rounded-full flex-shrink-0">
+                <FileText className="h-6 w-6 sm:h-6 sm:w-6 text-blue-500" />
               </div>
-              <div>
-                <CardTitle className="text-lg sm:text-xl">
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-xl sm:text-xl leading-tight">
                   Заявки по договору
                 </CardTitle>
-                <CardDescription className="text-sm">
+                <CardDescription className="text-sm mt-1">
                   Управление заявками и отгрузками
                 </CardDescription>
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -302,12 +302,12 @@ export const ApplicationBlock = ({
                       size="icon"
                       onClick={handleRefresh}
                       disabled={isRefreshing}
-                      className="h-9 w-9"
+                      className="h-10 w-10 sm:h-9 sm:w-9"
                     >
                       {isRefreshing ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 className="h-5 w-5 sm:h-4 sm:w-4 animate-spin" />
                       ) : (
-                        <RefreshCw className="h-4 w-4" />
+                        <RefreshCw className="h-5 w-5 sm:h-4 sm:w-4" />
                       )}
                     </Button>
                   </TooltipTrigger>
@@ -318,11 +318,15 @@ export const ApplicationBlock = ({
               </TooltipProvider>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-9 w-9">
-                    <SlidersHorizontal className="h-4 w-4" />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 sm:h-9 sm:w-9"
+                  >
+                    <SlidersHorizontal className="h-5 w-5 sm:h-4 sm:w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuLabel>Действия</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={exportToCSV}>
@@ -335,28 +339,28 @@ export const ApplicationBlock = ({
               {isAdmin && (
                 <Button
                   onClick={() => setIsAddDialogOpen(true)}
-                  className="gap-2 bg-blue-500 hover:bg-blue-600 w-full sm:w-auto"
+                  className="gap-2 bg-blue-500 hover:bg-blue-600 w-full sm:w-auto py-2.5 sm:py-2 text-base sm:text-sm"
                   size="sm"
                 >
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden xs:inline">Добавить заявку</span>
-                  <span className="xs:hidden">Добавить</span>
+                  <Plus className="h-5 w-5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Добавить заявку</span>
+                  <span className="sm:hidden">Добавить</span>
                 </Button>
               )}
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 sm:px-6">
           {isLoading ? (
             renderSkeleton()
           ) : (
             <div className="space-y-4">
-              <div className="relative mb-4">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <div className="relative mb-6">
+                <Search className="absolute left-3 top-3 h-5 w-5 sm:h-4 sm:w-4 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="Поиск по заявкам..."
-                  className="pl-8"
+                  className="pl-10 sm:pl-8 h-12 sm:h-10 text-base sm:text-sm"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -580,94 +584,103 @@ export const ApplicationBlock = ({
                       filteredApplications.map((application: any) => (
                         <Card
                           key={application.id}
-                          className="cursor-pointer hover:shadow-md transition-shadow"
+                          className="cursor-pointer hover:shadow-lg transition-all duration-200 border border-gray-200"
                           onClick={() =>
                             handleRowClick(application.id.toString())
                           }
                         >
-                          <CardContent className="p-4">
-                            <div className="space-y-3">
+                          <CardContent className="p-5">
+                            <div className="space-y-4">
                               {/* Header */}
-                              <div className="flex items-center justify-between">
-                                <h3 className="font-medium text-sm">
-                                  {application.name || "Без названия"}
-                                </h3>
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-semibold text-base leading-tight">
+                                    {application.name || "Без названия"}
+                                  </h3>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    ID: {application.id}
+                                  </p>
+                                </div>
                                 {isAdmin && (
-                                  <div className="flex gap-1">
+                                  <div className="flex gap-2">
                                     <Button
                                       variant="outline"
                                       size="icon"
-                                      className="h-7 w-7"
+                                      className="h-9 w-9"
                                       onClick={(e) =>
                                         handleEditApplication(application, e)
                                       }
                                     >
-                                      <Pencil className="h-3 w-3" />
+                                      <Pencil className="h-4 w-4" />
                                     </Button>
                                     <Button
                                       variant="destructive"
                                       size="icon"
-                                      className="h-7 w-7"
+                                      className="h-9 w-9"
                                       onClick={(e) =>
                                         handleDeleteClick(application, e)
                                       }
                                     >
-                                      <Trash2 className="h-3 w-3" />
+                                      <Trash2 className="h-4 w-4" />
                                     </Button>
                                   </div>
                                 )}
                               </div>
 
                               {/* Main Info */}
-                              <div className="grid grid-cols-2 gap-3 text-sm">
-                                <div className="flex items-center gap-2">
-                                  <Package className="h-4 w-4 text-muted-foreground" />
-                                  <span className="text-muted-foreground">
-                                    Объем:
-                                  </span>
-                                </div>
-                                <div className="font-medium">
-                                  {application.volume
-                                    ? formatNumber(application.volume)
-                                    : 0}{" "}
-                                  т
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                                  <div className="flex items-center gap-2">
+                                    <Package className="h-5 w-5 text-primary" />
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                      Объем:
+                                    </span>
+                                  </div>
+                                  <div className="font-semibold text-base">
+                                    {application.volume
+                                      ? formatNumber(application.volume)
+                                      : 0}{" "}
+                                    т
+                                  </div>
                                 </div>
 
-                                <div className="flex items-center gap-2">
-                                  <span className="text-muted-foreground">
+                                <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                                  <span className="text-sm font-medium text-muted-foreground">
                                     Культура:
                                   </span>
-                                </div>
-                                <div>
                                   <Badge
                                     variant="outline"
-                                    className="bg-green-50 text-green-700 text-xs"
+                                    className="bg-green-50 text-green-700 text-sm px-3 py-1"
                                   >
                                     {getCultureName(application.culture) ||
                                       "Не указана"}
                                   </Badge>
                                 </div>
 
-                                <div className="flex items-center gap-2">
-                                  <DollarSign className="h-4 w-4 text-green-500" />
-                                  <span className="text-muted-foreground">
-                                    Цена:
-                                  </span>
-                                </div>
-                                <div className="font-medium">
-                                  {application.price_per_ton
-                                    ? formatCurrency(application.price_per_ton)
-                                    : 0}
+                                <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                                  <div className="flex items-center gap-2">
+                                    <DollarSign className="h-5 w-5 text-green-500" />
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                      Цена за тонну:
+                                    </span>
+                                  </div>
+                                  <div className="font-semibold text-base">
+                                    {application.price_per_ton
+                                      ? formatCurrency(
+                                          application.price_per_ton
+                                        )
+                                      : 0}
+                                  </div>
                                 </div>
                               </div>
 
                               {/* Total Amount */}
-                              <div className="bg-green-50 rounded-lg p-3">
+                              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-green-700 font-medium">
+                                  <span className="text-green-700 font-semibold text-base">
                                     Общая сумма:
                                   </span>
-                                  <div className="text-green-700 font-medium">
+                                  <div className="text-green-700 font-bold text-lg">
                                     {application.total_amount
                                       ? formatCurrency(application.total_amount)
                                       : 0}{" "}
@@ -679,24 +692,30 @@ export const ApplicationBlock = ({
                               </div>
 
                               {/* Additional Info */}
-                              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                <div className="flex items-center gap-3">
-                                  <div className="flex items-center gap-1">
-                                    <FileText className="h-4 w-4 text-blue-500" />
-                                    <span>
+                              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                <div className="flex items-center gap-4">
+                                  <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg">
+                                    <FileText className="h-5 w-5 text-blue-500" />
+                                    <span className="font-medium text-blue-700">
                                       {application.files?.length || 0}
                                     </span>
+                                    <span className="text-sm text-blue-600">
+                                      док.
+                                    </span>
                                   </div>
-                                  <div className="flex items-center gap-1">
-                                    <TrainFront className="h-4 w-4 text-amber-500" />
-                                    <span>
+                                  <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 rounded-lg">
+                                    <TrainFront className="h-5 w-5 text-amber-500" />
+                                    <span className="font-medium text-amber-700">
                                       {application.wagons?.length || 0}
+                                    </span>
+                                    <span className="text-sm text-amber-600">
+                                      ваг.
                                     </span>
                                   </div>
                                 </div>
                                 <Badge
                                   variant="outline"
-                                  className="bg-blue-50 text-blue-700 text-xs"
+                                  className="bg-blue-50 text-blue-700 text-sm px-3 py-1 font-medium"
                                 >
                                   {application.currency ||
                                     application.contract?.currency ||
@@ -708,35 +727,43 @@ export const ApplicationBlock = ({
                         </Card>
                       ))
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="flex flex-col items-center justify-center py-16 text-center px-4">
                         {searchTerm ? (
                           <>
-                            <Search className="h-8 w-8 text-muted-foreground mb-2" />
-                            <p className="text-muted-foreground mb-4">
+                            <div className="p-4 bg-gray-50 rounded-full mb-4">
+                              <Search className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                            <h3 className="font-semibold text-lg mb-2">
+                              Ничего не найдено
+                            </h3>
+                            <p className="text-muted-foreground mb-6 text-base">
                               Заявки не найдены по запросу "{searchTerm}"
                             </p>
                             <Button
                               variant="outline"
-                              size="sm"
                               onClick={() => setSearchTerm("")}
+                              className="py-2.5 px-6 text-base"
                             >
                               Сбросить поиск
                             </Button>
                           </>
                         ) : (
                           <>
-                            <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                            <p className="text-muted-foreground mb-4">
-                              Заявки не найдены
+                            <div className="p-4 bg-blue-50 rounded-full mb-4">
+                              <FileText className="h-8 w-8 text-blue-500" />
+                            </div>
+                            <h3 className="font-semibold text-lg mb-2">
+                              Нет заявок
+                            </h3>
+                            <p className="text-muted-foreground mb-6 text-base">
+                              Заявки по данному договору не найдены
                             </p>
                             {isAdmin && (
                               <Button
-                                variant="outline"
-                                size="sm"
                                 onClick={() => setIsAddDialogOpen(true)}
+                                className="gap-2 py-2.5 px-6 text-base bg-blue-500 hover:bg-blue-600"
                               >
-                                <Plus className="h-4 w-4 mr-1" /> Добавить
-                                заявку
+                                <Plus className="h-5 w-5" /> Добавить заявку
                               </Button>
                             )}
                           </>

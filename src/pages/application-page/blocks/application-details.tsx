@@ -630,47 +630,61 @@ export const ApplicationDetail = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-3 sm:px-0">
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Назад к списку заявок
+        <Button
+          variant="outline"
+          onClick={onBack}
+          className="w-full sm:w-auto py-3 sm:py-2 text-base sm:text-sm gap-3 sm:gap-2"
+        >
+          <ArrowLeft className="h-5 w-5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Назад к списку заявок</span>
+          <span className="sm:hidden">Назад</span>
         </Button>
       </div>
       <Card className="overflow-hidden border-white-100 shadow-md">
-        <CardHeader className="pb-2 bg-gradient-to-r from-white-50 to-white-100">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-white-100 rounded-full">
-              <FileText className="h-6 w-6 text-white-500" />
+        <CardHeader className="pb-3 px-4 sm:px-6 sm:pb-2 bg-gradient-to-r from-white-50 to-white-100">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 sm:p-2 bg-white-100 rounded-full flex-shrink-0">
+              <FileText className="h-6 w-6 sm:h-6 sm:w-6 text-white-500" />
             </div>
-            <div>
-              <CardTitle className="text-xl">Заявка по договору</CardTitle>
-              <CardDescription className="flex items-center gap-1 mt-1">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                {application?.created_at
-                  ? formatDate(application?.created_at)
-                  : "Дата не указана"}
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-xl sm:text-xl leading-tight">
+                Заявка по договору
+              </CardTitle>
+              <CardDescription className="flex items-center gap-2 mt-2">
+                <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-sm">
+                  {application?.created_at
+                    ? formatDate(application?.created_at)
+                    : "Дата не указана"}
+                </span>
               </CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="flex items-start space-x-3">
-              <Package className="h-5 w-5 text-gray-500 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-gray-500">Объем</p>
-                <p className="font-medium">
+        <CardContent className="pt-4 px-4 sm:px-6 sm:pt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6">
+            <div className="flex items-start space-x-3 p-3 sm:p-0 bg-gray-50 sm:bg-transparent rounded-lg sm:rounded-none">
+              <Package className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground mb-1">
+                  Объем
+                </p>
+                <p className="font-semibold text-base">
                   {application?.volume ? formatNumber(application.volume) : 0}{" "}
-                  тонн
+                  <span className="hidden sm:inline">тонн</span>
+                  <span className="sm:hidden">т</span>
                 </p>
               </div>
             </div>
-            <div className="flex items-start space-x-3">
-              <Package className="h-5 w-5 text-gray-500 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-gray-500">Культура</p>
-                <p className="font-medium">
+            <div className="flex items-start space-x-3 p-3 sm:p-0 bg-gray-50 sm:bg-transparent rounded-lg sm:rounded-none">
+              <Package className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground mb-1">
+                  Культура
+                </p>
+                <p className="font-semibold text-base break-words">
                   {application?.culture === "wheat"
                     ? "Пшеница мягкая 5 класса"
                     : application?.culture === "barley"
@@ -687,22 +701,25 @@ export const ApplicationDetail = ({
                 </p>
               </div>
             </div>
-            <div className="flex items-start space-x-3">
-              <DollarSign className="h-5 w-5 text-green-500 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Цена за тонну
+            <div className="flex items-start space-x-3 p-3 sm:p-0 bg-gray-50 sm:bg-transparent rounded-lg sm:rounded-none">
+              <DollarSign className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground mb-1">
+                  <span className="hidden sm:inline">Цена за тонну</span>
+                  <span className="sm:hidden">Цена</span>
                 </p>
-                <p className="font-medium text-green-600">
+                <p className="font-semibold text-base text-green-600">
                   {application.price_per_ton} {application.contract?.currency}
                 </p>
               </div>
             </div>
-            <div className="flex items-start space-x-3">
-              <DollarSign className="h-5 w-5 text-green-500 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-gray-500">Общая сумма</p>
-                <p className="font-medium ">
+            <div className="flex items-start space-x-3 p-3 sm:p-0 bg-gray-50 sm:bg-transparent rounded-lg sm:rounded-none">
+              <DollarSign className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground mb-1">
+                  Общая сумма
+                </p>
+                <p className="font-semibold text-base">
                   {application?.total_amount
                     ? formatCurrency(application.total_amount)
                     : 0}{" "}
@@ -715,91 +732,141 @@ export const ApplicationDetail = ({
           </div>
 
           {/* Payment Progress Bar */}
-          <div className="mt-4 p-4 bg-white-50 rounded-lg shadow-sm">
-            <div className="flex justify-between items-center mb-2">
+          <div className="mt-4 p-4 sm:p-4 bg-white-50 rounded-lg shadow-sm border border-white-200">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-2 mb-3">
               <div className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-white-500" />
-                <h3 className="font-medium">Статус оплаты</h3>
+                <CreditCard className="h-5 w-5 text-white-500 flex-shrink-0" />
+                <h3 className="font-semibold text-base sm:text-base">
+                  Статус оплаты
+                </h3>
               </div>
               {isAdmin && (
                 <Button
                   variant="outline"
-                  size="sm"
-                  className="gap-2 bg-white hover:bg-white-100"
+                  className="w-full sm:w-auto gap-2 bg-white hover:bg-white-100 py-2.5 sm:py-2 text-sm"
                   onClick={() => setIsInvoiceDialogOpen(true)}
                 >
                   <Plus className="h-4 w-4" />
-                  Добавить счет
+                  <span className="hidden sm:inline">Добавить счет</span>
+                  <span className="sm:hidden">Добавить</span>
                 </Button>
               )}
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 text-sm">
                 <span>
-                  Оплачено: {formatCurrency(paidAmount)}{" "}
+                  Оплачено:{" "}
+                  <span className="font-semibold">
+                    {formatCurrency(paidAmount)}
+                  </span>{" "}
                   {application?.currency ||
                     application?.contract?.currency ||
                     "₸"}
                 </span>
                 <span>
-                  Всего: {formatCurrency(totalAmount)}{" "}
+                  Всего:{" "}
+                  <span className="font-semibold">
+                    {formatCurrency(totalAmount)}
+                  </span>{" "}
                   {application?.currency ||
                     application?.contract?.currency ||
                     "₸"}
                 </span>
               </div>
-              <Progress value={paymentProgress} className="h-2" />
-              <div className="text-xs text-right text-muted-foreground">
-                {paymentProgress.toFixed(0)}% выполнено
+              <Progress value={paymentProgress} className="h-3 sm:h-2" />
+              <div className="flex justify-between items-center text-xs text-muted-foreground">
+                <span>{paymentProgress.toFixed(0)}% выполнено</span>
+                <span>
+                  Осталось: {formatCurrency(totalAmount - paidAmount)} ₸
+                </span>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="details">Детали заявки</TabsTrigger>
-          <TabsTrigger value="documents">Документы</TabsTrigger>
-          <TabsTrigger value="wagons-details">Детали вагонов</TabsTrigger>
-          <TabsTrigger value="wagons">Вагоны</TabsTrigger>
-          <TabsTrigger value="invoices">Счета</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto gap-1 p-1.5 sm:p-1 bg-muted/30">
+          <TabsTrigger
+            value="details"
+            className="text-xs sm:text-sm py-3 sm:py-2.5 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+          >
+            <span className="hidden sm:inline">Детали заявки</span>
+            <span className="sm:hidden">Детали</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="documents"
+            className="text-xs sm:text-sm py-3 sm:py-2.5 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+          >
+            <span className="hidden sm:inline">Документы</span>
+            <span className="sm:hidden">Документы</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="wagons-details"
+            className="text-xs sm:text-sm py-3 sm:py-2.5 px-1 sm:px-3 col-span-2 sm:col-span-1 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+          >
+            <span className="hidden sm:inline">Детали вагонов</span>
+            <span className="sm:hidden">Вагоны</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="wagons"
+            className="text-xs sm:text-sm py-3 sm:py-2.5 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+          >
+            <span className="hidden sm:inline">Вагоны</span>
+            <span className="sm:hidden">Реестр</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="invoices"
+            className="text-xs sm:text-sm py-3 sm:py-2.5 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+          >
+            <span className="hidden sm:inline">Счета</span>
+            <span className="sm:hidden">Счета</span>
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="details" className="mt-4">
+        <TabsContent value="details" className="mt-4 sm:mt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Информация о заявке</CardTitle>
-              <CardDescription>
+            <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+              <CardTitle className="text-lg sm:text-lg">
+                Информация о заявке
+              </CardTitle>
+              <CardDescription className="text-sm sm:text-sm mt-1">
                 Подробная информация о заявке и связанном договоре
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
+            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-6">
+                <div className="space-y-4 sm:space-y-4">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                    <h3 className="text-sm sm:text-sm font-semibold text-foreground mb-3">
                       Информация о заявке
                     </h3>
-                    <div className="bg-muted/50 p-4 rounded-md space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm">Дата</span>
-                        <span>
+                    <div className="bg-muted/50 p-4 sm:p-4 rounded-lg space-y-3 sm:space-y-3 border border-muted">
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
+                          Дата
+                        </span>
+                        <span className="text-xs sm:text-sm font-medium text-right">
                           {application?.created_at
                             ? formatDate(application?.created_at)
                             : "Не указана"}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Объем:</span>
-                        <span>
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
+                          Объем:
+                        </span>
+                        <span className="text-xs sm:text-sm font-medium text-right">
                           {application?.volume
                             ? formatNumber(application.volume)
                             : 0}{" "}
-                          тонн
+                          <span className="hidden sm:inline">тонн</span>
+                          <span className="sm:hidden">т</span>
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Культура:</span>
-                        <span>
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
+                          Культура:
+                        </span>
+                        <span className="text-xs sm:text-sm font-medium text-right max-w-[60%] break-words">
                           {application?.culture === "wheat"
                             ? "Пшеница"
                             : application?.culture === "barley"
@@ -815,26 +882,36 @@ export const ApplicationDetail = ({
                             : application?.culture || "Не указана"}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Цена за тонну:</span>
-                        <span>
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
+                          <span className="hidden sm:inline">
+                            Цена за тонну:
+                          </span>
+                          <span className="sm:hidden">Цена:</span>
+                        </span>
+                        <span className="text-xs sm:text-sm font-medium text-right">
                           {application?.price_per_ton
                             ? formatCurrency(application.price_per_ton)
                             : 0}{" "}
                           {application?.contract?.currency}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Валюта:</span>
-                        <span className="font-medium">
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
+                          Валюта:
+                        </span>
+                        <span className="text-xs sm:text-sm font-medium">
                           {application?.currency ||
                             application?.contract?.currency ||
                             "KZT"}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Общая сумма:</span>
-                        <span className="font-medium ">
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
+                          <span className="hidden sm:inline">Общая сумма:</span>
+                          <span className="sm:hidden">Сумма:</span>
+                        </span>
+                        <span className="text-xs sm:text-sm font-medium text-right">
                           {application?.total_amount
                             ? application.total_amount.toLocaleString()
                             : 0}{" "}
@@ -847,28 +924,38 @@ export const ApplicationDetail = ({
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-4 sm:space-y-4">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                    <h3 className="text-sm sm:text-sm font-semibold text-foreground mb-3">
                       Информация о договоре
                     </h3>
-                    <div className="bg-muted/50 p-4 rounded-md space-y-3">
-                      <div className="flex justify-between"></div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Номер договора:</span>
-                        <span>
+                    <div className="bg-muted/50 p-4 sm:p-4 rounded-lg space-y-3 sm:space-y-3 border border-muted">
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
+                          <span className="hidden sm:inline">
+                            Номер договора:
+                          </span>
+                          <span className="sm:hidden">Номер:</span>
+                        </span>
+                        <span className="text-xs sm:text-sm font-medium text-right max-w-[60%] break-words">
                           {application?.contract?.number || "Не указан"}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Культура:</span>
-                        <span>
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
+                          Культура:
+                        </span>
+                        <span className="text-xs sm:text-sm font-medium text-right max-w-[60%] break-words">
                           {application?.contract?.crop || "Не указана"}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Комментарий:</span>
-                        <span>{application?.comment || "Не указан"}</span>
+                      <div className="flex justify-between items-start">
+                        <span className="text-xs sm:text-sm text-muted-foreground">
+                          Комментарий:
+                        </span>
+                        <span className="text-xs sm:text-sm font-medium text-right max-w-[60%] break-words">
+                          {application?.comment || "Не указан"}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -883,78 +970,81 @@ export const ApplicationDetail = ({
             handleFileDownload={handleFileDownload}
           />
         </TabsContent>
-        <TabsContent value="documents" className="mt-4">
+        <TabsContent value="documents" className="mt-4 sm:mt-4">
           <Card>
-            <CardHeader className="pb-2 ">
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white-200 rounded-full">
-                    <FileText className="h-5 w-5 text-white-700" />
+            <CardHeader className="pb-3 px-4 sm:px-6 py-4 sm:py-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4 sm:gap-0">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="p-2 sm:p-2 bg-blue-100 rounded-full flex-shrink-0">
+                    <FileText className="h-5 w-5 sm:h-5 sm:w-5 text-blue-600" />
                   </div>
-                  <div>
-                    <CardTitle>Документы заявки</CardTitle>
-                    <CardDescription>
+                  <div className="min-w-0 flex-1">
+                    <CardTitle className="text-lg sm:text-lg truncate">
+                      Документы заявки
+                    </CardTitle>
+                    <CardDescription className="text-sm sm:text-sm mt-1">
                       Управление документами по заявке
                     </CardDescription>
                   </div>
                 </div>
                 {isAdmin && (
                   <Button
-                    className="gap-2 !bg-primary shadow-sm"
+                    className="gap-2 bg-primary hover:bg-primary/90 shadow-sm text-sm py-3 sm:py-2 px-4 w-full sm:w-auto flex-shrink-0"
                     onClick={() => setIsUploadDialogOpen(true)}
                   >
-                    <Upload className="h-4 w-4" />
-                    Загрузить документ
+                    <Upload className="h-4 w-4 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Загрузить документ</span>
+                    <span className="sm:hidden">Загрузить</span>
                   </Button>
                 )}
               </div>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               {application?.files && application.files.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-4">
                   {application.files.map((file: any, index: number) => (
                     <div
                       key={index}
-                      className="bg-white border border-white-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
+                      className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200"
                     >
-                      <div className="bg-white-50 p-3 border-b border-white-100 flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-white-600" />
-                          <span className="font-medium text-white-800  max-w-[180px]">
+                      <div className="bg-gray-50 p-3 sm:p-3 border-b border-gray-100 flex justify-between items-center">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <FileText className="h-4 w-4 sm:h-4 sm:w-4 text-blue-600 flex-shrink-0" />
+                          <span className="font-semibold text-gray-800 text-sm sm:text-sm truncate">
                             {file.name || `Документ ${index + 1}`}
                           </span>
                         </div>
                         {isAdmin && (
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 sm:gap-1 flex-shrink-0">
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0 text-blue-500 hover:bg-blue-50 rounded-full"
+                              className="h-8 w-8 sm:h-8 sm:w-8 p-0 text-blue-500 hover:bg-blue-50 rounded-full"
                               onClick={() => handleEditDocumentClick(file)}
                             >
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-4 w-4 sm:h-4 sm:w-4" />
                             </Button>
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 rounded-full"
+                              className="h-8 w-8 sm:h-8 sm:w-8 p-0 text-red-500 hover:bg-red-50 rounded-full"
                               onClick={() => handleDeleteDocumentClick(file)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 sm:h-4 sm:w-4" />
                             </Button>
                           </div>
                         )}
                       </div>
-                      <div className="p-4 space-y-3">
-                        <div className="flex justify-between items-center text-sm">
+                      <div className="p-4 sm:p-4 space-y-3 sm:space-y-3">
+                        <div className="flex justify-between items-center text-xs sm:text-sm">
                           <span className="text-muted-foreground">Номер:</span>
-                          <span className="font-medium">
+                          <span className="font-medium truncate max-w-[60%]">
                             {file.number || "—"}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center text-sm">
+                        <div className="flex justify-between items-center text-xs sm:text-sm">
                           <span className="text-muted-foreground">Дата:</span>
                           <span className="font-medium">
                             {file.date ? formatDate(file.date) : "—"}
@@ -962,8 +1052,7 @@ export const ApplicationDetail = ({
                         </div>
                         <Button
                           variant="outline"
-                          size="sm"
-                          className="w-full mt-2 gap-2 border-white-200 text-white-700 hover:bg-white-50"
+                          className="w-full mt-3 gap-2 border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 text-sm py-2.5 sm:py-2"
                           onClick={() => {
                             const filePath =
                               file.location || file.file || file.path || "";
@@ -973,43 +1062,50 @@ export const ApplicationDetail = ({
                             );
                           }}
                         >
-                          <Download className="h-4 w-4" />
-                          Скачать документ
+                          <Download className="h-4 w-4 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">
+                            Скачать документ
+                          </span>
+                          <span className="sm:hidden">Скачать</span>
                         </Button>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16 border rounded-md bg-white-50/50 border-white-100">
-                  <div className="bg-white-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                    <FileText className="h-8 w-8 text-white-600" />
+                <div className="text-center py-12 sm:py-16 border rounded-lg bg-gray-50/50 border-gray-200">
+                  <div className="bg-blue-100 rounded-full w-16 h-16 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-4 sm:mb-4">
+                    <FileText className="h-8 w-8 sm:h-8 sm:w-8 text-blue-600" />
                   </div>
-                  <h3 className="text-lg font-medium text-white-800 mb-2">
-                    Документы не найдены
+                  <h3 className="text-lg sm:text-lg font-semibold text-gray-800 mb-2">
+                    Нет документов
                   </h3>
-                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                  <p className="text-muted-foreground mb-6 sm:mb-6 max-w-md mx-auto text-base sm:text-base px-4">
                     К этой заявке еще не прикреплены документы. Добавьте первый
                     документ, чтобы начать работу.
                   </p>
                   {isAdmin && (
                     <Button
-                      variant="outline"
-                      className="gap-2 border-white-300 text-white-700 hover:bg-white-100"
+                      className="gap-2 bg-primary hover:bg-primary/90 text-sm py-3 px-6"
                       onClick={() => setIsUploadDialogOpen(true)}
                     >
-                      <Plus className="h-4 w-4" />
-                      Добавить первый документ
+                      <Plus className="h-4 w-4 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">
+                        Добавить первый документ
+                      </span>
+                      <span className="sm:hidden">Добавить документ</span>
                     </Button>
                   )}
                 </div>
               )}
             </CardContent>
             {application?.files && application.files.length > 0 && (
-              <CardFooter className="bg-white-50 border-t border-white-100 py-3 px-6">
-                <div className="flex items-center gap-2 text-sm text-white-700">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>Всего документов: {application.files.length}</span>
+              <CardFooter className="bg-gray-50 border-t border-gray-100 py-3 sm:py-3 px-4 sm:px-6">
+                <div className="flex items-center gap-2 sm:gap-2 text-sm sm:text-sm text-gray-700">
+                  <CheckCircle2 className="h-4 w-4 sm:h-4 sm:w-4 text-green-600" />
+                  <span className="font-medium">
+                    Всего документов: {application.files.length}
+                  </span>
                 </div>
               </CardFooter>
             )}
@@ -1023,75 +1119,112 @@ export const ApplicationDetail = ({
             onDeleteWagon={handleDeleteWagon}
           />
         </TabsContent>
-        <TabsContent value="invoices" className="mt-4">
+        <TabsContent value="invoices" className="mt-4 sm:mt-4">
           <Card>
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between w-full">
-                <div>
-                  <CardTitle>Счета</CardTitle>
-                  <CardDescription>
+            <CardHeader className="pb-3 px-4 sm:px-6 py-4 sm:py-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4 sm:gap-0">
+                <div className="min-w-0 flex-1">
+                  <CardTitle className="text-lg sm:text-lg">Счета</CardTitle>
+                  <CardDescription className="text-sm sm:text-sm mt-1">
                     Управление счетами по заявке
                   </CardDescription>
                 </div>
                 {isAdmin && (
                   <Button
-                    className="gap-2 bg-white-500 hover:bg-white-600"
+                    className="gap-2 bg-green-500 hover:bg-green-600 text-sm py-3 sm:py-2 px-4 w-full sm:w-auto flex-shrink-0"
                     onClick={() => setIsInvoiceDialogOpen(true)}
                   >
-                    <Receipt className="h-4 w-4" />
-                    Добавить счет
+                    <Receipt className="h-4 w-4 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Добавить счет</span>
+                    <span className="sm:hidden">Добавить</span>
                   </Button>
                 )}
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
               {isInvoicesLoading ? (
-                <div className="flex justify-center items-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-                  <span>Загрузка счетов...</span>
+                <div className="flex justify-center items-center py-6 sm:py-8">
+                  <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin text-primary mr-2" />
+                  <span className="text-sm sm:text-base">
+                    Загрузка счетов...
+                  </span>
                 </div>
               ) : invoices.length > 0 ? (
-                <div className="rounded-md border">
-                  <Table>
+                <div className="rounded-md border overflow-x-auto">
+                  <Table className="min-w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Название</TableHead>
-                        <TableHead>Дата</TableHead>
-                        <TableHead>Сумма</TableHead>
-                        <TableHead>Статус</TableHead>
-                        <TableHead>Описание</TableHead>
-                        <TableHead>Файл</TableHead>
+                        <TableHead className="text-xs sm:text-sm p-2 sm:p-4">
+                          Название
+                        </TableHead>
+                        <TableHead className="text-xs sm:text-sm p-2 sm:p-4 hidden sm:table-cell">
+                          Дата
+                        </TableHead>
+                        <TableHead className="text-xs sm:text-sm p-2 sm:p-4">
+                          Сумма
+                        </TableHead>
+                        <TableHead className="text-xs sm:text-sm p-2 sm:p-4 hidden md:table-cell">
+                          Статус
+                        </TableHead>
+                        <TableHead className="text-xs sm:text-sm p-2 sm:p-4 hidden lg:table-cell">
+                          Описание
+                        </TableHead>
+                        <TableHead className="text-xs sm:text-sm p-2 sm:p-4 hidden sm:table-cell">
+                          Файл
+                        </TableHead>
                         {isAdmin && (
-                          <TableHead className="text-right">Действия</TableHead>
+                          <TableHead className="text-right text-xs sm:text-sm p-2 sm:p-4">
+                            Действия
+                          </TableHead>
                         )}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {invoices.map((invoice: any) => (
                         <TableRow key={invoice.id}>
-                          <TableCell className="font-medium">
-                            {invoice.name || invoice.number}
+                          <TableCell className="font-medium text-xs sm:text-sm p-2 sm:p-4">
+                            <div className="max-w-[120px] sm:max-w-none truncate">
+                              {invoice.name || invoice.number}
+                            </div>
+                            <div className="sm:hidden text-xs text-muted-foreground mt-1">
+                              {invoice.date ? formatDate(invoice.date) : "—"}
+                            </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-xs sm:text-sm p-2 sm:p-4 hidden sm:table-cell">
                             {invoice.date ? formatDate(invoice.date) : "—"}
                           </TableCell>
-                          <TableCell>
-                            {invoice.amount?.toLocaleString()}{" "}
-                            {application?.currency ||
-                              application?.contract?.currency ||
-                              "₸"}
+                          <TableCell className="text-xs sm:text-sm p-2 sm:p-4">
+                            <div className="font-medium">
+                              {invoice.amount?.toLocaleString()}{" "}
+                              <span className="hidden sm:inline">
+                                {application?.currency ||
+                                  application?.contract?.currency ||
+                                  "₸"}
+                              </span>
+                              <span className="sm:hidden">₸</span>
+                            </div>
+                            <div className="md:hidden mt-1">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  invoice.status === "paid"
+                                    ? "bg-green-100 text-green-800 hover:bg-green-100 text-xs border-green-200"
+                                    : "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 text-xs border-yellow-200"
+                                }
+                              >
+                                {invoice.status === "paid"
+                                  ? "Оплачен"
+                                  : "Ожидает"}
+                              </Badge>
+                            </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-xs sm:text-sm p-2 sm:p-4 hidden md:table-cell">
                             <Badge
-                              variant={
-                                invoice.status === "paid"
-                                  ? "success"
-                                  : "outline"
-                              }
+                              variant="outline"
                               className={
                                 invoice.status === "paid"
-                                  ? "bg-green-100 text-green-800 hover:bg-green-100"
-                                  : "bg-white-100 text-white-800 hover:bg-white-100"
+                                  ? "bg-green-100 text-green-800 hover:bg-green-100 text-xs sm:text-sm border-green-200"
+                                  : "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 text-xs sm:text-sm border-yellow-200"
                               }
                             >
                               {invoice.status === "paid"
@@ -1099,13 +1232,17 @@ export const ApplicationDetail = ({
                                 : "Ожидает оплаты"}
                             </Badge>
                           </TableCell>
-                          <TableCell>{invoice.description || "—"}</TableCell>
-                          <TableCell>
+                          <TableCell className="text-xs sm:text-sm p-2 sm:p-4 hidden lg:table-cell">
+                            <div className="max-w-[100px] truncate">
+                              {invoice.description || "—"}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs sm:text-sm p-2 sm:p-4 hidden sm:table-cell">
                             {invoice.file_url && (
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="gap-1"
+                                className="gap-1 text-xs sm:text-sm p-1 sm:p-2"
                                 onClick={() => {
                                   const filePath =
                                     invoice.file_url ||
@@ -1122,31 +1259,33 @@ export const ApplicationDetail = ({
                                   );
                                 }}
                               >
-                                <Download className="h-4 w-4" />
-                                Скачать
+                                <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+                                <span className="hidden sm:inline">
+                                  Скачать
+                                </span>
                               </Button>
                             )}
                           </TableCell>
                           {isAdmin && (
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
+                            <TableCell className="text-right text-xs sm:text-sm p-2 sm:p-4">
+                              <div className="flex justify-end gap-1 sm:gap-2">
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  className="h-8 w-8"
+                                  className="h-6 w-6 sm:h-8 sm:w-8"
                                   onClick={() => handleEditInvoice(invoice)}
                                 >
-                                  <Pencil className="h-4 w-4" />
+                                  <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
                                 </Button>
                                 <Button
                                   variant="destructive"
                                   size="icon"
-                                  className="h-8 w-8"
+                                  className="h-6 w-6 sm:h-8 sm:w-8"
                                   onClick={() =>
                                     handleDeleteInvoiceClick(invoice)
                                   }
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                                 </Button>
                               </div>
                             </TableCell>
@@ -1157,39 +1296,61 @@ export const ApplicationDetail = ({
                   </Table>
                 </div>
               ) : (
-                <div className="text-center py-12 border rounded-md bg-muted/10">
-                  <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-muted-foreground">Счета не найдены</p>
+                <div className="text-center py-12 sm:py-12 border rounded-lg bg-gray-50/50 border-gray-200">
+                  <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                    <Receipt className="h-8 w-8 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                    Нет счетов
+                  </h3>
+                  <p className="text-muted-foreground text-base mb-6">
+                    По данной заявке еще не создано ни одного счета
+                  </p>
                   {isAdmin && (
                     <Button
-                      variant="outline"
-                      className="mt-4 gap-2"
+                      className="gap-2 bg-green-500 hover:bg-green-600 text-sm py-3 px-6"
                       onClick={() => setIsInvoiceDialogOpen(true)}
                     >
-                      <Plus className="h-4 w-4" />
-                      Добавить первый счет
+                      <Plus className="h-4 w-4 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">
+                        Добавить первый счет
+                      </span>
+                      <span className="sm:hidden">Добавить счет</span>
                     </Button>
                   )}
                 </div>
               )}
             </CardContent>
-            <CardFooter className="border-t pt-4">
+            <CardFooter className="border-t border-gray-100 pt-4 sm:pt-4 px-4 sm:px-6 pb-4 sm:pb-6 bg-gray-50/50">
               <div className="w-full">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">Статус оплаты:</span>
-                  <span className="text-sm">
-                    {paidAmount.toLocaleString()} /{" "}
-                    {totalAmount.toLocaleString()}{" "}
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 gap-2 sm:gap-0">
+                  <span className="text-sm sm:text-sm font-semibold text-gray-700">
+                    Статус оплаты:
+                  </span>
+                  <span className="text-sm sm:text-sm font-medium">
+                    <span className="text-green-600">
+                      {paidAmount.toLocaleString()}
+                    </span>{" "}
+                    /{" "}
+                    <span className="text-gray-600">
+                      {totalAmount.toLocaleString()}
+                    </span>{" "}
                     {application?.currency ||
                       application?.contract?.currency ||
                       "₸"}
                   </span>
                 </div>
-                <Progress value={paymentProgress} className="h-2" />
-                <div className="flex justify-between items-center mt-2 text-xs text-muted-foreground">
-                  <span>{paymentProgress.toFixed(0)}% выполнено</span>
-                  <span>
-                    Осталось: {(totalAmount - paidAmount).toLocaleString()}{" "}
+                <Progress value={paymentProgress} className="h-2.5 sm:h-2" />
+                <div className="flex justify-between items-center mt-2.5 sm:mt-2 text-sm text-muted-foreground">
+                  <span className="font-medium">
+                    {paymentProgress.toFixed(0)}% выполнено
+                  </span>
+                  <span className="text-right font-medium">
+                    <span className="hidden sm:inline">Осталось: </span>
+                    <span className="sm:hidden">Осталось: </span>
+                    <span className="text-orange-600">
+                      {(totalAmount - paidAmount).toLocaleString()}
+                    </span>{" "}
                     {application?.currency ||
                       application?.contract?.currency ||
                       "₸"}
@@ -1996,9 +2157,11 @@ export const ApplicationDetail = ({
                 if (!newShippingDoc.name) return;
 
                 // Create a simple object with just the required data
-                const documentData = {
+                const documentData: any = {
                   name: newShippingDoc.name,
                   applicationId: applicationId,
+                  files: [],
+                  filesInfo: [],
                 };
 
                 // Add optional fields if they exist

@@ -210,39 +210,39 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
 
   if (isDataLoading || isWagonsLoading) {
     return (
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="container mx-auto py-4 sm:py-6 px-2 sm:px-4 space-y-4 sm:space-y-6">
         <Card>
-          <CardHeader>
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-96" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <Skeleton className="h-6 sm:h-8 w-48 sm:w-64" />
+            <Skeleton className="h-3 sm:h-4 w-64 sm:w-96" />
           </CardHeader>
           <CardContent>
-            <Skeleton className="h-10 w-40" />
+            <Skeleton className="h-8 sm:h-10 w-32 sm:w-40" />
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-96" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <Skeleton className="h-6 sm:h-8 w-48 sm:w-64" />
+            <Skeleton className="h-3 sm:h-4 w-64 sm:w-96" />
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="border rounded-lg p-4">
-                <Skeleton className="h-64 w-full" />
+            <div className="space-y-3 sm:space-y-4">
+              <div className="border rounded-lg p-3 sm:p-4">
+                <Skeleton className="h-48 sm:h-64 w-full" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-96" />
+          <CardHeader className="pb-3 sm:pb-6">
+            <Skeleton className="h-6 sm:h-8 w-48 sm:w-64" />
+            <Skeleton className="h-3 sm:h-4 w-64 sm:w-96" />
           </CardHeader>
           <CardContent>
-            <div className="border rounded-lg p-4">
-              <Skeleton className="h-64 w-full" />
+            <div className="border rounded-lg p-3 sm:p-4">
+              <Skeleton className="h-48 sm:h-64 w-full" />
             </div>
           </CardContent>
         </Card>
@@ -252,22 +252,20 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
 
   if (isDataError || isWagonsError) {
     return (
-      <div className="container mx-auto py-6">
+      <div className="container mx-auto py-4 sm:py-6 px-2 sm:px-4">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Ошибка</AlertTitle>
-          <AlertDescription>
+          <AlertDescription className="text-sm">
             {isWagonsError
-              ? `Не удалось загрузить данные вагонов. ${
-                  wagonsError?.message || "Пожалуйста, попробуйте позже."
-                }`
-              : `Не удалось загрузить данные контракта. ${
-                  dataError?.message || "Пожалуйста, попробуйте позже."
-                }`}
+              ? `Не удалось загрузить данные вагонов.`
+              : `Не удалось загрузить данные контракта.`}
           </AlertDescription>
         </Alert>
         <div className="mt-4">
-          <Button onClick={() => handleRefetch()}>Попробовать снова</Button>
+          <Button onClick={() => handleRefetch()} className="w-full sm:w-auto">
+            Попробовать снова
+          </Button>
         </div>
       </div>
     );
@@ -275,11 +273,11 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
 
   if (!contractData) {
     return (
-      <div className="container mx-auto py-6">
+      <div className="container mx-auto py-4 sm:py-6 px-2 sm:px-4">
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Контракт не найден</AlertTitle>
-          <AlertDescription>
+          <AlertDescription className="text-sm">
             Не удалось найти данные контракта.
           </AlertDescription>
         </Alert>
@@ -289,42 +287,61 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
 
   return (
     <>
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="container mx-auto py-4 sm:py-6 px-2 sm:px-4 space-y-4 sm:space-y-6">
         <ContractHeader
           contractData={contractData}
           getCompanyName={getCompanyName}
           handleDownload={handleDownload}
         />
         <Card className="bg-blue-50 border-blue-100">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-blue-100 rounded-full">
-                <Package className="h-5 w-5 text-blue-600" />
+          <CardHeader className="pb-3 sm:pb-2">
+            <div className="flex items-start sm:items-center gap-3 sm:gap-2">
+              <div className="p-2 bg-blue-100 rounded-full flex-shrink-0">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               </div>
-              <div>
-                <CardTitle className="text-lg">Использование объема</CardTitle>
-                <CardDescription>
-                  Общий объем договора: {formatNumber(volumeStats.totalVolume)}{" "}
-                  тонн
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-base sm:text-lg">
+                  <span className="hidden sm:inline">Использование объема</span>
+                  <span className="sm:hidden">Объем</span>
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  <span className="hidden sm:inline">
+                    Общий объем договора:{" "}
+                    {formatNumber(volumeStats.totalVolume)} тонн
+                  </span>
+                  <span className="sm:hidden">
+                    Всего: {formatNumber(volumeStats.totalVolume)} т
+                  </span>
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="pt-1 sm:pt-4">
+            <div className="space-y-3 sm:space-y-4">
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span>
-                    Использовано: {formatNumber(volumeStats.usedVolume)} тонн
+                    <span className="hidden sm:inline">Использовано:</span>
+                    <span className="sm:hidden">Исп.:</span>{" "}
+                    {formatNumber(volumeStats.usedVolume)}
+                    <span className="hidden sm:inline"> тонн</span>
+                    <span className="sm:hidden"> т</span>
                   </span>
                   <span>
-                    Осталось: {formatNumber(volumeStats.remainingVolume)} тонн
+                    <span className="hidden sm:inline">Осталось:</span>
+                    <span className="sm:hidden">Ост.:</span>{" "}
+                    {formatNumber(volumeStats.remainingVolume)}
+                    <span className="hidden sm:inline"> тонн</span>
+                    <span className="sm:hidden"> т</span>
                   </span>
                 </div>
-                <Progress value={volumeStats.percentUsed} className="h-2.5" />
-                <div className="flex justify-between items-center text-xs text-muted-foreground">
+                <Progress
+                  value={volumeStats.percentUsed}
+                  className="h-2 sm:h-2.5"
+                />
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 sm:gap-0 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5">
-                    <BarChart3 className="h-3.5 w-3.5" />
+                    <BarChart3 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     <span>
                       {volumeStats.percentUsed.toFixed(1)}% использовано
                     </span>
@@ -338,9 +355,20 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           </CardContent>
         </Card>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="details">Детали договора</TabsTrigger>
-            <TabsTrigger value="applications">Заявки</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 h-auto">
+            <TabsTrigger
+              value="details"
+              className="text-xs sm:text-sm py-2 sm:py-2.5"
+            >
+              <span className="hidden sm:inline">Детали договора</span>
+              <span className="sm:hidden">Детали</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="applications"
+              className="text-xs sm:text-sm py-2 sm:py-2.5"
+            >
+              Заявки
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="details" className="mt-4">
             <WagonDetails
