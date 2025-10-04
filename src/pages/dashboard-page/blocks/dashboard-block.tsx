@@ -1117,7 +1117,7 @@ export const DashboardBlock = () => {
                   </div>
                 ) : volumeByMonth.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
+                    <ComposedChart
                       data={volumeByMonth}
                       margin={{
                         top: 20,
@@ -1126,40 +1126,77 @@ export const DashboardBlock = () => {
                         bottom: 60,
                       }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <defs>
+                        <linearGradient
+                          id="totalVolumeGradient"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#3b82f6"
+                            stopOpacity={0.8}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#3b82f6"
+                            stopOpacity={0.1}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis
                         dataKey="name"
                         angle={-45}
                         textAnchor="end"
                         height={60}
+                        tick={{ fontSize: 12 }}
+                        stroke="#64748b"
                       />
                       <YAxis
                         tickFormatter={(value) => value.toLocaleString()}
+                        tick={{ fontSize: 12 }}
+                        stroke="#64748b"
                       />
                       <Tooltip
-                        formatter={(value) => [
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                        }}
+                        formatter={(value, name) => [
                           `${Number(value).toLocaleString()} т`,
-                          "",
+                          name === "totalVolume"
+                            ? "Общий объем"
+                            : "Отгруженный объем",
                         ]}
+                        labelFormatter={(label) => `Период: ${label}`}
                       />
-                      <Legend />
+                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
                       <Area
                         type="monotone"
                         dataKey="totalVolume"
                         name="Общий объем"
-                        stroke="#8884d8"
-                        fill="#8884d8"
-                        fillOpacity={0.3}
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        fill="url(#totalVolumeGradient)"
+                        dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, fill: "#3b82f6" }}
                       />
-                      <Area
+                      <Line
                         type="monotone"
                         dataKey="shippedVolume"
                         name="Отгруженный объем"
-                        stroke="#82ca9d"
-                        fill="#82ca9d"
-                        fillOpacity={0.3}
+                        stroke="#10b981"
+                        strokeWidth={3}
+                        dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, fill: "#10b981" }}
+                        strokeDasharray="5 5"
                       />
-                    </AreaChart>
+                    </ComposedChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-full w-full flex items-center justify-center text-muted-foreground">
@@ -1341,7 +1378,7 @@ export const DashboardBlock = () => {
                   </div>
                 ) : volumeByMonth.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
+                    <ComposedChart
                       data={volumeByMonth}
                       margin={{
                         top: 20,
@@ -1350,39 +1387,122 @@ export const DashboardBlock = () => {
                         bottom: 60,
                       }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <defs>
+                        <linearGradient
+                          id="totalVolumeBar"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#3b82f6"
+                            stopOpacity={0.9}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#3b82f6"
+                            stopOpacity={0.6}
+                          />
+                        </linearGradient>
+                        <linearGradient
+                          id="shippedVolumeBar"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#10b981"
+                            stopOpacity={0.9}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#10b981"
+                            stopOpacity={0.6}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis
                         dataKey="name"
                         angle={-45}
                         textAnchor="end"
                         height={60}
+                        tick={{ fontSize: 12 }}
+                        stroke="#64748b"
                       />
                       <YAxis
+                        yAxisId="volume"
+                        orientation="left"
                         tickFormatter={(value) => value.toLocaleString()}
+                        tick={{ fontSize: 12 }}
+                        stroke="#64748b"
+                        label={{
+                          value: "Объем (тонны)",
+                          angle: -90,
+                          position: "insideLeft",
+                        }}
+                      />
+                      <YAxis
+                        yAxisId="count"
+                        orientation="right"
+                        tick={{ fontSize: 12 }}
+                        stroke="#f59e0b"
+                        label={{
+                          value: "Количество контрактов",
+                          angle: 90,
+                          position: "insideRight",
+                        }}
                       />
                       <Tooltip
-                        formatter={(value) => [
-                          `${Number(value).toLocaleString()} т`,
-                          "",
-                        ]}
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                        }}
+                        formatter={(value, name) => {
+                          if (name === "contractCount") {
+                            return [`${value} шт.`, "Количество контрактов"];
+                          }
+                          return [
+                            `${Number(value).toLocaleString()} т`,
+                            name === "totalVolume"
+                              ? "Общий объем"
+                              : "Отгруженный объем",
+                          ];
+                        }}
+                        labelFormatter={(label) => `Период: ${label}`}
                       />
-                      <Legend />
+                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
                       <Bar
                         dataKey="totalVolume"
                         name="Общий объем"
-                        fill="#8884d8"
+                        fill="url(#totalVolumeBar)"
+                        yAxisId="volume"
+                        radius={[2, 2, 0, 0]}
                       />
                       <Bar
                         dataKey="shippedVolume"
                         name="Отгруженный объем"
-                        fill="#82ca9d"
+                        fill="url(#shippedVolumeBar)"
+                        yAxisId="volume"
+                        radius={[2, 2, 0, 0]}
                       />
-                      <Bar
+                      <Line
+                        type="monotone"
                         dataKey="contractCount"
                         name="Количество контрактов"
-                        fill="#ffc658"
+                        stroke="#f59e0b"
+                        strokeWidth={3}
+                        yAxisId="count"
+                        dot={{ fill: "#f59e0b", strokeWidth: 2, r: 5 }}
+                        activeDot={{ r: 7, fill: "#f59e0b" }}
                       />
-                    </BarChart>
+                    </ComposedChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-full w-full flex items-center justify-center text-muted-foreground">
@@ -1406,7 +1526,7 @@ export const DashboardBlock = () => {
                   </div>
                 ) : seasonalAnalysis.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
+                    <ComposedChart
                       data={seasonalAnalysis}
                       margin={{
                         top: 20,
@@ -1415,40 +1535,82 @@ export const DashboardBlock = () => {
                         bottom: 60,
                       }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <defs>
+                        <linearGradient
+                          id="seasonalTotalGradient"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#6366f1"
+                            stopOpacity={0.8}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#6366f1"
+                            stopOpacity={0.1}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis
                         dataKey="name"
                         angle={-45}
                         textAnchor="end"
                         height={60}
+                        tick={{ fontSize: 12 }}
+                        stroke="#64748b"
                       />
                       <YAxis
                         tickFormatter={(value) => value.toLocaleString()}
+                        tick={{ fontSize: 12 }}
+                        stroke="#64748b"
+                        label={{
+                          value: "Объем (тонны)",
+                          angle: -90,
+                          position: "insideLeft",
+                        }}
                       />
                       <Tooltip
-                        formatter={(value) => [
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                        }}
+                        formatter={(value, name) => [
                           `${Number(value).toLocaleString()} т`,
-                          "",
+                          name === "totalVolume"
+                            ? "Общий объем"
+                            : "Отгруженный объем",
                         ]}
+                        labelFormatter={(label) => `Квартал: ${label}`}
                       />
-                      <Legend />
+                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
                       <Area
                         type="monotone"
                         dataKey="totalVolume"
                         name="Общий объем"
-                        stroke="#8884d8"
-                        fill="#8884d8"
-                        fillOpacity={0.3}
+                        stroke="#6366f1"
+                        strokeWidth={2}
+                        fill="url(#seasonalTotalGradient)"
+                        dot={{ fill: "#6366f1", strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, fill: "#6366f1" }}
                       />
-                      <Area
+                      <Line
                         type="monotone"
                         dataKey="shippedVolume"
                         name="Отгруженный объем"
-                        stroke="#82ca9d"
-                        fill="#82ca9d"
-                        fillOpacity={0.3}
+                        stroke="#059669"
+                        strokeWidth={3}
+                        dot={{ fill: "#059669", strokeWidth: 2, r: 5 }}
+                        activeDot={{ r: 7, fill: "#059669" }}
+                        strokeDasharray="8 4"
                       />
-                    </AreaChart>
+                    </ComposedChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-full w-full flex items-center justify-center text-muted-foreground">
