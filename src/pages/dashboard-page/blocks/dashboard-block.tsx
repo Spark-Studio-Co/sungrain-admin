@@ -576,26 +576,31 @@ export const DashboardBlock = () => {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+    <div className="w-full max-w-none mx-auto px-4 sm:px-6 lg:px-12 py-6 sm:py-8 lg:py-12 space-y-6 sm:space-y-8 lg:space-y-12 relative min-h-screen overflow-x-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50/50 via-white to-blue-50/30 -z-20"></div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <div className="space-y-1">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
             Панель управления
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Расширенная аналитика контрактов и отгрузок
           </p>
         </div>
-        <Button asChild>
-          <Link to="/admin/contracts">
-            Все контракты
+        <Button asChild className="w-full sm:w-auto">
+          <Link
+            to="/admin/contracts"
+            className="flex items-center justify-center"
+          >
+            <span className="sm:hidden">Контракты</span>
+            <span className="hidden sm:inline">Все контракты</span>
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
       </div>
 
       {/* Key Performance Indicators */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -907,44 +912,129 @@ export const DashboardBlock = () => {
       </div>
 
       {/* Main Dashboard Tabs */}
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-7 w-full">
-          <TabsTrigger value="overview">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Обзор
-          </TabsTrigger>
-          <TabsTrigger value="time">
-            <Calendar className="h-4 w-4 mr-2" />
-            Временной анализ
-          </TabsTrigger>
-          <TabsTrigger value="geo">
-            <Map className="h-4 w-4 mr-2" />
-            География
-          </TabsTrigger>
-          <TabsTrigger value="crops">
-            <Warehouse className="h-4 w-4 mr-2" />
-            Культуры
-          </TabsTrigger>
-          <TabsTrigger value="companies">
-            <Building className="h-4 w-4 mr-2" />
-            Компании
-          </TabsTrigger>
-          <TabsTrigger value="transport">
-            <Truck className="h-4 w-4 mr-2" />
-            Транспорт
-          </TabsTrigger>
-          <TabsTrigger value="financial">
-            <DollarSign className="h-4 w-4 mr-2" />
-            Финансы
-          </TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="overview" className="space-y-6">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 via-purple-50/30 to-pink-50/50 rounded-xl sm:rounded-2xl -z-10"></div>
+
+          {/* Mobile: Compact grid layout with 2 columns */}
+          <div className="sm:hidden">
+            <TabsList className="grid grid-cols-2 gap-2 w-full h-auto p-2 bg-white/80 backdrop-blur-sm border-2 border-slate-200/60 rounded-xl shadow-lg">
+              <TabsTrigger
+                value="overview"
+                className="flex flex-col items-center justify-center gap-1 h-16 px-2 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 font-medium text-xs"
+              >
+                <BarChart3 className="h-5 w-5" />
+                <span>Обзор</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="time"
+                className="flex flex-col items-center justify-center gap-1 h-16 px-2 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-green-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-green-500/25 font-medium text-xs"
+              >
+                <Calendar className="h-5 w-5" />
+                <span>Время</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="geo"
+                className="flex flex-col items-center justify-center gap-1 h-16 px-2 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 font-medium text-xs"
+              >
+                <Map className="h-5 w-5" />
+                <span>География</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="crops"
+                className="flex flex-col items-center justify-center gap-1 h-16 px-2 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/25 font-medium text-xs"
+              >
+                <Warehouse className="h-5 w-5" />
+                <span>Культуры</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="companies"
+                className="flex flex-col items-center justify-center gap-1 h-16 px-2 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-500/25 font-medium text-xs"
+              >
+                <Building className="h-5 w-5" />
+                <span>Компании</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="transport"
+                className="flex flex-col items-center justify-center gap-1 h-16 px-2 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/25 font-medium text-xs"
+              >
+                <Truck className="h-5 w-5" />
+                <span>Транспорт</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="financial"
+                className="flex flex-col items-center justify-center gap-1 h-16 px-2 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 font-medium text-xs col-span-1"
+              >
+                <DollarSign className="h-5 w-5" />
+                <span>Финансы</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* Desktop: Grid layout */}
+          <TabsList className="hidden sm:grid grid-cols-4 md:grid-cols-5 lg:grid-cols-7 w-full h-16 p-2 bg-white/80 backdrop-blur-sm border-2 border-slate-200/60 rounded-2xl shadow-lg">
+            <TabsTrigger
+              value="overview"
+              className="flex flex-row items-center justify-center gap-2 h-12 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/25 hover:scale-105 font-medium text-sm"
+            >
+              <BarChart3 className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span>Обзор</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="time"
+              className="flex flex-row items-center justify-center gap-2 h-12 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-green-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-green-500/25 hover:scale-105 font-medium text-sm"
+            >
+              <Calendar className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span>Время</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="geo"
+              className="flex flex-row items-center justify-center gap-2 h-12 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/25 hover:scale-105 font-medium text-sm"
+            >
+              <Map className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span>География</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="crops"
+              className="flex flex-row items-center justify-center gap-2 h-12 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-amber-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/25 hover:scale-105 font-medium text-sm"
+            >
+              <Warehouse className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span>Культуры</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="companies"
+              className="flex flex-row items-center justify-center gap-2 h-12 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-500/25 hover:scale-105 font-medium text-sm"
+            >
+              <Building className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span>Компании</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="transport"
+              className="flex flex-row items-center justify-center gap-2 h-12 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-orange-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/25 hover:scale-105 font-medium text-sm"
+            >
+              <Truck className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span>Транспорт</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="financial"
+              className="flex flex-row items-center justify-center gap-2 h-12 rounded-xl transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 hover:scale-105 font-medium text-sm"
+            >
+              <DollarSign className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
+              <span>Финансы</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Последние контракты</CardTitle>
+        <TabsContent value="overview" className="space-y-6 relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-transparent to-blue-50/20 rounded-3xl -z-10"></div>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="bg-gradient-to-br from-white to-slate-50/50 border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent flex items-center gap-1 sm:gap-2">
+                  <span className="text-sm sm:text-base">📄</span> Последние
+                  контракты
+                </CardTitle>
                 <CardDescription>
                   Обзор недавно созданных и активных контрактов
                 </CardDescription>
@@ -961,74 +1051,104 @@ export const DashboardBlock = () => {
                     </div>
                   </Alert>
                 )}
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>№ Контракта</TableHead>
-                      <TableHead>Культура</TableHead>
-                      <TableHead>Объем (т)</TableHead>
-                      <TableHead>Выполнение</TableHead>
-                      <TableHead className="text-right">Действия</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      Array(5)
-                        .fill(0)
-                        .map((_, index) => (
-                          <TableRow key={`skeleton-${index}`}>
-                            {Array(5)
-                              .fill(0)
-                              .map((_, cellIndex) => (
-                                <TableCell key={`cell-${index}-${cellIndex}`}>
-                                  <Skeleton className="h-6 w-full" />
-                                </TableCell>
-                              ))}
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs sm:text-sm">
+                          № Контракта
+                        </TableHead>
+                        <TableHead className="text-xs sm:text-sm hidden sm:table-cell">
+                          Культура
+                        </TableHead>
+                        <TableHead className="text-xs sm:text-sm">
+                          Объем (т)
+                        </TableHead>
+                        <TableHead className="text-xs sm:text-sm hidden md:table-cell">
+                          Выполнение
+                        </TableHead>
+                        <TableHead className="text-xs sm:text-sm text-right hidden lg:table-cell">
+                          Действия
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        Array(5)
+                          .fill(0)
+                          .map((_, index) => (
+                            <TableRow key={`skeleton-${index}`}>
+                              {Array(5)
+                                .fill(0)
+                                .map((_, cellIndex) => (
+                                  <TableCell key={`cell-${index}-${cellIndex}`}>
+                                    <Skeleton className="h-6 w-full" />
+                                  </TableCell>
+                                ))}
+                            </TableRow>
+                          ))
+                      ) : recentContracts.length > 0 ? (
+                        recentContracts.slice(0, 5).map((contract: any) => (
+                          <TableRow key={contract.id}>
+                            <TableCell className="font-medium text-xs sm:text-sm">
+                              <div className="flex flex-col">
+                                <span>{contract.number}</span>
+                                <span className="sm:hidden text-xs text-muted-foreground">
+                                  {contract.crop}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell text-xs sm:text-sm">
+                              {contract.crop}
+                            </TableCell>
+                            <TableCell className="text-xs sm:text-sm">
+                              <div className="flex flex-col">
+                                <span>{contract.volume.toLocaleString()}</span>
+                                <div className="sm:hidden flex items-center gap-1 mt-1">
+                                  <Progress
+                                    value={contract.fulfillmentPercentage}
+                                    className="h-1 w-12"
+                                  />
+                                  <span className="text-xs">
+                                    {contract.fulfillmentPercentage}%
+                                  </span>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              <div className="flex items-center gap-2">
+                                <Progress
+                                  value={contract.fulfillmentPercentage}
+                                  className="h-2 w-16"
+                                />
+                                <span className="text-xs">
+                                  {contract.fulfillmentPercentage}%
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right hidden lg:table-cell">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  navigate(`/admin/contracts/${contract.id}`)
+                                }
+                              >
+                                Подробнее
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         ))
-                    ) : recentContracts.length > 0 ? (
-                      recentContracts.slice(0, 5).map((contract: any) => (
-                        <TableRow key={contract.id}>
-                          <TableCell className="font-medium">
-                            {contract.number}
-                          </TableCell>
-                          <TableCell>{contract.crop}</TableCell>
-                          <TableCell>
-                            {contract.volume.toLocaleString()}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Progress
-                                value={contract.fulfillmentPercentage}
-                                className="h-2 w-16"
-                              />
-                              <span className="text-xs">
-                                {contract.fulfillmentPercentage}%
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                navigate(`/admin/contracts/${contract.id}`)
-                              }
-                            >
-                              Подробнее
-                            </Button>
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-4">
+                            Контракты не найдены
                           </TableCell>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-4">
-                          Контракты не найдены
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
               <CardFooter>
                 <Button variant="outline" size="sm" className="ml-auto" asChild>
@@ -1040,14 +1160,20 @@ export const DashboardBlock = () => {
               </CardFooter>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Распределение объемов по культурам</CardTitle>
-                <CardDescription>
+            <Card className="bg-gradient-to-br from-white to-green-50/30 border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent flex items-center gap-1 sm:gap-2">
+                  <span className="text-sm sm:text-base">🌾</span>{" "}
+                  <span className="hidden sm:inline">
+                    Распределение объемов по культурам
+                  </span>
+                  <span className="sm:hidden">Объемы по культурам</span>
+                </CardTitle>
+                <CardDescription className="text-slate-600">
                   Соотношение объемов по типам культур
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-80">
+              <CardContent className="h-64 sm:h-80 p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -1059,17 +1185,20 @@ export const DashboardBlock = () => {
                         data={cropAnalysis}
                         cx="50%"
                         cy="50%"
-                        labelLine={true}
-                        outerRadius={80}
+                        labelLine={window.innerWidth >= 640}
+                        outerRadius={window.innerWidth < 640 ? 60 : 80}
                         fill="#8884d8"
                         dataKey="totalVolume"
                         nameKey="crop"
-                        label={({ name, percent }) =>
-                          `${
-                            percent > 0.05
-                              ? `${(percent * 100).toFixed(0)}%`
-                              : ""
-                          }`
+                        label={
+                          window.innerWidth < 640
+                            ? false
+                            : ({ name, percent }) =>
+                                `${
+                                  percent > 0.05
+                                    ? `${(percent * 100).toFixed(0)}%`
+                                    : ""
+                                }`
                         }
                       >
                         {cropAnalysis.map((entry, index) => (
@@ -1077,15 +1206,35 @@ export const DashboardBlock = () => {
                         ))}
                       </Pie>
                       <Tooltip
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          fontSize: window.innerWidth < 640 ? "12px" : "14px",
+                          maxWidth: window.innerWidth < 640 ? "200px" : "300px",
+                        }}
                         formatter={(value) => [
                           `${Number(value).toLocaleString()} т`,
                           "Объем",
                         ]}
-                        labelFormatter={(name) => `Культура: ${name}`}
+                        labelFormatter={(name) =>
+                          window.innerWidth < 640 ? name : `Культура: ${name}`
+                        }
                       />
                       <Legend
+                        wrapperStyle={{
+                          fontSize: window.innerWidth < 640 ? "11px" : "14px",
+                          paddingTop: "10px",
+                        }}
+                        iconSize={window.innerWidth < 640 ? 10 : 18}
                         formatter={(value, entry) => {
                           const { payload } = entry;
+                          if (window.innerWidth < 640) {
+                            return `${payload.crop}: ${(
+                              Number(payload.totalVolume) / 1000
+                            ).toFixed(0)}k т`;
+                          }
                           return `${payload.crop}: ${Number(
                             payload.totalVolume
                           ).toLocaleString()} т`;
@@ -1102,15 +1251,17 @@ export const DashboardBlock = () => {
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Динамика объемов по месяцам</CardTitle>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="bg-gradient-to-br from-white to-blue-50/30 border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent flex items-center gap-2">
+                  📈 Динамика объемов по месяцам
+                </CardTitle>
                 <CardDescription>
                   Изменение объемов контрактов во времени
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-80">
+              <CardContent className="h-64 sm:h-80 p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -1121,9 +1272,9 @@ export const DashboardBlock = () => {
                       data={volumeByMonth}
                       margin={{
                         top: 20,
-                        right: 30,
-                        left: 20,
-                        bottom: 60,
+                        right: window.innerWidth < 640 ? 10 : 30,
+                        left: window.innerWidth < 640 ? 5 : 20,
+                        bottom: window.innerWidth < 640 ? 40 : 60,
                       }}
                     >
                       <defs>
@@ -1146,19 +1297,32 @@ export const DashboardBlock = () => {
                           />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e2e8f0"
+                        opacity={0.6}
+                      />
                       <XAxis
                         dataKey="name"
-                        angle={-45}
+                        angle={window.innerWidth < 640 ? -60 : -45}
                         textAnchor="end"
-                        height={60}
-                        tick={{ fontSize: 12 }}
+                        height={window.innerWidth < 640 ? 40 : 60}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
                         stroke="#64748b"
+                        interval={window.innerWidth < 640 ? 1 : 0}
                       />
                       <YAxis
-                        tickFormatter={(value) => value.toLocaleString()}
-                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => {
+                          if (window.innerWidth < 640) {
+                            return value > 1000
+                              ? `${(value / 1000).toFixed(0)}k`
+                              : value.toString();
+                          }
+                          return value.toLocaleString();
+                        }}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
                         stroke="#64748b"
+                        width={window.innerWidth < 640 ? 35 : 60}
                       />
                       <Tooltip
                         contentStyle={{
@@ -1166,35 +1330,65 @@ export const DashboardBlock = () => {
                           border: "1px solid #e2e8f0",
                           borderRadius: "8px",
                           boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          fontSize: window.innerWidth < 640 ? "12px" : "14px",
+                          maxWidth: window.innerWidth < 640 ? "180px" : "300px",
                         }}
                         formatter={(value, name) => [
                           `${Number(value).toLocaleString()} т`,
-                          name === "totalVolume"
+                          window.innerWidth < 640
+                            ? name === "totalVolume"
+                              ? "Общий"
+                              : "Отгружен"
+                            : name === "totalVolume"
                             ? "Общий объем"
                             : "Отгруженный объем",
                         ]}
-                        labelFormatter={(label) => `Период: ${label}`}
+                        labelFormatter={(label) =>
+                          window.innerWidth < 640 ? label : `Период: ${label}`
+                        }
                       />
-                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                      <Legend
+                        wrapperStyle={{
+                          paddingTop: "20px",
+                          fontSize: window.innerWidth < 640 ? "11px" : "14px",
+                        }}
+                        iconSize={window.innerWidth < 640 ? 10 : 18}
+                      />
                       <Area
                         type="monotone"
                         dataKey="totalVolume"
                         name="Общий объем"
                         stroke="#3b82f6"
-                        strokeWidth={2}
+                        strokeWidth={window.innerWidth < 640 ? 2 : 2}
                         fill="url(#totalVolumeGradient)"
-                        dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
-                        activeDot={{ r: 6, fill: "#3b82f6" }}
+                        dot={{
+                          fill: "#3b82f6",
+                          strokeWidth: 2,
+                          r: window.innerWidth < 640 ? 3 : 4,
+                        }}
+                        activeDot={{
+                          r: window.innerWidth < 640 ? 5 : 6,
+                          fill: "#3b82f6",
+                        }}
                       />
                       <Line
                         type="monotone"
                         dataKey="shippedVolume"
                         name="Отгруженный объем"
                         stroke="#10b981"
-                        strokeWidth={3}
-                        dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
-                        activeDot={{ r: 6, fill: "#10b981" }}
-                        strokeDasharray="5 5"
+                        strokeWidth={window.innerWidth < 640 ? 2 : 3}
+                        dot={{
+                          fill: "#10b981",
+                          strokeWidth: 2,
+                          r: window.innerWidth < 640 ? 3 : 4,
+                        }}
+                        activeDot={{
+                          r: window.innerWidth < 640 ? 5 : 6,
+                          fill: "#10b981",
+                        }}
+                        strokeDasharray={
+                          window.innerWidth < 640 ? "3 3" : "5 5"
+                        }
                       />
                     </ComposedChart>
                   </ResponsiveContainer>
@@ -1206,14 +1400,16 @@ export const DashboardBlock = () => {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Топ маршрутов</CardTitle>
-                <CardDescription>
+            <Card className="bg-gradient-to-br from-white to-purple-50/30 border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
+                  🛤️ Топ маршрутов
+                </CardTitle>
+                <CardDescription className="text-slate-600">
                   Наиболее активные маршруты по объему
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-80">
+              <CardContent className="h-64 sm:h-80 p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -1221,28 +1417,73 @@ export const DashboardBlock = () => {
                 ) : routeAnalysis.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={routeAnalysis.slice(0, 5)}
-                      layout="vertical"
+                      data={routeAnalysis.slice(
+                        0,
+                        window.innerWidth < 640 ? 3 : 5
+                      )}
+                      layout={
+                        window.innerWidth < 640 ? "horizontal" : "vertical"
+                      }
                       margin={{
                         top: 20,
-                        right: 30,
-                        left: 20,
-                        bottom: 20,
+                        right: window.innerWidth < 640 ? 10 : 30,
+                        left: window.innerWidth < 640 ? 5 : 20,
+                        bottom: window.innerWidth < 640 ? 5 : 20,
                       }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.6} />
                       <XAxis
-                        type="number"
-                        tickFormatter={(value) => value.toLocaleString()}
+                        type={window.innerWidth < 640 ? "category" : "number"}
+                        tickFormatter={
+                          window.innerWidth < 640
+                            ? undefined
+                            : (value) => {
+                                return value > 1000
+                                  ? `${(value / 1000).toFixed(0)}k`
+                                  : value.toString();
+                              }
+                        }
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                        dataKey={window.innerWidth < 640 ? "route" : undefined}
+                        angle={window.innerWidth < 640 ? -45 : 0}
+                        textAnchor={window.innerWidth < 640 ? "end" : "middle"}
+                        height={window.innerWidth < 640 ? 60 : undefined}
                       />
-                      <YAxis dataKey="route" type="category" width={150} />
+                      <YAxis
+                        dataKey={window.innerWidth < 640 ? undefined : "route"}
+                        type={window.innerWidth < 640 ? "number" : "category"}
+                        width={window.innerWidth < 640 ? 40 : 150}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                        tickFormatter={
+                          window.innerWidth < 640
+                            ? (value) => {
+                                return value > 1000
+                                  ? `${(value / 1000).toFixed(0)}k`
+                                  : value.toString();
+                              }
+                            : undefined
+                        }
+                      />
                       <Tooltip
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          fontSize: window.innerWidth < 640 ? "11px" : "14px",
+                          maxWidth: window.innerWidth < 640 ? "180px" : "300px",
+                        }}
                         formatter={(value) => [
                           `${Number(value).toLocaleString()} т`,
                           "",
                         ]}
                       />
-                      <Legend />
+                      <Legend
+                        wrapperStyle={{
+                          fontSize: window.innerWidth < 640 ? "10px" : "14px",
+                        }}
+                        iconSize={window.innerWidth < 640 ? 8 : 18}
+                      />
                       <Bar
                         dataKey="totalVolume"
                         name="Общий объем"
@@ -1264,14 +1505,21 @@ export const DashboardBlock = () => {
             </Card>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Динамика цен</CardTitle>
-              <CardDescription>
-                Изменение средних цен по месяцам
+          <Card className="bg-gradient-to-br from-white to-orange-50/30 border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent flex items-center gap-1 sm:gap-2">
+                <span className="text-sm sm:text-base">💰</span>
+                <span className="hidden sm:inline">Динамика цен</span>
+                <span className="sm:hidden">Цены</span>
+              </CardTitle>
+              <CardDescription className="text-slate-600">
+                <span className="hidden sm:inline">
+                  Изменение средних цен по месяцам
+                </span>
+                <span className="sm:hidden">Средние цены по месяцам</span>
               </CardDescription>
             </CardHeader>
-            <CardContent className="h-80">
+            <CardContent className="h-64 sm:h-80 p-3 sm:p-6">
               {isLoading ? (
                 <div className="h-full w-full flex items-center justify-center">
                   <Skeleton className="h-full w-full" />
@@ -1283,57 +1531,127 @@ export const DashboardBlock = () => {
                     <ComposedChart
                       margin={{
                         top: 20,
-                        right: 30,
-                        left: 20,
-                        bottom: 60,
+                        right: window.innerWidth < 640 ? 10 : 30,
+                        left: window.innerWidth < 640 ? 10 : 30,
+                        bottom: window.innerWidth < 640 ? 40 : 60,
                       }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <defs>
+                        <linearGradient
+                          id="priceGradientUSD"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#3b82f6"
+                            stopOpacity={0.8}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#3b82f6"
+                            stopOpacity={0.2}
+                          />
+                        </linearGradient>
+                        <linearGradient
+                          id="priceGradientKZT"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#f59e0b"
+                            stopOpacity={0.8}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#f59e0b"
+                            stopOpacity={0.2}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e2e8f0"
+                        opacity={0.6}
+                      />
                       <XAxis
                         dataKey="name"
                         type="category"
                         allowDuplicatedCategory={false}
-                        angle={-45}
+                        angle={window.innerWidth < 640 ? -60 : -45}
                         textAnchor="end"
-                        height={60}
+                        height={window.innerWidth < 640 ? 40 : 60}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                        stroke="#64748b"
+                        interval={window.innerWidth < 640 ? 1 : 0}
                       />
                       <YAxis
-                        yAxisId="usd"
-                        orientation="left"
-                        tickFormatter={(value) => `$${value}`}
-                        domain={["auto", "auto"]}
-                      />
-                      <YAxis
-                        yAxisId="kzt"
-                        orientation="right"
-                        tickFormatter={(value) => `${value.toLocaleString()} ₸`}
-                        domain={["auto", "auto"]}
+                        tickFormatter={(value) => {
+                          if (window.innerWidth < 640) {
+                            return value > 1000
+                              ? `${(value / 1000).toFixed(0)}k`
+                              : value.toString();
+                          }
+                          return Number(value).toLocaleString();
+                        }}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                        stroke="#64748b"
+                        width={window.innerWidth < 640 ? 40 : 60}
                       />
                       <Tooltip
-                        formatter={(value, name, props) => {
-                          const currency =
-                            props.dataKey === "avgPrice" &&
-                            props.payload.currency === "USD"
-                              ? "$"
-                              : "₸";
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          fontSize: window.innerWidth < 640 ? "12px" : "14px",
+                          maxWidth: window.innerWidth < 640 ? "200px" : "300px",
+                        }}
+                        formatter={(value, name) => {
+                          const currency = name === "USD" ? "$" : "₸";
                           return [
                             `${currency}${Number(value).toLocaleString()}`,
-                            "Средняя цена",
+                            window.innerWidth < 640
+                              ? name
+                              : `Средняя цена (${name})`,
                           ];
                         }}
+                        labelFormatter={(label) =>
+                          window.innerWidth < 640 ? label : `Период: ${label}`
+                        }
                       />
-                      <Legend />
+                      <Legend
+                        wrapperStyle={{
+                          paddingTop: "20px",
+                          fontSize: window.innerWidth < 640 ? "12px" : "14px",
+                        }}
+                        iconSize={window.innerWidth < 640 ? 12 : 18}
+                      />
                       {priceTrendAnalysis.usdTrend.length > 0 && (
-                        <Line
+                        <Area
                           data={priceTrendAnalysis.usdTrend}
                           type="monotone"
                           dataKey="avgPrice"
                           name="USD"
-                          stroke="#8884d8"
-                          yAxisId="usd"
-                          strokeWidth={2}
-                          dot={{ r: 4 }}
-                          activeDot={{ r: 6 }}
+                          stroke="#3b82f6"
+                          strokeWidth={window.innerWidth < 640 ? 2 : 3}
+                          fill="url(#priceGradientUSD)"
+                          dot={{
+                            fill: "#3b82f6",
+                            strokeWidth: 2,
+                            r: window.innerWidth < 640 ? 3 : 4,
+                          }}
+                          activeDot={{
+                            r: window.innerWidth < 640 ? 5 : 6,
+                            fill: "#3b82f6",
+                            stroke: "#1e40af",
+                            strokeWidth: 2,
+                          }}
                         />
                       )}
                       {priceTrendAnalysis.kztTrend.length > 0 && (
@@ -1342,18 +1660,26 @@ export const DashboardBlock = () => {
                           type="monotone"
                           dataKey="avgPrice"
                           name="KZT"
-                          stroke="#82ca9d"
-                          yAxisId="kzt"
-                          strokeWidth={2}
-                          dot={{ r: 4 }}
-                          activeDot={{ r: 6 }}
+                          stroke="#f59e0b"
+                          strokeWidth={window.innerWidth < 640 ? 2 : 3}
+                          dot={{
+                            fill: "#f59e0b",
+                            strokeWidth: 2,
+                            r: window.innerWidth < 640 ? 3 : 4,
+                          }}
+                          activeDot={{
+                            r: window.innerWidth < 640 ? 5 : 6,
+                            fill: "#f59e0b",
+                            stroke: "#d97706",
+                            strokeWidth: 2,
+                          }}
                         />
                       )}
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="h-full w-full flex items-center justify-center text-muted-foreground">
+                <div className="h-full w-full flex items-center justify-center text-muted-foreground text-sm">
                   Нет данных для отображения
                 </div>
               )}
@@ -1362,7 +1688,8 @@ export const DashboardBlock = () => {
         </TabsContent>
 
         {/* Time Analysis Tab */}
-        <TabsContent value="time" className="space-y-4">
+        <TabsContent value="time" className="space-y-6 relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-green-50/30 via-transparent to-emerald-50/20 rounded-3xl -z-10"></div>
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
@@ -1371,7 +1698,7 @@ export const DashboardBlock = () => {
                   Динамика объемов контрактов по месяцам
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-96">
+              <CardContent className="h-72 sm:h-96 p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -1382,9 +1709,9 @@ export const DashboardBlock = () => {
                       data={volumeByMonth}
                       margin={{
                         top: 20,
-                        right: 30,
-                        left: 20,
-                        bottom: 60,
+                        right: window.innerWidth < 640 ? 10 : 30,
+                        left: window.innerWidth < 640 ? 5 : 20,
+                        bottom: window.innerWidth < 640 ? 40 : 60,
                       }}
                     >
                       <defs>
@@ -1425,37 +1752,59 @@ export const DashboardBlock = () => {
                           />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e2e8f0"
+                        opacity={0.6}
+                      />
                       <XAxis
                         dataKey="name"
-                        angle={-45}
+                        angle={window.innerWidth < 640 ? -60 : -45}
                         textAnchor="end"
-                        height={60}
-                        tick={{ fontSize: 12 }}
+                        height={window.innerWidth < 640 ? 40 : 60}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
                         stroke="#64748b"
+                        interval={window.innerWidth < 640 ? 1 : 0}
                       />
                       <YAxis
                         yAxisId="volume"
                         orientation="left"
-                        tickFormatter={(value) => value.toLocaleString()}
-                        tick={{ fontSize: 12 }}
-                        stroke="#64748b"
-                        label={{
-                          value: "Объем (тонны)",
-                          angle: -90,
-                          position: "insideLeft",
+                        tickFormatter={(value) => {
+                          if (window.innerWidth < 640) {
+                            return value > 1000
+                              ? `${(value / 1000).toFixed(0)}k`
+                              : value.toString();
+                          }
+                          return value.toLocaleString();
                         }}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                        stroke="#64748b"
+                        width={window.innerWidth < 640 ? 30 : 60}
+                        label={
+                          window.innerWidth >= 640
+                            ? {
+                                value: "Объем (тонны)",
+                                angle: -90,
+                                position: "insideLeft",
+                              }
+                            : undefined
+                        }
                       />
                       <YAxis
                         yAxisId="count"
                         orientation="right"
-                        tick={{ fontSize: 12 }}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
                         stroke="#f59e0b"
-                        label={{
-                          value: "Количество контрактов",
-                          angle: 90,
-                          position: "insideRight",
-                        }}
+                        width={window.innerWidth < 640 ? 25 : 60}
+                        label={
+                          window.innerWidth >= 640
+                            ? {
+                                value: "Количество контрактов",
+                                angle: 90,
+                                position: "insideRight",
+                              }
+                            : undefined
+                        }
                       />
                       <Tooltip
                         contentStyle={{
@@ -1463,21 +1812,40 @@ export const DashboardBlock = () => {
                           border: "1px solid #e2e8f0",
                           borderRadius: "8px",
                           boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          fontSize: window.innerWidth < 640 ? "11px" : "14px",
+                          maxWidth: window.innerWidth < 640 ? "180px" : "300px",
                         }}
                         formatter={(value, name) => {
                           if (name === "contractCount") {
-                            return [`${value} шт.`, "Количество контрактов"];
+                            return [
+                              `${value} шт.`,
+                              window.innerWidth < 640
+                                ? "Кол-во"
+                                : "Количество контрактов",
+                            ];
                           }
                           return [
                             `${Number(value).toLocaleString()} т`,
-                            name === "totalVolume"
+                            window.innerWidth < 640
+                              ? name === "totalVolume"
+                                ? "Общий"
+                                : "Отгружен"
+                              : name === "totalVolume"
                               ? "Общий объем"
                               : "Отгруженный объем",
                           ];
                         }}
-                        labelFormatter={(label) => `Период: ${label}`}
+                        labelFormatter={(label) =>
+                          window.innerWidth < 640 ? label : `Период: ${label}`
+                        }
                       />
-                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                      <Legend
+                        wrapperStyle={{
+                          paddingTop: "20px",
+                          fontSize: window.innerWidth < 640 ? "10px" : "14px",
+                        }}
+                        iconSize={window.innerWidth < 640 ? 10 : 18}
+                      />
                       <Bar
                         dataKey="totalVolume"
                         name="Общий объем"
@@ -1497,10 +1865,17 @@ export const DashboardBlock = () => {
                         dataKey="contractCount"
                         name="Количество контрактов"
                         stroke="#f59e0b"
-                        strokeWidth={3}
+                        strokeWidth={window.innerWidth < 640 ? 2 : 3}
                         yAxisId="count"
-                        dot={{ fill: "#f59e0b", strokeWidth: 2, r: 5 }}
-                        activeDot={{ r: 7, fill: "#f59e0b" }}
+                        dot={{
+                          fill: "#f59e0b",
+                          strokeWidth: 2,
+                          r: window.innerWidth < 640 ? 3 : 5,
+                        }}
+                        activeDot={{
+                          r: window.innerWidth < 640 ? 5 : 7,
+                          fill: "#f59e0b",
+                        }}
                       />
                     </ComposedChart>
                   </ResponsiveContainer>
@@ -1519,7 +1894,7 @@ export const DashboardBlock = () => {
                   Объемы контрактов по кварталам
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-96">
+              <CardContent className="h-72 sm:h-96 p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -1530,9 +1905,9 @@ export const DashboardBlock = () => {
                       data={seasonalAnalysis}
                       margin={{
                         top: 20,
-                        right: 30,
-                        left: 20,
-                        bottom: 60,
+                        right: window.innerWidth < 640 ? 10 : 30,
+                        left: window.innerWidth < 640 ? 5 : 20,
+                        bottom: window.innerWidth < 640 ? 40 : 60,
                       }}
                     >
                       <defs>
@@ -1555,24 +1930,41 @@ export const DashboardBlock = () => {
                           />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e2e8f0"
+                        opacity={0.6}
+                      />
                       <XAxis
                         dataKey="name"
-                        angle={-45}
+                        angle={window.innerWidth < 640 ? -60 : -45}
                         textAnchor="end"
-                        height={60}
-                        tick={{ fontSize: 12 }}
+                        height={window.innerWidth < 640 ? 40 : 60}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
                         stroke="#64748b"
+                        interval={window.innerWidth < 640 ? 0 : 0}
                       />
                       <YAxis
-                        tickFormatter={(value) => value.toLocaleString()}
-                        tick={{ fontSize: 12 }}
-                        stroke="#64748b"
-                        label={{
-                          value: "Объем (тонны)",
-                          angle: -90,
-                          position: "insideLeft",
+                        tickFormatter={(value) => {
+                          if (window.innerWidth < 640) {
+                            return value > 1000
+                              ? `${(value / 1000).toFixed(0)}k`
+                              : value.toString();
+                          }
+                          return value.toLocaleString();
                         }}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                        stroke="#64748b"
+                        width={window.innerWidth < 640 ? 35 : 60}
+                        label={
+                          window.innerWidth >= 640
+                            ? {
+                                value: "Объем (тонны)",
+                                angle: -90,
+                                position: "insideLeft",
+                              }
+                            : undefined
+                        }
                       />
                       <Tooltip
                         contentStyle={{
@@ -1580,35 +1972,65 @@ export const DashboardBlock = () => {
                           border: "1px solid #e2e8f0",
                           borderRadius: "8px",
                           boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          fontSize: window.innerWidth < 640 ? "11px" : "14px",
+                          maxWidth: window.innerWidth < 640 ? "160px" : "300px",
                         }}
                         formatter={(value, name) => [
                           `${Number(value).toLocaleString()} т`,
-                          name === "totalVolume"
+                          window.innerWidth < 640
+                            ? name === "totalVolume"
+                              ? "Общий"
+                              : "Отгружен"
+                            : name === "totalVolume"
                             ? "Общий объем"
                             : "Отгруженный объем",
                         ]}
-                        labelFormatter={(label) => `Квартал: ${label}`}
+                        labelFormatter={(label) =>
+                          window.innerWidth < 640 ? label : `Квартал: ${label}`
+                        }
                       />
-                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                      <Legend
+                        wrapperStyle={{
+                          paddingTop: "20px",
+                          fontSize: window.innerWidth < 640 ? "10px" : "14px",
+                        }}
+                        iconSize={window.innerWidth < 640 ? 10 : 18}
+                      />
                       <Area
                         type="monotone"
                         dataKey="totalVolume"
                         name="Общий объем"
                         stroke="#6366f1"
-                        strokeWidth={2}
+                        strokeWidth={window.innerWidth < 640 ? 2 : 2}
                         fill="url(#seasonalTotalGradient)"
-                        dot={{ fill: "#6366f1", strokeWidth: 2, r: 4 }}
-                        activeDot={{ r: 6, fill: "#6366f1" }}
+                        dot={{
+                          fill: "#6366f1",
+                          strokeWidth: 2,
+                          r: window.innerWidth < 640 ? 3 : 4,
+                        }}
+                        activeDot={{
+                          r: window.innerWidth < 640 ? 5 : 6,
+                          fill: "#6366f1",
+                        }}
                       />
                       <Line
                         type="monotone"
                         dataKey="shippedVolume"
                         name="Отгруженный объем"
                         stroke="#059669"
-                        strokeWidth={3}
-                        dot={{ fill: "#059669", strokeWidth: 2, r: 5 }}
-                        activeDot={{ r: 7, fill: "#059669" }}
-                        strokeDasharray="8 4"
+                        strokeWidth={window.innerWidth < 640 ? 2 : 3}
+                        dot={{
+                          fill: "#059669",
+                          strokeWidth: 2,
+                          r: window.innerWidth < 640 ? 3 : 5,
+                        }}
+                        activeDot={{
+                          r: window.innerWidth < 640 ? 5 : 7,
+                          fill: "#059669",
+                        }}
+                        strokeDasharray={
+                          window.innerWidth < 640 ? "4 2" : "8 4"
+                        }
                       />
                     </ComposedChart>
                   </ResponsiveContainer>
@@ -1629,7 +2051,7 @@ export const DashboardBlock = () => {
                   Изменение средних цен по месяцам
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-96">
+              <CardContent className="h-72 sm:h-96 p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -1640,33 +2062,119 @@ export const DashboardBlock = () => {
                     <ComposedChart
                       margin={{
                         top: 20,
-                        right: 30,
-                        left: 20,
-                        bottom: 60,
+                        right: window.innerWidth < 640 ? 25 : 60,
+                        left: window.innerWidth < 640 ? 25 : 60,
+                        bottom: window.innerWidth < 640 ? 40 : 60,
                       }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <defs>
+                        <linearGradient
+                          id="usdTrendGradient"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#6366f1"
+                            stopOpacity={0.8}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#6366f1"
+                            stopOpacity={0.1}
+                          />
+                        </linearGradient>
+                        <linearGradient
+                          id="kztTrendGradient"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#f59e0b"
+                            stopOpacity={0.8}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#f59e0b"
+                            stopOpacity={0.1}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e2e8f0"
+                        opacity={0.6}
+                      />
                       <XAxis
                         dataKey="name"
                         type="category"
                         allowDuplicatedCategory={false}
-                        angle={-45}
+                        angle={window.innerWidth < 640 ? -60 : -45}
                         textAnchor="end"
-                        height={60}
+                        height={window.innerWidth < 640 ? 40 : 60}
+                        tick={{ fontSize: window.innerWidth < 640 ? 9 : 12 }}
+                        stroke="#64748b"
+                        interval={window.innerWidth < 640 ? 1 : 0}
                       />
                       <YAxis
                         yAxisId="usd"
                         orientation="left"
-                        tickFormatter={(value) => `$${value}`}
+                        tickFormatter={(value) =>
+                          window.innerWidth < 640 ? `$${value}` : `$${value}`
+                        }
                         domain={["auto", "auto"]}
+                        tick={{ fontSize: window.innerWidth < 640 ? 9 : 12 }}
+                        stroke="#6366f1"
+                        width={window.innerWidth < 640 ? 35 : 60}
+                        label={
+                          window.innerWidth >= 640
+                            ? {
+                                value: "Цена USD ($)",
+                                angle: -90,
+                                position: "insideLeft",
+                                style: { textAnchor: "middle" },
+                              }
+                            : undefined
+                        }
                       />
                       <YAxis
                         yAxisId="kzt"
                         orientation="right"
-                        tickFormatter={(value) => `${value.toLocaleString()} ₸`}
+                        tickFormatter={(value) => {
+                          if (window.innerWidth < 640) {
+                            return value > 1000
+                              ? `${(value / 1000).toFixed(0)}k₸`
+                              : `${value}₸`;
+                          }
+                          return `${value.toLocaleString()} ₸`;
+                        }}
                         domain={["auto", "auto"]}
+                        tick={{ fontSize: window.innerWidth < 640 ? 9 : 12 }}
+                        stroke="#f59e0b"
+                        width={window.innerWidth < 640 ? 35 : 60}
+                        label={
+                          window.innerWidth >= 640
+                            ? {
+                                value: "Цена KZT (₸)",
+                                angle: 90,
+                                position: "insideRight",
+                                style: { textAnchor: "middle" },
+                              }
+                            : undefined
+                        }
                       />
                       <Tooltip
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                        }}
                         formatter={(value, name, props) => {
                           const currency =
                             props.dataKey === "avgPrice" &&
@@ -1675,22 +2183,29 @@ export const DashboardBlock = () => {
                               : "₸";
                           return [
                             `${currency}${Number(value).toLocaleString()}`,
-                            "Средняя цена",
+                            `Средняя цена (${name})`,
                           ];
                         }}
+                        labelFormatter={(label) => `Месяц: ${label}`}
                       />
-                      <Legend />
+                      <Legend wrapperStyle={{ paddingTop: "20px" }} />
                       {priceTrendAnalysis.usdTrend.length > 0 && (
-                        <Line
+                        <Area
                           data={priceTrendAnalysis.usdTrend}
                           type="monotone"
                           dataKey="avgPrice"
                           name="USD"
-                          stroke="#8884d8"
+                          stroke="#6366f1"
+                          strokeWidth={3}
+                          fill="url(#usdTrendGradient)"
                           yAxisId="usd"
-                          strokeWidth={2}
-                          dot={{ r: 4 }}
-                          activeDot={{ r: 6 }}
+                          dot={{ fill: "#6366f1", strokeWidth: 2, r: 4 }}
+                          activeDot={{
+                            r: 6,
+                            fill: "#6366f1",
+                            stroke: "#4338ca",
+                            strokeWidth: 2,
+                          }}
                         />
                       )}
                       {priceTrendAnalysis.kztTrend.length > 0 && (
@@ -1699,11 +2214,17 @@ export const DashboardBlock = () => {
                           type="monotone"
                           dataKey="avgPrice"
                           name="KZT"
-                          stroke="#82ca9d"
+                          stroke="#f59e0b"
                           yAxisId="kzt"
-                          strokeWidth={2}
-                          dot={{ r: 4 }}
-                          activeDot={{ r: 6 }}
+                          strokeWidth={4}
+                          strokeDasharray="6 3"
+                          dot={{ fill: "#f59e0b", strokeWidth: 2, r: 4 }}
+                          activeDot={{
+                            r: 6,
+                            fill: "#f59e0b",
+                            stroke: "#d97706",
+                            strokeWidth: 2,
+                          }}
                         />
                       )}
                     </ComposedChart>
@@ -1719,7 +2240,8 @@ export const DashboardBlock = () => {
         </TabsContent>
 
         {/* Geographical Analysis Tab */}
-        <TabsContent value="geo" className="space-y-4">
+        <TabsContent value="geo" className="space-y-6 relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-50/30 via-transparent to-violet-50/20 rounded-3xl -z-10"></div>
           <div className="grid gap-4 md:grid-cols-1">
             <Card className="w-full">
               <CardHeader>
@@ -1728,7 +2250,7 @@ export const DashboardBlock = () => {
                   Распределение объемов по станциям отправления
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-96">
+              <CardContent className="h-72 sm:h-96 p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -1752,13 +2274,16 @@ export const DashboardBlock = () => {
                         ).map(([_, data]) => data)}
                         cx="50%"
                         cy="50%"
-                        labelLine={true}
-                        outerRadius={80}
+                        labelLine={window.innerWidth >= 640}
+                        outerRadius={window.innerWidth < 640 ? 55 : 80}
                         fill="#8884d8"
                         dataKey="value"
                         nameKey="name"
-                        label={({ name, percent }) =>
-                          `${name}: ${(percent * 100).toFixed(0)}%`
+                        label={
+                          window.innerWidth < 640
+                            ? false
+                            : ({ name, percent }) =>
+                                `${name}: ${(percent * 100).toFixed(0)}%`
                         }
                       >
                         {Object.entries(
@@ -1803,7 +2328,7 @@ export const DashboardBlock = () => {
                   Распределение объемов по станциям назначения
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-96">
+              <CardContent className="h-72 sm:h-96 p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -1827,13 +2352,16 @@ export const DashboardBlock = () => {
                         ).map(([_, data]) => data)}
                         cx="50%"
                         cy="50%"
-                        labelLine={true}
-                        outerRadius={80}
+                        labelLine={window.innerWidth >= 640}
+                        outerRadius={window.innerWidth < 640 ? 55 : 80}
                         fill="#8884d8"
                         dataKey="value"
                         nameKey="name"
-                        label={({ name, percent }) =>
-                          `${name}: ${(percent * 100).toFixed(0)}%`
+                        label={
+                          window.innerWidth < 640
+                            ? false
+                            : ({ name, percent }) =>
+                                `${name}: ${(percent * 100).toFixed(0)}%`
                         }
                       >
                         {Object.entries(
@@ -1871,7 +2399,8 @@ export const DashboardBlock = () => {
           </div>
         </TabsContent>
         {/* Crops Analysis Tab */}
-        <TabsContent value="crops" className="space-y-4">
+        <TabsContent value="crops" className="space-y-6 relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-50/30 via-transparent to-yellow-50/20 rounded-3xl -z-10"></div>
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
@@ -1880,7 +2409,7 @@ export const DashboardBlock = () => {
                   Объемы контрактов по типам культур
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-96">
+              <CardContent className="h-72 sm:h-96 p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -1891,37 +2420,63 @@ export const DashboardBlock = () => {
                       data={cropAnalysis}
                       margin={{
                         top: 20,
-                        right: 30,
-                        left: 20,
-                        bottom: 60,
+                        right: window.innerWidth < 640 ? 10 : 30,
+                        left: window.innerWidth < 640 ? 5 : 20,
+                        bottom: window.innerWidth < 640 ? 40 : 60,
                       }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.6} />
                       <XAxis
                         dataKey="crop"
-                        angle={-45}
+                        angle={window.innerWidth < 640 ? -60 : -45}
                         textAnchor="end"
-                        height={60}
+                        height={window.innerWidth < 640 ? 40 : 60}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                        interval={window.innerWidth < 640 ? 0 : 0}
                       />
                       <YAxis
-                        tickFormatter={(value) => value.toLocaleString()}
+                        tickFormatter={(value) => {
+                          if (window.innerWidth < 640) {
+                            return value > 1000
+                              ? `${(value / 1000).toFixed(0)}k`
+                              : value.toString();
+                          }
+                          return value.toLocaleString();
+                        }}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                        width={window.innerWidth < 640 ? 35 : 60}
                       />
                       <Tooltip
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          fontSize: window.innerWidth < 640 ? "11px" : "14px",
+                          maxWidth: window.innerWidth < 640 ? "160px" : "300px",
+                        }}
                         formatter={(value) => [
                           `${Number(value).toLocaleString()} т`,
                           "",
                         ]}
                       />
-                      <Legend />
+                      <Legend
+                        wrapperStyle={{
+                          fontSize: window.innerWidth < 640 ? "10px" : "14px",
+                        }}
+                        iconSize={window.innerWidth < 640 ? 10 : 18}
+                      />
                       <Bar
                         dataKey="totalVolume"
                         name="Общий объем"
                         fill="#8884d8"
+                        radius={[2, 2, 0, 0]}
                       />
                       <Bar
                         dataKey="shippedVolume"
                         name="Отгруженный объем"
                         fill="#82ca9d"
+                        radius={[2, 2, 0, 0]}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -1940,7 +2495,7 @@ export const DashboardBlock = () => {
                   Средняя цена за тонну по типам культур
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-96">
+              <CardContent className="h-72 sm:h-96 p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -1949,7 +2504,13 @@ export const DashboardBlock = () => {
                   <div className="h-full">
                     <div className="flex justify-end mb-2">
                       <Select defaultValue="USD">
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger
+                          className={
+                            window.innerWidth < 640
+                              ? "w-[120px] text-xs"
+                              : "w-[180px]"
+                          }
+                        >
                           <SelectValue placeholder="Выберите валюту" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1965,32 +2526,57 @@ export const DashboardBlock = () => {
                         )}
                         margin={{
                           top: 20,
-                          right: 30,
-                          left: 20,
-                          bottom: 60,
+                          right: window.innerWidth < 640 ? 10 : 30,
+                          left: window.innerWidth < 640 ? 5 : 20,
+                          bottom: window.innerWidth < 640 ? 40 : 60,
                         }}
                       >
-                        <CartesianGrid strokeDasharray="3 3" />
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.6} />
                         <XAxis
                           dataKey="crop"
-                          angle={-45}
+                          angle={window.innerWidth < 640 ? -60 : -45}
                           textAnchor="end"
-                          height={60}
+                          height={window.innerWidth < 640 ? 40 : 60}
+                          tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
                         />
                         <YAxis
-                          tickFormatter={(value) => value.toLocaleString()}
+                          tickFormatter={(value) => {
+                            if (window.innerWidth < 640) {
+                              return value > 1000
+                                ? `$${(value / 1000).toFixed(0)}k`
+                                : `$${value}`;
+                            }
+                            return value.toLocaleString();
+                          }}
+                          tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                          width={window.innerWidth < 640 ? 40 : 60}
                         />
                         <Tooltip
+                          contentStyle={{
+                            backgroundColor: "white",
+                            border: "1px solid #e2e8f0",
+                            borderRadius: "8px",
+                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                            fontSize: window.innerWidth < 640 ? "11px" : "14px",
+                            maxWidth:
+                              window.innerWidth < 640 ? "150px" : "300px",
+                          }}
                           formatter={(value) => [
                             `$${Number(value).toLocaleString()}`,
-                            "Средняя цена",
+                            window.innerWidth < 640 ? "Цена" : "Средняя цена",
                           ]}
                         />
-                        <Legend />
+                        <Legend
+                          wrapperStyle={{
+                            fontSize: window.innerWidth < 640 ? "10px" : "14px",
+                          }}
+                          iconSize={window.innerWidth < 640 ? 10 : 18}
+                        />
                         <Bar
                           dataKey="avgPriceUSD"
                           name="Средняя цена (USD)"
                           fill="#8884d8"
+                          radius={[2, 2, 0, 0]}
                         />
                       </BarChart>
                     </ResponsiveContainer>
@@ -2006,7 +2592,8 @@ export const DashboardBlock = () => {
         </TabsContent>
 
         {/* Companies Tab */}
-        <TabsContent value="companies" className="space-y-4">
+        <TabsContent value="companies" className="space-y-6 relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/30 via-transparent to-blue-50/20 rounded-3xl -z-10"></div>
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
@@ -2015,7 +2602,7 @@ export const DashboardBlock = () => {
                   Компании с наибольшим объемом контрактов
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-96">
+              <CardContent className="h-72 sm:h-96 p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -2023,37 +2610,68 @@ export const DashboardBlock = () => {
                 ) : companyPerformance.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={companyPerformance.slice(0, 10)}
+                      data={companyPerformance.slice(
+                        0,
+                        window.innerWidth < 640 ? 6 : 10
+                      )}
                       layout="vertical"
                       margin={{
                         top: 20,
-                        right: 30,
-                        left: 150,
+                        right: window.innerWidth < 640 ? 10 : 30,
+                        left: window.innerWidth < 640 ? 80 : 150,
                         bottom: 20,
                       }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.6} />
                       <XAxis
                         type="number"
-                        tickFormatter={(value) => value.toLocaleString()}
+                        tickFormatter={(value) => {
+                          if (window.innerWidth < 640) {
+                            return value > 1000
+                              ? `${(value / 1000).toFixed(0)}k`
+                              : value.toString();
+                          }
+                          return value.toLocaleString();
+                        }}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
                       />
-                      <YAxis dataKey="company" type="category" width={150} />
+                      <YAxis
+                        dataKey="company"
+                        type="category"
+                        width={window.innerWidth < 640 ? 80 : 150}
+                        tick={{ fontSize: window.innerWidth < 640 ? 9 : 12 }}
+                      />
                       <Tooltip
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          fontSize: window.innerWidth < 640 ? "11px" : "14px",
+                          maxWidth: window.innerWidth < 640 ? "150px" : "300px",
+                        }}
                         formatter={(value) => [
                           `${Number(value).toLocaleString()} т`,
                           "",
                         ]}
                       />
-                      <Legend />
+                      <Legend
+                        wrapperStyle={{
+                          fontSize: window.innerWidth < 640 ? "10px" : "14px",
+                        }}
+                        iconSize={window.innerWidth < 640 ? 10 : 18}
+                      />
                       <Bar
                         dataKey="totalVolume"
                         name="Общий объем"
                         fill="#8884d8"
+                        radius={[0, 2, 2, 0]}
                       />
                       <Bar
                         dataKey="shippedVolume"
                         name="Отгруженный объем"
                         fill="#82ca9d"
+                        radius={[0, 2, 2, 0]}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -2072,7 +2690,7 @@ export const DashboardBlock = () => {
                   Процент выполнения контрактов по компаниям
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-96">
+              <CardContent className="h-72 sm:h-96 p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -2080,33 +2698,58 @@ export const DashboardBlock = () => {
                 ) : companyPerformance.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={companyPerformance.slice(0, 10)}
+                      data={companyPerformance.slice(
+                        0,
+                        window.innerWidth < 640 ? 6 : 10
+                      )}
                       layout="vertical"
                       margin={{
                         top: 20,
-                        right: 30,
-                        left: 150,
+                        right: window.innerWidth < 640 ? 10 : 30,
+                        left: window.innerWidth < 640 ? 80 : 150,
                         bottom: 20,
                       }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.6} />
                       <XAxis
                         type="number"
                         domain={[0, 100]}
                         tickFormatter={(value) => `${value}%`}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
                       />
-                      <YAxis dataKey="company" type="category" width={150} />
+                      <YAxis
+                        dataKey="company"
+                        type="category"
+                        width={window.innerWidth < 640 ? 80 : 150}
+                        tick={{ fontSize: window.innerWidth < 640 ? 9 : 12 }}
+                      />
                       <Tooltip
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          fontSize: window.innerWidth < 640 ? "11px" : "14px",
+                          maxWidth: window.innerWidth < 640 ? "150px" : "300px",
+                        }}
                         formatter={(value) => [
                           `${value}%`,
-                          "Процент выполнения",
+                          window.innerWidth < 640
+                            ? "Выполнение"
+                            : "Процент выполнения",
                         ]}
                       />
-                      <Legend />
+                      <Legend
+                        wrapperStyle={{
+                          fontSize: window.innerWidth < 640 ? "10px" : "14px",
+                        }}
+                        iconSize={window.innerWidth < 640 ? 10 : 18}
+                      />
                       <Bar
                         dataKey="fulfillmentRate"
                         name="Процент выполнения"
                         fill="#8884d8"
+                        radius={[0, 2, 2, 0]}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -2127,7 +2770,7 @@ export const DashboardBlock = () => {
                   Распределение количества контрактов по компаниям
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-96">
+              <CardContent className="h-72 sm:h-96 p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -2139,17 +2782,20 @@ export const DashboardBlock = () => {
                         data={companyPerformance}
                         cx="50%"
                         cy="50%"
-                        labelLine={true}
-                        outerRadius={80}
+                        labelLine={window.innerWidth >= 640}
+                        outerRadius={window.innerWidth < 640 ? 55 : 80}
                         fill="#8884d8"
                         dataKey="contractCount"
                         nameKey="company"
-                        label={({ name, percent }) =>
-                          `${
-                            percent > 0.05
-                              ? `${(percent * 100).toFixed(0)}%`
-                              : ""
-                          }`
+                        label={
+                          window.innerWidth < 640
+                            ? false
+                            : ({ name, percent }) =>
+                                `${
+                                  percent > 0.05
+                                    ? `${(percent * 100).toFixed(0)}%`
+                                    : ""
+                                }`
                         }
                       >
                         {companyPerformance.map((entry, index) => (
@@ -2259,7 +2905,8 @@ export const DashboardBlock = () => {
         </TabsContent>
 
         {/* Transport Tab */}
-        <TabsContent value="transport" className="space-y-4">
+        <TabsContent value="transport" className="space-y-6 relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-50/30 via-transparent to-red-50/20 rounded-3xl -z-10"></div>
           <div className="grid gap-4 md:grid-cols-1 w-full">
             <Card className="w-full">
               <CardHeader>
@@ -2268,7 +2915,7 @@ export const DashboardBlock = () => {
                   Распределение количества вагонов по перевозчикам
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-96">
+              <CardContent className="h-72 sm:h-96 p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -2280,17 +2927,20 @@ export const DashboardBlock = () => {
                         data={transportationEfficiency}
                         cx="50%"
                         cy="50%"
-                        labelLine={true}
-                        outerRadius={80}
+                        labelLine={window.innerWidth >= 640}
+                        outerRadius={window.innerWidth < 640 ? 55 : 80}
                         fill="#8884d8"
                         dataKey="wagonCount"
                         nameKey="owner"
-                        label={({ name, percent }) =>
-                          `${
-                            percent > 0.05
-                              ? `${(percent * 100).toFixed(0)}%`
-                              : ""
-                          }`
+                        label={
+                          window.innerWidth < 640
+                            ? false
+                            : ({ name, percent }) =>
+                                `${
+                                  percent > 0.05
+                                    ? `${(percent * 100).toFixed(0)}%`
+                                    : ""
+                                }`
                         }
                       >
                         {transportationEfficiency.map((entry, index) => (
@@ -2298,14 +2948,30 @@ export const DashboardBlock = () => {
                         ))}
                       </Pie>
                       <Tooltip
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          fontSize: window.innerWidth < 640 ? "11px" : "14px",
+                          maxWidth: window.innerWidth < 640 ? "180px" : "300px",
+                        }}
                         formatter={(value) => [
                           `${value} вагонов`,
                           "Количество",
                         ]}
                       />
                       <Legend
+                        wrapperStyle={{
+                          fontSize: window.innerWidth < 640 ? "10px" : "14px",
+                          paddingTop: "10px",
+                        }}
+                        iconSize={window.innerWidth < 640 ? 8 : 18}
                         formatter={(value, entry) => {
                           const { payload } = entry;
+                          if (window.innerWidth < 640) {
+                            return `${payload.owner}: ${payload.wagonCount}`;
+                          }
                           return `${payload.owner}: ${payload.wagonCount} вагонов`;
                         }}
                       />
@@ -2322,7 +2988,8 @@ export const DashboardBlock = () => {
         </TabsContent>
 
         {/* Financial Tab */}
-        <TabsContent value="financial" className="space-y-4">
+        <TabsContent value="financial" className="space-y-6 relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/30 via-transparent to-green-50/20 rounded-3xl -z-10"></div>
           <div className="w-full flex">
             <Card className="w-full">
               <CardHeader>
@@ -2331,7 +2998,7 @@ export const DashboardBlock = () => {
                   Изменение средних цен по месяцам
                 </CardDescription>
               </CardHeader>
-              <CardContent className="h-96 w-full">
+              <CardContent className="h-72 sm:h-96 w-full p-3 sm:p-6">
                 {isLoading ? (
                   <div className="h-full w-full flex items-center justify-center">
                     <Skeleton className="h-full w-full" />
@@ -2342,33 +3009,56 @@ export const DashboardBlock = () => {
                     <ComposedChart
                       margin={{
                         top: 20,
-                        right: 30,
-                        left: 20,
-                        bottom: 60,
+                        right: window.innerWidth < 640 ? 25 : 30,
+                        left: window.innerWidth < 640 ? 25 : 20,
+                        bottom: window.innerWidth < 640 ? 40 : 60,
                       }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.6} />
                       <XAxis
                         dataKey="name"
                         type="category"
                         allowDuplicatedCategory={false}
-                        angle={-45}
+                        angle={window.innerWidth < 640 ? -60 : -45}
                         textAnchor="end"
-                        height={60}
+                        height={window.innerWidth < 640 ? 40 : 60}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                        interval={window.innerWidth < 640 ? 1 : 0}
                       />
                       <YAxis
                         yAxisId="usd"
                         orientation="left"
-                        tickFormatter={(value) => `$${value}`}
+                        tickFormatter={(value) =>
+                          window.innerWidth < 640 ? `$${value}` : `$${value}`
+                        }
                         domain={["auto", "auto"]}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                        width={window.innerWidth < 640 ? 35 : 60}
                       />
                       <YAxis
                         yAxisId="kzt"
                         orientation="right"
-                        tickFormatter={(value) => `${value.toLocaleString()} ₸`}
+                        tickFormatter={(value) => {
+                          if (window.innerWidth < 640) {
+                            return value > 1000
+                              ? `${(value / 1000).toFixed(0)}k₸`
+                              : `${value}₸`;
+                          }
+                          return `${value.toLocaleString()} ₸`;
+                        }}
                         domain={["auto", "auto"]}
+                        tick={{ fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                        width={window.innerWidth < 640 ? 35 : 60}
                       />
                       <Tooltip
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          fontSize: window.innerWidth < 640 ? "11px" : "14px",
+                          maxWidth: window.innerWidth < 640 ? "160px" : "300px",
+                        }}
                         formatter={(value, name, props) => {
                           const currency =
                             props.dataKey === "avgPrice" &&
@@ -2377,11 +3067,16 @@ export const DashboardBlock = () => {
                               : "₸";
                           return [
                             `${currency}${Number(value).toLocaleString()}`,
-                            "Средняя цена",
+                            window.innerWidth < 640 ? "Цена" : "Средняя цена",
                           ];
                         }}
                       />
-                      <Legend />
+                      <Legend
+                        wrapperStyle={{
+                          fontSize: window.innerWidth < 640 ? "10px" : "14px",
+                        }}
+                        iconSize={window.innerWidth < 640 ? 10 : 18}
+                      />
                       {priceTrendAnalysis.usdTrend.length > 0 && (
                         <Line
                           data={priceTrendAnalysis.usdTrend}
@@ -2390,9 +3085,9 @@ export const DashboardBlock = () => {
                           name="USD"
                           stroke="#8884d8"
                           yAxisId="usd"
-                          strokeWidth={2}
-                          dot={{ r: 4 }}
-                          activeDot={{ r: 6 }}
+                          strokeWidth={window.innerWidth < 640 ? 2 : 2}
+                          dot={{ r: window.innerWidth < 640 ? 3 : 4 }}
+                          activeDot={{ r: window.innerWidth < 640 ? 5 : 6 }}
                         />
                       )}
                       {priceTrendAnalysis.kztTrend.length > 0 && (

@@ -144,70 +144,127 @@ export default function AddUserDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="w-full sm:w-auto">
           <UserPlus className="h-4 w-4 mr-2" />
-          Добавить пользователя
+          <span className="hidden sm:inline">Добавить пользователя</span>
+          <span className="sm:hidden">Добавить</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[800px]">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Добавить нового пользователя</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">
+            <span className="hidden sm:inline">
+              Добавить нового пользователя
+            </span>
+            <span className="sm:hidden">Новый пользователь</span>
+          </DialogTitle>
+          <DialogDescription className="hidden sm:block">
             Заполните информацию о новом пользователе
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">
-              Email <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              value={newUser.email}
-              onChange={(e) =>
-                setNewUser({ ...newUser, email: e.target.value })
-              }
-              className="col-span-3"
-            />
+          {/* Mobile: Stacked layout */}
+          <div className="sm:hidden space-y-4">
+            <div>
+              <Label htmlFor="email" className="text-sm font-medium">
+                Email <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={newUser.email}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, email: e.target.value })
+                }
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="password" className="text-sm font-medium">
+                Пароль <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={newUser.password}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, password: e.target.value })
+                }
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="full_name" className="text-sm font-medium">
+                ФИО <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="full_name"
+                type="text"
+                value={newUser.full_name}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, full_name: e.target.value })
+                }
+                className="mt-1"
+              />
+            </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="password" className="text-right">
-              Пароль <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="password"
-              type="password"
-              value={newUser.password}
-              onChange={(e) =>
-                setNewUser({ ...newUser, password: e.target.value })
-              }
-              className="col-span-3"
-            />
+
+          {/* Desktop: Grid layout */}
+          <div className="hidden sm:block">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email-desktop" className="text-right">
+                Email <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="email-desktop"
+                type="email"
+                value={newUser.email}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, email: e.target.value })
+                }
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4 mt-4">
+              <Label htmlFor="password-desktop" className="text-right">
+                Пароль <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="password-desktop"
+                type="password"
+                value={newUser.password}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, password: e.target.value })
+                }
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4 mt-4">
+              <Label htmlFor="full_name-desktop" className="text-right">
+                ФИО <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="full_name-desktop"
+                type="text"
+                value={newUser.full_name}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, full_name: e.target.value })
+                }
+                className="col-span-3"
+              />
+            </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="full_name" className="text-right">
-              ФИО <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="full_name"
-              type="text"
-              value={newUser.full_name}
-              onChange={(e) =>
-                setNewUser({ ...newUser, full_name: e.target.value })
-              }
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="role" className="text-right">
+
+          {/* Mobile: Role */}
+          <div className="sm:hidden">
+            <Label htmlFor="role-mobile" className="text-sm font-medium">
               Роль <span className="text-destructive">*</span>
             </Label>
             <Select
               value={newUser.role}
               onValueChange={(value) => setNewUser({ ...newUser, role: value })}
             >
-              <SelectTrigger className="col-span-3 w-full">
+              <SelectTrigger className="w-full mt-1">
                 <SelectValue placeholder="Выберите роль" />
               </SelectTrigger>
               <SelectContent>
@@ -219,12 +276,40 @@ export default function AddUserDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="companies" className="text-right">
+
+          {/* Desktop: Role */}
+          <div className="hidden sm:block">
+            <div className="grid grid-cols-4 items-center gap-4 mt-4">
+              <Label htmlFor="role" className="text-right">
+                Роль <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={newUser.role}
+                onValueChange={(value) =>
+                  setNewUser({ ...newUser, role: value })
+                }
+              >
+                <SelectTrigger className="col-span-3 w-full">
+                  <SelectValue placeholder="Выберите роль" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Mobile: Companies */}
+          <div className="sm:hidden">
+            <Label htmlFor="companies-mobile" className="text-sm font-medium">
               Компании{" "}
               {isCompanyRequired && <span className="text-destructive">*</span>}
             </Label>
-            <div className="col-span-3">
+            <div className="mt-1">
               {isCompaniesLoading ? (
                 <Skeleton className="h-10 w-full" />
               ) : (
@@ -284,11 +369,86 @@ export default function AddUserDialog({
               )}
             </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="contracts" className="text-right">
+
+          {/* Desktop: Companies */}
+          <div className="hidden sm:block">
+            <div className="grid grid-cols-4 items-center gap-4 mt-4">
+              <Label htmlFor="companies" className="text-right">
+                Компании{" "}
+                {isCompanyRequired && (
+                  <span className="text-destructive">*</span>
+                )}
+              </Label>
+              <div className="col-span-3">
+                {isCompaniesLoading ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
+                  <div className="space-y-4">
+                    <Select
+                      onValueChange={(value) => handleCompanyChange(value)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue
+                          placeholder="Добавить компанию"
+                          className="w-full"
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Выберите компанию</SelectItem>
+                        {companiesData?.data?.map((company: any) => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {newUser.companyId.length > 0 && (
+                      <div className="space-y-2">
+                        {newUser.companyId.map((companyId) => {
+                          const company = companiesData?.data?.find(
+                            (c: any) => c.id === companyId
+                          );
+                          return (
+                            <div
+                              key={companyId}
+                              className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Building className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm">{company?.name}</span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setNewUser({
+                                    ...newUser,
+                                    companyId: newUser.companyId.filter(
+                                      (id) => id !== companyId
+                                    ),
+                                  });
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile: Contracts */}
+          <div className="sm:hidden">
+            <Label htmlFor="contracts-mobile" className="text-sm font-medium">
               Контракты
             </Label>
-            <div className="col-span-3">
+            <div className="mt-1">
               {isContractsLoading ? (
                 <Skeleton className="h-10 w-full" />
               ) : (
@@ -361,17 +521,106 @@ export default function AddUserDialog({
                       )}
                     </>
                   ) : (
-                    <div className="text-sm text-muted-foreground">
-                      Сначала выберите компанию для отображения доступных
-                      контрактов
-                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Сначала выберите компанию
+                    </p>
                   )}
                 </div>
               )}
             </div>
           </div>
+
+          {/* Desktop: Contracts */}
+          <div className="hidden sm:block">
+            <div className="grid grid-cols-4 items-center gap-4 mt-4">
+              <Label htmlFor="contracts" className="text-right">
+                Контракты
+              </Label>
+              <div className="col-span-3">
+                {isContractsLoading ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
+                  <div className="space-y-4">
+                    {newUser.companyId.length > 0 ? (
+                      <>
+                        <Select
+                          onValueChange={(value) => {
+                            if (value === "none") return;
+                            if (!newUser.contractIds.includes(value)) {
+                              setNewUser({
+                                ...newUser,
+                                contractIds: [...newUser.contractIds, value],
+                              });
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Добавить контракт" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">
+                              Выберите контракт
+                            </SelectItem>
+                            {getAllFilteredContracts().map((contract: any) => (
+                              <SelectItem key={contract.id} value={contract.id}>
+                                {contract.number} -{" "}
+                                {contract.title || "Без названия"}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        {newUser.contractIds.length > 0 && (
+                          <div className="space-y-2">
+                            {newUser.contractIds.map((contractId) => {
+                              const contract = contractsData?.data?.find(
+                                (c: any) => c.id === contractId
+                              );
+                              return (
+                                <div
+                                  key={contractId}
+                                  className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <FileText className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm">
+                                      {contract?.number} -{" "}
+                                      {contract?.title || "Без названия"}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      setNewUser({
+                                        ...newUser,
+                                        contractIds: newUser.contractIds.filter(
+                                          (id) => id !== contractId
+                                        ),
+                                      });
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                  </Button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">
+                        Сначала выберите компанию для отображения доступных
+                        контрактов
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
           <Button
             type="submit"
             onClick={handleAddUser}
@@ -383,14 +632,19 @@ export default function AddUserDialog({
               !newUser.role ||
               (isCompanyRequired && newUser.companyId.length === 0)
             }
+            className="w-full sm:w-auto"
           >
             {addUserMutation.isPending ? (
               <>
                 <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Добавление...
+                <span className="hidden sm:inline">Добавление...</span>
+                <span className="sm:hidden">Добавляем</span>
               </>
             ) : (
-              "Добавить"
+              <>
+                <span className="hidden sm:inline">Добавить пользователя</span>
+                <span className="sm:hidden">Добавить</span>
+              </>
             )}
           </Button>
         </DialogFooter>

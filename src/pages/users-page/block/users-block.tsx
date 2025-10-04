@@ -106,10 +106,11 @@ export default function UsersBlock() {
 
   return (
     <>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold tracking-tight">
-            УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ
+      <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+            <span className="hidden sm:inline">УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ</span>
+            <span className="sm:hidden">Пользователи</span>
           </h1>
         </div>
 
@@ -123,30 +124,34 @@ export default function UsersBlock() {
           </Alert>
         )}
 
-        <div className="flex flex-col sm:flex-row justify-between gap-4">
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Поиск пользователей..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="pl-10"
-            />
-          </div>
-          <div className="flex flex-wrap border gap-2">
-            <AddUserDialog
-              isOpen={isAddDialogOpen}
-              onOpenChange={setIsAddDialogOpen}
-            />
+        <div className="flex flex-col gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-4">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Поиск..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="pl-10 h-10"
+              />
+            </div>
+            <div className="flex justify-center sm:justify-end">
+              <AddUserDialog
+                isOpen={isAddDialogOpen}
+                onOpenChange={setIsAddDialogOpen}
+              />
+            </div>
           </div>
         </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Пользователи</CardTitle>
-            <CardDescription>Управление пользователями системы</CardDescription>
+        <Card className="border-0 sm:border shadow-none sm:shadow-sm">
+          <CardHeader className="pb-2 px-2 sm:px-6">
+            <CardTitle className="text-lg sm:text-xl">Пользователи</CardTitle>
+            <CardDescription className="hidden sm:block">
+              Управление пользователями системы
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0 sm:px-6">
             <UserTable
               users={filteredUsers}
               isLoading={isLoading}
@@ -154,49 +159,50 @@ export default function UsersBlock() {
               onDelete={openDeleteDialog}
             />
           </CardContent>
-          <CardFooter className="flex items-center justify-between pt-4">
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <div>
-                Страница {currentPage} из {lastPage}
-              </div>
-              <div>|</div>
-              <div>
-                Всего: {totalItems}{" "}
-                {totalItems === 1
-                  ? "запись"
-                  : totalItems % 10 === 1 && totalItems % 100 !== 11
-                  ? "запись"
-                  : totalItems % 10 >= 2 &&
-                    totalItems % 10 <= 4 &&
-                    (totalItems % 100 < 10 || totalItems % 100 >= 20)
-                  ? "записи"
-                  : "записей"}
-              </div>
-              <div>|</div>
-              <div className="flex items-center space-x-2">
-                <span>Показывать:</span>
-                <Select
-                  value={limit.toString()}
-                  onValueChange={handleLimitChange}
-                >
-                  <SelectTrigger className="h-8 w-[70px]">
-                    <SelectValue placeholder={limit.toString()} />
-                  </SelectTrigger>
-                  <SelectContent side="top">
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Pagination */}
+          <CardFooter className="flex flex-col gap-4 pt-4 px-2 sm:px-6">
+            {/* Mobile Pagination Controls */}
             {lastPage > 1 && (
-              <div className="flex justify-center">
+              <div className="sm:hidden flex items-center justify-between w-full">
+                {/* Previous Button */}
+                <button
+                  onClick={() => {
+                    if (currentPage > 1) {
+                      handlePageChange(currentPage - 1);
+                    }
+                  }}
+                  disabled={currentPage <= 1}
+                  className="flex items-center px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Назад
+                </button>
+
+                {/* Page info */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-muted-foreground">
+                    {currentPage} из {lastPage}
+                  </span>
+                </div>
+
+                {/* Next Button */}
+                <button
+                  onClick={() => {
+                    if (currentPage < lastPage) {
+                      handlePageChange(currentPage + 1);
+                    }
+                  }}
+                  disabled={currentPage >= lastPage}
+                  className="flex items-center px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Вперёд
+                </button>
+              </div>
+            )}
+
+            {/* Desktop Pagination Controls */}
+            {lastPage > 1 && (
+              <div className="hidden sm:flex justify-center">
                 <Pagination>
-                  <PaginationContent>
+                  <PaginationContent className="flex-wrap gap-1">
                     <PaginationItem>
                       <PaginationPrevious
                         href="#"
@@ -236,6 +242,7 @@ export default function UsersBlock() {
                               handlePageChange(pageNum);
                             }}
                             isActive={currentPage === pageNum}
+                            className="min-w-[40px]"
                           >
                             {pageNum}
                           </PaginationLink>
@@ -256,6 +263,7 @@ export default function UsersBlock() {
                               handlePageChange(lastPage);
                             }}
                             isActive={currentPage === lastPage}
+                            className="min-w-[40px]"
                           >
                             {lastPage}
                           </PaginationLink>
@@ -284,26 +292,21 @@ export default function UsersBlock() {
               </div>
             )}
 
-            {/* Info about pagination */}
-            {totalItems > 0 && (
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
-                <div className="text-xs sm:text-sm text-muted-foreground">
-                  Показано {Math.min(limit, filteredUsers.length)} из{" "}
-                  {totalItems} записей
-                  <span className="hidden sm:inline">
-                    {" "}
-                    (страница {currentPage} из {lastPage})
-                  </span>
+            {/* Pagination Info and Controls */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
+              {/* Mobile: Compact layout */}
+              <div className="sm:hidden flex flex-col items-center gap-3 text-xs text-muted-foreground w-full">
+                <div className="text-center">
+                  Всего: {totalItems} записей | Показано:{" "}
+                  {Math.min(limit, filteredUsers.length)}
                 </div>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                  <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                    На странице:
-                  </span>
+                <div className="flex items-center justify-center gap-2 w-full">
+                  <span className="whitespace-nowrap">На стр.:</span>
                   <Select
                     value={limit.toString()}
                     onValueChange={handleLimitChange}
                   >
-                    <SelectTrigger className="w-[70px] h-8">
+                    <SelectTrigger className="h-8 w-[80px] min-w-[80px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -316,7 +319,36 @@ export default function UsersBlock() {
                   </Select>
                 </div>
               </div>
-            )}
+
+              {/* Desktop: Full layout */}
+              <div className="hidden sm:flex items-center space-x-4 text-sm text-muted-foreground">
+                <div>
+                  Показано {Math.min(limit, filteredUsers.length)} из{" "}
+                  {totalItems} записей
+                </div>
+              </div>
+
+              <div className="hidden sm:flex items-center space-x-2">
+                <span className="text-sm text-muted-foreground">
+                  На странице:
+                </span>
+                <Select
+                  value={limit.toString()}
+                  onValueChange={handleLimitChange}
+                >
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardFooter>
         </Card>
       </div>

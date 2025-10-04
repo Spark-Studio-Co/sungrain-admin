@@ -1,0 +1,98 @@
+/* Мобильные стили для Dashboard */
+
+/* Адаптация для маленьких экранов */
+@media (max-width: 640px) {
+  /* Улучшенная навигация табов */
+  .tab-trigger-mobile {
+    flex-direction: column !important;
+    gap: 2px !important;
+    height: 40px !important;
+    padding: 4px 8px !important;
+    font-size: 10px !important;
+  }
+
+  /* Компактные иконки */
+  .tab-icon-mobile {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  /* Адаптация графиков */
+  .chart-container-mobile {
+    height: 256px !important; /* h-64 */
+    padding: 8px !important;
+  }
+
+  /* Компактные карточки */
+  .card-mobile {
+    padding: 12px !important;
+  }
+
+  /* Адаптация таблиц */
+  .table-mobile {
+    font-size: 12px !important;
+  }
+
+  /* Скрытые элементы на мобильных */
+  .hidden-mobile {
+    display: none !important;
+  }
+
+  /* Компактные кнопки */
+  .button-mobile {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* Адаптация для средних экранов */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .chart-container-tablet {
+    height: 320px !important; /* h-80 */
+  }
+}
+
+/* Адаптация для больших экранов */
+@media (min-width: 1025px) {
+  .chart-container-desktop {
+    height: 384px !important; /* h-96 */
+  }
+}
+
+/* Touch-friendly кнопки */
+@media (hover: none) and (pointer: coarse) {
+  .touch-target {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+}
+
+/* Улучшенная прокрутка */
+.scroll-smooth {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Компактные отступы для мобильных */
+.mobile-compact {
+  padding: 12px !important;
+  margin: 8px !important;
+}
+
+/* Адаптивная типографика */
+@media (max-width: 640px) {
+  .responsive-text-sm {
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+  }
+
+  .responsive-text-base {
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+  }
+
+  .responsive-text-lg {
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+  }
+}
