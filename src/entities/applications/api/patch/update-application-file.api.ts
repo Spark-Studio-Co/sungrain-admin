@@ -19,10 +19,16 @@ export const updateApplicationFile = async ({
 }: UpdateApplicationFileParams) => {
   const formData = new FormData();
 
-  // Добавляем метаданные как поля формы
-  if (name) formData.append("name", name);
-  if (number) formData.append("number", number);
-  if (date) formData.append("date", date);
+  // Добавляем метаданные как поля формы (только если они не пустые)
+  if (name !== undefined && name !== null && name !== "") {
+    formData.append("name", name);
+  }
+  if (number !== undefined && number !== null && number !== "") {
+    formData.append("number", number);
+  }
+  if (date !== undefined && date !== null && date !== "") {
+    formData.append("date", date);
+  }
 
   // Если есть новый файл, добавляем его
   if (file) {

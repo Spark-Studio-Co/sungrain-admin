@@ -386,9 +386,21 @@ export const ApplicationDetail = ({
     if (!editingDocument) return;
 
     try {
+      // Используем number как fileNumber для идентификации файла
+      const fileNumber =
+        editingDocument.number ||
+        editingDocument.originalNumber ||
+        editingDocument.id;
+
+      if (!fileNumber) {
+        console.error("Cannot update document: no file number available");
+        alert("Ошибка: не удается определить номер файла для обновления");
+        return;
+      }
+
       await updateApplicationFileMutation.mutateAsync({
         applicationId: applicationId,
-        fileNumber: editingDocument.number || editingDocument.originalNumber,
+        fileNumber: fileNumber,
         name: editingDocument.name,
         number: editingDocument.number,
         date: editingDocument.date,
@@ -400,6 +412,7 @@ export const ApplicationDetail = ({
       refetch(); // Обновляем данные
     } catch (error) {
       console.error("Error updating document:", error);
+      alert("Ошибка при обновлении документа. Пожалуйста, попробуйте снова.");
     }
   };
 
