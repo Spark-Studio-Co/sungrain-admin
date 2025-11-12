@@ -65,18 +65,98 @@ export default function ApplicationPage() {
   const handleFileDownload = (fileUrl: string, fileName: string) => {
     if (!fileUrl) {
       console.error("File URL is missing");
-
       return;
     }
 
-    const link = document.createElement("a");
-    link.href = fileUrl;
-    link.setAttribute("download", fileName);
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      // Check if the URL is relative or absolute
+      const url = fileUrl.startsWith("http")
+        ? fileUrl
+        : `${process.env.NEXT_PUBLIC_API_URL || ""}${fileUrl}`;
+
+      console.log("Attempting to download file:", url);
+
+      // For mobile devices or URLs with special characters, open directly
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      if (
+        isMobile ||
+        url.includes("%") ||
+        /[а-яА-Я]/.test(url) ||
+        url.includes("+")
+      ) {
+        // Create a temporary link and click it
+        const link = document.createElement("a");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.download = fileName;
+
+        // Add to DOM, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        console.log(
+          "Opening/downloading file for mobile or special characters"
+        );
+        return;
+      }
+
+      // For desktop, try fetch first
+      fetch(url, { method: "HEAD" })
+        .then((response) => {
+          if (response.ok) {
+            // File exists, create download link
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            console.log("File download initiated");
+          } else {
+            // File doesn't exist or isn't accessible, open in new tab
+            const link = document.createElement("a");
+            link.href = url;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            console.log("Opening file in new tab as direct download failed");
+          }
+        })
+        .catch((error) => {
+          console.error("Error checking file:", error);
+          // On error, try opening in new tab
+          const link = document.createElement("a");
+          link.href = url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          console.log("Opening file as fallback");
+        });
+    } catch (error) {
+      console.error("Error in handleFileDownload:", error);
+      // Final fallback - create link element
+      try {
+        const link = document.createElement("a");
+        link.href = fileUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (e) {
+        console.error("Failed to open file:", e);
+      }
+    }
   };
 
   const handleFileEdit = (fileId: string, fileName: string) => {

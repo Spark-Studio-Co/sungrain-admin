@@ -240,44 +240,79 @@ export const ApplicationDetail = ({
 
       console.log("Attempting to download file:", url);
 
-      // For URLs with encoding issues, try to open in a new tab
-      if (url.includes("%") || /[а-яА-Я]/.test(url) || url.includes("+")) {
-        window.open(url, "_blank");
-        console.log("Opening file in new tab due to special characters in URL");
+      // For mobile devices or URLs with special characters, open directly
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      if (
+        isMobile ||
+        url.includes("%") ||
+        /[а-яА-Я]/.test(url) ||
+        url.includes("+")
+      ) {
+        // Create a temporary link and click it
+        const link = document.createElement("a");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.download = fileName;
+
+        // Add to DOM, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        console.log(
+          "Opening/downloading file for mobile or special characters"
+        );
         return;
       }
 
-      // Create a fetch request to check if the file exists and is accessible
+      // For desktop, try fetch first
       fetch(url, { method: "HEAD" })
         .then((response) => {
           if (response.ok) {
             // File exists, create download link
             const link = document.createElement("a");
-            window.open(url, "_blank");
-            link.setAttribute("download", fileName);
+            link.href = url;
+            link.download = fileName;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             console.log("File download initiated");
           } else {
             // File doesn't exist or isn't accessible, open in new tab
-            window.open(url, "_blank");
+            window.open(url, "_blank", "noopener,noreferrer");
             console.log("Opening file in new tab as direct download failed");
           }
         })
         .catch((error) => {
           console.error("Error checking file:", error);
           // On error, try opening in new tab
-          window.open(url, "_blank");
-          console.log("Opening file in new tab as fallback");
+          const link = document.createElement("a");
+          link.href = url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          console.log("Opening file as fallback");
         });
     } catch (error) {
       console.error("Error in handleFileDownload:", error);
-      // Final fallback - try to open in new tab
+      // Final fallback - create link element
       try {
-        window.open(fileUrl, "_blank");
+        const link = document.createElement("a");
+        link.href = fileUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } catch (e) {
-        console.error("Failed to open file in new tab:", e);
+        console.error("Failed to open file:", e);
       }
     }
   };
