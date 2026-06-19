@@ -1,0 +1,832 @@
+"use client";
+
+import type React from "react";
+import { useState } from "react";
+import { formatCurrency, formatNumber } from "@/lib/utils";
+import {
+  FileText,
+  Plus,
+  Package,
+  Coins as DollarSign,
+  Search,
+  Loader2,
+  Pencil,
+  Trash2,
+  AlertCircle,
+  TrainFront,
+  SlidersHorizontal,
+  Download,
+  RefreshCw,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useGetApplications } from "@/entities/applications/hooks/query/use-get-applications.query";
+import { useDeleteApplication } from "@/entities/applications/hooks/mutations/use-delete-application.mutation";
+import { ApplicationDialog } from "@/screens/application-page/blocks/application-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+interface ApplicationBlockProps {
+  contractId: string;
+  onSelectApplication: (applicationId: string) => void;
+}
+
+export const ApplicationBlock = ({
+  contractId,
+  onSelectApplication,
+}: ApplicationBlockProps) => {
+  const [isAdmin] = useState<boolean | null>(() => {
+    const storedAdminStatus = localStorage.getItem("isAdmin");
+    return storedAdminStatus ? JSON.parse(storedAdminStatus) : null;
+  });
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState<any>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const {
+    data: applications,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useGetApplications(contractId);
+
+  const deleteApplicationMutation = useDeleteApplication();
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "dd MMMM yyyy", { locale: ru });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Handle manual refresh
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } catch {
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Get culture name from code
+  const getCultureName = (cultureCode: string) => {
+    const cultures: Record<string, string> = {
+      wheat: "Пшеница",
+      barley: "Ячмень",
+      corn: "Кукуруза",
+      sunflower: "Подсолнечник",
+      flax: "Лен",
+      rapeseed: "Рапс",
+    };
+    return cultures[cultureCode] || cultureCode;
+  };
+
+  // Filter applications based on search term
+  const filteredApplications = Array.isArray(applications)
+    ? applications.filter((app: any) => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          app.id?.toString().includes(searchLower) ||
+          app.name?.toLowerCase().includes(searchLower) ||
+          app.price_per_ton?.toString().includes(searchLower) ||
+          app.volume?.toString().includes(searchLower) ||
+          app.total_amount?.toString().includes(searchLower) ||
+          app.currency?.toLowerCase().includes(searchLower) ||
+          (app.created_at &&
+            formatDate(app.created_at).toLowerCase().includes(searchLower)) ||
+          (app.culture &&
+            (app.culture.toLowerCase().includes(searchLower) ||
+              getCultureName(app.culture).toLowerCase().includes(searchLower)))
+        );
+      })
+    : [];
+
+  // Handle dialog close and refresh data
+  const handleDialogClose = (shouldRefresh: boolean) => {
+    setIsAddDialogOpen(false);
+    setIsEditDialogOpen(false);
+    setSelectedApplication(null);
+    if (shouldRefresh) {
+      refetch();
+    }
+  };
+
+  // Open edit dialog
+  const handleEditApplication = (application: any, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click from triggering
+    setSelectedApplication(application);
+    setIsEditDialogOpen(true);
+  };
+
+  // Open delete confirmation dialog
+  const handleDeleteClick = (application: any, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click from triggering
+    setSelectedApplication(application);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteApplication = async () => {
+    if (!selectedApplication) return;
+    await deleteApplicationMutation.mutateAsync(selectedApplication.id);
+    // The rest is handled in the onSuccess callback
+  };
+
+  // Handle row click to view application details
+  const handleRowClick = (applicationId: string) => {
+    onSelectApplication(applicationId);
+  };
+
+  // Export applications to CSV
+  const exportToCSV = () => {
+    if (!applications || applications.length === 0) {
+      return;
+    }
+
+    try {
+      // Create CSV header
+      const headers = [
+        "ID",
+        "Название",
+        "Дата создания",
+        "Объем (т)",
+        "Культура",
+        "Цена за тонну",
+        "Валюта",
+        "Общая сумма",
+        "Документы",
+        "Вагоны",
+      ];
+
+      // Create CSV rows
+      const rows = applications.map((app: any) => [
+        app.id,
+        app.name || "",
+        app.created_at ? formatDate(app.created_at) : "",
+        app.volume || 0,
+        getCultureName(app.culture) || "",
+        app.price_per_ton || 0,
+        app.currency || app.contract?.currency || "KZT",
+        app.total_amount || 0,
+        app.files?.length || 0,
+        app.wagons?.length || 0,
+      ]);
+
+      // Combine header and rows
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row: any) => row.join(",")),
+      ].join("\n");
+
+      // Create a blob and download
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute(
+        "download",
+        `applications-${new Date().toISOString().slice(0, 10)}.csv`
+      );
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch {}
+  };
+
+  // Render loading skeleton
+  const renderSkeleton = () => (
+    <div className="space-y-4">
+      <div className="flex items-center space-x-4">
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <div className="border rounded-lg">
+        <div className="p-4">
+          <div className="grid grid-cols-9 gap-4 mb-4">
+            {Array(9)
+              .fill(0)
+              .map((_, i) => (
+                <Skeleton key={i} className="h-8" />
+              ))}
+          </div>
+          {Array(5)
+            .fill(0)
+            .map((_, i) => (
+              <div key={i} className="grid grid-cols-9 gap-4 mb-4">
+                {Array(9)
+                  .fill(0)
+                  .map((_, j) => (
+                    <Skeleton key={j} className="h-10" />
+                  ))}
+              </div>
+            ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <Card className="sungrain-analytics-card overflow-hidden">
+        <CardHeader className="border-b border-[#e5ece4] bg-[#fbfcfa] px-4 py-4 sm:px-5 lg:px-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full sm:gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
+                <FileText className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-xl font-black leading-tight text-[#223137]">
+                  Заявки по договору
+                </CardTitle>
+                <CardDescription className="mt-1 text-sm text-[#6f7774]">
+                  Управление заявками и отгрузками
+                </CardDescription>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleRefresh}
+                      disabled={isRefreshing}
+                      className="h-10 w-10 rounded-md border-[#dce4da] bg-white text-[#223137] shadow-sm hover:bg-[#fff3e5] hover:text-[#d5740b]"
+                    >
+                      {isRefreshing ? (
+                        <Loader2 className="h-5 w-5 sm:h-4 sm:w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-5 w-5 sm:h-4 sm:w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Обновить данные</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-10 w-10 rounded-md border-[#dce4da] bg-white text-[#223137] shadow-sm hover:bg-[#fff3e5] hover:text-[#d5740b]"
+                  >
+                    <SlidersHorizontal className="h-5 w-5 sm:h-4 sm:w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>Действия</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={exportToCSV}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Экспорт в CSV
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {isAdmin && (
+                <Button
+                  onClick={() => setIsAddDialogOpen(true)}
+                  className="h-10 w-full gap-2 rounded-md bg-[#f38810] px-4 font-bold text-white shadow-[0_10px_24px_rgba(243,136,16,0.20)] hover:bg-[#db790c] sm:w-auto"
+                  size="sm"
+                >
+                  <Plus className="h-5 w-5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Добавить заявку</span>
+                  <span className="sm:hidden">Добавить</span>
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="px-4 py-4 sm:px-5 lg:px-6">
+          {isLoading ? (
+            renderSkeleton()
+          ) : (
+            <div className="space-y-4">
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a928f]" />
+                <Input
+                  type="search"
+                  placeholder="Поиск по заявкам..."
+                  className="h-11 rounded-md border-[#dce4da] bg-white pl-10 text-[#223137] shadow-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              {isError ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Ошибка загрузки данных:{" "}
+                    {(error as Error)?.message || "Неизвестная ошибка"}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => refetch()}
+                      className="mt-2 ml-2"
+                    >
+                      Попробовать снова
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden overflow-hidden rounded-md bg-white shadow-[0_16px_36px_rgba(34,49,55,0.06)] md:block">
+                    <Table className="min-w-[1100px]">
+                      <TableHeader className="bg-[#f7f8f5]">
+                        <TableRow>
+                          <TableHead>Название</TableHead>
+                          <TableHead>Объем (т)</TableHead>
+                          <TableHead>Культура</TableHead>
+                          <TableHead>Цена за тонну</TableHead>
+                          <TableHead>Валюта</TableHead>
+                          <TableHead>Общая сумма</TableHead>
+                          <TableHead>Документы</TableHead>
+                          <TableHead>Вагоны</TableHead>
+                          {isAdmin && (
+                            <TableHead className="text-right">
+                              Действия
+                            </TableHead>
+                          )}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredApplications.length > 0 ? (
+                          filteredApplications.map((application: any) => (
+                            <TableRow
+                              key={application.id}
+                              className="cursor-pointer hover:bg-[#f8faf7]"
+                              onClick={() =>
+                                handleRowClick(application.id.toString())
+                              }
+                            >
+                              <TableCell>
+                                <div className="max-w-[220px] truncate font-black text-[#223137]">
+                                  {application.name || "Без названия"}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <Package className="h-4 w-4 text-muted-foreground" />
+                                  {application.volume
+                                    ? formatNumber(application.volume)
+                                    : 0}{" "}
+                                  т
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]"
+                                >
+                                  {getCultureName(application.culture) ||
+                                    "Не указана"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <DollarSign className="h-4 w-4 text-green-500" />
+                                  {application.price_per_ton
+                                    ? formatCurrency(application.price_per_ton)
+                                    : 0}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]"
+                                >
+                                  {application.currency ||
+                                    application.contract?.currency ||
+                                    "KZT"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="border-[#dce8dc] bg-[#f5faf5] font-black text-[#2f6b4f]"
+                                >
+                                  {application.total_amount
+                                    ? formatCurrency(application.total_amount)
+                                    : 0}{" "}
+                                  {application.currency ||
+                                    application.contract?.currency ||
+                                    "₸"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <FileText className="h-4 w-4 text-blue-500" />
+                                  <span>{application.files?.length || 0}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <TrainFront className="h-4 w-4 text-amber-500" />
+                                  <span>{application.wagons?.length || 0}</span>
+                                </div>
+                              </TableCell>
+                              {isAdmin && (
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-1">
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                            onClick={(e) =>
+                                              handleEditApplication(
+                                                application,
+                                                e
+                                              )
+                                            }
+                                          >
+                                            <Pencil className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Редактировать</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="destructive"
+                                            size="icon"
+                                            className="h-8 w-8"
+                                            onClick={(e) =>
+                                              handleDeleteClick(application, e)
+                                            }
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Удалить</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </div>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell
+                              colSpan={isAdmin ? 11 : 10}
+                              className="h-24 text-center"
+                            >
+                              {searchTerm ? (
+                                <>
+                                  <div className="flex flex-col items-center gap-2">
+                                    <Search className="h-8 w-8 text-muted-foreground" />
+                                    <p>
+                                      Заявки не найдены по запросу "{searchTerm}
+                                      "
+                                    </p>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setSearchTerm("")}
+                                      className="mt-2"
+                                    >
+                                      Сбросить поиск
+                                    </Button>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                                  <p>Заявки не найдены</p>
+                                  {isAdmin && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setIsAddDialogOpen(true)}
+                                      className="mt-2"
+                                    >
+                                      <Plus className="h-4 w-4 mr-1" /> Добавить
+                                      заявку
+                                    </Button>
+                                  )}
+                                </>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="md:hidden space-y-4">
+                    {filteredApplications.length > 0 ? (
+                      filteredApplications.map((application: any) => (
+                        <Card
+                          key={application.id}
+                          className="cursor-pointer hover:shadow-lg transition-all duration-200 border border-gray-200"
+                          onClick={() =>
+                            handleRowClick(application.id.toString())
+                          }
+                        >
+                          <CardContent className="p-5">
+                            <div className="space-y-4">
+                              {/* Header */}
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-semibold text-base leading-tight">
+                                    {application.name || "Без названия"}
+                                  </h3>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    ID: {application.id}
+                                  </p>
+                                </div>
+                                {isAdmin && (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="h-9 w-9"
+                                      onClick={(e) =>
+                                        handleEditApplication(application, e)
+                                      }
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      size="icon"
+                                      className="h-9 w-9"
+                                      onClick={(e) =>
+                                        handleDeleteClick(application, e)
+                                      }
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Main Info */}
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                                  <div className="flex items-center gap-2">
+                                    <Package className="h-5 w-5 text-primary" />
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                      Объем:
+                                    </span>
+                                  </div>
+                                  <div className="font-semibold text-base">
+                                    {application.volume
+                                      ? formatNumber(application.volume)
+                                      : 0}{" "}
+                                    т
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                                  <span className="text-sm font-medium text-muted-foreground">
+                                    Культура:
+                                  </span>
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-green-50 text-green-700 text-sm px-3 py-1"
+                                  >
+                                    {getCultureName(application.culture) ||
+                                      "Не указана"}
+                                  </Badge>
+                                </div>
+
+                                <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                                  <div className="flex items-center gap-2">
+                                    <DollarSign className="h-5 w-5 text-green-500" />
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                      Цена за тонну:
+                                    </span>
+                                  </div>
+                                  <div className="font-semibold text-base">
+                                    {application.price_per_ton
+                                      ? formatCurrency(
+                                          application.price_per_ton
+                                        )
+                                      : 0}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Total Amount */}
+                              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-green-700 font-semibold text-base">
+                                    Общая сумма:
+                                  </span>
+                                  <div className="text-green-700 font-bold text-lg">
+                                    {application.total_amount
+                                      ? formatCurrency(application.total_amount)
+                                      : 0}{" "}
+                                    {application.currency ||
+                                      application.contract?.currency ||
+                                      "₸"}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Additional Info */}
+                              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                <div className="flex items-center gap-4">
+                                  <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg">
+                                    <FileText className="h-5 w-5 text-blue-500" />
+                                    <span className="font-medium text-blue-700">
+                                      {application.files?.length || 0}
+                                    </span>
+                                    <span className="text-sm text-blue-600">
+                                      док.
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 rounded-lg">
+                                    <TrainFront className="h-5 w-5 text-amber-500" />
+                                    <span className="font-medium text-amber-700">
+                                      {application.wagons?.length || 0}
+                                    </span>
+                                    <span className="text-sm text-amber-600">
+                                      ваг.
+                                    </span>
+                                  </div>
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className="bg-blue-50 text-blue-700 text-sm px-3 py-1 font-medium"
+                                >
+                                  {application.currency ||
+                                    application.contract?.currency ||
+                                    "KZT"}
+                                </Badge>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                        {searchTerm ? (
+                          <>
+                            <div className="p-4 bg-gray-50 rounded-full mb-4">
+                              <Search className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                            <h3 className="font-semibold text-lg mb-2">
+                              Ничего не найдено
+                            </h3>
+                            <p className="text-muted-foreground mb-6 text-base">
+                              Заявки не найдены по запросу "{searchTerm}"
+                            </p>
+                            <Button
+                              variant="outline"
+                              onClick={() => setSearchTerm("")}
+                              className="py-2.5 px-6 text-base"
+                            >
+                              Сбросить поиск
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <div className="p-4 bg-blue-50 rounded-full mb-4">
+                              <FileText className="h-8 w-8 text-blue-500" />
+                            </div>
+                            <h3 className="font-semibold text-lg mb-2">
+                              Нет заявок
+                            </h3>
+                            <p className="text-muted-foreground mb-6 text-base">
+                              Заявки по данному договору не найдены
+                            </p>
+                            {isAdmin && (
+                              <Button
+                                onClick={() => setIsAddDialogOpen(true)}
+                                className="gap-2 py-2.5 px-6 text-base bg-blue-500 hover:bg-blue-600"
+                              >
+                                <Plus className="h-5 w-5" /> Добавить заявку
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add Application Dialog */}
+      <ApplicationDialog
+        isOpen={isAddDialogOpen}
+        onClose={handleDialogClose}
+        contractId={contractId}
+      />
+
+      {/* Edit Application Dialog */}
+      {selectedApplication && (
+        <ApplicationDialog
+          isOpen={isEditDialogOpen}
+          onClose={handleDialogClose}
+          contractId={contractId}
+          application={selectedApplication}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить заявку</AlertDialogTitle>
+            <AlertDialogDescription>
+              Вы уверены, что хотите удалить заявку #{selectedApplication?.id}?
+              Это действие нельзя отменить.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteApplication}
+              disabled={deleteApplicationMutation.isPending}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              {deleteApplicationMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Удаление...
+                </>
+              ) : (
+                "Удалить"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+};
