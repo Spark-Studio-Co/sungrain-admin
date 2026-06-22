@@ -583,8 +583,8 @@ export const WagonRegistry = ({
           </div>
 
           {/* Desktop Table Layout */}
-          <div className="border rounded-lg overflow-x-auto hidden sm:block">
-            <Table>
+          <div className="crm-scrollbar hidden overflow-x-auto rounded-md border border-[#dfe7de] sm:block">
+            <Table className="min-w-[980px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs sm:text-sm p-2 sm:p-4">

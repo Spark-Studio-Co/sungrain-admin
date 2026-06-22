@@ -1,41 +1,22 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/shared/api/apiClient";
+import { createInvoice } from "../../api/post/create-invoice.api";
 
 interface CreateInvoiceParams {
   applicationId: string | number;
   name: string;
+  number?: string;
   amount: number;
   date: string;
   status: string;
-  description: string;
-  file: File;
+  description?: string;
+  file?: File;
 }
 
 export const useCreateInvoice = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: CreateInvoiceParams) => {
-      const formData = new FormData();
-      formData.append("name", params.name);
-      formData.append("amount", params.amount.toString());
-      formData.append("date", params.date);
-      formData.append("status", params.status);
-      formData.append("description", params.description);
-      formData.append("files", params.file);
-
-      const response = await apiClient.post(
-        `/application/add-invoice/${params.applicationId}/invoice`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      return response.data;
-    },
+    mutationFn: (params: CreateInvoiceParams) => createInvoice(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       queryClient.invalidateQueries({ queryKey: ["application"] });

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { mockApiAdapter } from "./mock-api";
+import { afterEach, describe, expect, it } from "vitest";
+import { mockApiAdapter, shouldUseMockApi } from "./mock-api";
 
 const request = async (url: string, options: Record<string, unknown> = {}) => {
   const response = await mockApiAdapter({
@@ -13,6 +13,22 @@ const request = async (url: string, options: Record<string, unknown> = {}) => {
 };
 
 describe("mockApiAdapter", () => {
+  afterEach(() => {
+    delete process.env.NEXT_PUBLIC_USE_MOCK_API;
+  });
+
+  it("keeps the real backend enabled by default", () => {
+    delete process.env.NEXT_PUBLIC_USE_MOCK_API;
+
+    expect(shouldUseMockApi()).toBe(false);
+  });
+
+  it("uses the mock adapter only when explicitly requested", () => {
+    process.env.NEXT_PUBLIC_USE_MOCK_API = "true";
+
+    expect(shouldUseMockApi()).toBe(true);
+  });
+
   it("returns paginated contract data with nested CRM entities", async () => {
     const data = await request("/contract", {
       params: { page: 1, limit: 2 },

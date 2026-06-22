@@ -83,6 +83,26 @@ const COLORS = [
 
 const getColor = (index) => COLORS[index % COLORS.length];
 
+const chartTooltipWrapperStyle = {
+  zIndex: 6,
+  pointerEvents: "none",
+};
+
+const chartTooltipContentStyle = {
+  backgroundColor: "white",
+  border: "1px solid #e2e8f0",
+  borderRadius: "8px",
+  boxShadow: "0 12px 30px rgba(34, 49, 55, 0.12)",
+  fontSize: "13px",
+};
+
+const donutTooltipProps = {
+  allowEscapeViewBox: { x: true, y: true },
+  contentStyle: chartTooltipContentStyle,
+  position: { x: 8, y: 8 },
+  wrapperStyle: chartTooltipWrapperStyle,
+};
+
 const formatCompactCurrency = (value) => {
   if (value >= 1_000_000) {
     return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)} млн`;
@@ -1095,7 +1115,7 @@ export const DashboardBlock = () => {
   };
 
   return (
-    <div className="sungrain-dashboard w-full max-w-none mx-auto px-4 sm:px-6 lg:px-12 py-5 sm:py-6 lg:py-8 space-y-5 sm:space-y-6 lg:space-y-8 relative min-h-screen overflow-x-hidden">
+    <div className="sungrain-dashboard relative min-h-screen w-full min-w-0 max-w-none space-y-5 overflow-x-hidden px-3 py-5 sm:px-5 sm:py-6 lg:px-6">
       <div className="absolute inset-0 bg-[linear-gradient(180deg,#ffffff_0%,#f7f8f5_42%,#ffffff_100%)] -z-20"></div>
       <div className="sungrain-dashboard-heading flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div className="space-y-1">
@@ -1645,7 +1665,7 @@ export const DashboardBlock = () => {
                           </Pie>
                         </PieChart>
                       </ResponsiveContainer>
-                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                      <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
                         <div className="text-center">
                           <div className="text-lg font-semibold leading-5 text-[#223137]">
                             {cropDistributionTotal.toLocaleString()}
@@ -1815,6 +1835,7 @@ export const DashboardBlock = () => {
                             width={window.innerWidth < 640 ? 32 : 42}
                           />
                           <Tooltip
+                            wrapperStyle={chartTooltipWrapperStyle}
                             cursor={{
                               stroke: "#dbe5da",
                               strokeWidth: 1,
@@ -2096,6 +2117,7 @@ export const DashboardBlock = () => {
                                 width={48}
                               />
                               <Tooltip
+                                wrapperStyle={chartTooltipWrapperStyle}
                                 cursor={{
                                   stroke: "#dbe5da",
                                   strokeWidth: 1,
@@ -2295,6 +2317,7 @@ export const DashboardBlock = () => {
                             domain={[0, "dataMax + 1"]}
                           />
                           <Tooltip
+                            wrapperStyle={chartTooltipWrapperStyle}
                             cursor={{
                               fill: "rgba(77, 124, 93, 0.055)",
                             }}
@@ -2498,6 +2521,7 @@ export const DashboardBlock = () => {
                             width={window.innerWidth < 640 ? 32 : 42}
                           />
                           <Tooltip
+                            wrapperStyle={chartTooltipWrapperStyle}
                             cursor={{
                               fill: "rgba(77, 124, 93, 0.055)",
                             }}
@@ -2659,6 +2683,7 @@ export const DashboardBlock = () => {
                                   width={48}
                                 />
                                 <Tooltip
+                                  wrapperStyle={chartTooltipWrapperStyle}
                                   cursor={{
                                     stroke: "#dbe5da",
                                     strokeWidth: 1,
@@ -2799,6 +2824,7 @@ export const DashboardBlock = () => {
                                   ))}
                                 </Pie>
                                 <Tooltip
+                                  {...donutTooltipProps}
                                   contentStyle={{
                                     backgroundColor: "white",
                                     border: "1px solid #e2e8f0",
@@ -2814,7 +2840,7 @@ export const DashboardBlock = () => {
                                 />
                               </PieChart>
                             </ResponsiveContainer>
-                            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
                               <div className="text-center">
                                 <div className="text-xl font-semibold leading-6 text-[#223137]">
                                   {topStation?.share ?? 0}%
@@ -2934,6 +2960,7 @@ export const DashboardBlock = () => {
                               ))}
                             </Pie>
                             <Tooltip
+                              {...donutTooltipProps}
                               contentStyle={{
                                 backgroundColor: "white",
                                 border: "1px solid #e2e8f0",
@@ -2949,7 +2976,7 @@ export const DashboardBlock = () => {
                             />
                           </PieChart>
                         </ResponsiveContainer>
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
                           <div className="text-center">
                             <div className="text-xl font-semibold leading-6 text-[#223137]">
                               {cropDistributionRows[0]?.share ?? 0}%
@@ -3329,6 +3356,7 @@ export const DashboardBlock = () => {
                             ))}
                           </Pie>
                           <Tooltip
+                            {...donutTooltipProps}
                             formatter={(value, ...tooltipArgs) => {
                               const props = tooltipArgs[1];
                               return [
@@ -3339,7 +3367,7 @@ export const DashboardBlock = () => {
                           />
                         </PieChart>
                       </ResponsiveContainer>
-                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                      <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
                         <div className="text-center">
                           <div className="text-4xl font-black text-[#223137]">
                             {companySummary.totalContracts}
@@ -3538,6 +3566,7 @@ export const DashboardBlock = () => {
                               ))}
                             </Pie>
                             <Tooltip
+                              {...donutTooltipProps}
                               formatter={(value, ...tooltipArgs) => {
                                 const props = tooltipArgs[1];
                                 return [
@@ -3548,7 +3577,7 @@ export const DashboardBlock = () => {
                             />
                           </PieChart>
                         </ResponsiveContainer>
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
                           <div className="text-center">
                             <div className="text-5xl font-black text-[#223137]">
                               {transportSummary.totalWagons}
@@ -3864,6 +3893,7 @@ export const DashboardBlock = () => {
                                   domain={["dataMin", "dataMax"]}
                                 />
                                 <Tooltip
+                                  wrapperStyle={chartTooltipWrapperStyle}
                                   cursor={{
                                     stroke: card.color,
                                     strokeOpacity: 0.16,

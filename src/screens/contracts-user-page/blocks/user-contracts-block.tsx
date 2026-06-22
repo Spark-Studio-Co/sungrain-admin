@@ -129,7 +129,7 @@ export const UserContractsBlock = () => {
 
   return (
     <>
-      <Card className="border-none shadow-none">
+      <Card className="w-full min-w-0 max-w-none overflow-x-hidden border-none shadow-none">
         <CardHeader className="px-0 pt-0">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -141,13 +141,13 @@ export const UserContractsBlock = () => {
               </CardDescription>
             </div>
           </div>
-          <div className="mt-4 relative">
+          <div className="relative mt-4 w-full">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Поиск контрактов..."
               value={searchTerm}
               onChange={handleSearchChange}
-              className="pl-10 w-full md:max-w-sm"
+              className="w-full pl-10"
             />
           </div>
         </CardHeader>
@@ -163,8 +163,8 @@ export const UserContractsBlock = () => {
               </AlertDescription>
             </Alert>
           )}
-          <div className="rounded-md border bg-card shadow-sm">
-            <Table>
+          <div className="crm-scrollbar rounded-md border bg-card shadow-sm">
+            <Table className="min-w-[1500px]">
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead className="w-[100px] text-center font-medium">

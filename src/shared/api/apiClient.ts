@@ -2,9 +2,11 @@ import { useAuthData } from "@/entities/auth/model/use-auth-store";
 import axios from "axios";
 import { mockApiAdapter, shouldUseMockApi } from "./mock-api";
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://backend.sungrain.kz/api";
+
 export const apiClient = axios.create({
-  baseURL: "https://backend.sungrain.kz/api",
-  // baseURL: "http://localhost:6001/api",
+  baseURL: API_BASE_URL,
   withCredentials: true,
   adapter: shouldUseMockApi() ? mockApiAdapter : undefined,
 });

@@ -113,8 +113,8 @@ function CulturesTable({
             ))}
         </div>
 
-        <div className="hidden overflow-hidden rounded-md border border-[#e5ece4] sm:block">
-          <table className="w-full">
+        <div className="crm-scrollbar hidden overflow-x-auto rounded-md border border-[#e5ece4] sm:block">
+          <table className="min-w-[720px] w-full">
             <thead className="bg-[#f7f8f5]">
               <tr className="border-b border-[#e5ece4]">
                 <th className="h-11 px-5 text-left text-xs font-black uppercase text-[#7b857f]">
@@ -231,8 +231,8 @@ function CulturesTable({
         ))}
       </div>
 
-      <div className="hidden overflow-x-auto sm:block">
-        <table className="w-full">
+      <div className="crm-scrollbar hidden overflow-x-auto sm:block">
+        <table className="min-w-[720px] w-full">
           <thead className="bg-[#f7f8f5]">
             <tr className="border-b border-[#e5ece4]">
               <th className="h-11 px-5 text-left text-xs font-black uppercase text-[#7b857f]">
@@ -438,7 +438,7 @@ export const CulturesBlock = () => {
 
   return (
     <>
-      <div className="space-y-4 px-0">
+      <div className="w-full min-w-0 max-w-none space-y-4 overflow-x-hidden px-0">
         {isError && (
           <Alert variant="destructive" className="rounded-md">
             <AlertTriangle className="h-4 w-4" />

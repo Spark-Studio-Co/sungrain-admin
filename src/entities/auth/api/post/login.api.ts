@@ -1,5 +1,8 @@
 import { apiClient } from "@/shared/api/apiClient";
-import { DEV_AUTH_SESSION, isLocalDevHost } from "@/shared/auth/dev-session";
+import {
+  DEV_AUTH_SESSION,
+  shouldBypassAuthLocally,
+} from "@/shared/auth/dev-session";
 import axios from "axios";
 import { LoginDTO } from "../dto/login.dto";
 
@@ -15,7 +18,7 @@ export const login = async (data: LoginDTO) => {
     if (typeof window === "undefined") return;
 
     if (
-      isLocalDevHost() &&
+      shouldBypassAuthLocally() &&
       data.email === devCredentials.email &&
       data.password === devCredentials.password
     ) {

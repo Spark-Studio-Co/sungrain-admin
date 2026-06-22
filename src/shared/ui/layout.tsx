@@ -196,14 +196,6 @@ export const Layout: React.FC<ILayout> = ({ children, isAdmin: adminStatus }) =>
     return pathname === url || pathname.startsWith(`${url}/`);
   };
 
-  const isWideWorkspace =
-    pathname === "/admin" ||
-    pathname === "/admin/contracts" ||
-    pathname.startsWith("/admin/contracts/") ||
-    pathname === "/admin/finance" ||
-    pathname === "/contracts" ||
-    pathname.startsWith("/contracts/");
-
   return (
     <AuthProvider>
       <SidebarProvider open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
@@ -366,7 +358,7 @@ export const Layout: React.FC<ILayout> = ({ children, isAdmin: adminStatus }) =>
             <SidebarRail />
           </Sidebar>
 
-          <SidebarInset className="min-w-0 bg-transparent">
+          <SidebarInset className="min-w-0 overflow-hidden bg-transparent">
             <header className="sticky top-0 z-20 border-b border-border/70 bg-background/88 px-4 backdrop-blur-xl sm:px-6">
               <div className="flex h-16 items-center gap-3">
                 <SidebarTrigger className="size-9 rounded-md border border-border/70 bg-card text-foreground shadow-sm">
@@ -399,18 +391,11 @@ export const Layout: React.FC<ILayout> = ({ children, isAdmin: adminStatus }) =>
             </header>
             <main
               className={cn(
-                "min-h-0 flex-1 overflow-auto",
+                "min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden",
                 pathname === "/admin" ? "p-0" : "p-3 sm:p-5 lg:p-6"
               )}
             >
-              <div
-                className={cn(
-                  "mx-auto w-full",
-                  isWideWorkspace ? "max-w-none" : "max-w-[1540px]"
-                )}
-              >
-                {children}
-              </div>
+              <div className="crm-workspace">{children}</div>
             </main>
           </SidebarInset>
         </div>

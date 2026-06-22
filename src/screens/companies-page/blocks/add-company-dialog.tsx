@@ -56,7 +56,7 @@ export default function AddCompanyDialog({
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button className="h-10 w-full gap-2 rounded-md bg-[#f38810] px-4 font-black text-white shadow-[0_10px_24px_rgba(243,136,16,0.22)] hover:bg-[#db790c] sm:w-auto">
+        <Button className="h-10 w-full gap-2 rounded-md bg-[#f38810] px-4 font-black text-white shadow-[0_10px_24px_rgba(243,136,16,0.22)] hover:bg-[#db790c] xl:w-auto">
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">Добавить компанию</span>
           <span className="sm:hidden">Добавить</span>

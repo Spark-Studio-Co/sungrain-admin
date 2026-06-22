@@ -167,7 +167,7 @@ export default function ApplicationPage() {
   if (isLoading) {
     return (
       <>
-        <div className="container mx-auto py-6 flex justify-center items-center h-64">
+        <div className="flex h-64 w-full items-center justify-center py-6">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span className="ml-2 text-lg">Загрузка данных заявки...</span>
         </div>
@@ -178,7 +178,7 @@ export default function ApplicationPage() {
   if (isError) {
     return (
       <>
-        <div className="container mx-auto py-6">
+        <div className="w-full py-6">
           <Card className="border-red-200">
             <CardContent className="pt-6">
               <div className="text-center text-red-500">
@@ -199,7 +199,7 @@ export default function ApplicationPage() {
 
   return (
     <>
-      <div className="container mx-auto py-6 space-y-6">
+      <div className="w-full space-y-6 py-6">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleBack}>
             <ArrowLeft className="mr-2 h-4 w-4" />

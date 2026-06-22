@@ -385,7 +385,7 @@ export const ApplicationBlock = ({
               ) : (
                 <>
                   {/* Desktop Table View */}
-                  <div className="hidden overflow-hidden rounded-md bg-white shadow-[0_16px_36px_rgba(34,49,55,0.06)] md:block">
+                  <div className="crm-scrollbar hidden overflow-x-auto rounded-md bg-white shadow-[0_16px_36px_rgba(34,49,55,0.06)] md:block">
                     <Table className="min-w-[1100px]">
                       <TableHeader className="bg-[#f7f8f5]">
                         <TableRow>

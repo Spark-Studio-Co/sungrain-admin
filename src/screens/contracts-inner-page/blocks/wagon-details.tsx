@@ -387,79 +387,80 @@ export const WagonDetails = ({
       <CardContent className="px-4 py-4 sm:px-5 lg:px-6">
         <div className="space-y-4">
           <div className="rounded-md border border-[#dfe7de] bg-white p-3 shadow-[0_10px_22px_rgba(34,49,55,0.04)]">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="flex flex-1 flex-col gap-2 sm:flex-row">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a928f]" />
-                <Input
-                  type="search"
-                  placeholder="Поиск по вагонам..."
-                  className="h-10 rounded-md border-[#dce4da] bg-white pl-9 text-[#223137] shadow-sm"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            <div className="flex min-w-0 flex-col gap-3 2xl:flex-row 2xl:items-center">
+              <div className="flex flex-1 flex-col gap-2 xl:flex-row xl:items-center">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a928f]" />
+                  <Input
+                    type="search"
+                    placeholder="Поиск по вагонам..."
+                    className="h-10 rounded-md border-[#dce4da] bg-white pl-9 text-[#223137] shadow-sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+
+                <ToggleGroup
+                  type="single"
+                  value={dateSortOrder || ""}
+                  className="flex shrink-0 items-center gap-2"
+                  onValueChange={(value) =>
+                    setDateSortOrder((value as any) || null)
+                  }
+                >
+                  <ToggleGroupItem
+                    value="newest"
+                    aria-label="Сначала новые"
+                    className="h-10 gap-1 whitespace-nowrap rounded-md border border-[#dce4da] bg-white px-3 font-semibold text-[#41514b] data-[state=on]:border-[#f38810] data-[state=on]:bg-[#fff3e5] data-[state=on]:text-[#d5740b]"
+                  >
+                    <Calendar className="h-4 w-4" />
+                    <span className="hidden sm:inline">Сначала новые</span>
+                    <ChevronDown className="h-3 w-3" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="oldest"
+                    aria-label="Сначала старые"
+                    className="h-10 gap-1 whitespace-nowrap rounded-md border border-[#dce4da] bg-white px-3 font-semibold text-[#41514b] data-[state=on]:border-[#f38810] data-[state=on]:bg-[#fff3e5] data-[state=on]:text-[#d5740b]"
+                  >
+                    <Calendar className="h-4 w-4" />
+                    <span className="hidden sm:inline">Сначала старые</span>
+                    <ChevronUp className="h-3 w-3" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleExpandAll}
+                  className="h-10 rounded-md border-[#dce4da] bg-white font-bold text-[#223137] shadow-sm sm:hidden"
+                >
+                  {areAllRowsExpanded ? "Свернуть все" : "Раскрыть все"}
+                </Button>
               </div>
 
-              <ToggleGroup
-                type="single"
-                value={dateSortOrder || ""}
-                onValueChange={(value) =>
-                  setDateSortOrder((value as any) || null)
-                }
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="w-full min-w-0 shrink-0 2xl:max-w-[720px]"
               >
-                <ToggleGroupItem
-                  value="newest"
-                  aria-label="Сначала новые"
-                  className="h-10 gap-1 rounded-md border border-[#dce4da] bg-white px-3 font-semibold text-[#41514b] data-[state=on]:border-[#f38810] data-[state=on]:bg-[#fff3e5] data-[state=on]:text-[#d5740b]"
-                >
-                  <Calendar className="h-4 w-4" />
-                  <span className="hidden sm:inline">Сначала новые</span>
-                  <ChevronDown className="h-3 w-3" />
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="oldest"
-                  aria-label="Сначала старые"
-                  className="h-10 gap-1 rounded-md border border-[#dce4da] bg-white px-3 font-semibold text-[#41514b] data-[state=on]:border-[#f38810] data-[state=on]:bg-[#fff3e5] data-[state=on]:text-[#d5740b]"
-                >
-                  <Calendar className="h-4 w-4" />
-                  <span className="hidden sm:inline">Сначала старые</span>
-                  <ChevronUp className="h-3 w-3" />
-                </ToggleGroupItem>
-              </ToggleGroup>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={toggleExpandAll}
-                className="h-10 rounded-md border-[#dce4da] bg-white font-bold text-[#223137] shadow-sm sm:hidden"
-              >
-                {areAllRowsExpanded ? "Свернуть все" : "Раскрыть все"}
-              </Button>
-            </div>
-
-            <Tabs
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="w-full lg:max-w-[620px]"
-            >
-              <TabsList className="grid h-10 grid-cols-3 rounded-md bg-[#f4f7f3] p-1">
-                <TabsTrigger
-                  value="all"
-                  className="rounded-md px-2 text-xs font-black text-[#6f7774] data-[state=active]:bg-[#1f5a43] data-[state=active]:text-white sm:px-3 sm:text-sm"
-                >
-                  Все ({totalWagons})
-                </TabsTrigger>
-                {statuses.map((status) => (
+                <TabsList className="grid h-auto min-h-10 w-full grid-cols-2 gap-1 rounded-md bg-[#f4f7f3] p-1 lg:h-10 lg:grid-cols-4 lg:gap-0">
                   <TabsTrigger
-                    key={status}
-                    value={status}
-                    className="rounded-md px-2 text-xs font-black text-[#6f7774] data-[state=active]:bg-[#1f5a43] data-[state=active]:text-white sm:px-3 sm:text-sm"
+                    value="all"
+                    className="h-8 whitespace-nowrap rounded-md px-2 text-xs font-black text-[#6f7774] data-[state=active]:bg-[#1f5a43] data-[state=active]:text-white sm:px-3 sm:text-sm"
                   >
-                    {getStatusInfo(status).label} ({statusCounts[status]})
+                    Все ({totalWagons})
                   </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+                  {statuses.map((status) => (
+                    <TabsTrigger
+                      key={status}
+                      value={status}
+                      className="h-8 whitespace-nowrap rounded-md px-2 text-xs font-black text-[#6f7774] data-[state=active]:bg-[#1f5a43] data-[state=active]:text-white sm:px-3 sm:text-sm"
+                    >
+                      {getStatusInfo(status).label} ({statusCounts[status]})
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
             </div>
           </div>
 
@@ -808,7 +809,7 @@ export const WagonDetails = ({
 
                           {/* Desktop Table Layout */}
                           <div className="hidden sm:block">
-                            <Table>
+                            <Table className="min-w-[820px]">
                               <TableHeader className="bg-muted/20">
                                 <TableRow>
                                   <TableHead className="w-[50px]"></TableHead>

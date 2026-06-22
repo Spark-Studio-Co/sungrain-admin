@@ -11,7 +11,6 @@ import {
   UserCheck,
   UsersRound,
 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
   CardContent,
@@ -28,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CrmErrorState } from "@/components/ui/crm-state";
 import {
   Pagination,
   PaginationContent,
@@ -160,15 +160,16 @@ export default function UsersBlock() {
 
   return (
     <>
-      <div className="space-y-4 px-0">
+      <div className="w-full min-w-0 max-w-none space-y-4 overflow-x-hidden px-0">
         {isError && (
-          <Alert variant="destructive" className="rounded-md">
-            <AlertTitle>Ошибка</AlertTitle>
-            <AlertDescription>
-              {(error as Error)?.message ||
-                "Произошла ошибка при загрузке данных"}
-            </AlertDescription>
-          </Alert>
+          <CrmErrorState
+            className="min-h-[10rem]"
+            title="Ошибка загрузки пользователей"
+            description={
+              (error as Error)?.message ||
+              "Произошла ошибка при загрузке данных"
+            }
+          />
         )}
 
         <Card className="sungrain-analytics-card overflow-hidden">
@@ -300,7 +301,7 @@ export default function UsersBlock() {
                   Поиск, фильтрация и управление доступом пользователей.
                 </CardDescription>
               </div>
-              <div className="grid gap-2 sm:grid-cols-[minmax(220px,1fr)_180px_auto] sm:items-center">
+              <div className="grid gap-2 xl:grid-cols-[minmax(220px,1fr)_180px_auto] xl:items-center">
                 <div className="relative w-full">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a928f]" />
                   <Input

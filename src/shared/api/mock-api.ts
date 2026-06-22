@@ -421,7 +421,7 @@ const tableRows: AnyRecord[] = contracts.map((contract) => ({
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const shouldUseMockApi = () =>
-  process.env.NEXT_PUBLIC_USE_MOCK_API !== "false";
+  process.env.NEXT_PUBLIC_USE_MOCK_API === "true";
 
 const normalizePath = (url = "") => {
   const cleanUrl = url.split("?")[0];

@@ -13,6 +13,7 @@ import {
 } from "@/shared/auth/dev-session";
 import { getAuthRedirect, type AdminStatus } from "@/shared/auth/route-policy";
 import { Layout } from "@/shared/ui/layout";
+import { ToastProvider } from "@/components/ui/toast";
 
 type PersistApi = {
   persist?: {
@@ -24,7 +25,9 @@ type PersistApi = {
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={reactQueryClient}>
-      <RouteGuard>{children}</RouteGuard>
+      <ToastProvider>
+        <RouteGuard>{children}</RouteGuard>
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

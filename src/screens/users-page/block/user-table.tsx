@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CrmEmptyState } from "@/components/ui/crm-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -109,8 +110,8 @@ export default function UserTable({
             ))}
         </div>
 
-        <div className="hidden overflow-hidden rounded-md border border-[#e5ece4] sm:block">
-          <Table>
+        <div className="crm-scrollbar hidden overflow-x-auto rounded-md border border-[#e5ece4] sm:block">
+          <Table className="min-w-[920px]">
             <TableHeader className="bg-[#f7f8f5]">
               <TableRow className="border-[#e5ece4] hover:bg-[#f7f8f5]">
                 <TableHead>Пользователь</TableHead>
@@ -157,16 +158,12 @@ export default function UserTable({
 
   if (users.length === 0) {
     return (
-      <div className="px-4 py-12 text-center sm:px-6">
-        <div className="mx-auto flex size-12 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
-          <UserRound className="h-6 w-6" />
-        </div>
-        <h3 className="mt-4 text-base font-black text-[#223137]">
-          Пользователи не найдены
-        </h3>
-        <p className="mt-1 text-sm text-[#7b857f]">
-          Попробуйте изменить поиск или фильтр роли.
-        </p>
+      <div className="p-4 sm:p-6">
+        <CrmEmptyState
+          icon={UserRound}
+          title="Пользователи не найдены"
+          description="Попробуйте изменить поиск или фильтр роли."
+        />
       </div>
     );
   }
@@ -254,8 +251,8 @@ export default function UserTable({
         ))}
       </div>
 
-      <div className="hidden overflow-x-auto sm:block">
-        <Table>
+      <div className="crm-scrollbar hidden overflow-x-auto sm:block">
+        <Table className="min-w-[920px]">
           <TableHeader className="bg-[#f7f8f5]">
             <TableRow className="border-[#e5ece4] hover:bg-[#f7f8f5]">
               <TableHead className="h-11 px-5 text-xs font-black uppercase text-[#7b857f]">

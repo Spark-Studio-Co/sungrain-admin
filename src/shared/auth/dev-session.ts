@@ -13,4 +13,4 @@ export const isLocalDevHost = () => {
 };
 
 export const shouldBypassAuthLocally = () =>
-  process.env.NEXT_PUBLIC_AUTH_BYPASS !== "false" && isLocalDevHost();
+  process.env.NEXT_PUBLIC_AUTH_BYPASS === "true" && isLocalDevHost();

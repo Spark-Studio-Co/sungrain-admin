@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -21,21 +22,27 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertTriangle,
+  ArrowUpRight,
   Banknote,
   Building2,
   CalendarDays,
   CheckCircle2,
+  CircleDollarSign,
   Clock3,
   CreditCard,
   Download,
+  FileDown,
   FileCheck2,
   FileText,
   Filter,
+  History,
   Landmark,
+  Link2,
   Plus,
   Receipt,
   Search,
   Send,
+  TimerReset,
   UserRound,
   WalletCards,
   Wheat,
@@ -67,76 +74,435 @@ import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { formatCurrency } from "@/lib/utils";
+import { getApplications } from "@/entities/applications/api/get/get-applications.api";
+import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contracts.query";
+import { getInvoices } from "@/entities/invoices/api/get/get-invoices.api";
+import { useCreateInvoice } from "@/entities/invoices/hooks/mutations/use-create-invoice.mutation";
+import { useUpdateInvoice } from "@/entities/invoices/hooks/mutations/use-update-invoice.mutation";
+import {
+  mapBackendInvoiceToFinanceInvoice,
+  toEntityArray,
+  type FinanceDocument,
+  type FinanceHistoryItem,
+  type FinanceInvoice,
+  type InvoiceStatus,
+} from "./finance-normalizers";
 
-// Sample invoice data
-const invoices = [
+type PaymentStatus = "completed" | "processing" | "reconciled" | "failed";
+
+type FinancePayment = {
+  id: string;
+  invoice: string;
+  contract: string;
+  date: string;
+  amount: number;
+  currency: string;
+  method: string;
+  reference: string;
+  status: PaymentStatus;
+  documents: FinanceDocument[];
+  history: FinanceHistoryItem[];
+  details?: Record<string, string>;
+};
+
+const createDefaultInvoiceForm = () => ({
+  application_id: "",
+  invoice_number: "",
+  invoice_date: "",
+  receiver_company_name: "ТОО «SUN GRAIN»",
+  receiver_legal_country: "Республика Казахстан",
+  receiver_legal_region: "Алматинская область",
+  receiver_legal_district: "Карасайский район",
+  receiver_legal_city: "город Каскелен",
+  receiver_legal_street: "ул. Наурызбай",
+  receiver_legal_office: "88, офис 7",
+  receiver_bin: "231240014096",
+  receiver_account_usd: "KZ0696507F0009576396",
+  receiver_bank_branch: 'Филиал АО "ForteBank" в г. Павлодар',
+  receiver_bic: "IRTYKZKA",
+  receiver_correspondent_bank: "Bank of New York, USA",
+  receiver_swift: "IRVTUS3N",
+  receiver_account_number: "890-0548-533",
+  sender_company_name: "",
+  sender_country: "",
+  sender_region: "",
+  sender_district: "",
+  sender_street: "",
+  contract_number: "",
+  contract_date: "",
+  contract_appendix_number: "",
+  contract_appendix_date: "",
+  product_name: "",
+  price_per_ton_usd: "",
+  total_quantity_mt: "",
+  payment_amount_usd: "",
+  total_amount_usd: "",
+  director_name: "",
+  contract: "",
+  amount: "",
+  currency: "USD",
+  status: "pending",
+  dueDate: "",
+  description: "",
+});
+
+const createDefaultPaymentForm = () => ({
+  invoice_id: "",
+  payment_date: "",
+  payment_amount: "",
+  payment_currency: "USD",
+  payment_method: "bank_transfer",
+  payment_reference: "",
+  payment_description: "",
+  bank_name: "",
+  bank_account: "",
+  payment_status: "completed",
+});
+
+const currencyMark = (currency: string) => (currency === "KZT" ? "₸" : currency);
+
+const formatMoney = (value: number, currency: string) =>
+  formatCurrency(value, currencyMark(currency));
+
+const createDocument = (
+  id: string,
+  title: string,
+  kind: string,
+  fileName: string,
+  updatedAt: string,
+  size = "128 KB"
+): FinanceDocument => ({
+  id,
+  title,
+  kind,
+  fileName,
+  updatedAt,
+  size,
+});
+
+const invoices: FinanceInvoice[] = [
   {
     id: "INV-001",
     contract: "001-2024",
+    contractId: "SG-2026-001",
+    contractTitle: "Экспорт пшеницы в порт Актау",
+    counterparty: "Sungrain Terminal",
     date: "15.03.2024",
+    dueDate: "20.03.2024",
     amount: 1250000,
+    paidAmount: 1250000,
     currency: "KZT",
     status: "paid",
+    paymentTerms: "100% оплата по факту выставления счета",
+    documents: [
+      createDocument(
+        "DOC-INV-001",
+        "Счет на оплату",
+        "PDF",
+        "INV-001-schet.pdf",
+        "15.03.2024"
+      ),
+      createDocument(
+        "DOC-ACT-001",
+        "Акт сверки",
+        "XLSX",
+        "INV-001-akt-sverki.xlsx",
+        "18.03.2024",
+        "84 KB"
+      ),
+    ],
+    history: [
+      {
+        date: "15.03.2024",
+        title: "Счет создан",
+        description: "Счет привязан к контракту SG-2026-001.",
+        tone: "slate",
+      },
+      {
+        date: "17.03.2024",
+        title: "Платеж подтвержден",
+        description: "Поступление закрывает счет полностью.",
+        tone: "green",
+      },
+    ],
   },
   {
     id: "INV-002",
     contract: "002-2024",
+    contractId: "SG-2026-002",
+    contractTitle: "Поставка ячменя в Алматы",
+    counterparty: "Almaty Feed Group",
     date: "10.03.2024",
+    dueDate: "25.03.2024",
     amount: 875000,
+    paidAmount: 0,
     currency: "KZT",
     status: "pending",
+    paymentTerms: "Оплата в течение 15 календарных дней",
+    documents: [
+      createDocument(
+        "DOC-INV-002",
+        "Счет на оплату",
+        "PDF",
+        "INV-002-schet.pdf",
+        "10.03.2024"
+      ),
+    ],
+    history: [
+      {
+        date: "10.03.2024",
+        title: "Счет выставлен",
+        description: "Ожидается подтверждение оплаты от клиента.",
+        tone: "orange",
+      },
+    ],
   },
   {
     id: "INV-003",
     contract: "001-2024",
+    contractId: "SG-2026-003",
+    contractTitle: "Лен на экспорт",
+    counterparty: "Black Sea Grain",
     date: "05.03.2024",
     amount: 950000,
+    dueDate: "18.03.2024",
+    paidAmount: 520000,
     currency: "KZT",
-    status: "paid",
+    status: "partial",
+    paymentTerms: "Допускается частичная оплата двумя траншами",
+    documents: [
+      createDocument(
+        "DOC-INV-003",
+        "Счет на оплату",
+        "PDF",
+        "INV-003-schet.pdf",
+        "05.03.2024"
+      ),
+      createDocument(
+        "DOC-PAY-003",
+        "Платежное поручение",
+        "PDF",
+        "PAY-002-poruchenie.pdf",
+        "07.03.2024",
+        "96 KB"
+      ),
+    ],
+    history: [
+      {
+        date: "05.03.2024",
+        title: "Счет создан",
+        description: "Счет готов к оплате и отправлен контрагенту.",
+      },
+      {
+        date: "07.03.2024",
+        title: "Частичная оплата",
+        description: "Поступил первый транш на 520.000 ₸.",
+        tone: "green",
+      },
+    ],
   },
   {
     id: "INV-004",
     contract: "003-2024",
+    contractId: "SG-2026-004",
+    contractTitle: "Рапс для переработки",
+    counterparty: "Caspian Food Logistics",
     date: "01.03.2024",
+    dueDate: "12.03.2024",
     amount: 1100000,
+    paidAmount: 250000,
     currency: "KZT",
     status: "overdue",
+    overdueDays: 8,
+    paymentTerms: "Просрочка после 10 календарных дней",
+    documents: [
+      createDocument(
+        "DOC-INV-004",
+        "Счет на оплату",
+        "PDF",
+        "INV-004-schet.pdf",
+        "01.03.2024"
+      ),
+      createDocument(
+        "DOC-CLAIM-004",
+        "Уведомление о просрочке",
+        "PDF",
+        "INV-004-prosrochka.pdf",
+        "13.03.2024",
+        "72 KB"
+      ),
+    ],
+    history: [
+      {
+        date: "01.03.2024",
+        title: "Счет создан",
+        description: "Плановая дата оплаты: 12.03.2024.",
+      },
+      {
+        date: "13.03.2024",
+        title: "Просрочка оплаты",
+        description: "Сформировано уведомление для контрагента.",
+        tone: "red",
+      },
+    ],
   },
   {
     id: "INV-005",
     contract: "004-2024",
+    contractId: "SG-2026-005",
+    contractTitle: "Подсолнечник, внутренняя поставка",
+    counterparty: "Almaty Feed Group",
     date: "25.02.2024",
+    dueDate: "01.03.2024",
     amount: 780000,
+    paidAmount: 780000,
     currency: "KZT",
     status: "paid",
+    paymentTerms: "Закрыто одним платежом",
+    documents: [
+      createDocument(
+        "DOC-INV-005",
+        "Счет на оплату",
+        "PDF",
+        "INV-005-schet.pdf",
+        "25.02.2024"
+      ),
+    ],
+    history: [
+      {
+        date: "25.02.2024",
+        title: "Счет выставлен",
+        description: "Документ создан на основании контракта SG-2026-005.",
+      },
+      {
+        date: "27.02.2024",
+        title: "Оплата закрыта",
+        description: "Получен банковский перевод REF345678.",
+        tone: "green",
+      },
+    ],
   },
 ];
 
-// Sample payment data
-const payments = [
+const payments: FinancePayment[] = [
   {
     id: "PAY-001",
     invoice: "INV-001",
+    contract: "SG-2026-001",
     date: "17.03.2024",
     amount: 1250000,
+    currency: "KZT",
     method: "bank_transfer",
     reference: "REF123456",
+    status: "reconciled",
+    documents: [
+      createDocument(
+        "DOC-PAY-001",
+        "Платежное поручение",
+        "PDF",
+        "PAY-001-poruchenie.pdf",
+        "17.03.2024"
+      ),
+    ],
+    history: [
+      {
+        date: "17.03.2024",
+        title: "Поступление импортировано",
+        description: "Банк прислал референс REF123456.",
+      },
+      {
+        date: "17.03.2024",
+        title: "Сверено со счетом",
+        description: "Платеж закрыл счет INV-001.",
+        tone: "green",
+      },
+    ],
   },
   {
     id: "PAY-002",
     invoice: "INV-003",
+    contract: "SG-2026-003",
     date: "07.03.2024",
-    amount: 950000,
+    amount: 520000,
+    currency: "KZT",
     method: "bank_transfer",
     reference: "REF789012",
+    status: "completed",
+    documents: [
+      createDocument(
+        "DOC-PAY-002",
+        "Платежное поручение",
+        "PDF",
+        "PAY-002-poruchenie.pdf",
+        "07.03.2024",
+        "96 KB"
+      ),
+    ],
+    history: [
+      {
+        date: "07.03.2024",
+        title: "Частичная оплата",
+        description: "Платеж распределен на 55% суммы счета.",
+        tone: "orange",
+      },
+    ],
   },
   {
     id: "PAY-003",
     invoice: "INV-005",
+    contract: "SG-2026-005",
     date: "27.02.2024",
     amount: 780000,
+    currency: "KZT",
     method: "bank_transfer",
     reference: "REF345678",
+    status: "reconciled",
+    documents: [
+      createDocument(
+        "DOC-PAY-003",
+        "Платежное поручение",
+        "PDF",
+        "PAY-003-poruchenie.pdf",
+        "27.02.2024"
+      ),
+    ],
+    history: [
+      {
+        date: "27.02.2024",
+        title: "Платеж проведен",
+        description: "Счет INV-005 переведен в статус «Оплачен».",
+        tone: "green",
+      },
+    ],
+  },
+  {
+    id: "PAY-004",
+    invoice: "INV-004",
+    contract: "SG-2026-004",
+    date: "09.03.2024",
+    amount: 250000,
+    currency: "KZT",
+    method: "bank_transfer",
+    reference: "REF555204",
+    status: "processing",
+    documents: [
+      createDocument(
+        "DOC-PAY-004",
+        "Выписка банка",
+        "PDF",
+        "PAY-004-bank-statement.pdf",
+        "09.03.2024",
+        "110 KB"
+      ),
+    ],
+    history: [
+      {
+        date: "09.03.2024",
+        title: "Платеж найден",
+        description: "Требуется ручная сверка остатка по счету.",
+        tone: "orange",
+      },
+    ],
   },
 ];
 
@@ -155,6 +521,15 @@ function parseDateValue(value: string) {
 
   const date = new Date(`${value}T00:00:00`);
   return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function formatDisplayDate(value: string) {
+  if (!value) {
+    return "";
+  }
+
+  const parsedDate = parseDateValue(value);
+  return parsedDate ? format(parsedDate, "dd.MM.yyyy") : value;
 }
 
 function DatePickerField({
@@ -226,81 +601,149 @@ export default function FinancesPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [allInvoices, setAllInvoices] = useState(invoices);
-
-  // Update the newInvoice state to include all the fields
-  const [newInvoice, setNewInvoice] = useState({
-    // Invoice Info
-    invoice_number: "",
-    invoice_date: "",
-
-    // Receiver (TOO "SUN GRAIN")
-    receiver_company_name: "ТОО «SUN GRAIN»", // Default value
-    receiver_legal_country: "Республика Казахстан",
-    receiver_legal_region: "Алматинская область",
-    receiver_legal_district: "Карасайский район",
-    receiver_legal_city: "город Каскелен",
-    receiver_legal_street: "ул. Наурызбай",
-    receiver_legal_office: "88, офис 7",
-    receiver_bin: "231240014096",
-    receiver_account_usd: "KZ0696507F0009576396",
-    receiver_bank_branch: 'Филиал АО "ForteBank" в г. Павлодар',
-    receiver_bic: "IRTYKZKA",
-    receiver_correspondent_bank: "Bank of New York, USA",
-    receiver_swift: "IRVTUS3N",
-    receiver_account_number: "890-0548-533",
-
-    // Sender
-    sender_company_name: "",
-    sender_country: "",
-    sender_region: "",
-    sender_district: "",
-    sender_street: "",
-
-    // Contract
-    contract_number: "",
-    contract_date: "",
-    contract_appendix_number: "",
-    contract_appendix_date: "",
-
-    // Product & Payment
-    product_name: "",
-    price_per_ton_usd: "",
-    total_quantity_mt: "",
-    payment_amount_usd: "",
-    total_amount_usd: "",
-
-    // Signature
-    director_name: "",
-
-    // Keep the original fields for backward compatibility
-    contract: "",
-    amount: "",
-    currency: "USD",
-    status: "pending",
-    dueDate: "",
-    description: "",
-  });
+  const shouldSeedFinanceMocks =
+    process.env.NEXT_PUBLIC_USE_MOCK_API === "true";
+  const [financeError, setFinanceError] = useState("");
+  const [allInvoices, setAllInvoices] = useState<FinanceInvoice[]>(
+    shouldSeedFinanceMocks ? invoices : []
+  );
+  const [newInvoice, setNewInvoice] = useState(createDefaultInvoiceForm);
 
   // Add this state after the other state declarations
   const [isViewInvoiceDialogOpen, setIsViewInvoiceDialogOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<FinanceInvoice | null>(
+    null
+  );
 
   // Add these new state variables after the existing state declarations
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [allPayments, setAllPayments] = useState(payments);
-  const [newPayment, setNewPayment] = useState({
-    invoice_id: "",
-    payment_date: "",
-    payment_amount: "",
-    payment_currency: "USD",
-    payment_method: "bank_transfer",
-    payment_reference: "",
-    payment_description: "",
-    bank_name: "",
-    bank_account: "",
-    payment_status: "completed",
+  const [isViewPaymentDialogOpen, setIsViewPaymentDialogOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<FinancePayment | null>(
+    null
+  );
+  const [allPayments, setAllPayments] = useState<FinancePayment[]>(
+    shouldSeedFinanceMocks ? payments : []
+  );
+  const [newPayment, setNewPayment] = useState(createDefaultPaymentForm);
+  const createInvoiceMutation = useCreateInvoice();
+  const updateInvoiceMutation = useUpdateInvoice();
+  const {
+    data: contractsResponse,
+    isLoading: isContractsLoading,
+    refetch: refetchContracts,
+  } = useGetContracts({ page: 1, limit: 100, enabled: true });
+
+  const contractRows = useMemo(
+    () => toEntityArray<Record<string, any>>(contractsResponse),
+    [contractsResponse]
+  );
+
+  const applicationQueries = useQueries({
+    queries: contractRows.map((contract) => ({
+      queryKey: ["applications", String(contract.id)],
+      queryFn: () => getApplications(String(contract.id)),
+      enabled: Boolean(contract.id),
+    })),
   });
+
+  const applicationContexts = useMemo(
+    () =>
+      contractRows.flatMap((contract, index) =>
+        toEntityArray<Record<string, any>>(applicationQueries[index]?.data).map(
+          (application) => ({ application, contract })
+        )
+      ),
+    [applicationQueries, contractRows]
+  );
+
+  const invoiceQueries = useQueries({
+    queries: applicationContexts.map(({ application }) => ({
+      queryKey: ["invoices", String(application.id)],
+      queryFn: () => getInvoices(String(application.id)),
+      enabled: Boolean(application.id),
+    })),
+  });
+
+  const backendInvoices = useMemo(
+    () =>
+      applicationContexts.flatMap((context, index) =>
+        toEntityArray<Record<string, any>>(invoiceQueries[index]?.data).map(
+          (invoice) =>
+            mapBackendInvoiceToFinanceInvoice({
+              invoice,
+              application: context.application,
+              contract: context.contract,
+            })
+        )
+      ),
+    [applicationContexts, invoiceQueries]
+  );
+
+  const applicationOptions = useMemo(
+    () =>
+      applicationContexts.map(({ application, contract }) => {
+        const amount = Number(application.total_amount || 0);
+        const volume = Number(
+          application.volume || application.total_volume || contract.total_volume || 0
+        );
+        const currency = String(
+          application.currency || contract.currency || newInvoice.currency
+        );
+        const contractNumber = String(
+          contract.number || contract.contract_number || contract.id || ""
+        );
+        const contractTitle = String(
+          contract.name || application.name || contractNumber || "Контракт"
+        );
+
+        return {
+          applicationId: String(application.id),
+          label: `${contractNumber || "Контракт"} · ${
+            application.name || `Заявка ${application.id}`
+          }`,
+          contractNumber,
+          contractTitle,
+          productName: String(contract.crop || application.crop || contractTitle),
+          counterparty: String(
+            contract.receiver ||
+              contract.receiver_name ||
+              application.receiver ||
+              application.counterparty ||
+              ""
+          ),
+          amount: amount ? String(amount) : "",
+          volume: volume ? String(volume) : "",
+          currency,
+        };
+      }),
+    [applicationContexts, newInvoice.currency]
+  );
+
+  const isFinanceLoading =
+    isContractsLoading ||
+    applicationQueries.some((query) => query.isLoading) ||
+    invoiceQueries.some((query) => query.isLoading);
+  const backendInvoiceKey = backendInvoices
+    .map(
+      (invoice) =>
+        `${invoice.backendId}:${invoice.applicationId}:${invoice.amount}:${invoice.status}`
+    )
+    .join("|");
+
+  useEffect(() => {
+    if (isFinanceLoading) return;
+
+    setAllInvoices(backendInvoices);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [backendInvoiceKey, isFinanceLoading]);
+
+  const refetchFinanceData = async () => {
+    await Promise.all([
+      refetchContracts(),
+      ...applicationQueries.map((query) => query.refetch()),
+      ...invoiceQueries.map((query) => query.refetch()),
+    ]);
+  };
 
   // Filter invoices based on search term and status
   const filteredInvoices = allInvoices.filter((invoice) => {
@@ -314,102 +757,65 @@ export default function FinancesPage() {
     return matchesSearch && matchesStatus;
   });
 
-  // Handle adding a new invoice
-  const handleAddInvoice = () => {
+  const handleAddInvoice = async () => {
+    setFinanceError("");
+
+    const amount = Number(
+      newInvoice.total_amount_usd ||
+        newInvoice.payment_amount_usd ||
+        newInvoice.amount ||
+        0
+    );
+
+    if (!newInvoice.application_id) {
+      setFinanceError("Выберите заявку, к которой нужно привязать счет.");
+      return;
+    }
+
+    if (!amount) {
+      setFinanceError("Укажите итоговую сумму счета.");
+      return;
+    }
+
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        // Generate a new invoice ID
-        const newId = `INV-${String(allInvoices.length + 1).padStart(3, "0")}`;
+    try {
+      await createInvoiceMutation.mutateAsync({
+        applicationId: newInvoice.application_id,
+        name:
+          newInvoice.invoice_number ||
+          `Счет ${format(new Date(), "dd.MM.yyyy")}`,
+        number: newInvoice.invoice_number || undefined,
+        date: newInvoice.invoice_date || format(new Date(), "yyyy-MM-dd"),
+        amount,
+        status: newInvoice.status,
+        description:
+          newInvoice.description ||
+          `${newInvoice.product_name || "Счет"} · ${
+            newInvoice.contract_number || "контракт не указан"
+          }`,
+      });
 
-        // Format the date
-        const formattedDate =
-          newInvoice.invoice_date || format(new Date(), "dd.MM.yyyy");
-
-        // Create the new invoice object with basic display fields
-        const invoice = {
-          id: newId,
-          contract: newInvoice.contract_number || newInvoice.contract,
-          date: formattedDate,
-          amount: Number(newInvoice.total_amount_usd || newInvoice.amount || 0),
-          currency: newInvoice.currency,
-          status: newInvoice.status,
-          // Store all the detailed data for viewing later
-          details: { ...newInvoice },
-        };
-
-        // Add the new invoice to the list
-        setAllInvoices([...allInvoices, invoice]);
-
-        // Reset the form
-        setNewInvoice({
-          // Invoice Info
-          invoice_number: "",
-          invoice_date: "",
-
-          // Receiver (TOO "SUN GRAIN")
-          receiver_company_name: "ТОО «SUN GRAIN»", // Default value
-          receiver_legal_country: "Республика Казахстан",
-          receiver_legal_region: "Алматинская область",
-          receiver_legal_district: "Карасайский район",
-          receiver_legal_city: "город Каскелен",
-          receiver_legal_street: "ул. Наурызбай",
-          receiver_legal_office: "88, офис 7",
-          receiver_bin: "231240014096",
-          receiver_account_usd: "KZ0696507F0009576396",
-          receiver_bank_branch: 'Филиал АО "ForteBank" в г. Павлодар',
-          receiver_bic: "IRTYKZKA",
-          receiver_correspondent_bank: "Bank of New York, USA",
-          receiver_swift: "IRVTUS3N",
-          receiver_account_number: "890-0548-533",
-
-          // Sender
-          sender_company_name: "",
-          sender_country: "",
-          sender_region: "",
-          sender_district: "",
-          sender_street: "",
-
-          // Contract
-          contract_number: "",
-          contract_date: "",
-          contract_appendix_number: "",
-          contract_appendix_date: "",
-
-          // Product & Payment
-          product_name: "",
-          price_per_ton_usd: "",
-          total_quantity_mt: "",
-          payment_amount_usd: "",
-          total_amount_usd: "",
-
-          // Signature
-          director_name: "",
-
-          // Original fields
-          contract: "",
-          amount: "",
-          currency: "USD",
-          status: "pending",
-          dueDate: "",
-          description: "",
-        });
-        // Close the dialog
-        setIsInvoiceDialogOpen(false);
-      } catch (error) {
-        console.error("Error adding invoice:", error);
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 1000);
+      await refetchFinanceData();
+      setNewInvoice(createDefaultInvoiceForm());
+      setIsInvoiceDialogOpen(false);
+    } catch (error) {
+      console.error("Error adding invoice:", error);
+      setFinanceError("Не получилось создать счет. Проверьте данные и backend.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Add this function before the return statement
-  const openViewInvoiceDialog = (invoice: any) => {
+  const openViewInvoiceDialog = (invoice: FinanceInvoice) => {
     setSelectedInvoice(invoice);
     setIsViewInvoiceDialogOpen(true);
+  };
+
+  const openViewPaymentDialog = (payment: FinancePayment) => {
+    setSelectedPayment(payment);
+    setIsViewPaymentDialogOpen(true);
   };
 
   // Add this helper function to convert numbers to words (for Russian)
@@ -505,70 +911,162 @@ export default function FinancesPage() {
     return result.trim().charAt(0).toUpperCase() + result.trim().slice(1);
   }
 
-  // Add this function before the return statement
-  const handleAddPayment = () => {
+  const handleAddPayment = async () => {
+    setFinanceError("");
+
+    const linkedInvoice = allInvoices.find(
+      (invoice) => invoice.id === newPayment.invoice_id
+    );
+    const paymentAmount = Number(newPayment.payment_amount || 0);
+
+    if (!linkedInvoice) {
+      setFinanceError("Выберите счет для привязки платежа.");
+      return;
+    }
+
+    if (!paymentAmount) {
+      setFinanceError("Укажите сумму платежа.");
+      return;
+    }
+
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        // Generate a new payment ID
-        const newId = `PAY-${String(allPayments.length + 1).padStart(3, "0")}`;
+    try {
+      const newId = `PAY-${String(allPayments.length + 1).padStart(3, "0")}`;
+      const formattedDate =
+        formatDisplayDate(newPayment.payment_date) ||
+        format(new Date(), "dd.MM.yyyy");
+      const nextPaidAmount = Math.min(
+        linkedInvoice.amount,
+        linkedInvoice.paidAmount + paymentAmount
+      );
+      const nextStatus = getNextInvoiceStatus(linkedInvoice, nextPaidAmount);
 
-        // Format the date
-        const formattedDate =
-          newPayment.payment_date || format(new Date(), "dd.MM.yyyy");
-
-        // Create the new payment object
-        const payment = {
-          id: newId,
-          invoice: newPayment.invoice_id,
-          date: formattedDate,
-          amount: Number(newPayment.payment_amount || 0),
-          method: newPayment.payment_method,
-          reference: newPayment.payment_reference,
-          // Store all the detailed data for viewing later
-          details: { ...newPayment },
-        };
-
-        // Add the new payment to the list
-        setAllPayments([...allPayments, payment]);
-
-        // Reset the form
-        setNewPayment({
-          invoice_id: "",
-          payment_date: "",
-          payment_amount: "",
-          payment_currency: "USD",
-          payment_method: "bank_transfer",
-          payment_reference: "",
-          payment_description: "",
-          bank_name: "",
-          bank_account: "",
-          payment_status: "completed",
+      if (linkedInvoice.backendId && linkedInvoice.applicationId) {
+        await updateInvoiceMutation.mutateAsync({
+          id: linkedInvoice.backendId,
+          applicationId: linkedInvoice.applicationId,
+          data: {
+            status: nextStatus,
+          },
         });
-
-        // Close the dialog
-        setIsPaymentDialogOpen(false);
-      } catch (error) {
-        console.error("Error adding payment:", error);
-      } finally {
-        setIsSubmitting(false);
       }
-    }, 1000);
+
+      const payment: FinancePayment = {
+        id: newId,
+        invoice: newPayment.invoice_id,
+        contract: linkedInvoice.contractId || linkedInvoice.contract,
+        date: formattedDate,
+        amount: paymentAmount,
+        currency: newPayment.payment_currency,
+        method: newPayment.payment_method,
+        reference: newPayment.payment_reference,
+        status: newPayment.payment_status as PaymentStatus,
+        documents: [
+          createDocument(
+            `DOC-${newId}`,
+            "Платежное поручение",
+            "PDF",
+            `${newId}-payment-order.pdf`,
+            formattedDate
+          ),
+        ],
+        history: [
+          {
+            date: formattedDate,
+            title: "Платеж добавлен",
+            description: "Поступление связано со счетом и ожидает сверки.",
+            tone: "orange",
+          },
+        ],
+        details: { ...newPayment },
+      };
+
+      setAllPayments((current) => [...current, payment]);
+      setAllInvoices((current) =>
+        current.map((invoice) => {
+          if (invoice.id !== newPayment.invoice_id) {
+            return invoice;
+          }
+
+          return {
+            ...invoice,
+            paidAmount: nextPaidAmount,
+            status: nextStatus,
+            history: [
+              ...invoice.history,
+              {
+                date: formattedDate,
+                title: "Добавлен платеж",
+                description: `${formatMoney(
+                  paymentAmount,
+                  payment.currency
+                )} распределено по счету.`,
+                tone: "green",
+              },
+            ],
+          };
+        })
+      );
+
+      await refetchFinanceData();
+      setNewPayment(createDefaultPaymentForm());
+      setIsPaymentDialogOpen(false);
+    } catch (error) {
+      console.error("Error adding payment:", error);
+      setFinanceError("Не получилось сохранить платеж. Проверьте backend.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getInvoicePaidAmount = (invoice: FinanceInvoice) =>
+    Math.min(invoice.amount, invoice.paidAmount || 0);
+
+  const getInvoiceBalance = (invoice: FinanceInvoice) =>
+    Math.max(invoice.amount - getInvoicePaidAmount(invoice), 0);
+
+  const getInvoiceProgress = (invoice: FinanceInvoice) => {
+    if (!invoice.amount) {
+      return 0;
+    }
+
+    return Math.min(
+      Math.round((getInvoicePaidAmount(invoice) / invoice.amount) * 100),
+      100
+    );
+  };
+
+  const getInvoicePayments = (invoiceId: string) =>
+    allPayments.filter((payment) => payment.invoice === invoiceId);
+
+  const getNextInvoiceStatus = (
+    invoice: FinanceInvoice,
+    nextPaidAmount: number
+  ): InvoiceStatus => {
+    if (nextPaidAmount >= invoice.amount) {
+      return "paid";
+    }
+
+    if (invoice.status === "overdue") {
+      return "overdue";
+    }
+
+    return nextPaidAmount > 0 ? "partial" : "pending";
   };
 
   const invoiceStats = {
     total: allInvoices.reduce((sum, invoice) => sum + invoice.amount, 0),
-    paid: allInvoices
-      .filter((invoice) => invoice.status === "paid")
-      .reduce((sum, invoice) => sum + invoice.amount, 0),
+    paid: allInvoices.reduce(
+      (sum, invoice) => sum + getInvoicePaidAmount(invoice),
+      0
+    ),
     pending: allInvoices
-      .filter((invoice) => invoice.status === "pending")
-      .reduce((sum, invoice) => sum + invoice.amount, 0),
+      .filter((invoice) => invoice.status === "pending" || invoice.status === "partial")
+      .reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0),
     overdue: allInvoices
       .filter((invoice) => invoice.status === "overdue")
-      .reduce((sum, invoice) => sum + invoice.amount, 0),
+      .reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0),
   };
   const paymentTotal = allPayments.reduce(
     (sum, payment) => sum + payment.amount,
@@ -580,12 +1078,16 @@ export default function FinancesPage() {
   const pendingCount = allInvoices.filter(
     (invoice) => invoice.status === "pending"
   ).length;
+  const partialCount = allInvoices.filter(
+    (invoice) => invoice.status === "partial"
+  ).length;
   const overdueCount = allInvoices.filter(
     (invoice) => invoice.status === "overdue"
   ).length;
 
   const getStatusLabel = (status: string) => {
     if (status === "paid") return "Оплачен";
+    if (status === "partial") return "Частично";
     if (status === "pending") return "Ожидает";
     if (status === "overdue") return "Просрочен";
     return status;
@@ -595,7 +1097,31 @@ export default function FinancesPage() {
     if (status === "paid") {
       return "border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]";
     }
+    if (status === "partial") {
+      return "border-[#f2dfca] bg-[#fff8ed] text-[#c16f11]";
+    }
     if (status === "overdue") {
+      return "border-[#f4d6ce] bg-[#fff1ed] text-[#b9472d]";
+    }
+    return "border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]";
+  };
+
+  const getPaymentStatusLabel = (status: string) => {
+    if (status === "reconciled") return "Сверен";
+    if (status === "completed") return "Проведен";
+    if (status === "processing") return "В обработке";
+    if (status === "failed") return "Ошибка";
+    return status;
+  };
+
+  const getPaymentStatusClassName = (status: string) => {
+    if (status === "reconciled") {
+      return "border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]";
+    }
+    if (status === "completed") {
+      return "border-[#dbe7ef] bg-[#f3f8fb] text-[#527f95]";
+    }
+    if (status === "failed") {
       return "border-[#f4d6ce] bg-[#fff1ed] text-[#b9472d]";
     }
     return "border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]";
@@ -606,6 +1132,40 @@ export default function FinancesPage() {
     if (method === "cash") return "Наличные";
     if (method === "credit_card") return "Карта";
     return method;
+  };
+
+  const downloadFinanceDocument = (
+    document: FinanceDocument,
+    entity: FinanceInvoice | FinancePayment
+  ) => {
+    if (document.url) {
+      const link = window.document.createElement("a");
+      link.href = document.url;
+      link.download = document.fileName;
+      link.target = "_blank";
+      link.click();
+      return;
+    }
+
+    const content = [
+      "SUNGRAIN CRM",
+      `Документ: ${document.title}`,
+      `Тип: ${document.kind}`,
+      `Номер: ${entity.id}`,
+      `Дата обновления: ${document.updatedAt}`,
+      `Сумма: ${formatMoney(entity.amount, entity.currency)}`,
+      "Документ сформирован в SUNGRAIN CRM.",
+    ].join("\n");
+
+    const blob = new Blob([content], {
+      type: "text/plain;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = window.document.createElement("a");
+    link.href = url;
+    link.download = document.fileName.replace(/\.(pdf|xlsx)$/i, ".txt");
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const updateNewInvoice = (field: keyof typeof newInvoice, value: string) => {
@@ -636,10 +1196,10 @@ export default function FinancesPage() {
     newInvoice.total_amount_usd || newInvoice.payment_amount_usd || 0
   );
   const invoiceFilledCoreCount = [
+    newInvoice.application_id,
     newInvoice.invoice_number,
     newInvoice.invoice_date,
     newInvoice.sender_company_name,
-    newInvoice.contract_number,
     newInvoice.product_name,
     newInvoice.total_amount_usd,
   ].filter(Boolean).length;
@@ -755,10 +1315,52 @@ export default function FinancesPage() {
       value: `${selectedInvoiceDetails.payment_amount_usd || "16 320"} USD`,
     },
   ];
+  const selectedInvoiceCurrency =
+    selectedInvoice?.currency || selectedInvoiceDetails.currency || "USD";
+  const selectedInvoiceTotalMoney = selectedInvoice
+    ? formatMoney(selectedInvoice.amount, selectedInvoice.currency)
+    : `${selectedInvoiceTotalAmount} ${selectedInvoiceCurrency}`;
+  const selectedInvoicePaidMoney = selectedInvoice
+    ? formatMoney(getInvoicePaidAmount(selectedInvoice), selectedInvoice.currency)
+    : "0";
+  const selectedInvoiceBalanceMoney = selectedInvoice
+    ? formatMoney(getInvoiceBalance(selectedInvoice), selectedInvoice.currency)
+    : "0";
+  const selectedInvoiceProgress = selectedInvoice
+    ? getInvoiceProgress(selectedInvoice)
+    : 0;
+  const selectedInvoicePayments = selectedInvoice
+    ? getInvoicePayments(selectedInvoice.id)
+    : [];
+  const selectedInvoiceDocuments = selectedInvoice?.documents || [];
+  const selectedInvoiceHistory = selectedInvoice
+    ? [
+        ...selectedInvoice.history,
+        ...selectedInvoicePayments.map((payment) => ({
+          date: payment.date,
+          title: `Платеж ${payment.id}`,
+          description: `${formatMoney(payment.amount, payment.currency)} · ${
+            payment.reference || "без референса"
+          }`,
+          tone: payment.status === "reconciled" ? "green" : "orange",
+        })),
+      ]
+    : [];
+  const selectedInvoiceContractHref = selectedInvoice
+    ? `/admin/contracts/${
+        selectedInvoice.contractNumericId ||
+        Number(selectedInvoice.contractId.match(/\d+$/)?.[0] || "1")
+      }`
+    : "/admin/contracts";
+  const selectedPaymentLinkedInvoice = selectedPayment
+    ? allInvoices.find((invoice) => invoice.id === selectedPayment.invoice)
+    : null;
+  const selectedPaymentDocuments = selectedPayment?.documents || [];
+  const selectedPaymentHistory = selectedPayment?.history || [];
 
   return (
     <>
-      <div className="space-y-4 px-0">
+      <div className="w-full min-w-0 max-w-none space-y-4 overflow-x-hidden px-0">
         <Card className="sungrain-analytics-card overflow-hidden">
           <CardHeader className="border-b border-[#e5ece4] bg-[linear-gradient(180deg,#fbfcfa_0%,#ffffff_100%)] px-4 py-4 sm:px-5 lg:px-6">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -788,13 +1390,13 @@ export default function FinancesPage() {
                 </div>
                 <div className="rounded-md border border-[#f2dfca] bg-white px-4 py-3">
                   <div className="text-[11px] font-black uppercase text-[#7b857f]">
-                    Ожидает
+                    Остаток в работе
                   </div>
                   <div className="mt-1 text-lg font-black text-[#d5740b]">
                     {formatCurrency(invoiceStats.pending)}
                   </div>
                   <div className="mt-1 text-xs text-[#7b857f]">
-                    {pendingCount} счетов
+                    {pendingCount + partialCount} счетов
                   </div>
                 </div>
                 <div className="rounded-md border border-[#f4d6ce] bg-white px-4 py-3">
@@ -877,6 +1479,22 @@ export default function FinancesPage() {
           </CardContent>
         </Card>
 
+        {isFinanceLoading && (
+          <div className="rounded-md border border-[#dfe7de] bg-white px-4 py-3 text-sm font-semibold text-[#53605a] shadow-[0_10px_22px_rgba(34,49,55,0.04)]">
+            Загружаем данные из backend...
+          </div>
+        )}
+
+        {financeError && (
+          <div
+            className="flex items-start gap-2 rounded-md border border-[#f4d6ce] bg-[#fff7f3] px-4 py-3 text-sm font-semibold text-[#9a3a1b]"
+            role="alert"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#f38810]" />
+            <span>{financeError}</span>
+          </div>
+        )}
+
         <Tabs defaultValue="invoices" className="space-y-4">
           <TabsList className="grid h-auto w-full grid-cols-2 rounded-md border border-[#dfe7de] bg-white p-1 shadow-[0_12px_28px_rgba(34,49,55,0.05)]">
             <TabsTrigger
@@ -913,6 +1531,7 @@ export default function FinancesPage() {
                       <SelectItem value="all">Все статусы</SelectItem>
                       <SelectItem value="paid">Оплачен</SelectItem>
                       <SelectItem value="pending">Ожидает оплаты</SelectItem>
+                      <SelectItem value="partial">Частичная оплата</SelectItem>
                       <SelectItem value="overdue">Просрочен</SelectItem>
                     </SelectContent>
                   </Select>
@@ -1492,6 +2111,77 @@ export default function FinancesPage() {
                               </div>
                             </div>
                             <div className="grid gap-3 md:grid-cols-2">
+                              <div className="space-y-2 md:col-span-2">
+                                <Label
+                                  htmlFor="application_id"
+                                  className={invoiceLabelClassName}
+                                >
+                                  Заявка
+                                </Label>
+                                <Select
+                                  value={newInvoice.application_id}
+                                  onValueChange={(value) => {
+                                    const option = applicationOptions.find(
+                                      (item) => item.applicationId === value
+                                    );
+
+                                    setNewInvoice((current) => ({
+                                      ...current,
+                                      application_id: value,
+                                      contract_number:
+                                        option?.contractNumber ||
+                                        current.contract_number,
+                                      contract:
+                                        option?.contractNumber || current.contract,
+                                      product_name:
+                                        option?.productName ||
+                                        current.product_name,
+                                      sender_company_name:
+                                        option?.counterparty ||
+                                        current.sender_company_name,
+                                      total_quantity_mt:
+                                        option?.volume ||
+                                        current.total_quantity_mt,
+                                      payment_amount_usd:
+                                        current.payment_amount_usd ||
+                                        option?.amount ||
+                                        "",
+                                      total_amount_usd:
+                                        current.total_amount_usd ||
+                                        option?.amount ||
+                                        "",
+                                      currency:
+                                        option?.currency || current.currency,
+                                      description:
+                                        option?.contractTitle ||
+                                        current.description,
+                                    }));
+                                  }}
+                                >
+                                  <SelectTrigger
+                                    id="application_id"
+                                    className={`${invoiceFieldClassName} w-full`}
+                                  >
+                                    <SelectValue placeholder="Выберите заявку из backend" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {applicationOptions.length > 0 ? (
+                                      applicationOptions.map((option) => (
+                                        <SelectItem
+                                          key={option.applicationId}
+                                          value={option.applicationId}
+                                        >
+                                          {option.label}
+                                        </SelectItem>
+                                      ))
+                                    ) : (
+                                      <SelectItem value="no-applications" disabled>
+                                        Заявки не найдены
+                                      </SelectItem>
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              </div>
                               <div className="space-y-2">
                                 <Label
                                   htmlFor="contract_number"
@@ -1835,6 +2525,10 @@ export default function FinancesPage() {
                       <Clock3 className="h-3.5 w-3.5" />
                       {pendingCount} ожидает
                     </span>
+                    <span className="inline-flex h-8 items-center gap-2 rounded-md border border-[#f2dfca] bg-[#fff8ed] px-3 text-xs font-black text-[#c16f11]">
+                      <CircleDollarSign className="h-3.5 w-3.5" />
+                      {partialCount} частично
+                    </span>
                     <span className="inline-flex h-8 items-center gap-2 rounded-md border border-[#f4d6ce] bg-[#fff1ed] px-3 text-xs font-black text-[#b9472d]">
                       <AlertTriangle className="h-3.5 w-3.5" />
                       {overdueCount} просрочено
@@ -1844,20 +2538,25 @@ export default function FinancesPage() {
               </CardHeader>
               <CardContent className="px-4 py-4 sm:px-5 lg:px-6">
                 <div className="overflow-hidden rounded-md bg-white shadow-[0_16px_36px_rgba(34,49,55,0.06)]">
-                <Table className="min-w-[920px]">
+                <Table className="min-w-[1180px]">
                   <TableHeader className="bg-[#f7f8f5]">
                     <TableRow className="hover:bg-transparent">
                       <TableHead className="pl-4">№ счета</TableHead>
                       <TableHead>Контракт</TableHead>
-                      <TableHead>Дата</TableHead>
+                      <TableHead>Срок</TableHead>
                       <TableHead>Статус</TableHead>
+                      <TableHead>Оплата</TableHead>
                       <TableHead className="text-right">Сумма</TableHead>
                       <TableHead className="pr-4 text-right">Действия</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredInvoices.length > 0 ? (
-                      filteredInvoices.map((invoice) => (
+                      filteredInvoices.map((invoice) => {
+                        const progress = getInvoiceProgress(invoice);
+                        const balance = getInvoiceBalance(invoice);
+
+                        return (
                         <TableRow key={invoice.id} className="hover:bg-[#f8faf7]">
                           <TableCell className="pl-4">
                             <div className="flex items-center gap-3">
@@ -1869,20 +2568,36 @@ export default function FinancesPage() {
                                   {invoice.id}
                                 </div>
                                 <div className="text-xs text-[#7b857f]">
-                                  Документ
+                                  {invoice.date}
                                 </div>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <span className="font-bold text-[#223137]">
-                              {invoice.contract}
-                            </span>
+                            <div className="max-w-[260px]">
+                              <div className="flex items-center gap-1.5 font-bold text-[#223137]">
+                                {invoice.contractId}
+                                <ArrowUpRight className="h-3.5 w-3.5 text-[#8a928f]" />
+                              </div>
+                              <div className="mt-0.5 truncate text-xs text-[#7b857f]">
+                                {invoice.contractTitle}
+                              </div>
+                              <div className="mt-0.5 truncate text-xs font-semibold text-[#2f6b4f]">
+                                {invoice.counterparty}
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell>
-                            <span className="inline-flex rounded-md bg-[#f7f8f5] px-2.5 py-1 text-xs font-semibold text-[#53605a]">
-                              {invoice.date}
-                            </span>
+                            <div className="inline-flex flex-col rounded-md border border-[#e5ece4] bg-[#fbfcfa] px-2.5 py-1.5">
+                              <span className="text-xs font-black text-[#223137]">
+                                {invoice.dueDate}
+                              </span>
+                              <span className="text-[11px] font-semibold text-[#7b857f]">
+                                {invoice.status === "overdue"
+                                  ? `${invoice.overdueDays || 1} дн. просрочки`
+                                  : "контроль оплаты"}
+                              </span>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -1892,29 +2607,72 @@ export default function FinancesPage() {
                               {getStatusLabel(invoice.status)}
                             </Badge>
                           </TableCell>
+                          <TableCell>
+                            <div className="w-[220px]">
+                              <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+                                <span className="font-black text-[#223137]">
+                                  {progress}%
+                                </span>
+                                <span className="font-semibold text-[#7b857f]">
+                                  остаток {formatMoney(balance, invoice.currency)}
+                                </span>
+                              </div>
+                              <div className="h-2 overflow-hidden rounded-full bg-[#edf1eb]">
+                                <div
+                                  className={`h-full rounded-full ${
+                                    invoice.status === "overdue"
+                                      ? "bg-[#b9472d]"
+                                      : invoice.status === "paid"
+                                        ? "bg-[#2f6b4f]"
+                                        : "bg-[#f38810]"
+                                  }`}
+                                  style={{ width: `${progress}%` }}
+                                />
+                              </div>
+                            </div>
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="font-black text-[#223137]">
-                              {formatCurrency(invoice.amount)}
+                              {formatMoney(invoice.amount, invoice.currency)}
                             </div>
-                            <div className="text-xs font-bold text-[#d5740b]">
-                              {invoice.currency}
+                            <div className="text-xs font-bold text-[#2f6b4f]">
+                              оплачено{" "}
+                              {formatMoney(
+                                getInvoicePaidAmount(invoice),
+                                invoice.currency
+                              )}
                             </div>
                           </TableCell>
                           <TableCell className="pr-4 text-right">
-                            <Button
-                              variant="ghost"
-                              className="h-9 w-9 rounded-md p-0 hover:bg-[#eef5ef]"
-                              onClick={() => openViewInvoiceDialog(invoice)}
-                            >
-                              <Download className="h-4 w-4" />
-                              <span className="sr-only">Просмотр</span>
-                            </Button>
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                className="h-9 rounded-md px-3 text-xs font-black text-[#2f6b4f] hover:bg-[#eef5ef]"
+                                onClick={() => openViewInvoiceDialog(invoice)}
+                              >
+                                Подробнее
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                className="h-9 w-9 rounded-md p-0 hover:bg-[#fff3e5]"
+                                onClick={() =>
+                                  downloadFinanceDocument(
+                                    invoice.documents[0],
+                                    invoice
+                                  )
+                                }
+                              >
+                                <FileDown className="h-4 w-4" />
+                                <span className="sr-only">Скачать</span>
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
-                      ))
+                        );
+                      })
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
+                        <TableCell colSpan={7} className="h-24 text-center">
                           Счета не найдены.
                         </TableCell>
                       </TableRow>
@@ -2225,7 +2983,7 @@ export default function FinancesPage() {
                                   <SelectItem value="completed">
                                     Проведен
                                   </SelectItem>
-                                  <SelectItem value="pending">
+                                  <SelectItem value="processing">
                                     В обработке
                                   </SelectItem>
                                   <SelectItem value="failed">
@@ -2385,21 +3143,21 @@ export default function FinancesPage() {
                       Всего поступило
                     </div>
                     <div className="text-lg font-black text-[#2f6b4f]">
-                      {formatCurrency(paymentTotal)}
+                      {formatMoney(paymentTotal, "KZT")}
                     </div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="px-4 py-4 sm:px-5 lg:px-6">
                 <div className="overflow-hidden rounded-md bg-white shadow-[0_16px_36px_rgba(34,49,55,0.06)]">
-                <Table className="min-w-[1080px]">
+                <Table className="min-w-[1120px]">
                   <TableHeader className="bg-[#f7f8f5]">
                     <TableRow className="hover:bg-transparent">
                       <TableHead className="pl-4">№ платежа</TableHead>
-                      <TableHead>№ счета</TableHead>
+                      <TableHead>Связка</TableHead>
                       <TableHead>Дата</TableHead>
+                      <TableHead>Статус</TableHead>
                       <TableHead>Способ оплаты</TableHead>
-                      <TableHead>Референс</TableHead>
                       <TableHead className="text-right">Сумма</TableHead>
                       <TableHead className="pr-4 text-right">Действия</TableHead>
                     </TableRow>
@@ -2418,15 +3176,21 @@ export default function FinancesPage() {
                                   {payment.id}
                                 </div>
                                 <div className="text-xs text-[#7b857f]">
-                                  Поступление
+                                  {payment.reference || "без референса"}
                                 </div>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <span className="font-bold text-[#223137]">
-                              {payment.invoice}
-                            </span>
+                            <div>
+                              <div className="font-bold text-[#223137]">
+                                {payment.invoice}
+                              </div>
+                              <div className="mt-0.5 inline-flex items-center gap-1 text-xs font-semibold text-[#2f6b4f]">
+                                <Link2 className="h-3.5 w-3.5" />
+                                {payment.contract}
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <span className="inline-flex rounded-md bg-[#f7f8f5] px-2.5 py-1 text-xs font-semibold text-[#53605a]">
@@ -2436,33 +3200,50 @@ export default function FinancesPage() {
                           <TableCell>
                             <Badge
                               variant="outline"
+                              className={getPaymentStatusClassName(payment.status)}
+                            >
+                              {getPaymentStatusLabel(payment.status)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
                               className="border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]"
                             >
                               {getPaymentMethodName(payment.method)}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            <span className="font-semibold text-[#53605a]">
-                              {payment.reference || "-"}
-                            </span>
-                          </TableCell>
                           <TableCell className="text-right">
                             <div className="font-black text-[#223137]">
-                              {formatCurrency(payment.amount)}
+                              {formatMoney(payment.amount, payment.currency)}
                             </div>
                             <div className="text-xs font-bold text-[#2f6b4f]">
-                              {(payment as any).details?.payment_currency ||
-                                "KZT"}
+                              {payment.currency}
                             </div>
                           </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              className="h-9 w-9 rounded-md p-0 hover:bg-[#eef5ef]"
-                            >
-                              <Download className="h-4 w-4" />
-                              <span className="sr-only">Скачать</span>
-                            </Button>
+                          <TableCell className="pr-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                className="h-9 rounded-md px-3 text-xs font-black text-[#2f6b4f] hover:bg-[#eef5ef]"
+                                onClick={() => openViewPaymentDialog(payment)}
+                              >
+                                Подробнее
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                className="h-9 w-9 rounded-md p-0 hover:bg-[#fff3e5]"
+                                onClick={() =>
+                                  downloadFinanceDocument(
+                                    payment.documents[0],
+                                    payment
+                                  )
+                                }
+                              >
+                                <FileDown className="h-4 w-4" />
+                                <span className="sr-only">Скачать</span>
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -2487,7 +3268,7 @@ export default function FinancesPage() {
           open={isViewInvoiceDialogOpen}
           onOpenChange={setIsViewInvoiceDialogOpen}
         >
-          <DialogContent className="grid h-[96vh] max-h-[900px] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden border-[#dfe7de] bg-[#f8faf7] [padding:0] sm:max-w-[900px]">
+          <DialogContent className="grid h-[96vh] max-h-[900px] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden border-[#dfe7de] bg-[#f8faf7] [padding:0] sm:max-w-[1120px]">
             <DialogHeader className="border-b border-[#dfe7de] bg-white px-5 py-4 pr-12 sm:px-6">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0">
@@ -2503,7 +3284,7 @@ export default function FinancesPage() {
                   </DialogDescription>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 lg:min-w-[430px]">
+                <div className="grid grid-cols-2 gap-2 lg:min-w-[560px] xl:grid-cols-4">
                   <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-3 py-2">
                     <div className="text-[10px] font-black uppercase text-[#7b857f]">
                       Дата
@@ -2518,7 +3299,15 @@ export default function FinancesPage() {
                       Сумма
                     </div>
                     <div className="mt-1 truncate text-sm font-black text-[#d5740b]">
-                      {selectedInvoiceTotalAmount} USD
+                      {selectedInvoiceTotalMoney}
+                    </div>
+                  </div>
+                  <div className="rounded-md border border-[#dce8dc] bg-[#f5faf5] px-3 py-2">
+                    <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                      Оплачено
+                    </div>
+                    <div className="mt-1 truncate text-sm font-black text-[#2f6b4f]">
+                      {selectedInvoicePaidMoney}
                     </div>
                   </div>
                   <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-3 py-2">
@@ -2539,6 +3328,215 @@ export default function FinancesPage() {
             </DialogHeader>
 
             <div className="min-h-0 space-y-3 overflow-y-auto px-4 py-3 sm:px-6">
+              <section className="grid gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
+                <div className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_12px_28px_rgba(34,49,55,0.045)]">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <div className="inline-flex items-center gap-2 rounded-md border border-[#dce8dc] bg-[#f5faf5] px-3 py-1 text-[11px] font-black uppercase text-[#2f6b4f]">
+                        <Link2 className="h-3.5 w-3.5" />
+                        Привязка к контракту
+                      </div>
+                      <h3 className="mt-3 text-xl font-black text-[#223137]">
+                        {selectedInvoice.contractTitle}
+                      </h3>
+                      <p className="mt-1 text-sm text-[#6f7774]">
+                        {selectedInvoice.counterparty} · {selectedInvoice.paymentTerms}
+                      </p>
+                    </div>
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="h-10 shrink-0 rounded-md border-[#dce8dc] px-3 font-black text-[#2f6b4f] hover:bg-[#eef5ef]"
+                    >
+                      <a href={selectedInvoiceContractHref}>
+                        Открыть контракт
+                        <ArrowUpRight className="ml-2 h-4 w-4" />
+                      </a>
+                    </Button>
+                  </div>
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-3">
+                      <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                        Оплачено
+                      </div>
+                      <div className="mt-1 text-lg font-black text-[#2f6b4f]">
+                        {selectedInvoicePaidMoney}
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-3">
+                      <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                        Остаток
+                      </div>
+                      <div className="mt-1 text-lg font-black text-[#d5740b]">
+                        {selectedInvoiceBalanceMoney}
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-3">
+                      <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                        Дедлайн
+                      </div>
+                      <div className="mt-1 flex items-center gap-2 text-lg font-black text-[#223137]">
+                        <TimerReset className="h-4 w-4 text-[#f38810]" />
+                        {selectedInvoice.dueDate}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-5">
+                    <div className="mb-2 flex items-center justify-between text-xs">
+                      <span className="font-black uppercase text-[#7b857f]">
+                        Прогресс оплаты
+                      </span>
+                      <span className="font-black text-[#223137]">
+                        {selectedInvoiceProgress}%
+                      </span>
+                    </div>
+                    <div className="h-3 overflow-hidden rounded-full bg-[#edf1eb]">
+                      <div
+                        className={`h-full rounded-full ${
+                          selectedInvoice.status === "overdue"
+                            ? "bg-[#b9472d]"
+                            : selectedInvoice.status === "paid"
+                              ? "bg-[#2f6b4f]"
+                              : "bg-[#f38810]"
+                        }`}
+                        style={{ width: `${selectedInvoiceProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_12px_28px_rgba(34,49,55,0.045)]">
+                  <div className="mb-3 flex items-center gap-3 border-b border-[#edf1eb] pb-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
+                      <FileDown className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h3 className="text-base font-black text-[#223137]">
+                        Документы
+                      </h3>
+                      <p className="text-xs text-[#7b857f]">
+                        Счета, акты и платежные файлы.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {selectedInvoiceDocuments.map((document) => (
+                      <button
+                        key={document.id}
+                        type="button"
+                        onClick={() =>
+                          downloadFinanceDocument(document, selectedInvoice)
+                        }
+                        className="flex w-full items-center justify-between gap-3 rounded-md border border-[#edf1eb] bg-[#fbfcfa] px-3 py-2 text-left transition hover:border-[#f2c184] hover:bg-[#fff8ed]"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-black text-[#223137]">
+                            {document.title}
+                          </span>
+                          <span className="mt-0.5 block text-xs text-[#7b857f]">
+                            {document.kind} · {document.size} · {document.updatedAt}
+                          </span>
+                        </span>
+                        <Download className="h-4 w-4 shrink-0 text-[#f38810]" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              <section className="grid gap-3 lg:grid-cols-2">
+                <div className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_12px_28px_rgba(34,49,55,0.045)]">
+                  <div className="mb-3 flex items-center gap-3 border-b border-[#edf1eb] pb-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
+                      <Banknote className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h3 className="text-base font-black text-[#223137]">
+                        Платежи по счету
+                      </h3>
+                      <p className="text-xs text-[#7b857f]">
+                        Частичные поступления и банковские референсы.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {selectedInvoicePayments.length > 0 ? (
+                      selectedInvoicePayments.map((payment) => (
+                        <button
+                          key={payment.id}
+                          type="button"
+                          onClick={() => openViewPaymentDialog(payment)}
+                          className="flex w-full items-center justify-between gap-3 rounded-md border border-[#edf1eb] bg-[#fbfcfa] px-3 py-2 text-left transition hover:border-[#dce8dc] hover:bg-[#f5faf5]"
+                        >
+                          <span>
+                            <span className="block text-sm font-black text-[#223137]">
+                              {payment.id} · {payment.date}
+                            </span>
+                            <span className="mt-0.5 block text-xs text-[#7b857f]">
+                              {payment.reference || "Без референса"} ·{" "}
+                              {getPaymentStatusLabel(payment.status)}
+                            </span>
+                          </span>
+                          <span className="text-sm font-black text-[#2f6b4f]">
+                            {formatMoney(payment.amount, payment.currency)}
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="rounded-md border border-dashed border-[#dfe7de] bg-[#fbfcfa] px-3 py-5 text-center text-sm font-semibold text-[#7b857f]">
+                        Поступлений по счету пока нет.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_12px_28px_rgba(34,49,55,0.045)]">
+                  <div className="mb-3 flex items-center gap-3 border-b border-[#edf1eb] pb-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
+                      <History className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h3 className="text-base font-black text-[#223137]">
+                        История изменений
+                      </h3>
+                      <p className="text-xs text-[#7b857f]">
+                        Журнал действий по счету и оплатам.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    {selectedInvoiceHistory.map((item, index) => (
+                      <div key={`${item.date}-${item.title}-${index}`} className="flex gap-3">
+                        <span
+                          className={`mt-1 size-2.5 rounded-full ${
+                            item.tone === "red"
+                              ? "bg-[#b9472d]"
+                              : item.tone === "green"
+                                ? "bg-[#2f6b4f]"
+                                : item.tone === "orange"
+                                  ? "bg-[#f38810]"
+                                  : "bg-[#8a928f]"
+                          }`}
+                        />
+                        <div className="min-w-0">
+                          <div className="text-sm font-black text-[#223137]">
+                            {item.title}
+                          </div>
+                          <div className="text-xs font-semibold text-[#7b857f]">
+                            {item.date}
+                          </div>
+                          <p className="mt-1 text-sm leading-5 text-[#53605a]">
+                            {item.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
               <section className="rounded-md border border-[#dfe7de] bg-white p-3.5 shadow-[0_12px_28px_rgba(34,49,55,0.045)]">
                 <div className="mb-3 flex items-center justify-between gap-3 border-b border-[#edf1eb] pb-3">
                   <div className="flex items-center gap-3">
@@ -2655,12 +3653,14 @@ export default function FinancesPage() {
                         Итого к оплате
                       </div>
                       <div className="mt-1 text-2xl font-black text-[#223137]">
-                        {selectedInvoiceTotalAmount} USD
+                        {selectedInvoiceTotalMoney}
                       </div>
                     </div>
                   </div>
                   <div className="mt-4 rounded-md border border-[#f2dfca] bg-white p-3 text-sm font-semibold leading-6 text-[#53605a]">
-                    {selectedInvoiceTotalWords} долларов США, 00 центов
+                    {selectedInvoiceDetails.total_amount_usd
+                      ? `${selectedInvoiceTotalWords} долларов США, 00 центов`
+                      : "Сумма сформирована по данным счета."}
                   </div>
                 </div>
               </section>
@@ -2694,9 +3694,287 @@ export default function FinancesPage() {
               >
                 Закрыть
               </Button>
-              <Button className="h-11 gap-2 rounded-md bg-[#f38810] px-5 font-black text-white shadow-[0_10px_24px_rgba(243,136,16,0.22)] hover:bg-[#db790c]">
+              <Button
+                className="h-11 gap-2 rounded-md bg-[#f38810] px-5 font-black text-white shadow-[0_10px_24px_rgba(243,136,16,0.22)] hover:bg-[#db790c]"
+                onClick={() =>
+                  selectedInvoiceDocuments[0] &&
+                  downloadFinanceDocument(
+                    selectedInvoiceDocuments[0],
+                    selectedInvoice
+                  )
+                }
+              >
                 <Download className="h-4 w-4" />
                 Скачать счет
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {selectedPayment && (
+        <Dialog
+          open={isViewPaymentDialogOpen}
+          onOpenChange={setIsViewPaymentDialogOpen}
+        >
+          <DialogContent className="grid h-[90vh] max-h-[780px] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden border-[#dfe7de] bg-[#f8faf7] [padding:0] sm:max-w-[920px]">
+            <DialogHeader className="border-b border-[#dfe7de] bg-white px-5 py-4 pr-12 sm:px-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <div className="mb-2 inline-flex items-center gap-2 rounded-md border border-[#dce8dc] bg-[#f5faf5] px-3 py-1 text-[11px] font-black uppercase text-[#2f6b4f]">
+                    <Banknote className="h-3.5 w-3.5" />
+                    Платеж
+                  </div>
+                  <DialogTitle className="text-2xl font-black tracking-tight text-[#223137]">
+                    {selectedPayment.id}
+                  </DialogTitle>
+                  <DialogDescription className="mt-1 text-sm text-[#6f7774]">
+                    Банковское поступление, сверка и связанные документы.
+                  </DialogDescription>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 sm:min-w-[420px]">
+                  <div className="rounded-md border border-[#dce8dc] bg-[#f5faf5] px-3 py-2">
+                    <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                      Статус
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={`mt-1 ${getPaymentStatusClassName(
+                        selectedPayment.status
+                      )}`}
+                    >
+                      {getPaymentStatusLabel(selectedPayment.status)}
+                    </Badge>
+                  </div>
+                  <div className="rounded-md border border-[#f2dfca] bg-[#fffdf9] px-3 py-2">
+                    <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                      Сумма
+                    </div>
+                    <div className="mt-1 text-lg font-black text-[#d5740b]">
+                      {formatMoney(selectedPayment.amount, selectedPayment.currency)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="min-h-0 overflow-y-auto px-4 py-4 sm:px-6">
+              <div className="grid gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
+                <aside className="space-y-3">
+                  <section className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_12px_28px_rgba(34,49,55,0.045)]">
+                    <div className="flex size-11 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
+                      <Receipt className="h-5 w-5" />
+                    </div>
+                    <div className="mt-4 text-[11px] font-black uppercase text-[#7b857f]">
+                      Счет
+                    </div>
+                    <div className="mt-1 text-lg font-black text-[#223137]">
+                      {selectedPayment.invoice}
+                    </div>
+                    <div className="mt-2 text-sm font-semibold leading-5 text-[#53605a]">
+                      {selectedPaymentLinkedInvoice?.contractTitle ||
+                        "Связанный контракт"}
+                    </div>
+                    <div className="mt-4 grid gap-2">
+                      <div className="rounded-md bg-[#f7f8f5] px-3 py-2">
+                        <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                          Референс
+                        </div>
+                        <div className="mt-1 truncate text-sm font-bold text-[#223137]">
+                          {selectedPayment.reference || "Не указан"}
+                        </div>
+                      </div>
+                      <div className="rounded-md bg-[#f7f8f5] px-3 py-2">
+                        <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                          Метод
+                        </div>
+                        <div className="mt-1 text-sm font-bold text-[#223137]">
+                          {getPaymentMethodName(selectedPayment.method)}
+                        </div>
+                      </div>
+                      <div className="rounded-md bg-[#fff3e5] px-3 py-2">
+                        <div className="text-[10px] font-black uppercase text-[#9a621d]">
+                          Дата поступления
+                        </div>
+                        <div className="mt-1 text-sm font-black text-[#d5740b]">
+                          {selectedPayment.date}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </aside>
+
+                <div className="grid gap-4">
+                  {selectedPaymentLinkedInvoice && (
+                    <section className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_12px_28px_rgba(34,49,55,0.045)]">
+                      <div className="mb-3 flex items-center justify-between gap-3 border-b border-[#edf1eb] pb-3">
+                        <div className="flex items-center gap-3">
+                          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
+                            <Link2 className="h-5 w-5" />
+                          </span>
+                          <div>
+                            <h3 className="text-base font-black text-[#223137]">
+                              Связанный счет
+                            </h3>
+                            <p className="text-xs text-[#7b857f]">
+                              Остаток и прогресс обновляются по связанным платежам.
+                            </p>
+                          </div>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={getStatusClassName(
+                            selectedPaymentLinkedInvoice.status
+                          )}
+                        >
+                          {getStatusLabel(selectedPaymentLinkedInvoice.status)}
+                        </Badge>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-3">
+                          <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                            Сумма счета
+                          </div>
+                          <div className="mt-1 text-base font-black text-[#223137]">
+                            {formatMoney(
+                              selectedPaymentLinkedInvoice.amount,
+                              selectedPaymentLinkedInvoice.currency
+                            )}
+                          </div>
+                        </div>
+                        <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-3">
+                          <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                            Остаток
+                          </div>
+                          <div className="mt-1 text-base font-black text-[#d5740b]">
+                            {formatMoney(
+                              getInvoiceBalance(selectedPaymentLinkedInvoice),
+                              selectedPaymentLinkedInvoice.currency
+                            )}
+                          </div>
+                        </div>
+                        <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-3">
+                          <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                            Прогресс
+                          </div>
+                          <div className="mt-1 text-base font-black text-[#2f6b4f]">
+                            {getInvoiceProgress(selectedPaymentLinkedInvoice)}%
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+                  )}
+
+                  <section className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_12px_28px_rgba(34,49,55,0.045)]">
+                      <div className="mb-3 flex items-center gap-3 border-b border-[#edf1eb] pb-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
+                          <FileDown className="h-5 w-5" />
+                        </span>
+                        <div>
+                          <h3 className="text-base font-black text-[#223137]">
+                            Документы
+                          </h3>
+                          <p className="text-xs text-[#7b857f]">
+                            Поручения, выписки и подтверждения.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        {selectedPaymentDocuments.map((document) => (
+                          <button
+                            key={document.id}
+                            type="button"
+                            onClick={() =>
+                              downloadFinanceDocument(document, selectedPayment)
+                            }
+                            className="flex w-full items-center justify-between gap-3 rounded-md border border-[#edf1eb] bg-[#fbfcfa] px-3 py-2 text-left transition hover:border-[#f2c184] hover:bg-[#fff8ed]"
+                          >
+                            <span className="min-w-0">
+                              <span className="block truncate text-sm font-black text-[#223137]">
+                                {document.title}
+                              </span>
+                              <span className="mt-0.5 block text-xs text-[#7b857f]">
+                                {document.kind} · {document.size}
+                              </span>
+                            </span>
+                            <Download className="h-4 w-4 shrink-0 text-[#f38810]" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_12px_28px_rgba(34,49,55,0.045)]">
+                      <div className="mb-3 flex items-center gap-3 border-b border-[#edf1eb] pb-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
+                          <History className="h-5 w-5" />
+                        </span>
+                        <div>
+                          <h3 className="text-base font-black text-[#223137]">
+                            История
+                          </h3>
+                          <p className="text-xs text-[#7b857f]">
+                            События обработки платежа.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        {selectedPaymentHistory.map((item, index) => (
+                          <div
+                            key={`${item.date}-${item.title}-${index}`}
+                            className="flex gap-3"
+                          >
+                            <span
+                              className={`mt-1 size-2.5 rounded-full ${
+                                item.tone === "green"
+                                  ? "bg-[#2f6b4f]"
+                                  : item.tone === "red"
+                                    ? "bg-[#b9472d]"
+                                    : "bg-[#f38810]"
+                              }`}
+                            />
+                            <div>
+                              <div className="text-sm font-black text-[#223137]">
+                                {item.title}
+                              </div>
+                              <div className="text-xs font-semibold text-[#7b857f]">
+                                {item.date}
+                              </div>
+                              <p className="mt-1 text-sm leading-5 text-[#53605a]">
+                                {item.description}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="border-t border-[#dfe7de] bg-white px-5 py-4 sm:px-6">
+              <Button
+                variant="outline"
+                onClick={() => setIsViewPaymentDialogOpen(false)}
+                className="h-11 rounded-md border-[#dce4da] px-5 font-bold text-[#53605a]"
+              >
+                Закрыть
+              </Button>
+              <Button
+                className="h-11 gap-2 rounded-md bg-[#f38810] px-5 font-black text-white shadow-[0_10px_24px_rgba(243,136,16,0.22)] hover:bg-[#db790c]"
+                onClick={() =>
+                  selectedPaymentDocuments[0] &&
+                  downloadFinanceDocument(
+                    selectedPaymentDocuments[0],
+                    selectedPayment
+                  )
+                }
+              >
+                <Download className="h-4 w-4" />
+                Скачать документ
               </Button>
             </DialogFooter>
           </DialogContent>
