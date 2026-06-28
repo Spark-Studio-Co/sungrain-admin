@@ -76,7 +76,7 @@ export const UserContractsBlock = () => {
   return (
     <>
       <Card className="w-full min-w-0 max-w-none overflow-x-hidden border-none shadow-none">
-        <CardHeader className="px-0 pt-0">
+        <CardHeader className="px-4 pt-0 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="text-2xl font-bold tracking-tight">
@@ -98,7 +98,7 @@ export const UserContractsBlock = () => {
           </div>
         </CardHeader>
 
-        <CardContent className="px-0 pb-0">
+        <CardContent className="px-4 pb-4 sm:px-6 lg:px-8">
           {isError && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
