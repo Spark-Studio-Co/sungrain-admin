@@ -232,6 +232,70 @@ export const getApplicationWagonGroupStats = (
   };
 };
 
+export type ApplicationShipmentStatus =
+  | "empty"
+  | "at_elevator"
+  | "loading"
+  | "shipped";
+
+export const getApplicationShipmentSummary = (application: any) => {
+  const wagons = getArray(application?.wagons);
+  const counts = wagons.reduce(
+    (acc, wagon: any) => {
+      if (isContractWagonShipped(wagon)) {
+        acc.shipped += 1;
+      } else {
+        const status = getStatusValue(wagon?.status || wagon?.wagon?.status);
+
+        if (status === "in_transit") {
+          acc.inTransit += 1;
+        } else if (status === "at_elevator") {
+          acc.atElevator += 1;
+        } else {
+          acc.other += 1;
+        }
+      }
+
+      return acc;
+    },
+    {
+      total: wagons.length,
+      shipped: 0,
+      inTransit: 0,
+      atElevator: 0,
+      other: 0,
+    }
+  );
+
+  const status: ApplicationShipmentStatus =
+    counts.total === 0
+      ? "empty"
+      : counts.shipped === counts.total
+        ? "shipped"
+        : counts.inTransit > 0 || counts.shipped > 0
+          ? "loading"
+          : "at_elevator";
+  const label =
+    status === "shipped"
+      ? "Отгружено"
+      : status === "loading"
+        ? "Грузится"
+        : status === "at_elevator"
+          ? "На элеваторе"
+          : "Нет вагонов";
+  const progress =
+    counts.total > 0
+      ? clamp(Math.round((counts.shipped / counts.total) * 100), 0, 100)
+      : 0;
+
+  return {
+    ...counts,
+    status,
+    label,
+    progress,
+  };
+};
+
 const getContractApplications = (contract: any) => getArray(contract?.applications);
 
 const getContractFiles = (contract: any) =>

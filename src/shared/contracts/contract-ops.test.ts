@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getWagonGroupStats,
   getApplicationWagonGroupStats,
+  getApplicationShipmentSummary,
   getContractDocuments,
   getContractFinanceLinks,
   getContractOpsMeta,
@@ -106,6 +107,44 @@ describe("contract operational metadata", () => {
     expect(stats.totalCapacity).toBe(490);
     expect(stats.totalTargetVolume).toBe(980);
     expect(stats.utilizationPercentage).toBe(50);
+  });
+
+  it("marks an application as shipped when all wagons are shipped", () => {
+    const summary = getApplicationShipmentSummary({
+      wagons: [
+        { status: "shipped", real_weight: 70 },
+        { status: "shipped", real_weight: 68 },
+      ],
+    });
+
+    expect(summary).toMatchObject({
+      status: "shipped",
+      label: "Отгружено",
+      total: 2,
+      shipped: 2,
+      inTransit: 0,
+      atElevator: 0,
+    });
+  });
+
+  it("summarizes mixed application wagon statuses for operations", () => {
+    const summary = getApplicationShipmentSummary({
+      wagons: [
+        { status: "shipped" },
+        { status: "in_transit" },
+        { status: "at_elevator" },
+        { wagon: { status: "in_transit" } },
+      ],
+    });
+
+    expect(summary).toMatchObject({
+      status: "loading",
+      label: "Грузится",
+      total: 4,
+      shipped: 1,
+      inTransit: 2,
+      atElevator: 1,
+    });
   });
 
   it("keeps a safe backend download target for contract documents", () => {

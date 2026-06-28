@@ -2,8 +2,10 @@
 
 import type React from "react";
 import { useState } from "react";
-import { formatMoney, formatNumber, normalizeCurrencyLabel } from "@/lib/utils";
+import { cn, formatMoney, formatNumber, normalizeCurrencyLabel } from "@/lib/utils";
 import {
+  Building2,
+  CheckCircle2,
   FileText,
   Plus,
   Package,
@@ -67,6 +69,10 @@ import {
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  getApplicationShipmentSummary,
+  type ApplicationShipmentStatus,
+} from "@/shared/contracts/contract-ops";
 
 interface ApplicationBlockProps {
   contractId: string;
@@ -139,6 +145,107 @@ export const ApplicationBlock = ({
     application: any,
     value: number | string | null | undefined
   ) => formatMoney(value, getApplicationCurrency(application));
+
+  const shipmentStatusConfig: Record<
+    ApplicationShipmentStatus,
+    {
+      icon: typeof TrainFront;
+      className: string;
+      progressClassName: string;
+    }
+  > = {
+    shipped: {
+      icon: CheckCircle2,
+      className: "border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]",
+      progressClassName: "bg-[#2f6b4f]",
+    },
+    loading: {
+      icon: TrainFront,
+      className: "border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]",
+      progressClassName: "bg-[#f38810]",
+    },
+    at_elevator: {
+      icon: Building2,
+      className: "border-[#dce8dc] bg-[#eef5ef] text-[#1f5a43]",
+      progressClassName: "bg-[#1f5a43]",
+    },
+    empty: {
+      icon: AlertCircle,
+      className: "border-[#edf1eb] bg-[#fbfcfa] text-[#7b857f]",
+      progressClassName: "bg-[#c9d2cc]",
+    },
+  };
+
+  const renderShipmentSummary = (application: any) => {
+    const summary = getApplicationShipmentSummary(application);
+    const config = shipmentStatusConfig[summary.status];
+    const StatusIcon = config.icon;
+    const counters = [
+      {
+        label: "Отгружено",
+        value: summary.shipped,
+        activeClassName: "border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]",
+      },
+      {
+        label: "В пути",
+        value: summary.inTransit,
+        activeClassName: "border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]",
+      },
+      {
+        label: "Элеватор",
+        value: summary.atElevator,
+        activeClassName: "border-[#dce8dc] bg-[#eef5ef] text-[#1f5a43]",
+      },
+    ];
+
+    return (
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge
+            variant="outline"
+            className={cn("gap-1.5 font-black", config.className)}
+          >
+            <StatusIcon className="h-3.5 w-3.5" />
+            {summary.label}
+          </Badge>
+          {summary.total > 0 && (
+            <span className="text-xs font-black text-[#7b857f]">
+              {summary.progress}%
+            </span>
+          )}
+        </div>
+        {summary.total > 0 ? (
+          <>
+            <div className="flex flex-wrap gap-1.5">
+              {counters.map((counter) => (
+                <span
+                  key={counter.label}
+                  className={cn(
+                    "rounded-md border px-2 py-1 text-[11px] font-black",
+                    counter.value > 0
+                      ? counter.activeClassName
+                      : "border-[#edf1eb] bg-[#fbfcfa] text-[#8a928f]"
+                  )}
+                >
+                  {counter.label}: {counter.value}
+                </span>
+              ))}
+            </div>
+            <div className="h-1.5 rounded-full bg-[#edf1eb]">
+              <div
+                className={cn("h-full rounded-full", config.progressClassName)}
+                style={{ width: `${summary.progress}%` }}
+              />
+            </div>
+          </>
+        ) : (
+          <div className="text-xs font-semibold text-[#8a928f]">
+            Вагоны еще не привязаны
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Filter applications based on search term
   const filteredApplications = Array.isArray(applications)
@@ -214,21 +321,27 @@ export const ApplicationBlock = ({
         "Общая сумма",
         "Документы",
         "Вагоны",
+        "Статус отгрузки",
       ];
 
       // Create CSV rows
-      const rows = applications.map((app: any) => [
-        app.id,
-        app.name || "",
-        app.created_at ? formatDate(app.created_at) : "",
-        app.volume || 0,
-        getCultureName(app.culture) || "",
-        app.price_per_ton || 0,
-        app.currency || app.contract?.currency || "KZT",
-        app.total_amount || 0,
-        app.files?.length || 0,
-        app.wagons?.length || 0,
-      ]);
+      const rows = applications.map((app: any) => {
+        const shipmentSummary = getApplicationShipmentSummary(app);
+
+        return [
+          app.id,
+          app.name || "",
+          app.created_at ? formatDate(app.created_at) : "",
+          app.volume || 0,
+          getCultureName(app.culture) || "",
+          app.price_per_ton || 0,
+          app.currency || app.contract?.currency || "KZT",
+          app.total_amount || 0,
+          app.files?.length || 0,
+          app.wagons?.length || 0,
+          `${shipmentSummary.label}: отгружено ${shipmentSummary.shipped}, в пути ${shipmentSummary.inTransit}, элеватор ${shipmentSummary.atElevator}`,
+        ];
+      });
 
       // Combine header and rows
       const csvContent = [
@@ -260,8 +373,8 @@ export const ApplicationBlock = ({
       </div>
       <div className="border rounded-lg">
         <div className="p-4">
-          <div className="grid grid-cols-9 gap-4 mb-4">
-            {Array(9)
+          <div className="grid grid-cols-10 gap-4 mb-4">
+            {Array(10)
               .fill(0)
               .map((_, i) => (
                 <Skeleton key={i} className="h-8" />
@@ -270,8 +383,8 @@ export const ApplicationBlock = ({
           {Array(5)
             .fill(0)
             .map((_, i) => (
-              <div key={i} className="grid grid-cols-9 gap-4 mb-4">
-                {Array(9)
+              <div key={i} className="grid grid-cols-10 gap-4 mb-4">
+                {Array(10)
                   .fill(0)
                   .map((_, j) => (
                     <Skeleton key={j} className="h-10" />
@@ -394,7 +507,7 @@ export const ApplicationBlock = ({
                 <>
                   {/* Desktop Table View */}
                   <div className="crm-scrollbar hidden overflow-x-auto rounded-md bg-white shadow-[0_16px_36px_rgba(34,49,55,0.06)] md:block">
-                    <Table className="min-w-[1100px]">
+                    <Table className="min-w-[1280px]">
                       <TableHeader className="bg-[#f7f8f5]">
                         <TableRow>
                           <TableHead>Название</TableHead>
@@ -405,6 +518,7 @@ export const ApplicationBlock = ({
                           <TableHead>Общая сумма</TableHead>
                           <TableHead>Документы</TableHead>
                           <TableHead>Вагоны</TableHead>
+                          <TableHead>Статус отгрузки</TableHead>
                           {isAdmin && (
                             <TableHead className="text-right">
                               Действия
@@ -491,6 +605,9 @@ export const ApplicationBlock = ({
                                   <span>{application.wagons?.length || 0}</span>
                                 </div>
                               </TableCell>
+                              <TableCell className="min-w-[280px]">
+                                {renderShipmentSummary(application)}
+                              </TableCell>
                               {isAdmin && (
                                 <TableCell className="text-right">
                                   <div className="flex justify-end gap-1">
@@ -544,7 +661,7 @@ export const ApplicationBlock = ({
                         ) : (
                           <TableRow>
                             <TableCell
-                              colSpan={isAdmin ? 11 : 10}
+                              colSpan={isAdmin ? 10 : 9}
                               className="h-24 text-center"
                             >
                               {searchTerm ? (
@@ -701,6 +818,13 @@ export const ApplicationBlock = ({
                                       : formatApplicationMoney(application, 0)}
                                   </div>
                                 </div>
+                              </div>
+
+                              <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] p-3">
+                                <div className="mb-2 text-xs font-black uppercase text-[#7b857f]">
+                                  Статус отгрузки
+                                </div>
+                                {renderShipmentSummary(application)}
                               </div>
 
                               {/* Additional Info */}
