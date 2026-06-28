@@ -29,7 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatMoney, formatNumber, normalizeCurrencyLabel } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -197,6 +197,12 @@ export const ApplicationDetail = ({
 
   // Calculate total amount and paid amount
   const totalAmount = application?.total_amount || 0;
+  const applicationCurrency =
+    application?.currency || application?.contract?.currency || "KZT";
+  const applicationCurrencyLabel = normalizeCurrencyLabel(applicationCurrency);
+  const formatApplicationMoney = (
+    value: number | string | null | undefined
+  ) => formatMoney(value, applicationCurrency);
   const invoices = Array.isArray(invoicesData) ? invoicesData : [];
   const paidAmount = invoices
     .filter((invoice) => invoice.status === "paid")
@@ -744,7 +750,7 @@ export const ApplicationDetail = ({
                   <span className="sm:hidden">Цена</span>
                 </p>
                 <p className="font-semibold text-base text-green-600">
-                  {application.price_per_ton} {application.contract?.currency}
+                  {formatApplicationMoney(application.price_per_ton)}
                 </p>
               </div>
             </div>
@@ -755,12 +761,7 @@ export const ApplicationDetail = ({
                   Общая сумма
                 </p>
                 <p className="font-semibold text-base">
-                  {application?.total_amount
-                    ? formatCurrency(application.total_amount)
-                    : 0}{" "}
-                  {application?.currency ||
-                    application?.contract?.currency ||
-                    "₸"}
+                  {formatApplicationMoney(application?.total_amount || 0)}
                 </p>
               </div>
             </div>
@@ -792,27 +793,21 @@ export const ApplicationDetail = ({
                 <span>
                   Оплачено:{" "}
                   <span className="font-semibold">
-                    {formatCurrency(paidAmount)}
-                  </span>{" "}
-                  {application?.currency ||
-                    application?.contract?.currency ||
-                    "₸"}
+                    {formatApplicationMoney(paidAmount)}
+                  </span>
                 </span>
                 <span>
                   Всего:{" "}
                   <span className="font-semibold">
-                    {formatCurrency(totalAmount)}
-                  </span>{" "}
-                  {application?.currency ||
-                    application?.contract?.currency ||
-                    "₸"}
+                    {formatApplicationMoney(totalAmount)}
+                  </span>
                 </span>
               </div>
               <Progress value={paymentProgress} className="h-3 sm:h-2" />
               <div className="flex justify-between items-center text-xs text-muted-foreground">
                 <span>{paymentProgress.toFixed(0)}% выполнено</span>
                 <span>
-                  Осталось: {formatCurrency(totalAmount - paidAmount)} ₸
+                  Осталось: {formatApplicationMoney(totalAmount - paidAmount)}
                 </span>
               </div>
             </div>
@@ -926,9 +921,8 @@ export const ApplicationDetail = ({
                         </span>
                         <span className="text-xs sm:text-sm font-medium text-right">
                           {application?.price_per_ton
-                            ? formatCurrency(application.price_per_ton)
-                            : 0}{" "}
-                          {application?.contract?.currency}
+                            ? formatApplicationMoney(application.price_per_ton)
+                            : formatApplicationMoney(0)}
                         </span>
                       </div>
                       <div className="flex justify-between items-start">
@@ -936,9 +930,7 @@ export const ApplicationDetail = ({
                           Валюта:
                         </span>
                         <span className="text-xs sm:text-sm font-medium">
-                          {application?.currency ||
-                            application?.contract?.currency ||
-                            "KZT"}
+                          {applicationCurrencyLabel}
                         </span>
                       </div>
                       <div className="flex justify-between items-start">
@@ -947,12 +939,7 @@ export const ApplicationDetail = ({
                           <span className="sm:hidden">Сумма:</span>
                         </span>
                         <span className="text-xs sm:text-sm font-medium text-right">
-                          {application?.total_amount
-                            ? application.total_amount.toLocaleString()
-                            : 0}{" "}
-                          {application?.currency ||
-                            application?.contract?.currency ||
-                            "₸"}
+                          {formatApplicationMoney(application?.total_amount || 0)}
                         </span>
                       </div>
                     </div>
@@ -1232,11 +1219,11 @@ export const ApplicationDetail = ({
                             <div className="font-medium">
                               {invoice.amount?.toLocaleString()}{" "}
                               <span className="hidden sm:inline">
-                                {application?.currency ||
-                                  application?.contract?.currency ||
-                                  "₸"}
+                                {applicationCurrencyLabel}
                               </span>
-                              <span className="sm:hidden">₸</span>
+                              <span className="sm:hidden">
+                                {applicationCurrencyLabel}
+                              </span>
                             </div>
                             <div className="md:hidden mt-1">
                               <Badge
@@ -1370,9 +1357,7 @@ export const ApplicationDetail = ({
                     <span className="text-gray-600">
                       {totalAmount.toLocaleString()}
                     </span>{" "}
-                    {application?.currency ||
-                      application?.contract?.currency ||
-                      "₸"}
+                    {applicationCurrencyLabel}
                   </span>
                 </div>
                 <Progress value={paymentProgress} className="h-2.5 sm:h-2" />
@@ -1386,9 +1371,7 @@ export const ApplicationDetail = ({
                     <span className="text-orange-600">
                       {(totalAmount - paidAmount).toLocaleString()}
                     </span>{" "}
-                    {application?.currency ||
-                      application?.contract?.currency ||
-                      "₸"}
+                    {applicationCurrencyLabel}
                   </span>
                 </div>
               </div>

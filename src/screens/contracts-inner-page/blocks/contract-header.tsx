@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { formatNumber } from "@/lib/utils";
+import { formatMoney, formatNumber } from "@/lib/utils";
 
 interface ContractHeaderProps {
   contractData: any;
@@ -193,7 +193,7 @@ export const ContractHeader = ({
               Стоимость
             </div>
             <div className="text-base font-black text-[#223137]">
-              {formatNumber(contractData?.estimated_cost)} {contractData?.currency}
+              {formatMoney(contractData?.estimated_cost, contractData?.currency)}
             </div>
           </div>
         </div>

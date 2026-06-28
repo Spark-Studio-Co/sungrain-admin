@@ -1,7 +1,7 @@
 "use client";
 
 import { DialogFooter } from "@/components/ui/dialog";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatMoney, formatNumber, normalizeCurrencyLabel } from "@/lib/utils";
 
 import type React from "react";
 import { useState, useEffect } from "react";
@@ -60,6 +60,10 @@ export const ApplicationDialog = ({
     useGetContractsId(contractId);
   const contract = contractData as any;
   const contractCurrency = contract?.currency || "";
+  const contractCurrencyLabel = normalizeCurrencyLabel(contractCurrency);
+  const formatContractMoneyValue = (
+    value: number | string | null | undefined
+  ) => formatMoney(value, contractCurrency);
   const { data: culturesData, isLoading: isCulturesLoading } = useFetchCultures(
     1,
     100
@@ -579,7 +583,7 @@ export const ApplicationDialog = ({
                   Сумма
                 </div>
                 <div className="mt-1 truncate text-lg font-black text-[#d5740b]">
-                  {formatCurrency(totalAmount)}
+                  {formatContractMoneyValue(totalAmount)}
                 </div>
               </div>
               <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-3 py-1.5">
@@ -680,7 +684,7 @@ export const ApplicationDialog = ({
                 </Label>
                 <div className="flex h-11 items-center rounded-md border border-[#edf1eb] bg-[#f7f8f5] px-3 font-black text-[#223137] shadow-sm">
                   <DollarSign className="mr-2 h-4 w-4 text-[#6f7774]" />
-                  <span>{contractCurrency || "KZT"}</span>
+                  <span>{contractCurrencyLabel}</span>
                 </div>
               </div>
 
@@ -751,9 +755,8 @@ export const ApplicationDialog = ({
                 <Label className={applicationLabelClassName}>Общая сумма</Label>
                 <div className="flex h-12 items-center rounded-md border border-[#f2dfca] bg-[#fffdf9] px-3 font-black text-[#223137] shadow-sm">
                   <DollarSign className="mr-2 h-4 w-4 text-[#2f6b4f]" />
-                  <span className="text-lg">{formatCurrency(totalAmount)}</span>
-                  <span className="ml-1 text-lg text-[#2f6b4f]">
-                    {contractCurrency || "KZT"}
+                  <span className="text-lg">
+                    {formatContractMoneyValue(totalAmount)}
                   </span>
                 </div>
               </div>

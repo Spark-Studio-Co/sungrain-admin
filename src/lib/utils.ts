@@ -38,3 +38,24 @@ export function formatCurrency(
 ): string {
   return `${formatNumber(value)} ${currency}`;
 }
+
+export function normalizeCurrencyLabel(
+  currency: string | null | undefined,
+  fallback: string = "KZT"
+): string {
+  const normalized = (currency || fallback).trim().toUpperCase();
+
+  if (!normalized || normalized === "KZT" || normalized === "₸") {
+    return "₸";
+  }
+
+  return normalized;
+}
+
+export function formatMoney(
+  value: number | string | null | undefined,
+  currency: string | null | undefined,
+  fallback: string = "KZT"
+): string {
+  return `${formatNumber(value)} ${normalizeCurrencyLabel(currency, fallback)}`;
+}

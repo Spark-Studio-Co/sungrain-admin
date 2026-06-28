@@ -159,7 +159,11 @@ const createDefaultPaymentForm = () => ({
   payment_status: "completed",
 });
 
-const currencyMark = (currency: string) => (currency === "KZT" ? "₸" : currency);
+const currencyMark = (currency: string) => {
+  const normalized = (currency || "USD").trim().toUpperCase();
+
+  return normalized === "KZT" || normalized === "₸" ? "₸" : normalized;
+};
 
 const formatMoney = (value: number, currency: string) =>
   formatCurrency(value, currencyMark(currency));
@@ -2840,8 +2844,10 @@ export default function FinancesPage() {
                                       value={invoice.id}
                                     >
                                       {invoice.id} ·{" "}
-                                      {formatCurrency(invoice.amount)}{" "}
-                                      {invoice.currency}
+                                      {formatMoney(
+                                        invoice.amount,
+                                        invoice.currency || "USD"
+                                      )}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>

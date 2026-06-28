@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState } from "react";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatMoney, formatNumber, normalizeCurrencyLabel } from "@/lib/utils";
 import {
   FileText,
   Plus,
@@ -131,6 +131,14 @@ export const ApplicationBlock = ({
     };
     return cultures[cultureCode] || cultureCode;
   };
+
+  const getApplicationCurrency = (application: any) =>
+    application?.currency || application?.contract?.currency || "KZT";
+
+  const formatApplicationMoney = (
+    application: any,
+    value: number | string | null | undefined
+  ) => formatMoney(value, getApplicationCurrency(application));
 
   // Filter applications based on search term
   const filteredApplications = Array.isArray(applications)
@@ -441,8 +449,11 @@ export const ApplicationBlock = ({
                                 <div className="flex items-center gap-1">
                                   <DollarSign className="h-4 w-4 text-green-500" />
                                   {application.price_per_ton
-                                    ? formatCurrency(application.price_per_ton)
-                                    : 0}
+                                    ? formatApplicationMoney(
+                                        application,
+                                        application.price_per_ton
+                                      )
+                                    : formatApplicationMoney(application, 0)}
                                 </div>
                               </TableCell>
                               <TableCell>
@@ -450,9 +461,9 @@ export const ApplicationBlock = ({
                                   variant="outline"
                                   className="border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]"
                                 >
-                                  {application.currency ||
-                                    application.contract?.currency ||
-                                    "KZT"}
+                                  {normalizeCurrencyLabel(
+                                    getApplicationCurrency(application)
+                                  )}
                                 </Badge>
                               </TableCell>
                               <TableCell>
@@ -461,11 +472,11 @@ export const ApplicationBlock = ({
                                   className="border-[#dce8dc] bg-[#f5faf5] font-black text-[#2f6b4f]"
                                 >
                                   {application.total_amount
-                                    ? formatCurrency(application.total_amount)
-                                    : 0}{" "}
-                                  {application.currency ||
-                                    application.contract?.currency ||
-                                    "₸"}
+                                    ? formatApplicationMoney(
+                                        application,
+                                        application.total_amount
+                                      )
+                                    : formatApplicationMoney(application, 0)}
                                 </Badge>
                               </TableCell>
                               <TableCell>
@@ -666,10 +677,11 @@ export const ApplicationBlock = ({
                                   </div>
                                   <div className="font-semibold text-base">
                                     {application.price_per_ton
-                                      ? formatCurrency(
+                                      ? formatApplicationMoney(
+                                          application,
                                           application.price_per_ton
                                         )
-                                      : 0}
+                                      : formatApplicationMoney(application, 0)}
                                   </div>
                                 </div>
                               </div>
@@ -682,11 +694,11 @@ export const ApplicationBlock = ({
                                   </span>
                                   <div className="text-green-700 font-bold text-lg">
                                     {application.total_amount
-                                      ? formatCurrency(application.total_amount)
-                                      : 0}{" "}
-                                    {application.currency ||
-                                      application.contract?.currency ||
-                                      "₸"}
+                                      ? formatApplicationMoney(
+                                          application,
+                                          application.total_amount
+                                        )
+                                      : formatApplicationMoney(application, 0)}
                                   </div>
                                 </div>
                               </div>
@@ -717,9 +729,9 @@ export const ApplicationBlock = ({
                                   variant="outline"
                                   className="bg-blue-50 text-blue-700 text-sm px-3 py-1 font-medium"
                                 >
-                                  {application.currency ||
-                                    application.contract?.currency ||
-                                    "KZT"}
+                                  {normalizeCurrencyLabel(
+                                    getApplicationCurrency(application)
+                                  )}
                                 </Badge>
                               </div>
                             </div>

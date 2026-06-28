@@ -1,4 +1,4 @@
-import { formatCurrency, formatNumber } from "../../lib/utils";
+import { formatMoney, formatNumber } from "../../lib/utils";
 
 export type ContractOperationStatus = "active" | "risk" | "completed" | "draft";
 
@@ -130,7 +130,7 @@ export const formatContractDate = (date?: string) =>
 export const formatContractMoney = (
   value: number | string | null | undefined,
   currency = "USD"
-) => formatCurrency(value, currency === "KZT" ? "₸" : currency);
+) => formatMoney(value, currency, "USD");
 
 export const getContractOpsMeta = (
   contract: any,

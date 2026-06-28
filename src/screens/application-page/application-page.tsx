@@ -29,7 +29,7 @@ import { usePopupStore } from "@/shared/model/popup-store";
 import { AddWagonPopup } from "@/entities/wagon/ui/add-wagon-popup";
 import { useNavigate, useParams } from "react-router-dom";
 import { useGetApplication } from "@/entities/applications/hooks/query/use-get-application.query";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatMoney, formatNumber } from "@/lib/utils";
 import { WagonRegistry } from "../contracts-inner-page/blocks/wagon-registry";
 
 export default function ApplicationPage() {
@@ -60,6 +60,12 @@ export default function ApplicationPage() {
   const handleBack = () => {
     navigate(`/admin/contracts/${id}`);
   };
+
+  const applicationCurrency =
+    application?.currency || application?.contract?.currency || "KZT";
+  const formatApplicationMoney = (
+    value: number | string | null | undefined
+  ) => formatMoney(value, applicationCurrency);
 
   const handleFileDownload = (fileUrl: string, fileName: string) => {
     if (!fileUrl) {
@@ -245,7 +251,7 @@ export default function ApplicationPage() {
                     Цена за тонну
                   </p>
                   <p className="font-medium">
-                    {formatCurrency(application.price_per_ton)}
+                    {formatApplicationMoney(application.price_per_ton)}
                   </p>
                 </div>
               </div>
@@ -259,7 +265,7 @@ export default function ApplicationPage() {
                     variant="outline"
                     className="bg-green-50 text-green-700 font-medium mt-1"
                   >
-                    {formatCurrency(application.total_amount)}
+                    {formatApplicationMoney(application.total_amount)}
                   </Badge>
                 </div>
               </div>
@@ -303,13 +309,13 @@ export default function ApplicationPage() {
                         <div className="flex justify-between">
                           <span className="text-sm">Цена за тонну:</span>
                           <span>
-                            {formatCurrency(application.price_per_ton)}
+                            {formatApplicationMoney(application.price_per_ton)}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm">Общая сумма:</span>
                           <span className="font-medium text-green-600">
-                            {formatCurrency(application.total_amount)}
+                            {formatApplicationMoney(application.total_amount)}
                           </span>
                         </div>
                       </div>
