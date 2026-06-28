@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getWagonGroupStats,
+  getApplicationWagonGroupStats,
   getContractDocuments,
   getContractFinanceLinks,
   getContractOpsMeta,
@@ -87,6 +88,24 @@ describe("contract operational metadata", () => {
     expect(stats.totalCapacity).toBe(5000);
     expect(stats.totalRealWeight).toBe(1000);
     expect(stats.utilizationPercentage).toBe(20);
+  });
+
+  it("uses application volume as wagon group target volume", () => {
+    const stats = getApplicationWagonGroupStats(
+      { id: 1, name: "Приложение №1", volume: 980 },
+      Array.from({ length: 7 }, (_, index) => ({
+        id: index + 1,
+        status: "shipped",
+        capacity: 70,
+        real_weight: 70,
+      }))
+    );
+
+    expect(stats.wagonCount).toBe(7);
+    expect(stats.totalRealWeight).toBe(490);
+    expect(stats.totalCapacity).toBe(490);
+    expect(stats.totalTargetVolume).toBe(980);
+    expect(stats.utilizationPercentage).toBe(50);
   });
 
   it("keeps a safe backend download target for contract documents", () => {

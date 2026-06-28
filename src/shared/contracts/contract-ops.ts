@@ -203,6 +203,35 @@ export const getWagonGroupStats = (wagons: any[]) => {
   };
 };
 
+export const getApplicationVolumeValue = (application: any) =>
+  getFirstPositiveNumber(
+    application?.volume,
+    application?.total_volume,
+    application?.totalVolume,
+    application?.planned_volume,
+    application?.plannedVolume
+  );
+
+export const getApplicationWagonGroupStats = (
+  application: any,
+  wagons: any[]
+) => {
+  const wagonStats = getWagonGroupStats(wagons);
+  const applicationVolume = getApplicationVolumeValue(application);
+  const totalTargetVolume =
+    applicationVolume > 0 ? applicationVolume : wagonStats.totalCapacity;
+
+  return {
+    ...wagonStats,
+    applicationVolume,
+    totalTargetVolume,
+    utilizationPercentage:
+      totalTargetVolume > 0
+        ? clamp((wagonStats.totalShippedWeight / totalTargetVolume) * 100, 0, 100)
+        : 0,
+  };
+};
+
 const getContractApplications = (contract: any) => getArray(contract?.applications);
 
 const getContractFiles = (contract: any) =>

@@ -57,9 +57,9 @@ import {
   getWagonExpansionId,
 } from "./wagon-expansion";
 import {
+  getApplicationWagonGroupStats,
   getWagonActualWeightValue,
   getWagonCapacityValue,
-  getWagonGroupStats,
 } from "@/shared/contracts/contract-ops";
 
 interface WagonDetailsProps {
@@ -323,8 +323,6 @@ export const WagonDetails = ({
     };
   };
 
-  const getApplicationStats = getWagonGroupStats;
-
   // Check if any filters are active
   const hasActiveFilters =
     searchTerm || activeTab !== "all" || dateSortOrder !== null;
@@ -449,7 +447,10 @@ export const WagonDetails = ({
           {filteredWagons?.length > 0 ? (
             <div className="space-y-4">
               {filteredWagons.map((group) => {
-                const stats = getApplicationStats(group.wagons);
+                const stats = getApplicationWagonGroupStats(
+                  group.application,
+                  group.wagons
+                );
                 const applicationId = String(group.application.id);
 
                 return (
@@ -498,7 +499,7 @@ export const WagonDetails = ({
                                 ? "вагона"
                                 : "вагонов"}{" "}
                               • {stats.totalRealWeight.toFixed(2)} т. из{" "}
-                              {stats.totalCapacity.toFixed(2)} т.
+                              {stats.totalTargetVolume.toFixed(2)} т.
                             </p>
                           </div>
                         </div>
