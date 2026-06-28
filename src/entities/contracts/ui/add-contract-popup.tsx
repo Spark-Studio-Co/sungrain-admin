@@ -286,10 +286,13 @@ export const AddContractDialog = () => {
 
     // Create FormData to send files along with contract data
     const formData = new FormData();
+    const trimmedUnk = newContract.unk.trim();
 
     // Append each field separately (excluding ID)
     formData.append("number", newContract.number);
-    formData.append("unk", newContract.unk);
+    if (trimmedUnk) {
+      formData.append("unk", trimmedUnk);
+    }
     formData.append("name", newContract.name);
     formData.append("crop", newContract.crop);
     formData.append("sender", newContract.sender);
