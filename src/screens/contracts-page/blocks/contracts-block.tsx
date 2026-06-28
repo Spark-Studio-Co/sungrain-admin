@@ -1798,8 +1798,8 @@ export const ContractsBlock = () => {
           }
         }}
       >
-        <DialogContent className="max-h-[92vh] w-[calc(100vw-2rem)] max-w-[1040px] overflow-hidden border-[#dfe7de] bg-[#f6f8f5] p-0 shadow-[0_28px_90px_rgba(22,42,35,0.24)] sm:max-w-[1040px]">
-          <DialogHeader className="border-b border-[#dfe7de] bg-white px-5 py-5 pr-14 sm:px-6">
+        <DialogContent className="flex max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] max-w-[1040px] flex-col gap-0 overflow-hidden border-[#dfe7de] bg-[#f6f8f5] p-0 shadow-[0_28px_90px_rgba(22,42,35,0.24)] supports-[height:100dvh]:max-h-[calc(100dvh-2rem)] sm:max-w-[1040px]">
+          <DialogHeader className="shrink-0 border-b border-[#dfe7de] bg-white px-5 py-5 pr-14 sm:px-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0">
                 <div className="mb-3 inline-flex items-center gap-2 rounded-md border border-[#dfe7de] bg-[#eef5ef] px-3 py-1 text-xs font-black uppercase text-[#2f6b4f]">
@@ -1855,7 +1855,7 @@ export const ContractsBlock = () => {
             </div>
           </DialogHeader>
           {contractToEdit && (
-            <div className="max-h-[calc(92vh-190px)] overflow-y-auto px-5 py-5 sm:px-6">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">
               {hasValidationErrors(editErrors) && (
                 <Alert
                   variant="destructive"
@@ -2375,7 +2375,7 @@ export const ContractsBlock = () => {
               </div>
             </div>
           )}
-          <DialogFooter className="border-t border-[#dfe7de] bg-white px-5 py-4 sm:px-6">
+          <DialogFooter className="shrink-0 border-t border-[#dfe7de] bg-white px-5 py-4 sm:px-6">
             <Button
               variant="outline"
               className="h-11 rounded-md border-[#dce4da] bg-white px-5 font-bold text-[#53605a] shadow-sm hover:bg-[#eef5ef] hover:text-[#2f6b4f]"
