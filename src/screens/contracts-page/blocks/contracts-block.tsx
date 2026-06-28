@@ -22,7 +22,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Calendar,
   Edit,
   FileIcon as FilePdf,
   Search,
@@ -32,7 +31,6 @@ import {
   AlertCircle,
   AlertTriangle,
   ArrowUpRight,
-  Banknote,
   Trash2,
   MoreHorizontal,
   Upload,
@@ -49,8 +47,6 @@ import {
   Leaf,
   Loader2,
   RotateCcw,
-  ShieldCheck,
-  TrainFront,
 } from "lucide-react";
 import {
   Pagination,
@@ -896,7 +892,6 @@ export const ContractsBlock = () => {
     }
 
     filterRestoreToastShown.current = true;
-    setShowFilters(activeFilterCount > 0);
     toast.info(
       "Фильтры восстановлены",
       "Мы вернули последний поиск и быстрые статусы для реестра контрактов."
@@ -938,20 +933,6 @@ export const ContractsBlock = () => {
   const safeVisibleContracts = Array.isArray(visibleContracts)
     ? visibleContracts
     : [];
-  const visibleVolume = safeVisibleContracts.reduce(
-    (sum: number, contract: any) => sum + getContractVolume(contract),
-    0
-  );
-  const visibleCultures = new Set(
-    safeVisibleContracts
-      .map((contract: any) => contract.crop)
-      .filter(Boolean)
-  ).size;
-  const visibleCompanies = new Set(
-    safeVisibleContracts
-      .map((contract: any) => getContractCompanyName(contract))
-      .filter((company: string) => company !== "-")
-  ).size;
   const opsMetrics = safeVisibleContracts.reduce(
     (acc, contract: any) => {
       const meta = getContractOpsMeta(contract);
@@ -978,9 +959,6 @@ export const ContractsBlock = () => {
       documents: number;
     }
   );
-  const averageProgress = safeVisibleContracts.length
-    ? Math.round(opsMetrics.progress / safeVisibleContracts.length)
-    : 0;
   const statusCounts = contractsForStatusCounts.reduce(
     (acc, contract: any) => {
       const status = getContractOpsMeta(contract).status;
@@ -1018,7 +996,7 @@ export const ContractsBlock = () => {
         type="button"
         onClick={() => toggleFilterItem(type, value)}
         className={cn(
-          "inline-flex h-8 max-w-full items-center gap-1 rounded-md border px-3 text-xs font-bold transition-all",
+          "inline-flex h-7 max-w-full items-center gap-1 rounded-md border px-2.5 text-[11px] font-bold transition-all",
           isSelected
             ? "border-[#f38810] bg-[#fff3e5] text-[#d5740b] shadow-[0_8px_18px_rgba(243,136,16,0.12)]"
             : "border-[#dfe7de] bg-white text-[#41514b] hover:border-[#c9d8ca] hover:bg-[#f7faf6]"
@@ -1096,107 +1074,42 @@ export const ContractsBlock = () => {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-xs font-bold uppercase text-[#7b857f]">
-                    В работе
-                  </div>
-                  <div className="mt-2 text-3xl font-black text-[#223137]">
-                    {isDataLoading ? (
-                      <Skeleton className="h-9 w-14 rounded-md" />
-                    ) : (
-                      opsMetrics.active
-                    )}
-                  </div>
-                  <div className="mt-1 text-xs text-[#7b857f]">
-                    {isDataLoading ? (
-                      <Skeleton className="h-3 w-32 rounded-md" />
-                    ) : (
-                      `${averageProgress}% средний прогресс`
-                    )}
-                  </div>
-                </div>
-                <div className="flex size-10 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
-                  <ShieldCheck className="h-5 w-5" />
-                </div>
-              </div>
-            </div>
-            <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-xs font-bold uppercase text-[#7b857f]">
-                    Риски
-                  </div>
-                  <div className="mt-2 text-3xl font-black text-[#b9472d]">
-                    {isDataLoading ? (
-                      <Skeleton className="h-9 w-14 rounded-md" />
-                    ) : (
-                      opsMetrics.risk
-                    )}
-                  </div>
-                  <div className="mt-1 text-xs text-[#7b857f]">
-                    требуют внимания
-                  </div>
-                </div>
-                <div className="flex size-10 items-center justify-center rounded-md bg-[#fff1ed] text-[#b9472d]">
-                  <AlertTriangle className="h-5 w-5" />
-                </div>
-              </div>
-            </div>
-            <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-xs font-bold uppercase text-[#7b857f]">
-                    Отгружено
-                  </div>
-                  <div className="mt-2 text-3xl font-black text-[#223137]">
-                    {isDataLoading ? (
-                      <Skeleton className="h-9 w-28 rounded-md" />
-                    ) : (
-                      `${opsMetrics.shippedVolume.toLocaleString()} т`
-                    )}
-                  </div>
-                  <div className="mt-1 text-xs text-[#7b857f]">
-                    {isDataLoading ? (
-                      <Skeleton className="h-3 w-24 rounded-md" />
-                    ) : (
-                      `из ${visibleVolume.toLocaleString()} т`
-                    )}
-                  </div>
-                </div>
-                <div className="flex size-10 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
-                  <TrainFront className="h-5 w-5" />
-                </div>
-              </div>
-            </div>
-            <div className="rounded-md border border-[#f2dfca] bg-[#fffdf9] p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-xs font-bold uppercase text-[#7b857f]">
-                    К оплате
-                  </div>
-                  <div className="mt-2 text-3xl font-black text-[#d5740b]">
-                    {isDataLoading ? (
-                      <Skeleton className="h-9 w-32 rounded-md" />
-                    ) : (
-                      formatContractMoney(opsMetrics.balance, "USD")
-                    )}
-                  </div>
-                  <div className="mt-1 text-xs text-[#7b857f]">
-                    {isDataLoading ? (
-                      <Skeleton className="h-3 w-36 rounded-md" />
-                    ) : (
-                      `${opsMetrics.documents} документов · ${visibleCultures}/${visibleCompanies}`
-                    )}
-                  </div>
-                </div>
-                <div className="flex size-10 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
-                  <Banknote className="h-5 w-5" />
-                </div>
-              </div>
-            </div>
+          <div className="mt-5 flex flex-wrap items-center gap-2 text-xs">
+            {[
+              {
+                label: "В реестре",
+                value: isDataLoading ? "..." : safeVisibleContracts.length,
+                tone: "border-[#dfe7de] bg-[#f8faf7] text-[#41514b]",
+              },
+              {
+                label: "В работе",
+                value: isDataLoading ? "..." : opsMetrics.active,
+                tone: "border-[#dfe7de] bg-[#eef5ef] text-[#2f6b4f]",
+              },
+              {
+                label: "Риск",
+                value: isDataLoading ? "..." : opsMetrics.risk,
+                tone: "border-[#f2c7c1] bg-[#fff4f1] text-[#b9472d]",
+              },
+              {
+                label: "Отгружено",
+                value: isDataLoading
+                  ? "..."
+                  : `${opsMetrics.shippedVolume.toLocaleString()} т`,
+                tone: "border-[#f2dfca] bg-[#fff8ef] text-[#d5740b]",
+              },
+            ].map((item) => (
+              <span
+                key={item.label}
+                className={cn(
+                  "inline-flex h-8 items-center gap-2 rounded-md border px-3 font-bold",
+                  item.tone
+                )}
+              >
+                <span className="text-[#7b857f]">{item.label}</span>
+                <span className="text-[#223137]">{item.value}</span>
+              </span>
+            ))}
           </div>
 
           <div className="mt-5 flex flex-col gap-3 xl:flex-row xl:items-center">
@@ -1265,7 +1178,7 @@ export const ContractsBlock = () => {
                       setCurrentPage(1);
                     }}
                     className={cn(
-                      "inline-flex h-10 items-center gap-2 rounded-md px-4 text-sm font-black transition",
+                      "inline-flex h-9 items-center gap-2 rounded-md px-3 text-xs font-black transition sm:px-4 sm:text-sm",
                       isActive
                         ? "bg-[#f38810] text-white shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
                         : "text-[#6f7774] hover:bg-[#f8faf7] hover:text-[#223137]"
@@ -1297,7 +1210,7 @@ export const ContractsBlock = () => {
           </div>
 
           {showFilters && (
-            <div className="mt-4 overflow-hidden rounded-md border border-[#dfe7de] bg-white shadow-[0_16px_36px_rgba(34,49,55,0.06)]">
+            <div className="mt-4 overflow-hidden rounded-md border border-[#dfe7de] bg-white shadow-[0_12px_28px_rgba(34,49,55,0.05)]">
               <div className="flex flex-col gap-3 border-b border-[#e6ece5] bg-[#f8faf7] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
@@ -1314,9 +1227,6 @@ export const ContractsBlock = () => {
                         </span>
                       )}
                     </div>
-                    <p className="mt-0.5 text-xs text-[#7b857f]">
-                      Быстро сузьте реестр по участникам, культуре и объему
-                    </p>
                   </div>
                 </div>
                 <Button
@@ -1330,10 +1240,10 @@ export const ContractsBlock = () => {
                 </Button>
               </div>
 
-              <div className="grid gap-3 p-4 xl:grid-cols-[1.1fr_1fr_1fr_1.15fr]">
+              <div className="grid gap-3 p-3 lg:grid-cols-4">
                 <div className="rounded-md border border-[#e1e9e0] bg-[#fbfcfa] p-3">
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-sm font-black text-[#223137]">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase text-[#223137]">
                       <Leaf className="h-4 w-4 text-[#2f6b4f]" />
                       Культура
                     </div>
@@ -1341,7 +1251,7 @@ export const ContractsBlock = () => {
                       {filters.cultures.length || availableCultures.length}
                     </span>
                   </div>
-                  <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1">
+                  <div className="flex max-h-20 flex-wrap gap-1.5 overflow-y-auto pr-1">
                     {availableCultures.length > 0 ? (
                       availableCultures.map((culture) =>
                         renderFilterChip("cultures", culture)
@@ -1355,8 +1265,8 @@ export const ContractsBlock = () => {
                 </div>
 
                 <div className="rounded-md border border-[#e1e9e0] bg-[#fbfcfa] p-3">
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-sm font-black text-[#223137]">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase text-[#223137]">
                       <Building2 className="h-4 w-4 text-[#2f6b4f]" />
                       Грузоотправитель
                     </div>
@@ -1364,7 +1274,7 @@ export const ContractsBlock = () => {
                       {filters.senders.length || sendersData.data.length}
                     </span>
                   </div>
-                  <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1">
+                  <div className="flex max-h-20 flex-wrap gap-1.5 overflow-y-auto pr-1">
                     {sendersData.data.length > 0 ? (
                       sendersData.data.map((sender: any) =>
                         renderFilterChip("senders", sender.name)
@@ -1378,8 +1288,8 @@ export const ContractsBlock = () => {
                 </div>
 
                 <div className="rounded-md border border-[#e1e9e0] bg-[#fbfcfa] p-3">
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-sm font-black text-[#223137]">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase text-[#223137]">
                       <Route className="h-4 w-4 text-[#f38810]" />
                       Грузополучатель
                     </div>
@@ -1387,7 +1297,7 @@ export const ContractsBlock = () => {
                       {filters.receivers.length || receiversData.data.length}
                     </span>
                   </div>
-                  <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1">
+                  <div className="flex max-h-20 flex-wrap gap-1.5 overflow-y-auto pr-1">
                     {receiversData.data.length > 0 ? (
                       receiversData.data.map((receiver: any) =>
                         renderFilterChip("receivers", receiver.name)
@@ -1401,8 +1311,8 @@ export const ContractsBlock = () => {
                 </div>
 
                 <div className="rounded-md border border-[#e1e9e0] bg-[linear-gradient(180deg,#fffdf9_0%,#fbfcfa_100%)] p-3">
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 text-sm font-black text-[#223137]">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase text-[#223137]">
                       <Package className="h-4 w-4 text-[#f38810]" />
                       Объем
                     </div>
@@ -1462,19 +1372,16 @@ export const ContractsBlock = () => {
             </Alert>
           )}
           {/* Desktop: Table View */}
-          <div className="hidden overflow-hidden rounded-md bg-white shadow-[0_16px_36px_rgba(34,49,55,0.06)] sm:block">
-            <div className="max-h-[calc(100vh-350px)] min-h-[360px] overflow-auto">
-              <Table className="min-w-[1560px]">
+          <div className="hidden overflow-hidden rounded-md border border-[#e1e9e0] bg-white shadow-[0_12px_28px_rgba(34,49,55,0.05)] sm:block">
+            <div className="max-h-[calc(100vh-310px)] min-h-[360px] overflow-auto">
+              <Table className="min-w-[1120px]">
                 <TableHeader className="sticky top-0 z-10 bg-[#f7f8f5]">
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="w-[280px] pl-4">Контракт</TableHead>
-                    <TableHead className="w-[180px]">Статус</TableHead>
-                    <TableHead className="w-[270px]">Маршрут</TableHead>
-                    <TableHead className="w-[220px]">Прогресс</TableHead>
-                    <TableHead className="w-[190px]">Заявки / вагоны</TableHead>
-                    <TableHead className="w-[220px]">Финансы</TableHead>
-                    <TableHead className="w-[150px]">Документы</TableHead>
-                    <TableHead className="w-[190px]">Компания</TableHead>
+                    <TableHead className="w-[330px] pl-4">Контракт</TableHead>
+                    <TableHead className="w-[260px]">Маршрут</TableHead>
+                    <TableHead className="w-[240px]">Объем</TableHead>
+                    <TableHead className="w-[210px]">Финансы</TableHead>
+                    <TableHead className="w-[220px]">Компания</TableHead>
                     {isAdmin && (
                       <TableHead className="w-[80px] pr-4 text-right">
                         Действия
@@ -1488,7 +1395,7 @@ export const ContractsBlock = () => {
                       .fill(0)
                       .map((_, index) => (
                         <TableRow key={`skeleton-${index}`}>
-                          {Array(isAdmin ? 9 : 8)
+                          {Array(isAdmin ? 6 : 5)
                             .fill(0)
                             .map((_, cellIndex) => (
                               <TableCell key={`cell-${index}-${cellIndex}`}>
@@ -1507,7 +1414,7 @@ export const ContractsBlock = () => {
                           key={contract.id}
                           role="button"
                           tabIndex={0}
-                          className="cursor-pointer align-top hover:bg-[#f8faf7] focus-visible:bg-[#fff8ef] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f38810]/30"
+                          className="cursor-pointer align-middle hover:bg-[#f8faf7] focus-visible:bg-[#fff8ef] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f38810]/30"
                           onClick={() => handleRowClick(contract)}
                           onKeyDown={(event) => {
                             if (event.key === "Enter" || event.key === " ") {
@@ -1518,76 +1425,68 @@ export const ContractsBlock = () => {
                         >
                           <TableCell className="pl-4">
                             <div className="flex min-w-0 items-center gap-3">
-                              <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
+                              <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
                                 <File className="h-4 w-4" />
                               </div>
                               <div className="min-w-0">
-                                <div className="flex items-center gap-2 font-black text-[#223137]">
-                                  {contract.number || `#${contract.id}`}
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <span className="truncate font-black text-[#223137]">
+                                    {contract.number || `#${contract.id}`}
+                                  </span>
                                   <ArrowUpRight className="h-3.5 w-3.5 text-[#8a928f]" />
                                 </div>
-                                <div className="mt-1 max-w-[220px] truncate text-xs text-[#6f7774]">
+                                <div className="mt-1 max-w-[250px] truncate text-xs text-[#6f7774]">
                                   {contract.name || "Без названия"}
                                 </div>
-                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                <div className="mt-2 flex flex-wrap items-center gap-1.5">
                                   <Badge
                                     variant="outline"
-                                    className="border-[#dce8dc] bg-[#f5faf5] px-2 py-0.5 text-[11px] text-[#2f6b4f]"
+                                    className={cn(
+                                      "h-6 px-2 text-[11px] font-black",
+                                      meta.statusConfig.badgeClassName
+                                    )}
+                                  >
+                                    {meta.statusConfig.label}
+                                  </Badge>
+                                  <Badge
+                                    variant="outline"
+                                    className="h-6 border-[#dce8dc] bg-[#f5faf5] px-2 text-[11px] text-[#2f6b4f]"
                                   >
                                     {contract.crop || "Культура"}
                                   </Badge>
-                                  <span className="inline-flex rounded-md bg-[#fff3e5] px-2 py-0.5 text-[11px] font-black text-[#f38810]">
-                                    {contract.currency || "USD"}
+                                  <span className="inline-flex h-6 items-center rounded-md bg-[#f7f8f5] px-2 text-[11px] font-bold text-[#7b857f]">
+                                    {formatContractDate(contract.date)}
                                   </span>
                                 </div>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "px-2.5 py-1 font-black",
-                                meta.statusConfig.badgeClassName
-                              )}
-                            >
-                              {meta.statusConfig.label}
-                            </Badge>
-                            <div className="mt-2 text-xs font-semibold text-[#7b857f]">
-                              {meta.statusConfig.tone}
-                            </div>
-                            <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-[#f7f8f5] px-2 py-1 text-[11px] font-bold text-[#53605a]">
-                              <Calendar className="h-3.5 w-3.5" />
-                              {formatContractDate(contract.date)}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-2.5">
+                            <div className="min-w-0">
                               <div className="flex min-w-0 items-center gap-2 text-sm font-black text-[#223137]">
                                 <Route className="h-4 w-4 shrink-0 text-[#f38810]" />
                                 <span className="truncate">{meta.route.departure}</span>
                               </div>
-                              <div className="my-1 ml-6 h-4 border-l border-dashed border-[#cfd9cf]" />
-                              <div className="flex min-w-0 items-center gap-2 text-sm font-black text-[#223137]">
+                              <div className="mt-1 flex min-w-0 items-center gap-2 text-sm font-semibold text-[#41514b]">
                                 <MapPin className="h-4 w-4 shrink-0 text-[#2f6b4f]" />
                                 <span className="truncate">{meta.route.destination}</span>
                               </div>
-                              <div className="mt-2 text-xs font-semibold text-[#7b857f]">
+                              <div className="mt-1.5 text-xs font-semibold text-[#7b857f]">
                                 {meta.route.eta}
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between gap-3 text-xs">
-                                <span className="font-black text-[#223137]">
+                            <div className="space-y-2 pr-3">
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="text-sm font-black text-[#223137]">
                                   {summary[0].value}
                                 </span>
-                                <span className="font-black text-[#2f6b4f]">
+                                <span className="text-xs font-black text-[#2f6b4f]">
                                   {meta.progress}%
                                 </span>
                               </div>
-                              <div className="h-2.5 overflow-hidden rounded-full bg-[#edf1eb]">
+                              <div className="h-2 overflow-hidden rounded-full bg-[#edf1eb]">
                                 <div
                                   className={cn(
                                     "h-full rounded-full",
@@ -1596,75 +1495,53 @@ export const ContractsBlock = () => {
                                   style={{ width: `${meta.progress}%` }}
                                 />
                               </div>
-                              <div className="text-xs text-[#7b857f]">
-                                остаток {meta.remainingVolume.toLocaleString()} т
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] px-2 py-2">
-                                <div className="text-[10px] font-black uppercase text-[#7b857f]">
-                                  Заявки
-                                </div>
-                                <div className="mt-1 text-base font-black text-[#223137]">
-                                  {meta.applicationsCount}
-                                </div>
-                              </div>
-                              <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] px-2 py-2">
-                                <div className="text-[10px] font-black uppercase text-[#7b857f]">
-                                  Вагоны
-                                </div>
-                                <div className="mt-1 text-base font-black text-[#223137]">
-                                  {meta.wagonsCount}
-                                </div>
+                              <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#7b857f]">
+                                <span>остаток {meta.remainingVolume.toLocaleString()} т</span>
+                                <span className="h-1 w-1 rounded-full bg-[#c6d3c6]" />
+                                <span>{meta.applicationsCount} заявок</span>
+                                <span className="h-1 w-1 rounded-full bg-[#c6d3c6]" />
+                                <span>{meta.wagonsCount} вагонов</span>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="text-xs font-black uppercase text-[#7b857f]">
-                                  Оплачено
-                                </span>
-                                <span className="text-xs font-black text-[#2f6b4f]">
-                                  {meta.paymentProgress}%
-                                </span>
-                              </div>
-                              <div className="h-2 overflow-hidden rounded-full bg-[#edf1eb]">
-                                <div
-                                  className="h-full rounded-full bg-[#2f6b4f]"
-                                  style={{ width: `${meta.paymentProgress}%` }}
-                                />
-                              </div>
                               <div className="flex items-center justify-between gap-2 text-xs">
-                                <span className="font-semibold text-[#53605a]">
-                                  {meta.invoiceCount} счетов / {meta.paymentsCount} платежей
-                                </span>
-                                <span className="font-black text-[#d5740b]">
+                                <span className="font-black text-[#223137]">
                                   {formatContractMoney(
                                     meta.balance,
                                     contract.currency || "USD"
                                   )}
                                 </span>
+                                <span className="font-black text-[#2f6b4f]">
+                                  {meta.paymentProgress}%
+                                </span>
+                              </div>
+                              <div className="h-1.5 overflow-hidden rounded-full bg-[#edf1eb]">
+                                <div
+                                  className="h-full rounded-full bg-[#2f6b4f]"
+                                  style={{ width: `${meta.paymentProgress}%` }}
+                                />
+                              </div>
+                              <div className="text-xs font-semibold text-[#7b857f]">
+                                {meta.invoiceCount} счетов · {meta.paymentsCount} платежей
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="inline-flex items-center gap-2 rounded-md border border-[#dfe7de] bg-white px-2.5 py-1.5 text-sm font-black text-[#223137] shadow-sm">
-                              <FilePdf className="h-4 w-4 text-[#f38810]" />
-                              {meta.documentsCount}
-                            </div>
-                            <div className="mt-2 text-xs font-semibold text-[#7b857f]">
-                              {meta.nextAction}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex min-w-0 items-center gap-2">
-                              <Building2 className="h-4 w-4 shrink-0 text-[#7b857f]" />
-                              <span className="max-w-[155px] truncate text-sm font-semibold text-[#223137]">
+                            <div className="min-w-0">
+                              <div className="flex min-w-0 items-center gap-2">
+                                <Building2 className="h-4 w-4 shrink-0 text-[#7b857f]" />
+                                <span className="truncate text-sm font-semibold text-[#223137]">
                                 {getContractCompanyName(contract)}
-                              </span>
+                                </span>
+                              </div>
+                              <div className="mt-1.5 flex min-w-0 items-center gap-2 text-xs font-semibold text-[#7b857f]">
+                                <FilePdf className="h-3.5 w-3.5 shrink-0 text-[#f38810]" />
+                                <span>{meta.documentsCount} док.</span>
+                                <span className="h-1 w-1 rounded-full bg-[#c6d3c6]" />
+                                <span className="truncate">{meta.nextAction}</span>
+                              </div>
                             </div>
                           </TableCell>
                           {isAdmin && (
@@ -1709,7 +1586,7 @@ export const ContractsBlock = () => {
                   ) : (
                     <TableRow>
                       <TableCell
-                        colSpan={isAdmin ? 9 : 8}
+                        colSpan={isAdmin ? 6 : 5}
                         className="h-40 text-center text-muted-foreground"
                       >
                         {searchTerm || activeFilterCount > 0
