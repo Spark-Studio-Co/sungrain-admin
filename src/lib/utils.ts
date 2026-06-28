@@ -17,13 +17,23 @@ export function formatNumber(
     return "0";
   }
 
-  const num = typeof value === "string" ? parseFloat(value) : value;
+  const num =
+    typeof value === "string"
+      ? Number(value.trim().replace(/\s/g, "").replace(",", "."))
+      : value;
 
   if (isNaN(num)) {
     return "0";
   }
 
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const rounded = Math.round((num + Number.EPSILON) * 100) / 100;
+  const [integerPart, fractionalPart] = rounded.toFixed(2).split(".");
+  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const formattedFraction = fractionalPart.replace(/0+$/, "");
+
+  return formattedFraction
+    ? `${formattedInteger},${formattedFraction}`
+    : formattedInteger;
 }
 
 /**

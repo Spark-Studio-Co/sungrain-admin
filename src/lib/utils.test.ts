@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { formatMoney, normalizeCurrencyLabel } from "./utils";
+import { formatMoney, formatNumber, normalizeCurrencyLabel } from "./utils";
+
+describe("number formatting", () => {
+  it("rounds floating point artifacts before adding thousands separators", () => {
+    expect(formatNumber(419.44999999999993)).toBe("419,45");
+    expect(formatNumber(4580.55)).toBe("4.580,55");
+  });
+
+  it("keeps integer thousands formatting unchanged", () => {
+    expect(formatNumber(212660)).toBe("212.660");
+  });
+});
 
 describe("money formatting", () => {
   it("renders exactly one currency label", () => {
