@@ -356,7 +356,6 @@ export const ContractsBlock = () => {
       deserialize: deserializeContractsFilters,
     }
   );
-  const [availableCultures, setAvailableCultures] = useState<string[]>([]);
 
   // Fetch dropdown data
   const { data: stationsData = { data: [], total: 0 } } = useFetchStations(
@@ -415,13 +414,9 @@ export const ContractsBlock = () => {
   const editComboClass =
     "h-11 w-full justify-between rounded-md border-[#dce4da] bg-[#fbfcfa] px-3 font-semibold text-[#223137] shadow-sm hover:bg-white";
 
-  // Add this useMemo to get unique cultures from contracts
-  // Add after the filteredContracts useMemo (around line 186)
-  // With this version that doesn't update state directly:
-  const availableCulturesData = useMemo(() => {
+  const availableCultures = useMemo(() => {
     if (!contractsToDisplay || !Array.isArray(contractsToDisplay)) return [];
 
-    // Extract unique cultures
     const cultures = new Set<string>();
     contractsToDisplay.forEach((contract: any) => {
       if (contract.crop) {
@@ -431,11 +426,6 @@ export const ContractsBlock = () => {
 
     return Array.from(cultures);
   }, [contractsToDisplay]);
-
-  // Then update the state in a useEffect that depends on the memoized value:
-  useEffect(() => {
-    setAvailableCultures(availableCulturesData);
-  }, [availableCulturesData]);
 
   // Add this new applyFilters function before the handleSearchChange function (around line 190)
   const applyFilters = useCallback((contracts: any[]) => {
