@@ -42,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useGetOwners } from "@/entities/owner/hooks/query/use-get-owners.query";
 import {
   Table,
   TableBody,
@@ -92,6 +93,11 @@ export const WagonRegistry = ({
   const [deletingWagon, setDeletingWagon] = useState<any>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const {
+    data: ownersData,
+    isLoading: isLoadingOwners,
+    isError: isErrorOwners,
+  } = useGetOwners(1, 100);
 
   // Add a separate state for tracking the unloading date
   const [unloadingDate, setUnloadingDate] = useState<string | null>(null);
@@ -447,6 +453,16 @@ export const WagonRegistry = ({
         : editingWagon?.status === "at_elevator"
           ? "На элеваторе"
           : "Не указан";
+  const ownerOptions = (ownersData?.data || []).filter(
+    (ownerItem: any) => typeof ownerItem?.owner === "string" && ownerItem.owner.trim()
+  );
+  const currentOwner =
+    typeof editingWagon?.owner === "string" ? editingWagon.owner.trim() : "";
+  const visibleOwnerOptions =
+    currentOwner &&
+    !ownerOptions.some((ownerItem: any) => ownerItem.owner === currentOwner)
+      ? [{ id: "current-owner", owner: currentOwner }, ...ownerOptions]
+      : ownerOptions;
 
   return (
     <>
@@ -831,18 +847,47 @@ export const WagonRegistry = ({
                         <Label htmlFor="edit-owner" className="text-sm font-black text-[#34433d]">
                           Собственник
                         </Label>
-                        <Input
-                          id="edit-owner"
+                        <Select
                           value={editingWagon.owner}
-                          onChange={(e) =>
+                          onValueChange={(value) =>
                             setEditingWagon({
                               ...editingWagon,
-                              owner: e.target.value,
+                              owner: value,
                             })
                           }
-                          placeholder="Название собственника"
-                          className="h-12 rounded-md border-[#dfe7de] bg-[#fbfcfa] text-base font-bold shadow-sm focus-visible:ring-[#f38810]/25"
-                        />
+                        >
+                          <SelectTrigger
+                            id="edit-owner"
+                            className="h-12 rounded-md border-[#dfe7de] bg-[#fbfcfa] text-base font-bold shadow-sm focus:ring-[#f38810]/25"
+                          >
+                            <SelectValue placeholder="Выберите собственника" />
+                          </SelectTrigger>
+                          <SelectContent className="z-[80]">
+                            {isLoadingOwners ? (
+                              <SelectItem value="owner-loading" disabled>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Загрузка собственников...
+                              </SelectItem>
+                            ) : isErrorOwners ? (
+                              <SelectItem value="owner-error" disabled>
+                                Ошибка загрузки собственников
+                              </SelectItem>
+                            ) : visibleOwnerOptions.length > 0 ? (
+                              visibleOwnerOptions.map((ownerItem: any) => (
+                                <SelectItem
+                                  key={ownerItem.id ?? ownerItem.owner}
+                                  value={ownerItem.owner}
+                                >
+                                  {ownerItem.owner}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="owner-empty" disabled>
+                                Нет доступных собственников
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="space-y-2">

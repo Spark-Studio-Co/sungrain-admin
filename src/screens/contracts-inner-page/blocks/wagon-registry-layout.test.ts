@@ -14,4 +14,18 @@ describe("wagon edit dialog layout", () => {
     expect(source).toContain("Документы вагона");
     expect(source).toContain("shrink-0 border-t border-[#dfe7de]");
   });
+
+  it("uses the owner directory dropdown in the edit wagon dialog", () => {
+    const ownerFieldStart = source.indexOf('htmlFor="edit-owner"');
+    const capacityFieldStart = source.indexOf('htmlFor="edit-capacity"');
+    const ownerFieldSource = source.slice(ownerFieldStart, capacityFieldStart);
+
+    expect(ownerFieldStart).toBeGreaterThan(-1);
+    expect(capacityFieldStart).toBeGreaterThan(ownerFieldStart);
+    expect(source).toContain("useGetOwners");
+    expect(ownerFieldSource).toContain("<Select");
+    expect(ownerFieldSource).toContain('id="edit-owner"');
+    expect(ownerFieldSource).toContain("Выберите собственника");
+    expect(ownerFieldSource).not.toContain("<Input");
+  });
 });
