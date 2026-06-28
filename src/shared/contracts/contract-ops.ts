@@ -6,6 +6,10 @@ type ContractOpsOptions = {
   wagons?: any[];
 };
 
+type ContractDocumentsOptions = {
+  backendUrl?: string;
+};
+
 const statusConfig: Record<
   ContractOperationStatus,
   {
@@ -58,6 +62,79 @@ const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
 const getArray = (value: unknown) => (Array.isArray(value) ? value : []);
+
+const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
+
+const getBackendFileBaseUrl = (backendUrl?: string) => {
+  const baseUrl =
+    backendUrl ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    "";
+
+  return trimTrailingSlash(baseUrl.replace(/\/api\/?$/, ""));
+};
+
+const getFileUrlValue = (file: any) => {
+  if (typeof file === "string") return file;
+
+  return (
+    file?.location ||
+    file?.url ||
+    file?.file_url ||
+    file?.fileUrl ||
+    file?.path ||
+    file?.src ||
+    file?.href ||
+    ""
+  );
+};
+
+const getFileName = (file: any, index: number) => {
+  if (typeof file === "string") {
+    return file.split(/[\\/]/).pop()?.split("?")[0] || `Документ ${index + 1}`;
+  }
+
+  const fileUrl = getFileUrlValue(file);
+
+  return (
+    file?.name ||
+    file?.originalname ||
+    file?.filename ||
+    file?.fileName ||
+    (typeof fileUrl === "string"
+      ? fileUrl.split(/[\\/]/).pop()?.split("?")[0]
+      : "") ||
+    `Документ ${index + 1}`
+  );
+};
+
+export const resolveBackendFileUrl = (
+  file: any,
+  options: ContractDocumentsOptions = {}
+) => {
+  const rawUrl = String(getFileUrlValue(file) || "").trim();
+
+  if (!rawUrl || rawUrl === "#") return "";
+
+  if (/^(https?:|blob:|data:)/i.test(rawUrl)) {
+    return rawUrl;
+  }
+
+  const backendBaseUrl = getBackendFileBaseUrl(options.backendUrl);
+  if (!backendBaseUrl) return rawUrl;
+
+  if (rawUrl.startsWith("/")) {
+    return `${backendBaseUrl}${encodeURI(rawUrl)}`;
+  }
+
+  const normalizedPath = rawUrl.replace(/^\/+/, "");
+  if (normalizedPath.startsWith("uploads/") || normalizedPath.includes("/uploads/")) {
+    return `${backendBaseUrl}/${encodeURI(normalizedPath)}`;
+  }
+
+  return `${backendBaseUrl}/uploads/${encodeURI(normalizedPath)}`;
+};
 
 const getCount = (value: unknown) => {
   const count = toNumber(value);
@@ -231,16 +308,21 @@ export const getContractOpsMeta = (
   };
 };
 
-export const getContractDocuments = (contract: any) => {
+export const getContractDocuments = (
+  contract: any,
+  options: ContractDocumentsOptions = {}
+) => {
   const files = getContractFiles(contract);
 
   if (files.length > 0) {
     return files.map((file, index) => ({
       id: file?.id || `file-${index}`,
-      name: file?.name || file?.originalname || `Документ ${index + 1}`,
+      name: getFileName(file, index),
       type: file?.mimetype || "PDF",
       date: file?.created_at ? formatContractDate(file.created_at) : "в договоре",
       size: file?.size ? `${Math.round(file.size / 1024)} KB` : "128 KB",
+      downloadUrl: resolveBackendFileUrl(file, options),
+      file,
     }));
   }
 

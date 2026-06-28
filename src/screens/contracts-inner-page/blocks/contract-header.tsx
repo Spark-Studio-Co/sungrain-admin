@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { formatMoney, formatNumber } from "@/lib/utils";
+import { resolveBackendFileUrl } from "@/shared/contracts/contract-ops";
 
 interface ContractHeaderProps {
   contractData: any;
@@ -46,23 +47,10 @@ export const ContractHeader = ({
 
     const file = contractData.files[0];
 
-    let fileUrl = "";
-
-    if (typeof file === "string") {
-      if (file.startsWith("http")) {
-        fileUrl = file;
-      } else {
-        const backendUrl = "https://agro-pv-backend-production.up.railway.app";
-        fileUrl = `${backendUrl}/uploads/${file}`;
-      }
-    } else if (file?.location) {
-      fileUrl = file.location;
-    } else if (file?.url) {
-      fileUrl = file.url;
-    }
+    const fileUrl = resolveBackendFileUrl(file);
 
     if (fileUrl) {
-      window.open(fileUrl, "_blank");
+      window.open(fileUrl, "_blank", "noopener,noreferrer");
     }
   };
 

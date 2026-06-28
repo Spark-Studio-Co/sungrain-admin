@@ -51,4 +51,42 @@ describe("contract operational metadata", () => {
     expect(meta.remainingVolume).toBe(3820);
     expect(meta.wagonsCount).toBe(3);
   });
+
+  it("keeps a safe backend download target for contract documents", () => {
+    const file = {
+      id: 12,
+      name: "contract-signed.pdf",
+      location: "/uploads/contracts/contract-signed.pdf",
+      mimetype: "application/pdf",
+      created_at: "2026-06-20T00:00:00.000Z",
+      size: 2048,
+    };
+
+    const documents = getContractDocuments(
+      { ...baseContract, files: [file] },
+      { backendUrl: "https://backend.sungrain.kz/api" }
+    );
+
+    expect(documents[0]).toMatchObject({
+      id: 12,
+      name: "contract-signed.pdf",
+      type: "application/pdf",
+      size: "2 KB",
+      downloadUrl: "https://backend.sungrain.kz/uploads/contracts/contract-signed.pdf",
+      file,
+    });
+  });
+
+  it("resolves bare uploaded filenames against the backend uploads directory", () => {
+    const documents = getContractDocuments(
+      { ...baseContract, files: ["contract-final.pdf"] },
+      { backendUrl: "https://backend.sungrain.kz/api" }
+    );
+
+    expect(documents[0]).toMatchObject({
+      name: "contract-final.pdf",
+      downloadUrl: "https://backend.sungrain.kz/uploads/contract-final.pdf",
+      file: "contract-final.pdf",
+    });
+  });
 });

@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { resolveBackendFileUrl } from "@/shared/contracts/contract-ops";
 
 interface ShippingDocumentsProps {
   renderedFiles: any[];
@@ -26,8 +27,12 @@ export const ShippingDocuments = ({
   renderedFiles,
 }: ShippingDocumentsProps) => {
   const handleDownload = (fileUrl: string) => {
+    const resolvedUrl = resolveBackendFileUrl(fileUrl);
+
+    if (!resolvedUrl) return;
+
     const link = document.createElement("a");
-    link.href = fileUrl;
+    link.href = resolvedUrl;
     link.setAttribute("download", "document.pdf");
     link.target = "_blank";
     link.rel = "noopener noreferrer";

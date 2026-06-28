@@ -70,6 +70,7 @@ import { cn } from "@/lib/utils";
 import { WagonDetails } from "@/screens/contracts-inner-page/blocks/wagon-details";
 import { WagonRegistry } from "@/screens/contracts-inner-page/blocks/wagon-registry";
 import { apiClient } from "@/shared/api/apiClient";
+import { resolveBackendFileUrl } from "@/shared/contracts/contract-ops";
 import { usePopupStore } from "@/shared/model/popup-store";
 import { format } from "date-fns";
 import {
@@ -239,10 +240,12 @@ export const ApplicationDetail = ({
     }
 
     try {
-      // Check if the URL is relative or absolute
-      const url = fileUrl.startsWith("http")
-        ? fileUrl
-        : `${process.env.NEXT_PUBLIC_API_URL || ""}${fileUrl}`;
+      const url = resolveBackendFileUrl(fileUrl);
+
+      if (!url) {
+        console.error("Resolved file URL is missing");
+        return;
+      }
 
       console.log("Attempting to download file:", url);
 

@@ -31,6 +31,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useGetApplication } from "@/entities/applications/hooks/query/use-get-application.query";
 import { formatMoney, formatNumber } from "@/lib/utils";
 import { WagonRegistry } from "../contracts-inner-page/blocks/wagon-registry";
+import { resolveBackendFileUrl } from "@/shared/contracts/contract-ops";
 
 export default function ApplicationPage() {
   const { id, application_id } = useParams();
@@ -74,10 +75,12 @@ export default function ApplicationPage() {
     }
 
     try {
-      // Check if the URL is relative or absolute
-      const url = fileUrl.startsWith("http")
-        ? fileUrl
-        : `${process.env.NEXT_PUBLIC_API_URL || ""}${fileUrl}`;
+      const url = resolveBackendFileUrl(fileUrl);
+
+      if (!url) {
+        console.error("Resolved file URL is missing");
+        return;
+      }
 
       console.log("Attempting to download file:", url);
 

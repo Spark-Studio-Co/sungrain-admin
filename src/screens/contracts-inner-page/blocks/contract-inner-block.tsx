@@ -45,6 +45,7 @@ import {
   getContractDocuments,
   getContractFinanceLinks,
   getContractOpsMeta,
+  resolveBackendFileUrl,
 } from "@/shared/contracts/contract-ops";
 
 interface ContractInnerBlockProps {
@@ -187,23 +188,20 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
       return;
     }
 
-    const fileUrl =
-      typeof (contractData as any).files[0] === "string"
-        ? (contractData as any).files[0]
-        : (contractData as any).files[0].url;
-
-    const link = document.createElement("a");
-    link.href = fileUrl;
-    link.setAttribute(
-      "download",
+    handleFileDownload(
+      (contractData as any).files[0],
       `contract-${(contractData as any).number || (contractData as any).id}.pdf`
     );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
-  const handleFileDownload = (fileUrl: string, fileName: string) => {
+  const handleFileDownload = (fileRef: any, fileName: string) => {
+    const fileUrl = resolveBackendFileUrl(fileRef);
+
+    if (!fileUrl) {
+      alert("Файл не найден!");
+      return;
+    }
+
     const link = document.createElement("a");
     link.href = fileUrl;
     link.setAttribute("download", fileName);
@@ -711,7 +709,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                       type="button"
                       onClick={() =>
                         handleFileDownload(
-                          (contractData as any)?.files?.[0]?.url || "#",
+                          document.file || document.downloadUrl,
                           document.name
                         )
                       }
