@@ -434,6 +434,20 @@ export const WagonRegistry = ({
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
+  const editCapacity = Number.parseFloat(editingWagon?.capacity || "0") || 0;
+  const editRealWeight =
+    Number.parseFloat(editingWagon?.real_weight || "0") || 0;
+  const editCompletion =
+    editCapacity > 0 ? Math.min((editRealWeight / editCapacity) * 100, 100) : 0;
+  const editStatusLabel =
+    editingWagon?.status === "shipped"
+      ? "Отгружен"
+      : editingWagon?.status === "in_transit"
+        ? "В пути"
+        : editingWagon?.status === "at_elevator"
+          ? "На элеваторе"
+          : "Не указан";
+
   return (
     <>
       <Card>
@@ -720,469 +734,456 @@ export const WagonRegistry = ({
           open={!!editingWagon}
           onOpenChange={(open) => !open && setEditingWagon(null)}
         >
-          <DialogContent className="w-[95vw] max-w-[800px] max-h-[95vh] overflow-y-auto p-3 sm:p-6">
-            <DialogHeader className="pb-3 sm:pb-4">
-              <DialogTitle className="text-lg sm:text-xl">
-                Редактировать вагон
-              </DialogTitle>
-              <DialogDescription className="text-sm sm:text-base">
-                Измените информацию о вагоне и документах
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 sm:space-y-6 py-2 sm:py-4">
-              {/* Wagon Information Section */}
-              <div className="bg-blue-50 p-2 sm:p-3 rounded-md">
-                <h3 className="font-semibold text-blue-700 mb-2 sm:mb-3 uppercase text-xs sm:text-sm">
-                  ИНФОРМАЦИЯ О ВАГОНЕ
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 bg-white p-3 sm:p-4 rounded-md border border-blue-100">
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label
-                      htmlFor="edit-number"
-                      className="font-medium text-xs sm:text-sm"
-                    >
-                      № вагона <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="edit-number"
-                      value={editingWagon.number}
-                      onChange={(e) =>
-                        setEditingWagon({
-                          ...editingWagon,
-                          number: e.target.value,
-                        })
-                      }
-                      placeholder="Введите номер вагона"
-                      className="text-sm h-9 sm:h-10"
-                    />
-                  </div>
+          <DialogContent className="grid h-[94vh] max-h-[880px] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden border-[#dfe7de] bg-[#f8faf7] p-0 shadow-[0_28px_90px_rgba(22,42,35,0.24)] sm:w-[92vw] sm:max-w-[980px]">
+            <DialogHeader className="border-b border-[#dfe7de] bg-white px-5 py-5 pr-20 sm:px-7">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <Badge
+                    variant="outline"
+                    className="mb-3 border-[#dce8dc] bg-[#eef5ef] px-3 py-1 text-[#2f6b4f]"
+                  >
+                    <TrainFront className="h-3.5 w-3.5" />
+                    Операционная карточка вагона
+                  </Badge>
+                  <DialogTitle className="text-2xl font-black tracking-tight text-[#223137] sm:text-3xl">
+                    Редактировать вагон
+                  </DialogTitle>
+                  <DialogDescription className="mt-2 text-sm text-[#6f7774]">
+                    Обновите номер, вес, статус отгрузки и документы вагона.
+                  </DialogDescription>
+                </div>
 
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label
-                      htmlFor="edit-capacity"
-                      className="font-medium text-xs sm:text-sm"
-                    >
-                      <span className="hidden sm:inline">
-                        Вес по документам, т.
-                      </span>
-                      <span className="sm:hidden">Вес по док., т.</span>
-                      <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="edit-capacity"
-                      type="number"
-                      step="0.01"
-                      value={editingWagon.capacity}
-                      onChange={(e) =>
-                        setEditingWagon({
-                          ...editingWagon,
-                          capacity: e.target.value,
-                        })
-                      }
-                      placeholder="Введите вес по документам"
-                      className="text-sm h-9 sm:h-10"
-                    />
+                <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[430px]">
+                  <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-3 py-2">
+                    <div className="text-[11px] font-black uppercase text-[#7b857f]">
+                      Вагон
+                    </div>
+                    <div className="mt-1 truncate text-base font-black text-[#223137]">
+                      {editingWagon.number || "Не указан"}
+                    </div>
                   </div>
-
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label
-                      htmlFor="edit-real_weight"
-                      className="font-medium text-xs sm:text-sm"
-                    >
-                      <span className="hidden sm:inline">
-                        Фактический вес, т.
-                      </span>
-                      <span className="sm:hidden">Факт. вес, т.</span>
-                    </Label>
-                    <Input
-                      id="edit-real_weight"
-                      type="number"
-                      step="0.01"
-                      value={editingWagon.real_weight}
-                      onChange={(e) =>
-                        setEditingWagon({
-                          ...editingWagon,
-                          real_weight: e.target.value,
-                        })
-                      }
-                      placeholder="Введите фактический вес"
-                      className="text-sm h-9 sm:h-10"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label
-                      htmlFor="edit-owner"
-                      className="font-medium text-xs sm:text-sm"
-                    >
-                      Собственник
-                    </Label>
-                    <Input
-                      id="edit-owner"
-                      value={editingWagon.owner}
-                      onChange={(e) =>
-                        setEditingWagon({
-                          ...editingWagon,
-                          owner: e.target.value,
-                        })
-                      }
-                      placeholder="Введите собственника"
-                      className="text-sm h-9 sm:h-10"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label
-                      htmlFor="edit-status"
-                      className="font-medium text-xs sm:text-sm"
-                    >
+                  <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-3 py-2">
+                    <div className="text-[11px] font-black uppercase text-[#7b857f]">
                       Статус
-                    </Label>
-                    <Select
-                      value={editingWagon.status}
-                      onValueChange={(value) =>
-                        setEditingWagon({ ...editingWagon, status: value })
-                      }
-                    >
-                      <SelectTrigger
-                        id="edit-status"
-                        className="text-sm h-9 sm:h-10"
-                      >
-                        <SelectValue placeholder="Выберите статус" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="at_elevator" className="text-sm">
-                          На элеваторе
-                        </SelectItem>
-                        <SelectItem value="in_transit" className="text-sm">
-                          В пути
-                        </SelectItem>
-                        <SelectItem value="shipped" className="text-sm">
-                          Отгружен
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    </div>
+                    <div className="mt-1 truncate text-base font-black text-[#2f6b4f]">
+                      {editStatusLabel}
+                    </div>
                   </div>
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label
-                      htmlFor="edit-date_of_unloading"
-                      className="font-medium text-xs sm:text-sm"
-                    >
-                      <span className="hidden sm:inline">Дата отгрузки</span>
-                      <span className="sm:hidden">Дата</span>
-                    </Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          id="edit-date_of_unloading"
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal text-sm h-9 sm:h-10",
-                            !unloadingDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                          {unloadingDate ? (
-                            formatDate(unloadingDate)
-                          ) : (
-                            <span>Выберите дату</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={
-                            unloadingDate ? new Date(unloadingDate) : undefined
-                          }
-                          onSelect={handleUnloadingDateChange}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                  <div className="rounded-md border border-[#f2dfca] bg-[#fff8ed] px-3 py-2">
+                    <div className="text-[11px] font-black uppercase text-[#b56c12]">
+                      Заполнено
+                    </div>
+                    <div className="mt-1 text-base font-black text-[#d5740b]">
+                      {Math.round(editCompletion)}%
+                    </div>
                   </div>
                 </div>
               </div>
+            </DialogHeader>
 
-              {/* Documents Section */}
-              <div className="bg-amber-50 p-2 sm:p-3 rounded-md">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 sm:mb-3 gap-2 sm:gap-0">
-                  <h3 className="font-semibold text-amber-700 uppercase text-xs sm:text-sm">
-                    ДОКУМЕНТЫ ВАГОНА
-                  </h3>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={addDocumentRow}
-                    className="text-amber-600 border-amber-300 hover:bg-amber-100 text-xs sm:text-sm py-1.5 px-2 sm:py-2 sm:px-3 w-full sm:w-auto"
-                  >
-                    <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                    <span className="hidden sm:inline">Добавить документ</span>
-                    <span className="sm:hidden">Добавить</span>
-                  </Button>
-                </div>
-
-                <div className="bg-white p-2 sm:p-4 rounded-md border border-amber-100">
-                  <div className="hidden sm:grid grid-cols-12 gap-2 mb-2 text-sm font-medium text-muted-foreground">
-                    <div className="col-span-1">№</div>
-                    <div className="col-span-3">Наименование</div>
-                    <div className="col-span-2">Загрузить файл</div>
-                    <div className="col-span-1"></div>
-                  </div>
-                  {documents.map((doc, index) => (
-                    <div
-                      key={index}
-                      className="mb-3 sm:mb-4 rounded-md border border-gray-200 p-3 sm:p-4 bg-white shadow-sm"
-                    >
-                      {/* Mobile Layout */}
-                      <div className="block sm:hidden space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-semibold text-gray-700">
-                            Документ {index + 1}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-500 hover:bg-red-100 h-6 w-6"
-                            onClick={() => removeDocumentRow(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+            <div className="crm-scrollbar min-h-0 overflow-y-auto px-4 py-4 sm:px-7 sm:py-6">
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+                <div className="space-y-4">
+                  <section className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_14px_34px_rgba(34,49,55,0.06)] sm:p-5">
+                    <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#edf1eb] pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
+                          <TrainFront className="h-5 w-5" />
                         </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-xs font-medium">
-                            Тип документа
-                          </Label>
-                          <Select
-                            value={doc.name}
-                            onValueChange={(value) => {
-                              if (value === "custom") {
-                                updateDocument(index, "name", "");
-                              } else {
-                                updateDocument(index, "name", value);
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="w-full border-gray-300 focus:ring-1 focus:ring-primary text-sm h-9">
-                              <SelectValue placeholder="Выберите тип документа">
-                                {doc.name || "Выберите тип документа"}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem
-                                value="ЖД накладная"
-                                className="text-sm"
-                              >
-                                ЖД накладная
-                              </SelectItem>
-                              <SelectItem
-                                value="Паспорт качества"
-                                className="text-sm"
-                              >
-                                Паспорт качества
-                              </SelectItem>
-                              <SelectItem value="custom" className="text-sm">
-                                Другое (свое название)
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-
-                          {doc.name &&
-                            doc.name !== "ЖД накладная" &&
-                            doc.name !== "Паспорт качества" && (
-                              <Input
-                                value={doc.name}
-                                onChange={(e) =>
-                                  updateDocument(index, "name", e.target.value)
-                                }
-                                placeholder="Введите название документа"
-                                className="w-full border-gray-300 focus:ring-1 focus:ring-primary text-sm h-9"
-                              />
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-xs font-medium">Файл</Label>
-                          <div className="flex flex-col space-y-2">
-                            <input
-                              type="file"
-                              id={`edit-file-mobile-${index}`}
-                              className="hidden"
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  handleFileUpload(index, e.target.files[0]);
-                                }
-                              }}
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="text-green-600 border-dashed hover:bg-green-50 text-xs w-full"
-                              onClick={() =>
-                                document
-                                  .getElementById(`edit-file-mobile-${index}`)
-                                  ?.click()
-                              }
-                            >
-                              <Upload className="h-3 w-3 mr-1" />
-                              {doc.location && !doc.file
-                                ? "Заменить"
-                                : "Загрузить"}
-                            </Button>
-
-                            {(doc.fileName || doc.location) && (
-                              <div className="flex items-center justify-between text-xs text-gray-600 bg-gray-100 rounded px-2 py-1">
-                                <div className="flex items-center min-w-0 flex-1">
-                                  <FileText className="h-3 w-3 mr-1 flex-shrink-0" />
-                                  <span className="truncate">
-                                    {doc.fileName || "Документ"}
-                                  </span>
-                                </div>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-5 w-5 p-0 ml-2 flex-shrink-0"
-                                  onClick={() => removeFile(index)}
-                                >
-                                  <X className="h-3 w-3 text-red-500" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
+                        <div>
+                          <h3 className="text-base font-black text-[#223137]">
+                            Параметры вагона
+                          </h3>
+                          <p className="mt-0.5 text-sm text-[#7b857f]">
+                            Номер, собственник, вес и текущий статус.
+                          </p>
                         </div>
                       </div>
+                      <Badge
+                        variant="outline"
+                        className="hidden border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f] sm:inline-flex"
+                      >
+                        {editStatusLabel}
+                      </Badge>
+                    </div>
 
-                      {/* Desktop Layout */}
-                      <div className="hidden sm:grid grid-cols-12 gap-4 items-center">
-                        {/* Index */}
-                        <div className="col-span-1 text-center text-sm font-medium text-gray-700">
-                          {index + 1}
-                        </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-number" className="text-sm font-black text-[#34433d]">
+                          № вагона <span className="text-[#c84b31]">*</span>
+                        </Label>
+                        <Input
+                          id="edit-number"
+                          value={editingWagon.number}
+                          onChange={(e) =>
+                            setEditingWagon({
+                              ...editingWagon,
+                              number: e.target.value,
+                            })
+                          }
+                          placeholder="Например: 64718290"
+                          className="h-12 rounded-md border-[#dfe7de] bg-[#fbfcfa] text-base font-bold shadow-sm focus-visible:ring-[#f38810]/25"
+                        />
+                      </div>
 
-                        {/* Document name input */}
-                        <div className="col-span-4">
-                          <Select
-                            value={doc.name}
-                            onValueChange={(value) => {
-                              if (value === "custom") {
-                                // If custom is selected, clear the name to allow manual input
-                                updateDocument(index, "name", "");
-                              } else {
-                                updateDocument(index, "name", value);
-                              }
-                            }}
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-owner" className="text-sm font-black text-[#34433d]">
+                          Собственник
+                        </Label>
+                        <Input
+                          id="edit-owner"
+                          value={editingWagon.owner}
+                          onChange={(e) =>
+                            setEditingWagon({
+                              ...editingWagon,
+                              owner: e.target.value,
+                            })
+                          }
+                          placeholder="Название собственника"
+                          className="h-12 rounded-md border-[#dfe7de] bg-[#fbfcfa] text-base font-bold shadow-sm focus-visible:ring-[#f38810]/25"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-capacity" className="text-sm font-black text-[#34433d]">
+                          Вес по документам, т <span className="text-[#c84b31]">*</span>
+                        </Label>
+                        <Input
+                          id="edit-capacity"
+                          type="number"
+                          step="0.01"
+                          value={editingWagon.capacity}
+                          onChange={(e) =>
+                            setEditingWagon({
+                              ...editingWagon,
+                              capacity: e.target.value,
+                            })
+                          }
+                          placeholder="0.00"
+                          className="h-12 rounded-md border-[#dfe7de] bg-[#fbfcfa] text-base font-bold shadow-sm focus-visible:ring-[#f38810]/25"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-real_weight" className="text-sm font-black text-[#34433d]">
+                          Фактический вес, т
+                        </Label>
+                        <Input
+                          id="edit-real_weight"
+                          type="number"
+                          step="0.01"
+                          value={editingWagon.real_weight}
+                          onChange={(e) =>
+                            setEditingWagon({
+                              ...editingWagon,
+                              real_weight: e.target.value,
+                            })
+                          }
+                          placeholder="0.00"
+                          className="h-12 rounded-md border-[#dfe7de] bg-[#fbfcfa] text-base font-bold shadow-sm focus-visible:ring-[#f38810]/25"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-status" className="text-sm font-black text-[#34433d]">
+                          Статус
+                        </Label>
+                        <Select
+                          value={editingWagon.status}
+                          onValueChange={(value) =>
+                            setEditingWagon({ ...editingWagon, status: value })
+                          }
+                        >
+                          <SelectTrigger
+                            id="edit-status"
+                            className="h-12 rounded-md border-[#dfe7de] bg-[#fbfcfa] text-base font-bold shadow-sm focus:ring-[#f38810]/25"
                           >
-                            <SelectTrigger className="w-full border-gray-300 focus:ring-1 focus:ring-primary">
-                              <SelectValue placeholder="Выберите тип документа">
-                                {doc.name || "Выберите тип документа"}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="ЖД накладная">
-                                ЖД накладная
-                              </SelectItem>
-                              <SelectItem value="Паспорт качества">
-                                Паспорт качества
-                              </SelectItem>
-                              <SelectItem value="custom">
-                                Другое (свое название)
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
+                            <SelectValue placeholder="Выберите статус" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="at_elevator">
+                              На элеваторе
+                            </SelectItem>
+                            <SelectItem value="in_transit">В пути</SelectItem>
+                            <SelectItem value="shipped">Отгружен</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                          {/* Show input field if custom option is selected or if name doesn't match predefined options */}
-                          {doc.name &&
-                            doc.name !== "ЖД накладная" &&
-                            doc.name !== "Паспорт качества" && (
-                              <Input
-                                value={doc.name}
-                                onChange={(e) =>
-                                  updateDocument(index, "name", e.target.value)
-                                }
-                                placeholder="Введите название документа"
-                                className="w-full border-gray-300 focus:ring-1 focus:ring-primary mt-2"
-                              />
-                            )}
-                        </div>
-
-                        {/* Upload button and filename display */}
-                        <div className="col-span-5">
-                          <div className="flex items-center space-x-3">
-                            <input
-                              type="file"
-                              id={`edit-file-${index}`}
-                              className="hidden"
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  handleFileUpload(index, e.target.files[0]);
-                                }
-                              }}
-                            />
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-date_of_unloading" className="text-sm font-black text-[#34433d]">
+                          Дата отгрузки
+                        </Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
                             <Button
-                              type="button"
+                              id="edit-date_of_unloading"
                               variant="outline"
-                              size="sm"
-                              className="text-green-600 border-dashed hover:bg-green-50"
-                              onClick={() =>
-                                document
-                                  .getElementById(`edit-file-${index}`)
-                                  ?.click()
-                              }
+                              className={cn(
+                                "h-12 w-full justify-start rounded-md border-[#dfe7de] bg-[#fbfcfa] text-left text-base font-bold shadow-sm hover:bg-white",
+                                !unloadingDate && "text-[#8b948f]"
+                              )}
                             >
-                              <Upload className="h-4 w-4 mr-1" />
-                              {doc.location && !doc.file
-                                ? "Заменить"
-                                : "Загрузить"}
+                              <CalendarIcon className="mr-2 h-4 w-4 text-[#f38810]" />
+                              {unloadingDate ? (
+                                formatDate(unloadingDate)
+                              ) : (
+                                <span>Выберите дату</span>
+                              )}
                             </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={
+                                unloadingDate
+                                  ? new Date(unloadingDate)
+                                  : undefined
+                              }
+                              onSelect={handleUnloadingDateChange}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+                  </section>
 
-                            {(doc.fileName || doc.location) && (
-                              <div className="flex items-center text-sm text-gray-600 bg-gray-100 rounded px-2 py-1">
-                                <FileText className="h-4 w-4 mr-1" />
-                                <span className="truncate max-w-[140px]">
-                                  {doc.fileName || "Документ"}
-                                </span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-5 w-5 p-0 ml-2"
-                                  onClick={() => removeFile(index)}
-                                >
-                                  <X className="h-3 w-3 text-red-500" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
+                  <section className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_14px_34px_rgba(34,49,55,0.06)] sm:p-5">
+                    <div className="mb-4 flex flex-col gap-3 border-b border-[#edf1eb] pb-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
+                          <FileText className="h-5 w-5" />
                         </div>
+                        <div>
+                          <h3 className="text-base font-black text-[#223137]">
+                            Документы вагона
+                          </h3>
+                          <p className="mt-0.5 text-sm text-[#7b857f]">
+                            Накладные, паспорта качества и вложения.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={addDocumentRow}
+                        className="h-10 gap-2 rounded-md border-[#f2dfca] bg-[#fff8ed] font-black text-[#d5740b] hover:bg-[#fff3e5]"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Добавить документ
+                      </Button>
+                    </div>
 
-                        {/* Delete document row button */}
-                        <div className="col-span-2 flex justify-center">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-500 hover:bg-red-100"
-                            onClick={() => removeDocumentRow(index)}
+                    {documents.length === 0 ? (
+                      <div className="rounded-md border border-dashed border-[#dfe7de] bg-[#fbfcfa] px-4 py-8 text-center">
+                        <div className="mx-auto flex size-11 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
+                          <FileText className="h-5 w-5" />
+                        </div>
+                        <div className="mt-3 text-sm font-black text-[#223137]">
+                          Документы пока не добавлены
+                        </div>
+                        <div className="mt-1 text-sm text-[#7b857f]">
+                          Добавьте файл, чтобы зафиксировать отгрузку.
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {documents.map((doc, index) => (
+                          <div
+                            key={index}
+                            className="rounded-md border border-[#e5ece4] bg-[#fbfcfa] p-3"
                           >
-                            <Trash2 className="h-5 w-5" />
-                          </Button>
+                            <div className="grid gap-3 lg:grid-cols-[44px_minmax(0,1fr)_minmax(220px,260px)_40px] lg:items-start">
+                              <div className="flex size-10 items-center justify-center rounded-md bg-white text-sm font-black text-[#2f6b4f] shadow-sm">
+                                {String(index + 1).padStart(2, "0")}
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label className="text-xs font-black uppercase text-[#7b857f]">
+                                  Тип документа
+                                </Label>
+                                <Select
+                                  value={doc.name}
+                                  onValueChange={(value) => {
+                                    updateDocument(
+                                      index,
+                                      "name",
+                                      value === "custom" ? "" : value
+                                    );
+                                  }}
+                                >
+                                  <SelectTrigger className="h-11 rounded-md border-[#dfe7de] bg-white font-semibold">
+                                    <SelectValue placeholder="Выберите тип документа" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="ЖД накладная">
+                                      ЖД накладная
+                                    </SelectItem>
+                                    <SelectItem value="Паспорт качества">
+                                      Паспорт качества
+                                    </SelectItem>
+                                    <SelectItem value="custom">
+                                      Другое название
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                {doc.name &&
+                                  doc.name !== "ЖД накладная" &&
+                                  doc.name !== "Паспорт качества" && (
+                                    <Input
+                                      value={doc.name}
+                                      onChange={(e) =>
+                                        updateDocument(
+                                          index,
+                                          "name",
+                                          e.target.value
+                                        )
+                                      }
+                                      placeholder="Введите название документа"
+                                      className="h-11 rounded-md border-[#dfe7de] bg-white font-semibold"
+                                    />
+                                  )}
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label className="text-xs font-black uppercase text-[#7b857f]">
+                                  Файл
+                                </Label>
+                                <input
+                                  type="file"
+                                  id={`edit-wagon-file-${index}`}
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                      handleFileUpload(index, e.target.files[0]);
+                                    }
+                                  }}
+                                />
+                                <div className="flex flex-col gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="h-11 justify-center gap-2 rounded-md border-dashed border-[#dce8dc] bg-white font-black text-[#2f6b4f] hover:bg-[#f5faf5]"
+                                    onClick={() =>
+                                      document
+                                        .getElementById(
+                                          `edit-wagon-file-${index}`
+                                        )
+                                        ?.click()
+                                    }
+                                  >
+                                    <Upload className="h-4 w-4" />
+                                    {doc.location && !doc.file
+                                      ? "Заменить файл"
+                                      : "Загрузить файл"}
+                                  </Button>
+
+                                  {(doc.fileName || doc.location) && (
+                                    <div className="flex min-w-0 items-center justify-between gap-2 rounded-md border border-[#dfe7de] bg-white px-3 py-2 text-sm text-[#53605a]">
+                                      <span className="flex min-w-0 items-center gap-2">
+                                        <FileText className="h-4 w-4 shrink-0 text-[#2f6b4f]" />
+                                        <span className="truncate">
+                                          {doc.fileName || "Документ"}
+                                        </span>
+                                      </span>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 shrink-0 text-[#c84b31] hover:bg-[#fff1ed] hover:text-[#c84b31]"
+                                        onClick={() => removeFile(index)}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-md text-[#c84b31] hover:bg-[#fff1ed] hover:text-[#c84b31] lg:mt-6"
+                                onClick={() => removeDocumentRow(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                </div>
+
+                <aside className="space-y-3">
+                  <div className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_14px_34px_rgba(34,49,55,0.06)]">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
+                        <CheckCircle2 className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-black text-[#223137]">
+                          Сводка отгрузки
+                        </div>
+                        <div className="text-xs text-[#7b857f]">
+                          Данные обновятся после сохранения.
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                    <div className="mt-4 space-y-3">
+                      <div>
+                        <div className="flex justify-between text-xs font-black uppercase text-[#7b857f]">
+                          <span>Фактический вес</span>
+                          <span>{Math.round(editCompletion)}%</span>
+                        </div>
+                        <div className="mt-2 h-2 rounded-full bg-[#f7eadc]">
+                          <div
+                            className="h-full rounded-full bg-[#f38810]"
+                            style={{ width: `${editCompletion}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid gap-2">
+                        <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] px-3 py-2">
+                          <div className="text-[11px] font-black uppercase text-[#7b857f]">
+                            По документам
+                          </div>
+                          <div className="mt-1 font-black text-[#223137]">
+                            {formatNumber(editCapacity)} т
+                          </div>
+                        </div>
+                        <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] px-3 py-2">
+                          <div className="text-[11px] font-black uppercase text-[#7b857f]">
+                            Фактический
+                          </div>
+                          <div className="mt-1 font-black text-[#2f6b4f]">
+                            {formatNumber(editRealWeight)} т
+                          </div>
+                        </div>
+                        <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] px-3 py-2">
+                          <div className="text-[11px] font-black uppercase text-[#7b857f]">
+                            Документы
+                          </div>
+                          <div className="mt-1 font-black text-[#223137]">
+                            {documents.length}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </aside>
               </div>
             </div>
 
-            <DialogFooter className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t flex-col sm:flex-row gap-2 sm:gap-0">
+            <DialogFooter className="shrink-0 border-t border-[#dfe7de] bg-white px-4 py-4 sm:px-7">
               <Button
                 variant="outline"
                 onClick={() => setEditingWagon(null)}
-                className="w-full sm:w-auto sm:mr-2 order-2 sm:order-1 text-sm"
+                className="h-12 w-full rounded-md border-[#dfe7de] bg-white font-black text-[#53605a] shadow-sm hover:bg-[#fbfcfa] sm:w-auto"
               >
                 Отмена
               </Button>
@@ -1192,21 +1193,15 @@ export const WagonRegistry = ({
                 disabled={
                   isUpdating || !editingWagon.number || !editingWagon.capacity
                 }
-                className="gap-1 sm:gap-2 w-full sm:w-auto order-1 sm:order-2 text-sm"
+                className="h-12 w-full gap-2 rounded-md bg-[#f38810] px-6 font-black text-white shadow-[0_12px_26px_rgba(243,136,16,0.24)] hover:bg-[#d5740b] sm:w-auto"
               >
                 {isUpdating ? (
                   <>
-                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-                    <span className="hidden sm:inline">Сохранение...</span>
-                    <span className="sm:hidden">Сохранение...</span>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Сохранение...
                   </>
                 ) : (
-                  <>
-                    <span className="hidden sm:inline">
-                      Сохранить изменения
-                    </span>
-                    <span className="sm:hidden">Сохранить</span>
-                  </>
+                  "Сохранить изменения"
                 )}
               </Button>
             </DialogFooter>
