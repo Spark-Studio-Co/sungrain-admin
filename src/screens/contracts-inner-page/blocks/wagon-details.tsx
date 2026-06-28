@@ -56,6 +56,11 @@ import {
   getVisibleWagonExpansionState,
   getWagonExpansionId,
 } from "./wagon-expansion";
+import {
+  getWagonActualWeightValue,
+  getWagonCapacityValue,
+  getWagonGroupStats,
+} from "@/shared/contracts/contract-ops";
 
 interface WagonDetailsProps {
   wagons: any[];
@@ -300,14 +305,13 @@ export const WagonDetails = ({
 
   // Get wagon capacity and real weight, handling different API response structures
   const getWagonData = (wagon: any) => {
-    const capacity =
-      wagon.capacity || (wagon.wagon && wagon.wagon.capacity) || 0;
-    const realWeight =
-      wagon.real_weight || (wagon.wagon && wagon.wagon.real_weight) || 0;
+    const capacity = getWagonCapacityValue(wagon);
+    const realWeight = getWagonActualWeightValue(wagon);
     const wagonId = getWagonExpansionId(wagon);
-    const wagonNumber = wagon.number || `Вагон ${wagonId}`;
-    const wagonOwner = wagon.owner || "Не указан";
-    const wagonStatus = wagon.status || "unknown";
+    const wagonNumber =
+      wagon.number || wagon.wagon?.number || `Вагон ${wagonId}`;
+    const wagonOwner = wagon.owner || wagon.wagon?.owner || "Не указан";
+    const wagonStatus = wagon.status || wagon.wagon?.status || "unknown";
 
     return {
       capacity,
@@ -319,24 +323,9 @@ export const WagonDetails = ({
     };
   };
 
-  // Calculate application stats
-  const getApplicationStats = (wagons: any[]) => {
-    const totalCapacity = wagons.reduce((sum: number, wagon: any) => {
-      return sum + (wagon.capacity || 0);
-    }, 0);
+  const getApplicationStats = getWagonGroupStats;
 
-    const totalRealWeight = wagons.reduce((sum: number, wagon: any) => {
-      return sum + (wagon.realWeight || 0);
-    }, 0);
-
-    return {
-      wagonCount: wagons.length,
-      totalCapacity,
-      totalRealWeight,
-      utilizationPercentage:
-        totalCapacity > 0 ? (totalRealWeight / totalCapacity) * 100 : 0,
-    };
-  }; // Check if any filters are active
+  // Check if any filters are active
   const hasActiveFilters =
     searchTerm || activeTab !== "all" || dateSortOrder !== null;
 

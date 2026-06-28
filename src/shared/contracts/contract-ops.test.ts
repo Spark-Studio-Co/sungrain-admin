@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getWagonGroupStats,
   getContractDocuments,
   getContractFinanceLinks,
   getContractOpsMeta,
@@ -50,6 +51,42 @@ describe("contract operational metadata", () => {
     expect(meta.progress).toBe(24);
     expect(meta.remainingVolume).toBe(3820);
     expect(meta.wagonsCount).toBe(3);
+  });
+
+  it("uses backend wagon weight fields for wagon detail group totals", () => {
+    const stats = getWagonGroupStats([
+      {
+        status: "shipped",
+        capacity: "1000",
+        real_weight: "1000",
+      },
+      {
+        status: "at_elevator",
+        capacity: "4000",
+        real_weight: "4000",
+      },
+    ]);
+
+    expect(stats.totalCapacity).toBe(5000);
+    expect(stats.totalRealWeight).toBe(1000);
+    expect(stats.totalShippedWeight).toBe(1000);
+    expect(stats.utilizationPercentage).toBe(20);
+  });
+
+  it("reads nested wagon payloads when calculating wagon detail group totals", () => {
+    const stats = getWagonGroupStats([
+      {
+        wagon: {
+          status: "shipped",
+          capacity: 5000,
+          real_weight: 1000,
+        },
+      },
+    ]);
+
+    expect(stats.totalCapacity).toBe(5000);
+    expect(stats.totalRealWeight).toBe(1000);
+    expect(stats.utilizationPercentage).toBe(20);
   });
 
   it("keeps a safe backend download target for contract documents", () => {

@@ -144,7 +144,16 @@ const getCount = (value: unknown) => {
 const getStatusValue = (value: unknown) =>
   typeof value === "string" ? value.toLowerCase() : "";
 
-const isWagonShipped = (wagon: any) => {
+const getFirstPositiveNumber = (...values: unknown[]) => {
+  for (const value of values) {
+    const numericValue = toNumber(value);
+    if (numericValue > 0) return numericValue;
+  }
+
+  return 0;
+};
+
+export const isContractWagonShipped = (wagon: any) => {
   const status = getStatusValue(wagon?.status || wagon?.wagon?.status);
   return (
     status === "shipped" ||
@@ -153,15 +162,46 @@ const isWagonShipped = (wagon: any) => {
   );
 };
 
-const getWagonWeight = (wagon: any) =>
-  toNumber(
-    wagon?.real_weight ||
-      wagon?.realWeight ||
-      wagon?.capacity ||
-      wagon?.wagon?.real_weight ||
-      wagon?.wagon?.realWeight ||
-      wagon?.wagon?.capacity
+export const getWagonCapacityValue = (wagon: any) =>
+  getFirstPositiveNumber(wagon?.capacity, wagon?.wagon?.capacity);
+
+export const getWagonActualWeightValue = (wagon: any) =>
+  getFirstPositiveNumber(
+    wagon?.real_weight,
+    wagon?.realWeight,
+    wagon?.wagon?.real_weight,
+    wagon?.wagon?.realWeight
   );
+
+export const getWagonShippedWeightValue = (wagon: any) => {
+  if (!isContractWagonShipped(wagon)) return 0;
+
+  const actualWeight = getWagonActualWeightValue(wagon);
+  return actualWeight > 0 ? actualWeight : getWagonCapacityValue(wagon);
+};
+
+export const getWagonGroupStats = (wagons: any[]) => {
+  const wagonItems = getArray(wagons);
+  const totalCapacity = wagonItems.reduce(
+    (sum: number, wagon: any) => sum + getWagonCapacityValue(wagon),
+    0
+  );
+  const totalShippedWeight = wagonItems.reduce(
+    (sum: number, wagon: any) => sum + getWagonShippedWeightValue(wagon),
+    0
+  );
+
+  return {
+    wagonCount: wagonItems.length,
+    totalCapacity,
+    totalRealWeight: totalShippedWeight,
+    totalShippedWeight,
+    utilizationPercentage:
+      totalCapacity > 0
+        ? clamp((totalShippedWeight / totalCapacity) * 100, 0, 100)
+        : 0,
+  };
+};
 
 const getContractApplications = (contract: any) => getArray(contract?.applications);
 
@@ -220,7 +260,7 @@ export const getContractOpsMeta = (
   const invoices = getContractInvoices(contract);
   const payments = getContractPayments(contract);
   const shippedFromWagons = wagons.reduce(
-    (sum, wagon) => sum + (isWagonShipped(wagon) ? getWagonWeight(wagon) : 0),
+    (sum, wagon) => sum + getWagonShippedWeightValue(wagon),
     0
   );
   const shippedVolume = shippedFromWagons;
