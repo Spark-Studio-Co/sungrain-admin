@@ -50,6 +50,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  areAllVisibleWagonGroupsExpanded,
+  getVisibleApplicationIds,
+  getVisibleWagonExpansionState,
+  getWagonExpansionId,
+} from "./wagon-expansion";
 
 interface WagonDetailsProps {
   wagons: any[];
@@ -264,37 +270,24 @@ export const WagonDetails = ({
 
   // Expand all rows
   const expandAllRows = () => {
-    const allExpanded: { [key: string]: boolean } = {};
-    filteredWagons.forEach((group: any) => {
-      group.wagons.forEach((wagon: any) => {
-        const wagonId = wagon.id || wagon.wagon_id;
-        allExpanded[wagonId] = true;
-      });
-    });
-    setExpandedRows(allExpanded);
+    setExpandedApplications(getVisibleApplicationIds(filteredWagons));
+    setExpandedRows(getVisibleWagonExpansionState(filteredWagons));
   };
 
   // Collapse all rows
   const collapseAllRows = () => {
+    setExpandedApplications([]);
     setExpandedRows({});
   };
 
   // Check if all rows are expanded
   const areAllRowsExpanded = useMemo(() => {
-    if (filteredWagons.length === 0) return false;
-
-    const allWagonIds: string[] = [];
-    filteredWagons.forEach((group: any) => {
-      group.wagons.forEach((wagon: any) => {
-        allWagonIds.push(wagon.id || wagon.wagon_id);
-      });
-    });
-
-    return (
-      allWagonIds.length > 0 &&
-      allWagonIds.every((id: string) => expandedRows[id])
+    return areAllVisibleWagonGroupsExpanded(
+      filteredWagons,
+      expandedRows,
+      expandedApplications
     );
-  }, [filteredWagons, expandedRows]);
+  }, [filteredWagons, expandedRows, expandedApplications]);
 
   // Toggle expand/collapse all
   const toggleExpandAll = () => {
@@ -311,7 +304,7 @@ export const WagonDetails = ({
       wagon.capacity || (wagon.wagon && wagon.wagon.capacity) || 0;
     const realWeight =
       wagon.real_weight || (wagon.wagon && wagon.wagon.real_weight) || 0;
-    const wagonId = wagon.id || wagon.wagon_id || 0;
+    const wagonId = getWagonExpansionId(wagon);
     const wagonNumber = wagon.number || `Вагон ${wagonId}`;
     const wagonOwner = wagon.owner || "Не указан";
     const wagonStatus = wagon.status || "unknown";
@@ -468,33 +461,35 @@ export const WagonDetails = ({
             <div className="space-y-4">
               {filteredWagons.map((group) => {
                 const stats = getApplicationStats(group.wagons);
+                const applicationId = String(group.application.id);
 
                 return (
                   <Accordion
-                    key={group.application.id}
+                    key={applicationId}
                     type="single"
                     collapsible
                     className="overflow-hidden rounded-md border border-[#dfe7de] bg-white shadow-[0_12px_28px_rgba(34,49,55,0.05)]"
                     value={
-                      expandedApplications.includes(group.application.id)
-                        ? group.application.id
+                      expandedApplications.includes(applicationId)
+                        ? applicationId
                         : undefined
                     }
                     onValueChange={(value) => {
                       if (value) {
-                        setExpandedApplications((prev) => [
-                          ...prev,
-                          group.application.id,
-                        ]);
+                        setExpandedApplications((prev) =>
+                          prev.includes(applicationId)
+                            ? prev
+                            : [...prev, applicationId]
+                        );
                       } else {
                         setExpandedApplications((prev) =>
-                          prev.filter((id) => id !== group.application.id)
+                          prev.filter((id) => id !== applicationId)
                         );
                       }
                     }}
                   >
                     <AccordionItem
-                      value={group.application.id}
+                      value={applicationId}
                       className="border-b-0"
                     >
                       <AccordionTrigger className="px-4 py-3 hover:bg-[#f8faf7] group">
