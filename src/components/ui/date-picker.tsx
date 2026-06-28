@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 type DatePickerInputProps = {
   id?: string;
   value?: string | Date | null;
-  onChange: (value: string, date: Date) => void;
+  onChange: (value: string, date?: Date) => void;
   outputFormat?: "date" | "iso";
   placeholder?: string;
   className?: string;
@@ -58,6 +58,11 @@ function DatePickerInput({
     setOpen(false);
   };
 
+  const clearDate = () => {
+    onChange("", undefined);
+    setOpen(false);
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -87,7 +92,12 @@ function DatePickerInput({
           mode="single"
           selected={selectedDate}
           onSelect={(date) => {
-            if (date) selectDate(date);
+            if (!date) {
+              clearDate();
+              return;
+            }
+
+            selectDate(date);
           }}
           initialFocus
         />

@@ -546,6 +546,11 @@ function DatePickerField({
   const [open, setOpen] = useState(false);
   const selectedDate = parseDateValue(value);
 
+  const clearDate = () => {
+    onChange("");
+    setOpen(false);
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -573,6 +578,7 @@ function DatePickerField({
           selected={selectedDate}
           onSelect={(date) => {
             if (!date) {
+              clearDate();
               return;
             }
 
