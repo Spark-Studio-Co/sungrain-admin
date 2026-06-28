@@ -11,4 +11,12 @@ describe("wagon details application relation", () => {
     expect(source).toContain("{applicationLabel}");
     expect(source).toContain("К какому приложению относится вагон");
   });
+
+  it("renders one flat wagon registry instead of splitting rows by application accordions", () => {
+    expect(source).toContain("filteredWagonRows");
+    expect(source).toContain("flatMap");
+    expect(source).toContain("Единый список всех вагонов");
+    expect(source).not.toContain("<Accordion");
+    expect(source).not.toContain("<AccordionTrigger");
+  });
 });
