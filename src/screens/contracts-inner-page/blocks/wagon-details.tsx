@@ -452,6 +452,8 @@ export const WagonDetails = ({
                   group.wagons
                 );
                 const applicationId = String(group.application.id);
+                const applicationLabel =
+                  group.application.name || `Приложение ${applicationId}`;
 
                 return (
                   <Accordion
@@ -540,6 +542,17 @@ export const WagonDetails = ({
                                           <span className="font-medium text-sm truncate">
                                             № {wagonNumber}
                                           </span>
+                                          <Badge
+                                            variant="outline"
+                                            aria-label={`Приложение строки вагона: ${applicationLabel}`}
+                                            title={`К какому приложению относится вагон: ${applicationLabel}`}
+                                            className="flex max-w-[150px] shrink items-center gap-1 truncate border-[#f2dfca] bg-[#fff8ed] px-2 py-0.5 text-[10px] font-black text-[#d5740b]"
+                                          >
+                                            <FileBox className="h-3 w-3 shrink-0" />
+                                            <span className="truncate">
+                                              {applicationLabel}
+                                            </span>
+                                          </Badge>
                                           <Button
                                             variant="ghost"
                                             size="icon"
@@ -623,6 +636,18 @@ export const WagonDetails = ({
                                                 </span>
                                                 <span className="text-xs font-medium">
                                                   {wagonNumber}
+                                                </span>
+                                              </div>
+                                              <div className="flex justify-between gap-3 py-1 border-b border-dashed border-slate-200">
+                                                <span className="text-xs text-slate-500 flex items-center gap-1">
+                                                  <FileBox className="h-3 w-3 text-[#d5740b]" />
+                                                  Приложение
+                                                </span>
+                                                <span
+                                                  className="max-w-[50%] truncate text-xs font-medium"
+                                                  title={`К какому приложению относится вагон: ${applicationLabel}`}
+                                                >
+                                                  {applicationLabel}
                                                 </span>
                                               </div>
                                               <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
@@ -794,10 +819,12 @@ export const WagonDetails = ({
 
                           {/* Desktop Table Layout */}
                           <div className="hidden sm:block">
-                            <Table className="min-w-[820px]">
+                            <Table className="min-w-[960px]">
                               <TableHeader className="bg-muted/20">
                                 <TableRow>
-                                  <TableHead className="w-[50px]"></TableHead>
+                                  <TableHead className="w-[220px]">
+                                    Приложение
+                                  </TableHead>
                                   <TableHead>Номер вагона</TableHead>
                                   <TableHead>Владелец</TableHead>
                                   <TableHead>Статус</TableHead>
@@ -835,25 +862,38 @@ export const WagonDetails = ({
                                         )}
                                       >
                                         <TableCell>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className={cn(
-                                              "h-8 w-8 rounded-full transition-colors duration-150",
-                                              isExpanded
-                                                ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                                                : "hover:bg-slate-100"
-                                            )}
-                                            onClick={() =>
-                                              toggleRowExpansion(wagonId)
-                                            }
-                                          >
-                                            {isExpanded ? (
-                                              <ChevronUp className="h-4 w-4" />
-                                            ) : (
-                                              <ChevronDown className="h-4 w-4" />
-                                            )}
-                                          </Button>
+                                          <div className="flex min-w-0 items-center gap-2">
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              className={cn(
+                                                "h-8 w-8 shrink-0 rounded-full transition-colors duration-150",
+                                                isExpanded
+                                                  ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                                  : "hover:bg-slate-100"
+                                              )}
+                                              onClick={() =>
+                                                toggleRowExpansion(wagonId)
+                                              }
+                                            >
+                                              {isExpanded ? (
+                                                <ChevronUp className="h-4 w-4" />
+                                              ) : (
+                                                <ChevronDown className="h-4 w-4" />
+                                              )}
+                                            </Button>
+                                            <Badge
+                                              variant="outline"
+                                              aria-label={`Приложение строки вагона: ${applicationLabel}`}
+                                              title={`К какому приложению относится вагон: ${applicationLabel}`}
+                                              className="flex max-w-[140px] items-center gap-1 truncate border-[#f2dfca] bg-[#fff8ed] px-2 py-1 text-[11px] font-black text-[#d5740b]"
+                                            >
+                                              <FileBox className="h-3 w-3 shrink-0" />
+                                              <span className="truncate">
+                                                {applicationLabel}
+                                              </span>
+                                            </Badge>
+                                          </div>
                                         </TableCell>
                                         <TableCell>
                                           <span className="font-medium">
@@ -907,6 +947,18 @@ export const WagonDetails = ({
                                                         </span>
                                                         <span className="text-sm font-medium">
                                                           {wagonNumber}
+                                                        </span>
+                                                      </div>
+                                                      <div className="flex justify-between gap-4 py-1.5 border-b border-dashed border-slate-200">
+                                                        <span className="text-sm text-slate-500 flex items-center gap-2">
+                                                          <FileBox className="h-4 w-4 text-[#d5740b]" />
+                                                          Приложение
+                                                        </span>
+                                                        <span
+                                                          className="max-w-[55%] truncate text-sm font-medium text-[#223137]"
+                                                          title={`К какому приложению относится вагон: ${applicationLabel}`}
+                                                        >
+                                                          {applicationLabel}
                                                         </span>
                                                       </div>
                                                       <div className="flex justify-between py-1.5 border-b border-dashed border-slate-200">
