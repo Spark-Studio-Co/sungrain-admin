@@ -120,32 +120,20 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   //     })
   //     .filter(Boolean) || [];
 
-  // Calculate volume usage from applications
+  const contractOps = useMemo(
+    () => getContractOpsMeta(contractData, { wagons }),
+    [contractData, wagons]
+  );
+
+  // Calculate shipment usage from the same source as the operational center.
   const volumeStats = useMemo(() => {
-    if (!wagons || wagons.length === 0) {
-      return {
-        totalVolume: (contractData as any)?.total_volume || 0,
-        usedVolume: 0,
-        percentUsed: 0,
-        remainingVolume: (contractData as any)?.total_volume || 0,
-      };
-    }
-
-    const totalVolume = (contractData as any)?.total_volume || 0;
-    const usedVolume = wagons.reduce(
-      (sum: number, wagon: any) => sum + (wagon.capacity || 0),
-      0
-    );
-    const percentUsed = totalVolume > 0 ? (usedVolume / totalVolume) * 100 : 0;
-    const remainingVolume = Math.max(0, totalVolume - usedVolume);
-
     return {
-      totalVolume,
-      usedVolume,
-      percentUsed,
-      remainingVolume,
+      totalVolume: contractOps.totalVolume,
+      usedVolume: contractOps.shippedVolume,
+      percentUsed: contractOps.progress,
+      remainingVolume: contractOps.remainingVolume,
     };
-  }, [contractData, wagons]);
+  }, [contractOps]);
 
   // Calculate wagon capacity statistics
   const wagonCapacityStats = useMemo(() => {
@@ -181,10 +169,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     };
   }, [wagons]);
 
-  const contractOps = useMemo(
-    () => getContractOpsMeta(contractData, { wagons }),
-    [contractData, wagons]
-  );
   const contractDocuments = useMemo(
     () => getContractDocuments(contractData),
     [contractData]
@@ -593,7 +577,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                         Связанные счета и платежи
                       </CardTitle>
                       <CardDescription className="mt-1 text-sm text-[#6f7774]">
-                        Моковая финансовая связка по текущему контракту.
+                        Реальные счета и поступления по текущему контракту.
                       </CardDescription>
                     </div>
                   </div>
@@ -604,7 +588,12 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                       <div className="text-xs font-black uppercase text-[#7b857f]">
                         Счета
                       </div>
-                      {contractFinanceLinks.invoices.map((invoice) => (
+                      {contractFinanceLinks.invoices.length === 0 ? (
+                        <div className="rounded-md border border-dashed border-[#dfe7de] bg-[#fbfcfa] p-4 text-sm font-semibold text-[#7b857f]">
+                          Счета пока не добавлены
+                        </div>
+                      ) : (
+                        contractFinanceLinks.invoices.map((invoice) => (
                         <div
                           key={invoice.id}
                           className="rounded-md border border-[#dfe7de] bg-white p-3 shadow-[0_10px_22px_rgba(34,49,55,0.04)]"
@@ -648,14 +637,20 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                             </div>
                           </div>
                         </div>
-                      ))}
+                        ))
+                      )}
                     </div>
 
                     <div className="space-y-3">
                       <div className="text-xs font-black uppercase text-[#7b857f]">
                         Платежи
                       </div>
-                      {contractFinanceLinks.payments.map((payment) => (
+                      {contractFinanceLinks.payments.length === 0 ? (
+                        <div className="rounded-md border border-dashed border-[#dfe7de] bg-[#fbfcfa] p-4 text-sm font-semibold text-[#7b857f]">
+                          Платежи пока не добавлены
+                        </div>
+                      ) : (
+                        contractFinanceLinks.payments.map((payment) => (
                         <div
                           key={payment.id}
                           className="rounded-md border border-[#dfe7de] bg-white p-3 shadow-[0_10px_22px_rgba(34,49,55,0.04)]"
@@ -681,7 +676,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                             {formatContractMoney(payment.amount, payment.currency)}
                           </div>
                         </div>
-                      ))}
+                        ))
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -704,7 +700,12 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2 px-4 py-4">
-                  {contractDocuments.map((document) => (
+                  {contractDocuments.length === 0 ? (
+                    <div className="rounded-md border border-dashed border-[#dfe7de] bg-[#fbfcfa] p-4 text-sm font-semibold text-[#7b857f]">
+                      Документы пока не загружены
+                    </div>
+                  ) : (
+                    contractDocuments.map((document) => (
                     <button
                       key={document.id}
                       type="button"
@@ -726,7 +727,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                       </span>
                       <Download className="h-4 w-4 shrink-0 text-[#f38810]" />
                     </button>
-                  ))}
+                    ))
+                  )}
                 </CardContent>
               </Card>
             </div>

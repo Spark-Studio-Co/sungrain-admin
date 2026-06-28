@@ -1,4 +1,4 @@
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatCurrency, formatNumber } from "../../lib/utils";
 
 export type ContractOperationStatus = "active" | "risk" | "completed" | "draft";
 
@@ -54,16 +54,63 @@ const toNumber = (value: unknown) => {
   return 0;
 };
 
-const getSeed = (contract: any) => {
-  const raw = `${contract?.id || ""}${contract?.number || ""}`;
-  const numbers = raw.match(/\d+/g)?.join("") || "7";
-  return Number.parseInt(numbers.slice(-4), 10) || 7;
-};
-
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
 const getArray = (value: unknown) => (Array.isArray(value) ? value : []);
+
+const getCount = (value: unknown) => {
+  const count = toNumber(value);
+  return count > 0 ? Math.round(count) : 0;
+};
+
+const getStatusValue = (value: unknown) =>
+  typeof value === "string" ? value.toLowerCase() : "";
+
+const isWagonShipped = (wagon: any) => {
+  const status = getStatusValue(wagon?.status || wagon?.wagon?.status);
+  return (
+    status === "shipped" ||
+    status === "completed" ||
+    Boolean(wagon?.date_of_unloading || wagon?.dateOfUnloading || wagon?.wagon?.date_of_unloading)
+  );
+};
+
+const getWagonWeight = (wagon: any) =>
+  toNumber(
+    wagon?.real_weight ||
+      wagon?.realWeight ||
+      wagon?.capacity ||
+      wagon?.wagon?.real_weight ||
+      wagon?.wagon?.realWeight ||
+      wagon?.wagon?.capacity
+  );
+
+const getContractApplications = (contract: any) => getArray(contract?.applications);
+
+const getContractFiles = (contract: any) =>
+  getArray(contract?.files || contract?.documents || contract?.documentsForUpload);
+
+const getContractInvoices = (contract: any) => {
+  const directInvoices = getArray(contract?.invoices || contract?.finance?.invoices);
+  if (directInvoices.length > 0) return directInvoices;
+
+  return getContractApplications(contract).flatMap((application: any) =>
+    getArray(application?.invoices)
+  );
+};
+
+const getContractPayments = (contract: any) => {
+  const directPayments = getArray(contract?.payments || contract?.finance?.payments);
+  if (directPayments.length > 0) return directPayments;
+
+  return getContractInvoices(contract).flatMap((invoice: any) =>
+    getArray(invoice?.payments)
+  );
+};
+
+const getMoneyValue = (value: any) =>
+  toNumber(value?.amount ?? value?.total_amount ?? value?.totalAmount ?? value?.sum ?? value);
 
 export const getContractStatusConfig = (status: ContractOperationStatus) =>
   statusConfig[status] || statusConfig.active;
@@ -89,37 +136,26 @@ export const getContractOpsMeta = (
   contract: any,
   options: ContractOpsOptions = {}
 ) => {
-  const seed = getSeed(contract);
   const totalVolume = getContractVolume(contract);
   const wagons = options.wagons || getArray(contract?.wagons);
-  const applications = getArray(contract?.applications);
-  const files = getArray(contract?.files);
+  const applications = getContractApplications(contract);
+  const files = getContractFiles(contract);
+  const invoices = getContractInvoices(contract);
+  const payments = getContractPayments(contract);
   const shippedFromWagons = wagons.reduce(
-    (sum, wagon) =>
-      sum +
-      toNumber(
-        wagon?.real_weight ||
-          wagon?.realWeight ||
-          wagon?.capacity ||
-          wagon?.wagon?.real_weight ||
-          wagon?.wagon?.capacity
-      ),
+    (sum, wagon) => sum + (isWagonShipped(wagon) ? getWagonWeight(wagon) : 0),
     0
   );
-  const fallbackRatio = [0.18, 0.42, 0.63, 0.81, 1][seed % 5];
-  const shippedVolume =
-    shippedFromWagons > 0
-      ? shippedFromWagons
-      : Math.round(totalVolume * fallbackRatio);
+  const shippedVolume = shippedFromWagons;
   const progress =
     totalVolume > 0 ? clamp(Math.round((shippedVolume / totalVolume) * 100), 0, 100) : 0;
   const remainingVolume = Math.max(totalVolume - shippedVolume, 0);
   const applicationsCount =
-    applications.length || Number(contract?.applications_count) || (seed % 4) + 2;
+    applications.length || getCount(contract?.applications_count);
   const wagonsCount =
-    wagons.length || Number(contract?.wagons_count) || Math.max(1, (seed % 7) + 3);
+    wagons.length || getCount(contract?.wagons_count);
   const documentsCount =
-    files.length || Number(contract?.documents_count) || (seed % 3) + 2;
+    files.length || getCount(contract?.documents_count);
   const hasCoreData =
     Boolean(contract?.number) &&
     Boolean(contract?.sender) &&
@@ -128,8 +164,7 @@ export const getContractOpsMeta = (
     Boolean(contract?.destination_station || contract?.destinationStation);
   const overdueSignal =
     contract?.status === "overdue" ||
-    contract?.payment_status === "overdue" ||
-    seed % 6 === 0;
+    contract?.payment_status === "overdue";
   const status: ContractOperationStatus = !hasCoreData
     ? "draft"
     : progress >= 96
@@ -137,17 +172,19 @@ export const getContractOpsMeta = (
       : overdueSignal
         ? "risk"
         : "active";
-  const invoiceTotal =
-    toNumber(contract?.estimated_cost) ||
-    Math.round(totalVolume * (contract?.currency === "KZT" ? 56413 : 184));
-  const paidRatio =
-    status === "completed" ? 1 : status === "risk" ? 0.42 : [0.35, 0.58, 0.73, 0.86][seed % 4];
-  const paidAmount = Math.round(invoiceTotal * paidRatio);
+  const invoiceTotal = invoices.reduce(
+    (sum, invoice) => sum + getMoneyValue(invoice),
+    0
+  );
+  const paidAmount = payments.reduce(
+    (sum, payment) => sum + getMoneyValue(payment),
+    0
+  );
   const balance = Math.max(invoiceTotal - paidAmount, 0);
   const paymentProgress =
     invoiceTotal > 0 ? clamp(Math.round((paidAmount / invoiceTotal) * 100), 0, 100) : 0;
-  const invoiceCount = Math.max(1, Math.min(4, applicationsCount - 1));
-  const paymentsCount = Math.max(1, Math.min(invoiceCount + 1, Math.round(invoiceCount * paidRatio) + 1));
+  const invoiceCount = invoices.length || getCount(contract?.invoice_count);
+  const paymentsCount = payments.length || getCount(contract?.payments_count);
   const departure =
     contract?.departure_station || contract?.departureStation || "Станция отправления";
   const destination =
@@ -169,12 +206,17 @@ export const getContractOpsMeta = (
     paymentProgress,
     invoiceCount,
     paymentsCount,
-    overdueCount: status === "risk" ? Math.max(1, seed % 3) : 0,
+    overdueCount: status === "risk" ? 1 : 0,
     route: {
       departure,
       destination,
       label: `${departure} → ${destination}`,
-      eta: status === "risk" ? "требует контроля" : `${(seed % 5) + 2} дн. в пути`,
+      eta:
+        status === "risk"
+          ? "требует контроля"
+          : shippedVolume > 0
+            ? "в работе"
+            : "отгрузок нет",
     },
     nextAction:
       status === "draft"
@@ -183,12 +225,14 @@ export const getContractOpsMeta = (
           ? "Проверить просрочки"
           : status === "completed"
             ? "Закрыть документы"
-            : "Контроль отгрузки",
+            : shippedVolume > 0
+              ? "Контроль отгрузки"
+              : "Начать отгрузку",
   };
 };
 
 export const getContractDocuments = (contract: any) => {
-  const files = getArray(contract?.files);
+  const files = getContractFiles(contract);
 
   if (files.length > 0) {
     return files.map((file, index) => ({
@@ -200,50 +244,45 @@ export const getContractDocuments = (contract: any) => {
     }));
   }
 
-  const meta = getContractOpsMeta(contract);
-  return [
-    {
-      id: "contract",
-      name: `Договор ${contract?.number || contract?.id || ""}`.trim(),
-      type: "PDF",
-      date: formatContractDate(contract?.date),
-      size: "148 KB",
-    },
-    {
-      id: "route",
-      name: "Маршрутный лист",
-      type: "XLSX",
-      date: meta.route.eta,
-      size: "84 KB",
-    },
-  ];
+  return [];
 };
 
 export const getContractFinanceLinks = (contract: any) => {
-  const meta = getContractOpsMeta(contract);
   const currency = contract?.currency || "USD";
+  const invoices = getContractInvoices(contract).map((invoice: any, index) => {
+    const amount = getMoneyValue(invoice);
+    const paid = getArray(invoice?.payments).reduce(
+      (sum, payment) => sum + getMoneyValue(payment),
+      toNumber(invoice?.paid_amount ?? invoice?.paidAmount)
+    );
+    const status = getStatusValue(invoice?.status);
+
+    return {
+      id: invoice?.number || invoice?.id || `INV-${String(index + 1).padStart(3, "0")}`,
+      title: invoice?.name || invoice?.title || `Счет ${index + 1}`,
+      amount,
+      paid,
+      balance: Math.max(amount - paid, 0),
+      status:
+        status === "paid" || paid >= amount
+          ? "Оплачен"
+          : paid > 0
+            ? "Частично"
+            : "Ожидает",
+      currency: invoice?.currency || currency,
+    };
+  });
+  const payments = getContractPayments(contract).map((payment: any, index) => ({
+    id: payment?.number || payment?.id || `PAY-${String(index + 1).padStart(3, "0")}`,
+    amount: getMoneyValue(payment),
+    status: payment?.status || "Проведен",
+    reference: payment?.reference || payment?.ref || "-",
+    currency: payment?.currency || currency,
+  }));
 
   return {
-    invoices: Array.from({ length: meta.invoiceCount }, (_, index) => {
-      const amount = Math.round(meta.invoiceTotal / meta.invoiceCount);
-      const paid = Math.min(amount, Math.round(amount * (meta.paymentProgress / 100)));
-      return {
-        id: `INV-${String(index + 1).padStart(3, "0")}`,
-        title: index === 0 ? "Основной счет" : `Счет по заявке ${index + 1}`,
-        amount,
-        paid,
-        balance: Math.max(amount - paid, 0),
-        status: paid >= amount ? "Оплачен" : paid > 0 ? "Частично" : "Ожидает",
-        currency,
-      };
-    }),
-    payments: Array.from({ length: meta.paymentsCount }, (_, index) => ({
-      id: `PAY-${String(index + 1).padStart(3, "0")}`,
-      amount: Math.round(meta.paidAmount / meta.paymentsCount),
-      status: index === 0 ? "Сверен" : "Проведен",
-      reference: `REF-${String(getSeed(contract) + index * 17).padStart(6, "0")}`,
-      currency,
-    })),
+    invoices,
+    payments,
   };
 };
 
