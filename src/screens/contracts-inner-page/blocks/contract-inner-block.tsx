@@ -55,7 +55,7 @@ interface ContractInnerBlockProps {
 export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   const { id } = useParams();
   const isAdmin = localStorage.getItem("isAdmin") === "true";
-  const [activeTab, setActiveTab] = useState("details");
+  const [activeTab, setActiveTab] = useState("applications");
   const [selectedApplicationId, setSelectedApplicationId] = useState<
     string | null
   >(null);
@@ -521,13 +521,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid h-auto w-full grid-cols-3 rounded-md border border-[#dfe7de] bg-white p-1 shadow-[0_12px_28px_rgba(34,49,55,0.05)]">
             <TabsTrigger
-              value="details"
-              className="rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
-            >
-              <span className="hidden sm:inline">Вагоны</span>
-              <span className="sm:hidden">Вагоны</span>
-            </TabsTrigger>
-            <TabsTrigger
               value="applications"
               className="rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
             >
@@ -539,15 +532,14 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
             >
               Финансы
             </TabsTrigger>
+            <TabsTrigger
+              value="details"
+              className="rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
+            >
+              <span className="hidden sm:inline">Вагоны</span>
+              <span className="sm:hidden">Вагоны</span>
+            </TabsTrigger>
           </TabsList>
-          <TabsContent value="details" className="mt-4">
-            <WagonDetails
-              wagons={wagons}
-              handleFileDownload={handleFileDownload}
-              capacityStats={wagonCapacityStats}
-              contractData={contractData}
-            />
-          </TabsContent>
           <TabsContent value="applications" className="mt-4">
             {selectedApplicationId ? (
               <ApplicationDetail
@@ -709,7 +701,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                       type="button"
                       onClick={() =>
                         handleFileDownload(
-                          document.file || document.downloadUrl,
+                          document.downloadUrl,
                           document.name
                         )
                       }
@@ -730,6 +722,14 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+          <TabsContent value="details" className="mt-4">
+            <WagonDetails
+              wagons={wagons}
+              handleFileDownload={handleFileDownload}
+              capacityStats={wagonCapacityStats}
+              contractData={contractData}
+            />
           </TabsContent>
         </Tabs>
       </div>

@@ -80,6 +80,8 @@ const getFileUrlValue = (file: any) => {
 
   return (
     file?.location ||
+    file?.downloadUrl ||
+    file?.download_url ||
     file?.url ||
     file?.file_url ||
     file?.fileUrl ||
@@ -135,6 +137,42 @@ export const resolveBackendFileUrl = (
 
   return `${backendBaseUrl}/uploads/${encodeURI(normalizedPath)}`;
 };
+
+const documentFileExtensionPattern =
+  /\.(pdf|docx?|xlsx?|png|jpe?g|webp|zip|rar|txt|csv)(?:[?#].*)?$/i;
+
+const isHtmlDocumentReference = (file: any, downloadUrl: string, name: string) => {
+  const rawUrl = String(getFileUrlValue(file) || "");
+  const mimeType = String(file?.mimetype || file?.type || "");
+  const text = `${rawUrl} ${downloadUrl} ${name} ${mimeType}`;
+
+  return (
+    /text\/html/i.test(mimeType) ||
+    /\.html?(?:[?#]|\s|$)/i.test(text) ||
+    /https?:\/\/admin\.sungrain\.kz\//i.test(text) ||
+    /\/admin\/contracts\//i.test(text)
+  );
+};
+
+const isDownloadableDocumentReference = (
+  file: any,
+  downloadUrl: string,
+  name: string
+) => {
+  if (!downloadUrl) return false;
+  if (isHtmlDocumentReference(file, downloadUrl, name)) return false;
+
+  const rawUrl = String(getFileUrlValue(file) || "");
+  const source = `${rawUrl} ${downloadUrl} ${name}`;
+
+  return (
+    documentFileExtensionPattern.test(source) ||
+    /\/uploads\//i.test(downloadUrl)
+  );
+};
+
+const getDocumentDedupeKey = (downloadUrl: string, name: string) =>
+  (downloadUrl || name).split("?")[0].trim().toLowerCase();
 
 const getCount = (value: unknown) => {
   const count = toNumber(value);
@@ -448,15 +486,48 @@ export const getContractDocuments = (
   const files = getContractFiles(contract);
 
   if (files.length > 0) {
-    return files.map((file, index) => ({
-      id: file?.id || `file-${index}`,
-      name: getFileName(file, index),
-      type: file?.mimetype || "PDF",
-      date: file?.created_at ? formatContractDate(file.created_at) : "в договоре",
-      size: file?.size ? `${Math.round(file.size / 1024)} KB` : "128 KB",
-      downloadUrl: resolveBackendFileUrl(file, options),
-      file,
-    }));
+    const seenDocuments = new Set<string>();
+
+    return files
+      .map((file, index) => {
+        const name = getFileName(file, index);
+        const downloadUrl = resolveBackendFileUrl(file, options);
+
+        return {
+          id: file?.id || `file-${index}`,
+          name,
+          type: file?.mimetype || file?.type || "PDF",
+          date: file?.created_at
+            ? formatContractDate(file.created_at)
+            : "в договоре",
+          size: file?.size ? `${Math.round(file.size / 1024)} KB` : "128 KB",
+          downloadUrl,
+          file,
+        };
+      })
+      .filter((document) => {
+        if (
+          !isDownloadableDocumentReference(
+            document.file,
+            document.downloadUrl,
+            document.name
+          )
+        ) {
+          return false;
+        }
+
+        const dedupeKey = getDocumentDedupeKey(
+          document.downloadUrl,
+          document.name
+        );
+
+        if (seenDocuments.has(dedupeKey)) {
+          return false;
+        }
+
+        seenDocuments.add(dedupeKey);
+        return true;
+      });
   }
 
   return [];

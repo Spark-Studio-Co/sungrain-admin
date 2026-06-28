@@ -184,4 +184,40 @@ describe("contract operational metadata", () => {
       file: "contract-final.pdf",
     });
   });
+
+  it("keeps only real downloadable deal files and removes duplicate document links", () => {
+    const documents = getContractDocuments(
+      {
+        ...baseContract,
+        files: [
+          {
+            id: "page-link",
+            name: "contract-page.html",
+            location: "https://admin.sungrain.kz/admin/contracts/c3f1097a",
+            mimetype: "text/html",
+          },
+          {
+            id: "primary",
+            name: "contract-final.pdf",
+            location: "/uploads/contracts/contract-final.pdf",
+            mimetype: "application/pdf",
+          },
+          {
+            id: "duplicate",
+            name: "duplicate-contract.pdf",
+            url: "/uploads/contracts/contract-final.pdf",
+            mimetype: "application/pdf",
+          },
+        ],
+      },
+      { backendUrl: "https://backend.sungrain.kz/api" }
+    );
+
+    expect(documents).toHaveLength(1);
+    expect(documents[0]).toMatchObject({
+      id: "primary",
+      name: "contract-final.pdf",
+      downloadUrl: "https://backend.sungrain.kz/uploads/contracts/contract-final.pdf",
+    });
+  });
 });
