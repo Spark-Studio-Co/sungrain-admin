@@ -23,22 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AdminPageSizeControl } from "@/components/ui/admin-page-size-control";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { CreateSenderData } from "@/entities/sender/api/create/create-sender.api";
 import type { Sender } from "@/entities/sender/api/get/get-senders.api";
@@ -320,7 +305,7 @@ function SenderTable({
 export default function SenderPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(50);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -338,28 +323,15 @@ export default function SenderPage() {
     sender.name.toLowerCase().includes(searchTerm.toLowerCase().trim())
   );
   const totalItems = data?.total || 0;
-  const currentPage = data?.page || 1;
-  const lastPage = data?.totalPages || Math.ceil(totalItems / limit) || 1;
   const visibleCount = filteredSenders.length;
-  const startIndex =
-    totalItems === 0 || visibleCount === 0 ? 0 : (currentPage - 1) * limit + 1;
-  const endIndex =
-    totalItems === 0 || visibleCount === 0
-      ? 0
-      : Math.min((currentPage - 1) * limit + visibleCount, totalItems);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
     setPage(1);
   };
 
-  const handlePageChange = (newPage: number) => {
-    if (newPage < 1 || newPage > lastPage) return;
-    setPage(newPage);
-  };
-
-  const handleLimitChange = (value: string) => {
-    setLimit(Number(value));
+  const handleLimitChange = (value: number) => {
+    setLimit(value);
     setPage(1);
   };
 
@@ -484,12 +456,12 @@ export default function SenderPage() {
                 </div>
                 <div className="rounded-md border border-[#f2dfca] bg-white px-4 py-3">
                   <div className="text-[11px] font-black uppercase text-[#7b857f]">
-                    Страница
+                    Лимит
                   </div>
                   <div className="mt-1 text-lg font-black text-[#d5740b]">
-                    {currentPage}/{lastPage}
+                    {limit}
                   </div>
-                  <div className="mt-1 text-xs text-[#7b857f]">реестра</div>
+                  <div className="mt-1 text-xs text-[#7b857f]">на экране</div>
                 </div>
               </div>
             </div>
@@ -605,150 +577,14 @@ export default function SenderPage() {
             />
           </CardContent>
 
-          <CardFooter className="flex flex-col gap-4 border-t border-[#e5ece4] bg-[#fbfcfa] px-4 py-4 sm:px-5 lg:px-6">
-            {lastPage > 1 && (
-              <div className="flex w-full items-center justify-between gap-3 sm:hidden">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                  className="h-10 rounded-md border border-[#dce4da] bg-white px-4 text-sm font-bold text-[#53605a] shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Назад
-                </button>
-                <div className="rounded-md border border-[#dfe7de] bg-white px-3 py-2 text-sm font-black text-[#223137]">
-                  {currentPage} / {lastPage}
-                </div>
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= lastPage}
-                  className="h-10 rounded-md border border-[#dce4da] bg-white px-4 text-sm font-bold text-[#53605a] shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Вперед
-                </button>
-              </div>
-            )}
-
-            {lastPage > 1 && (
-              <div className="hidden w-full justify-center sm:flex">
-                <Pagination>
-                  <PaginationContent className="flex-wrap gap-1">
-                    <PaginationItem>
-                      <PaginationPrevious
-                        href="#"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          handlePageChange(currentPage - 1);
-                        }}
-                        className={
-                          currentPage <= 1
-                            ? "pointer-events-none opacity-50"
-                            : "rounded-md border-[#dce4da] bg-white text-[#53605a] hover:bg-[#eef5ef] hover:text-[#2f6b4f]"
-                        }
-                      />
-                    </PaginationItem>
-
-                    {Array.from({ length: Math.min(5, lastPage) }, (_, i) => {
-                      let pageNumber;
-                      if (lastPage <= 5) {
-                        pageNumber = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNumber = i + 1;
-                      } else if (currentPage >= lastPage - 2) {
-                        pageNumber = lastPage - 4 + i;
-                      } else {
-                        pageNumber = currentPage - 2 + i;
-                      }
-
-                      return (
-                        <PaginationItem key={pageNumber}>
-                          <PaginationLink
-                            href="#"
-                            onClick={(event) => {
-                              event.preventDefault();
-                              handlePageChange(pageNumber);
-                            }}
-                            isActive={currentPage === pageNumber}
-                            className={`min-w-[40px] rounded-md ${
-                              currentPage === pageNumber
-                                ? "bg-[#f38810] text-white hover:bg-[#db790c] hover:text-white"
-                                : "border-[#dce4da] bg-white text-[#53605a] hover:bg-[#eef5ef] hover:text-[#2f6b4f]"
-                            }`}
-                          >
-                            {pageNumber}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    })}
-
-                    {lastPage > 5 && currentPage < lastPage - 2 && (
-                      <>
-                        <PaginationItem>
-                          <PaginationEllipsis />
-                        </PaginationItem>
-                        <PaginationItem>
-                          <PaginationLink
-                            href="#"
-                            onClick={(event) => {
-                              event.preventDefault();
-                              handlePageChange(lastPage);
-                            }}
-                            isActive={currentPage === lastPage}
-                            className="min-w-[40px] rounded-md border-[#dce4da] bg-white text-[#53605a]"
-                          >
-                            {lastPage}
-                          </PaginationLink>
-                        </PaginationItem>
-                      </>
-                    )}
-
-                    <PaginationItem>
-                      <PaginationNext
-                        href="#"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          handlePageChange(currentPage + 1);
-                        }}
-                        className={
-                          currentPage >= lastPage
-                            ? "pointer-events-none opacity-50"
-                            : "rounded-md border-[#dce4da] bg-white text-[#53605a] hover:bg-[#eef5ef] hover:text-[#2f6b4f]"
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-
-            <div className="flex w-full flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-center text-[#7b857f] sm:text-left">
-                Показано{" "}
-                <span className="font-black text-[#223137]">
-                  {startIndex}-{endIndex}
-                </span>{" "}
-                из <span className="font-black text-[#223137]">{totalItems}</span>{" "}
-                записей
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-sm font-bold text-[#7b857f]">
-                  На странице:
-                </span>
-                <Select
-                  value={limit.toString()}
-                  onValueChange={handleLimitChange}
-                >
-                  <SelectTrigger className="h-9 w-[82px] rounded-md border-[#dce4da] bg-white font-bold text-[#223137]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+          <CardFooter className="border-t border-[#e5ece4] bg-[#fbfcfa] px-4 py-4 sm:px-5 lg:px-6">
+            <AdminPageSizeControl
+              value={limit}
+              onChange={handleLimitChange}
+              totalItems={totalItems}
+              visibleItems={visibleCount}
+              itemLabel="грузоотправителей"
+            />
           </CardFooter>
         </Card>
       </div>

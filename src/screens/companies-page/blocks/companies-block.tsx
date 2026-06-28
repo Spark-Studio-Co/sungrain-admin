@@ -19,22 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { AdminPageSizeControl } from "@/components/ui/admin-page-size-control";
 import { CrmErrorState } from "@/components/ui/crm-state";
 
 import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
@@ -47,7 +32,7 @@ import ViewCompanyDialog from "./view-company-dialog";
 export default function CompaniesBlock() {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(50);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -66,8 +51,6 @@ export default function CompaniesBlock() {
   } = useGetCompanies(page, limit);
 
   const totalItems = companiesData?.total || 0;
-  const currentPage = companiesData?.page || 1;
-  const lastPage = companiesData?.lastPage || companiesData?.totalPages || 1;
   const companies = companiesData?.data || [];
 
   const filteredCompanies =
@@ -86,16 +69,9 @@ export default function CompaniesBlock() {
     setPage(1);
   };
 
-  const handleLimitChange = (value: string) => {
-    const newLimitNum = Number(value);
-    setLimit(newLimitNum);
-
-    const maxPage = Math.ceil(totalItems / newLimitNum);
-    if (page > maxPage) {
-      setPage(Math.max(1, maxPage));
-    } else {
-      setPage(1);
-    }
+  const handleLimitChange = (value: number) => {
+    setLimit(value);
+    setPage(1);
   };
 
   const openEditDialog = (company: any) => {
@@ -111,10 +87,6 @@ export default function CompaniesBlock() {
   const openViewDialog = (company: any) => {
     setViewingCompany(company);
     setIsViewDialogOpen(true);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
   };
 
   return (
@@ -171,12 +143,12 @@ export default function CompaniesBlock() {
                 </div>
                 <div className="rounded-md border border-[#f2dfca] bg-white px-4 py-3">
                   <div className="text-[11px] font-black uppercase text-[#7b857f]">
-                    Страница
+                    Лимит
                   </div>
                   <div className="mt-1 text-lg font-black text-[#d5740b]">
-                    {currentPage}/{lastPage}
+                    {limit}
                   </div>
-                  <div className="mt-1 text-xs text-[#7b857f]">реестра</div>
+                  <div className="mt-1 text-xs text-[#7b857f]">на экране</div>
                 </div>
               </div>
             </div>
@@ -287,163 +259,13 @@ export default function CompaniesBlock() {
             />
           </CardContent>
 
-          <CardFooter className="flex flex-col gap-4 border-t border-[#e5ece4] bg-[#fbfcfa] px-4 py-4 sm:px-5 lg:px-6">
-            {lastPage > 1 && (
-              <div className="flex w-full items-center justify-between gap-3 sm:hidden">
-                <button
-                  onClick={() => {
-                    if (currentPage > 1) {
-                      handlePageChange(currentPage - 1);
-                    }
-                  }}
-                  disabled={currentPage <= 1}
-                  className="h-10 rounded-md border border-[#dce4da] bg-white px-4 text-sm font-bold text-[#53605a] shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Назад
-                </button>
-                <div className="rounded-md border border-[#dfe7de] bg-white px-3 py-2 text-sm font-black text-[#223137]">
-                  {currentPage} / {lastPage}
-                </div>
-                <button
-                  onClick={() => {
-                    if (currentPage < lastPage) {
-                      handlePageChange(currentPage + 1);
-                    }
-                  }}
-                  disabled={currentPage >= lastPage}
-                  className="h-10 rounded-md border border-[#dce4da] bg-white px-4 text-sm font-bold text-[#53605a] shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Вперед
-                </button>
-              </div>
-            )}
-
-            {lastPage > 1 && (
-              <div className="hidden w-full justify-center sm:flex">
-                <Pagination>
-                  <PaginationContent className="flex-wrap gap-1">
-                    <PaginationItem>
-                      <PaginationPrevious
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (currentPage > 1) {
-                            handlePageChange(currentPage - 1);
-                          }
-                        }}
-                        className={
-                          currentPage <= 1
-                            ? "pointer-events-none opacity-50"
-                            : "rounded-md border-[#dce4da] bg-white text-[#53605a] hover:bg-[#eef5ef] hover:text-[#2f6b4f]"
-                        }
-                      />
-                    </PaginationItem>
-
-                    {Array.from({ length: Math.min(5, lastPage) }, (_, i) => {
-                      let pageNum;
-                      if (lastPage <= 5) {
-                        pageNum = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (currentPage >= lastPage - 2) {
-                        pageNum = lastPage - 4 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
-
-                      return (
-                        <PaginationItem key={pageNum}>
-                          <PaginationLink
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handlePageChange(pageNum);
-                            }}
-                            isActive={currentPage === pageNum}
-                            className={`min-w-[40px] rounded-md ${
-                              currentPage === pageNum
-                                ? "bg-[#f38810] text-white hover:bg-[#db790c] hover:text-white"
-                                : "border-[#dce4da] bg-white text-[#53605a] hover:bg-[#eef5ef] hover:text-[#2f6b4f]"
-                            }`}
-                          >
-                            {pageNum}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    })}
-
-                    {lastPage > 5 && currentPage < lastPage - 2 && (
-                      <>
-                        <PaginationItem>
-                          <PaginationEllipsis />
-                        </PaginationItem>
-                        <PaginationItem>
-                          <PaginationLink
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handlePageChange(lastPage);
-                            }}
-                            isActive={currentPage === lastPage}
-                            className="min-w-[40px] rounded-md border-[#dce4da] bg-white text-[#53605a]"
-                          >
-                            {lastPage}
-                          </PaginationLink>
-                        </PaginationItem>
-                      </>
-                    )}
-
-                    <PaginationItem>
-                      <PaginationNext
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (currentPage < lastPage) {
-                            handlePageChange(currentPage + 1);
-                          }
-                        }}
-                        className={
-                          currentPage >= lastPage
-                            ? "pointer-events-none opacity-50"
-                            : "rounded-md border-[#dce4da] bg-white text-[#53605a] hover:bg-[#eef5ef] hover:text-[#2f6b4f]"
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-
-            <div className="flex w-full flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-center text-[#7b857f] sm:text-left">
-                Показано{" "}
-                <span className="font-black text-[#223137]">
-                  {Math.min(limit, filteredCompanies.length)}
-                </span>{" "}
-                из <span className="font-black text-[#223137]">{totalItems}</span>{" "}
-                записей
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-sm font-bold text-[#7b857f]">
-                  На странице:
-                </span>
-                <Select
-                  value={limit.toString()}
-                  onValueChange={handleLimitChange}
-                >
-                  <SelectTrigger className="h-9 w-[82px] rounded-md border-[#dce4da] bg-white font-bold text-[#223137]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+          <CardFooter className="border-t border-[#e5ece4] bg-[#fbfcfa] px-4 py-4 sm:px-5 lg:px-6">
+            <AdminPageSizeControl
+              value={limit}
+              onChange={handleLimitChange}
+              totalItems={totalItems}
+              visibleItems={filteredCompanies.length}
+            />
           </CardFooter>
         </Card>
       </div>

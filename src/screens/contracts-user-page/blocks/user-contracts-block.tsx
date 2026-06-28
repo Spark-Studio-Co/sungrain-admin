@@ -21,15 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Search, AlertCircle, ChevronRight } from "lucide-react";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { AdminPageSizeControl } from "@/components/ui/admin-page-size-control";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetUserContracts } from "@/entities/contracts/hooks/query/use-get-user-contracts.query";
@@ -39,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 export const UserContractsBlock = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
   const navigate = useNavigate();
 
   const {
@@ -65,58 +57,12 @@ export const UserContractsBlock = () => {
       );
     }
 
-    // Otherwise return all data for the current page
     return userContracts.data;
   }, [userContracts, searchTerm]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1);
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const getPageNumbers = () => {
-    const totalPages = userContracts.totalPages || 1;
-    const currentPageNum = currentPage;
-
-    // If 5 or fewer pages, show all
-    if (totalPages <= 5) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
-    }
-
-    // Otherwise, show current page, 2 before and 2 after if possible
-    const pages = [];
-
-    // Always include first page
-    pages.push(1);
-
-    // Add ellipsis if needed
-    if (currentPageNum > 3) {
-      pages.push(-1); // -1 represents ellipsis
-    }
-
-    // Add pages around current page
-    const startPage = Math.max(2, currentPageNum - 1);
-    const endPage = Math.min(totalPages - 1, currentPageNum + 1);
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-
-    // Add ellipsis if needed
-    if (currentPageNum < totalPages - 2) {
-      pages.push(-2); // -2 represents ellipsis
-    }
-
-    // Always include last page
-    if (totalPages > 1) {
-      pages.push(totalPages);
-    }
-
-    return pages;
   };
 
   const handleRowClick = (contract: any) => {
@@ -284,68 +230,18 @@ export const UserContractsBlock = () => {
               </TableBody>
             </Table>
           </div>
-          <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-muted-foreground mb-4 sm:mb-0">
-              Всего контрактов: {isLoading ? "..." : userContracts.total || 0}
-            </div>
-            {!isLoading && userContracts.totalPages > 1 && (
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (currentPage > 1) {
-                          handlePageChange(currentPage - 1);
-                        }
-                      }}
-                      className={
-                        currentPage === 1
-                          ? "pointer-events-none opacity-50"
-                          : ""
-                      }
-                    />
-                  </PaginationItem>
-
-                  {getPageNumbers().map((pageNum, index) => (
-                    <PaginationItem key={index}>
-                      {pageNum < 0 ? (
-                        <PaginationEllipsis />
-                      ) : (
-                        <PaginationLink
-                          href="#"
-                          isActive={pageNum === currentPage}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handlePageChange(pageNum);
-                          }}
-                        >
-                          {pageNum}
-                        </PaginationLink>
-                      )}
-                    </PaginationItem>
-                  ))}
-
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (currentPage < userContracts.totalPages || 1) {
-                          handlePageChange(currentPage + 1);
-                        }
-                      }}
-                      className={
-                        currentPage === (userContracts.totalPages || 1)
-                          ? "pointer-events-none opacity-50"
-                          : ""
-                      }
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            )}
+          <div className="mt-4 border-t border-[#edf1eb] pt-4">
+            <AdminPageSizeControl
+              value={itemsPerPage}
+              onChange={(nextLimit) => {
+                setItemsPerPage(nextLimit);
+                setCurrentPage(1);
+              }}
+              totalItems={userContracts.total || 0}
+              visibleItems={contractsToDisplay.length}
+              itemLabel="контрактов"
+              isLoading={isLoading}
+            />
           </div>
         </CardContent>
       </Card>

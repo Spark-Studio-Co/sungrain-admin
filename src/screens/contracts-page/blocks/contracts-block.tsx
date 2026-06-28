@@ -48,17 +48,9 @@ import {
   Loader2,
   RotateCcw,
 } from "lucide-react";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AdminPageSizeControl } from "@/components/ui/admin-page-size-control";
 import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contracts.query";
 import { useContractDialogStore } from "@/entities/contracts/model/use-contract-dialog";
 import { AddContractDialog } from "@/entities/contracts/ui/add-contract-popup";
@@ -311,7 +303,7 @@ export const ContractsBlock = () => {
     deserialize: deserializeContractsSearch,
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
   const navigate = useNavigate();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contractToDelete, setContractToDelete] = useState<any>(null);
@@ -401,7 +393,6 @@ export const ContractsBlock = () => {
     : isUserContractsLoading;
   const isDataError = isAdmin ? isAllContractsError : isUserContractsError;
   const dataError = isAdmin ? allContractsError : userContractsError;
-  const totalPages = isAdmin ? contracts.totalPages : userContracts.totalPages;
   const totalItems = isAdmin ? contracts.total : userContracts.total;
   const isEditSaving = isUpdating || isUploadingFiles || isDeletingFiles;
   const editSectionClass =
@@ -617,10 +608,6 @@ export const ContractsBlock = () => {
     return count;
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
   const handleExportPDF = async () => {
     try {
       await downloadPDF();
@@ -663,47 +650,6 @@ export const ContractsBlock = () => {
         },
       });
     }
-  };
-
-  const getPageNumbers = () => {
-    const totalPagesCount = totalPages || 1;
-    const currentPageNum = currentPage;
-
-    // If 5 or fewer pages, show all
-    if (totalPagesCount <= 5) {
-      return Array.from({ length: totalPagesCount }, (_, i) => i + 1);
-    }
-
-    // Otherwise, show current page, 2 before and 2 after if possible
-    const pages = [];
-
-    // Always include first page
-    pages.push(1);
-
-    // Add ellipsis if needed
-    if (currentPageNum > 3) {
-      pages.push(-1); // -1 represents ellipsis
-    }
-
-    // Add pages around current page
-    const startPage = Math.max(2, currentPageNum - 1);
-    const endPage = Math.min(totalPagesCount - 1, currentPageNum + 1);
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-
-    // Add ellipsis if needed
-    if (currentPageNum < totalPagesCount - 2) {
-      pages.push(-2); // -2 represents ellipsis
-    }
-
-    // Always include last page
-    if (totalPagesCount > 1) {
-      pages.push(totalPagesCount);
-    }
-
-    return pages;
   };
 
   const handleRowClick = (contract: any) => {
@@ -1763,164 +1709,31 @@ export const ContractsBlock = () => {
               </Card>
             )}
           </div>
-          {/* Add this to the "mt-4 flex flex-col sm:flex-row" div after the table (around line 517) */}
-          {/* Replace the existing div with info about total contracts with this: */}
-          {/* Mobile Pagination Controls */}
-          {!isDataLoading && totalPages > 1 && (
-            <div className="mt-4 sm:hidden flex items-center justify-between">
-              {/* Previous Button */}
-              <button
-                onClick={() => {
-                  if (currentPage > 1) {
-                    handlePageChange(currentPage - 1);
-                  }
-                }}
-                disabled={currentPage <= 1}
-                className="flex items-center px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Назад
-              </button>
-
-              {/* Page info */}
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">
-                  {currentPage} из {totalPages || 1}
-                </span>
+          <div className="mt-4 flex flex-col gap-3 border-t border-[#edf1eb] pt-4">
+            {getActiveFilterCount() > 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-[#7b857f] sm:justify-start">
+                <span>Отфильтровано: {filteredContracts.length}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => clearFilters({ includeSearch: true })}
+                  className="h-7 px-2 text-xs"
+                >
+                  <X className="mr-1 h-3 w-3" /> Сбросить фильтры
+                </Button>
               </div>
-
-              {/* Next Button */}
-              <button
-                onClick={() => {
-                  if (currentPage < (totalPages || 1)) {
-                    handlePageChange(currentPage + 1);
-                  }
-                }}
-                disabled={currentPage >= (totalPages || 1)}
-                className="flex items-center px-3 py-2 text-sm font-medium text-muted-foreground bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Вперёд
-              </button>
-            </div>
-          )}
-
-          {/* Desktop Pagination and Info */}
-          <div className="mt-4 hidden sm:flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="text-sm text-muted-foreground flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2">
-                Всего контрактов:
-                {isDataLoading ? (
-                  <Skeleton className="h-4 w-8 rounded-md" />
-                ) : (
-                  totalItems || 0
-                )}
-                {!isAdmin && " (только ваши контракты)"}
-              </span>
-
-              {/* Show active filters summary */}
-              {getActiveFilterCount() > 0 && (
-                <>
-                  <Separator orientation="vertical" className="h-4" />
-                  <span>Отфильтровано: {filteredContracts.length}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => clearFilters({ includeSearch: true })}
-                    className="h-6 px-2 text-xs"
-                  >
-                    <X className="h-3 w-3 mr-1" /> Сбросить фильтры
-                  </Button>
-                </>
-              )}
-            </div>
-
-            {!isDataLoading && totalPages > 1 && (
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (currentPage > 1) {
-                          handlePageChange(currentPage - 1);
-                        }
-                      }}
-                      className={
-                        currentPage === 1
-                          ? "pointer-events-none opacity-50"
-                          : ""
-                      }
-                    />
-                  </PaginationItem>
-
-                  {getPageNumbers().map((pageNum, index) => (
-                    <PaginationItem key={index}>
-                      {pageNum < 0 ? (
-                        <PaginationEllipsis />
-                      ) : (
-                        <PaginationLink
-                          href="#"
-                          isActive={pageNum === currentPage}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handlePageChange(pageNum);
-                          }}
-                        >
-                          {pageNum}
-                        </PaginationLink>
-                      )}
-                    </PaginationItem>
-                  ))}
-
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (currentPage < totalPages || 1) {
-                          handlePageChange(currentPage + 1);
-                        }
-                      }}
-                      className={
-                        currentPage === (totalPages || 1)
-                          ? "pointer-events-none opacity-50"
-                          : ""
-                      }
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
             )}
-          </div>
-
-          {/* Mobile Info */}
-          <div className="mt-4 sm:hidden text-center">
-            <div className="text-xs text-muted-foreground">
-              <span className="inline-flex items-center justify-center gap-2">
-                Всего:
-                {isDataLoading ? (
-                  <Skeleton className="h-3 w-7 rounded-md" />
-                ) : (
-                  totalItems || 0
-                )}
-                контрактов
-              </span>
-              {!isAdmin && " (ваши)"}
-              {getActiveFilterCount() > 0 && (
-                <>
-                  {" | "}
-                  Отфильтровано: {filteredContracts.length}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => clearFilters({ includeSearch: true })}
-                    className="h-6 px-2 text-xs ml-2"
-                  >
-                    <X className="h-3 w-3 mr-1" /> Сбросить
-                  </Button>
-                </>
-              )}
-            </div>
+            <AdminPageSizeControl
+              value={itemsPerPage}
+              onChange={(nextLimit) => {
+                setItemsPerPage(nextLimit);
+                setCurrentPage(1);
+              }}
+              totalItems={totalItems || 0}
+              visibleItems={safeVisibleContracts.length}
+              itemLabel="контрактов"
+              isLoading={isDataLoading}
+            />
           </div>
         </CardContent>
       </Card>
