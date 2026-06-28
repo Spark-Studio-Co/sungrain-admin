@@ -42,6 +42,7 @@ import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contra
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { useMemo } from "react";
+import { getContractOpsMeta } from "@/shared/contracts/contract-ops";
 import {
   BarChart,
   Bar,
@@ -132,17 +133,11 @@ export const DashboardBlock = () => {
     if (!contractsData || !contractsData.data) return [];
 
     return contractsData.data.map((contract: any) => {
-      // Calculate shipped volume from applications
-      const shippedVolume =
-        contract.applications?.reduce(
-          (sum: number, app: any) => sum + (Number(app.volume) || 0),
-          0
-        ) || 0;
+      const opsMeta = getContractOpsMeta(contract);
+      const shippedVolume = opsMeta.shippedVolume;
 
       // Calculate fulfillment percentage
-      const fulfillmentPercentage = contract.total_volume
-        ? Math.round((shippedVolume / contract.total_volume) * 100)
-        : 0;
+      const fulfillmentPercentage = opsMeta.progress;
 
       // Calculate average price per ton from applications
       const totalValue =
@@ -160,7 +155,7 @@ export const DashboardBlock = () => {
           : 0;
 
       // Calculate wagon efficiency
-      const totalWagons = contract.wagons?.length || 0;
+      const totalWagons = opsMeta.wagonsCount;
       const avgVolumePerWagon =
         totalWagons > 0
           ? Math.round((shippedVolume / totalWagons) * 100) / 100
