@@ -6,7 +6,7 @@ describe("wagon details application relation", () => {
   const source = readFileSync(resolve(__dirname, "wagon-details.tsx"), "utf8");
 
   it("shows which application every wagon row belongs to", () => {
-    expect(source).toContain("const applicationLabel");
+    expect(source).toContain("applicationLabel: resolveWagonApplicationLabel");
     expect(source).toContain("Приложение строки вагона");
     expect(source).toContain("{applicationLabel}");
     expect(source).toContain("К какому приложению относится вагон");
@@ -14,8 +14,10 @@ describe("wagon details application relation", () => {
 
   it("renders one flat wagon registry instead of splitting rows by application accordions", () => {
     expect(source).toContain("filteredWagonRows");
-    expect(source).toContain("flatMap");
+    expect(source).toContain("resolveWagonApplicationLabel");
     expect(source).toContain("Единый список всех вагонов");
+    expect(source).not.toContain("wagonsByApplication");
+    expect(source).not.toContain("group.wagons");
     expect(source).not.toContain("<Accordion");
     expect(source).not.toContain("<AccordionTrigger");
   });

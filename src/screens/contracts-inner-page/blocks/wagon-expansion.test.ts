@@ -1,47 +1,22 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  areAllVisibleWagonGroupsExpanded,
-  getVisibleApplicationIds,
-  getVisibleWagonExpansionState,
-} from "./wagon-expansion";
-
-const visibleGroups = [
-  {
-    application: { id: 101, name: "Февраль" },
-    wagons: [{ id: 1 }, { wagon_id: 2 }],
-  },
-  {
-    application: { id: "none", name: "Без заявки" },
-    wagons: [{ id: "wagon-3" }],
-  },
-];
+import { getWagonExpansionId } from "./wagon-expansion";
 
 describe("wagon expansion helpers", () => {
-  it("builds expansion state for every visible application and wagon", () => {
-    expect(getVisibleApplicationIds(visibleGroups)).toEqual(["101", "none"]);
-    expect(getVisibleWagonExpansionState(visibleGroups)).toEqual({
-      "1": true,
-      "2": true,
-      "wagon-3": true,
-    });
+  it("builds expansion ids from wagon rows only", () => {
+    expect(getWagonExpansionId({ id: 1 })).toBe("1");
+    expect(getWagonExpansionId({ wagon_id: 2 })).toBe("2");
+    expect(getWagonExpansionId({ wagon: { id: "inner" } })).toBe("inner");
+    expect(getWagonExpansionId({ number: "95005757" })).toBe("95005757");
   });
 
-  it("requires both application accordions and wagon rows to be expanded", () => {
-    expect(
-      areAllVisibleWagonGroupsExpanded(
-        visibleGroups,
-        { "1": true, "2": true, "wagon-3": true },
-        ["101", "none"]
-      )
-    ).toBe(true);
+  it("does not expose application-group expansion helpers anymore", async () => {
+    const wagonExpansionModule = await import("./wagon-expansion");
 
-    expect(
-      areAllVisibleWagonGroupsExpanded(
-        visibleGroups,
-        { "1": true, "2": true, "wagon-3": true },
-        ["101"]
-      )
-    ).toBe(false);
+    expect(wagonExpansionModule).not.toHaveProperty("getVisibleApplicationIds");
+    expect(wagonExpansionModule).not.toHaveProperty("getVisibleWagonExpansionState");
+    expect(wagonExpansionModule).not.toHaveProperty(
+      "areAllVisibleWagonGroupsExpanded"
+    );
   });
 });

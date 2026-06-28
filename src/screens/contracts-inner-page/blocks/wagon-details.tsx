@@ -124,6 +124,75 @@ const getWagonData = (wagon: any) => {
   };
 };
 
+const getWagonApplicationId = (wagon: any) =>
+  wagon?.applicationId ??
+  wagon?.application_id ??
+  wagon?.application?.id ??
+  wagon?.application?.uuid ??
+  wagon?.application?.id_application;
+
+const getApplicationDisplayLabel = (
+  application: any,
+  index?: number,
+  applicationId?: unknown
+) => {
+  const explicitName =
+    application?.name ||
+    application?.title ||
+    application?.number ||
+    application?.application_number;
+
+  if (explicitName) return String(explicitName);
+  if (typeof index === "number") return `Приложение №${index + 1}`;
+  if (applicationId !== null && applicationId !== undefined && applicationId !== "") {
+    return `Приложение ${applicationId}`;
+  }
+
+  return "Без приложения";
+};
+
+const buildApplicationLookup = (applications: any[] = []) => {
+  const lookup: Record<string, string> = {};
+
+  applications.forEach((application, index) => {
+    const label = getApplicationDisplayLabel(application, index);
+
+    [
+      application?.id,
+      application?.uuid,
+      application?._id,
+      application?.id_application,
+    ].forEach((id) => {
+      if (id !== null && id !== undefined && id !== "") {
+        lookup[String(id)] = label;
+      }
+    });
+  });
+
+  return lookup;
+};
+
+const resolveWagonApplicationLabel = (
+  wagon: any,
+  applicationLookup: Record<string, string>
+) => {
+  const applicationId = getWagonApplicationId(wagon);
+
+  if (
+    applicationId !== null &&
+    applicationId !== undefined &&
+    applicationLookup[String(applicationId)]
+  ) {
+    return applicationLookup[String(applicationId)];
+  }
+
+  if (wagon?.application) {
+    return getApplicationDisplayLabel(wagon.application, undefined, applicationId);
+  }
+
+  return getApplicationDisplayLabel(null, undefined, applicationId);
+};
+
 export const WagonDetails = ({
   wagons = [],
   handleFileDownload,
@@ -136,62 +205,21 @@ export const WagonDetails = ({
     "newest" | "oldest" | null
   >(null);
 
-  const wagonsByApplication = useMemo(() => {
-    const applicationMap: Record<string, any> = {};
-
-    contractData?.applications?.forEach((app: any) => {
-      [app.id, app.uuid, app._id].forEach((id) => {
-        if (id !== null && id !== undefined && id !== "") {
-          applicationMap[String(id)] = app;
-        }
-      });
-    });
-
-    const groupedWagons: Record<string, { application: any; wagons: any[] }> =
-      {};
-
-    wagons.forEach((wagon) => {
-      const applicationId =
-        wagon.applicationId ??
-        wagon.application_id ??
-        wagon.application?.id ??
-        wagon.application?.uuid;
-      const application =
-        (applicationId !== null && applicationId !== undefined
-          ? applicationMap[String(applicationId)]
-          : null) || wagon.application;
-      const groupId =
-        application?.id ?? application?.uuid ?? applicationId ?? "none";
-      const applicationName =
-        application?.name ||
-        (applicationId ? `Приложение ${applicationId}` : "Без приложения");
-
-      if (!groupedWagons[String(groupId)]) {
-        groupedWagons[String(groupId)] = {
-          application: { id: groupId, name: applicationName },
-          wagons: [],
-        };
-      }
-
-      groupedWagons[String(groupId)].wagons.push(wagon);
-    });
-
-    return Object.values(groupedWagons);
-  }, [wagons, contractData]);
+  const applicationLookup = useMemo(
+    () => buildApplicationLookup(contractData?.applications || []),
+    [contractData]
+  );
 
   const rawWagonRows = useMemo(
     () =>
-      wagonsByApplication.flatMap((group) => {
-        const applicationId = String(group.application?.id ?? "none");
-        const applicationLabel =
-          group.application?.name || `Приложение ${applicationId}`;
-
-        return group.wagons.map((wagon: any) => ({
+      wagons.map((wagon: any) => ({
+        wagon,
+        applicationLabel: resolveWagonApplicationLabel(
           wagon,
-          applicationLabel,
-        }));
-      }),
-    [wagonsByApplication]
+          applicationLookup
+        ),
+      })),
+    [wagons, applicationLookup]
   );
 
   // Единый список всех вагонов: приложение показываем внутри строки, без разбиения на группы.
