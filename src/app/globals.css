@@ -220,6 +220,21 @@
     }
   }
 
+  [data-radix-popper-content-wrapper] {
+    z-index: 80 !important;
+    pointer-events: auto !important;
+  }
+
+  [data-slot="popover-content"] {
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  [data-slot="popover-content"] [role="gridcell"] button {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
   .crm-page-shell {
     width: 100%;
     min-width: 0;

@@ -1,7 +1,38 @@
+"use client"
+
 import * as React from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
 
 import { cn } from "@/lib/utils"
+
+type PopoverPortalContainer =
+  React.ComponentProps<typeof PopoverPrimitive.Portal>["container"]
+
+type PopoverContentProps = React.ComponentProps<
+  typeof PopoverPrimitive.Content
+> & {
+  container?: PopoverPortalContainer
+}
+
+function getActiveDialogContainer() {
+  if (typeof document === "undefined") {
+    return undefined
+  }
+
+  const activeDialog = document.activeElement?.closest<HTMLElement>(
+    '[data-slot="dialog-content"][data-state="open"]'
+  )
+
+  if (activeDialog) {
+    return activeDialog
+  }
+
+  const openDialogs = document.querySelectorAll<HTMLElement>(
+    '[data-slot="dialog-content"][data-state="open"]'
+  )
+
+  return openDialogs.length ? openDialogs[openDialogs.length - 1] : undefined
+}
 
 function Popover({
   ...props
@@ -18,17 +49,26 @@ function PopoverTrigger({
 function PopoverContent({
   className,
   align = "center",
+  container,
   sideOffset = 4,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+}: PopoverContentProps) {
+  const [portalContainer, setPortalContainer] = React.useState<
+    PopoverPortalContainer | undefined
+  >(() => container ?? getActiveDialogContainer())
+
+  React.useLayoutEffect(() => {
+    setPortalContainer(container ?? getActiveDialogContainer())
+  }, [container])
+
   return (
-    <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Portal container={portalContainer}>
       <PopoverPrimitive.Content
         data-slot="popover-content"
         align={align}
         sideOffset={sideOffset}
         className={cn(
-          "crm-scrollbar bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-md border border-[#dfe7de] p-4 shadow-[0_18px_44px_rgba(34,49,55,0.14)] outline-hidden",
+          "crm-scrollbar pointer-events-auto bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-[80] w-72 origin-(--radix-popover-content-transform-origin) rounded-md border border-[#dfe7de] p-4 shadow-[0_18px_44px_rgba(34,49,55,0.14)] outline-hidden",
           className
         )}
         {...props}
