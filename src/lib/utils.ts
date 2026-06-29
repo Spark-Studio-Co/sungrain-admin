@@ -6,9 +6,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Форматирует число с разделителями тысяч (точками)
+ * Форматирует число с разделителями тысяч (пробелами)
  * @param value - число для форматирования
- * @returns отформатированная строка, например: "1.234.567"
+ * @returns отформатированная строка, например: "1 234 567"
  */
 export function formatNumber(
   value: number | string | null | undefined
@@ -28,7 +28,7 @@ export function formatNumber(
 
   const rounded = Math.round((num + Number.EPSILON) * 100) / 100;
   const [integerPart, fractionalPart] = rounded.toFixed(2).split(".");
-  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   const formattedFraction = fractionalPart.replace(/0+$/, "");
 
   return formattedFraction

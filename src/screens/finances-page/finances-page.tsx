@@ -300,7 +300,7 @@ const invoices: FinanceInvoice[] = [
       {
         date: "07.03.2024",
         title: "Частичная оплата",
-        description: "Поступил первый транш на 520.000 ₸.",
+        description: "Поступил первый транш на 520 000 ₸.",
         tone: "green",
       },
     ],
