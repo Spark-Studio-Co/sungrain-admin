@@ -49,10 +49,27 @@ describe("contract operational metadata", () => {
       ],
     });
 
-    expect(meta.shippedVolume).toBe(1180);
+    expect(meta.shippedVolume).toBe(1200);
+    expect(meta.documentedShippedVolume).toBe(1200);
+    expect(meta.actualShippedVolume).toBe(1180);
     expect(meta.progress).toBe(24);
-    expect(meta.remainingVolume).toBe(3820);
+    expect(meta.remainingVolume).toBe(3800);
     expect(meta.wagonsCount).toBe(3);
+  });
+
+  it("uses document weight for volume usage while keeping actual weight separate", () => {
+    const meta = getContractOpsMeta(baseContract, {
+      wagons: [
+        { status: "shipped", capacity: 980, real_weight: 977.15 },
+        { status: "at_elevator", capacity: 4000, real_weight: 3990 },
+      ],
+    });
+
+    expect(meta.progress).toBe(20);
+    expect(meta.shippedVolume).toBe(980);
+    expect(meta.documentedShippedVolume).toBe(980);
+    expect(meta.actualShippedVolume).toBe(977.15);
+    expect(meta.remainingVolume).toBe(4020);
   });
 
   it("uses backend wagon weight fields for wagon detail group totals", () => {
@@ -88,7 +105,9 @@ describe("contract operational metadata", () => {
 
     expect(stats.totalCapacity).toBe(5000);
     expect(stats.totalRealWeight).toBe(1000);
-    expect(stats.utilizationPercentage).toBe(20);
+    expect(stats.totalShippedDocumentWeight).toBe(5000);
+    expect(stats.totalShippedActualWeight).toBe(1000);
+    expect(stats.utilizationPercentage).toBe(100);
   });
 
   it("uses application volume as wagon group target volume", () => {
@@ -105,6 +124,8 @@ describe("contract operational metadata", () => {
     expect(stats.wagonCount).toBe(7);
     expect(stats.totalRealWeight).toBe(490);
     expect(stats.totalCapacity).toBe(490);
+    expect(stats.totalShippedWeight).toBe(490);
+    expect(stats.totalShippedActualWeight).toBe(490);
     expect(stats.totalTargetVolume).toBe(980);
     expect(stats.utilizationPercentage).toBe(50);
   });

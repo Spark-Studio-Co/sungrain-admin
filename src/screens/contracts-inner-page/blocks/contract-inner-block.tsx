@@ -130,7 +130,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   const volumeStats = useMemo(() => {
     return {
       totalVolume: contractOps.totalVolume,
-      usedVolume: contractOps.shippedVolume,
+      documentedShippedVolume: contractOps.documentedShippedVolume,
+      actualShippedVolume: contractOps.actualShippedVolume,
       percentUsed: contractOps.progress,
       remainingVolume: contractOps.remainingVolume,
     };
@@ -391,8 +392,9 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                   <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold text-[#7b857f]">
                     <span>
                       {formatNumber(contractOps.shippedVolume)} /{" "}
-                      {formatNumber(contractOps.totalVolume)} т
+                      {formatNumber(contractOps.totalVolume)} т по документам
                     </span>
+                    <span>факт {formatNumber(contractOps.actualShippedVolume)} т</span>
                     <span>остаток {formatNumber(contractOps.remainingVolume)} т</span>
                     <span>{contractOps.route.eta}</span>
                   </div>
@@ -467,11 +469,11 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                     Использование объема
                   </CardTitle>
                   <CardDescription className="mt-1 text-sm text-[#6f7774]">
-                    План, отгрузка и остаток по текущему контракту
+                    План, вес по документам, фактический вес и остаток
                   </CardDescription>
                 </div>
               </div>
-              <div className="grid gap-2 sm:grid-cols-3 xl:min-w-[620px]">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:min-w-[780px]">
                 <div className="rounded-md border border-[#dfe7de] bg-white px-4 py-3">
                   <div className="text-[11px] font-black uppercase text-[#7b857f]">
                     Всего
@@ -482,10 +484,18 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                 </div>
                 <div className="rounded-md border border-[#dfe7de] bg-white px-4 py-3">
                   <div className="text-[11px] font-black uppercase text-[#7b857f]">
-                    Отгружено
+                    По документам
                   </div>
                   <div className="mt-1 text-lg font-black text-[#2f6b4f]">
-                    {formatNumber(volumeStats.usedVolume)} т
+                    {formatNumber(volumeStats.documentedShippedVolume)} т
+                  </div>
+                </div>
+                <div className="rounded-md border border-[#dfe7de] bg-white px-4 py-3">
+                  <div className="text-[11px] font-black uppercase text-[#7b857f]">
+                    Фактически
+                  </div>
+                  <div className="mt-1 text-lg font-black text-[#223137]">
+                    {formatNumber(volumeStats.actualShippedVolume)} т
                   </div>
                 </div>
                 <div className="rounded-md border border-[#f2dfca] bg-white px-4 py-3">
@@ -504,7 +514,9 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
               <div className="flex flex-col gap-2 text-sm font-semibold text-[#53605a] sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-[#2f6b4f]" />
-                  <span>{volumeStats.percentUsed.toFixed(1)}% использовано</span>
+                  <span>
+                    {volumeStats.percentUsed.toFixed(1)}% использовано по документам
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-[#f38810]" />

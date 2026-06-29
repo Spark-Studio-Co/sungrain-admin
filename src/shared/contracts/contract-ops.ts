@@ -211,12 +211,19 @@ export const getWagonActualWeightValue = (wagon: any) =>
     wagon?.wagon?.realWeight
   );
 
-export const getWagonShippedWeightValue = (wagon: any) => {
+export const getWagonShippedDocumentWeightValue = (wagon: any) => {
   if (!isContractWagonShipped(wagon)) return 0;
 
-  const actualWeight = getWagonActualWeightValue(wagon);
-  return actualWeight > 0 ? actualWeight : getWagonCapacityValue(wagon);
+  return getWagonCapacityValue(wagon);
 };
+
+export const getWagonShippedActualWeightValue = (wagon: any) => {
+  if (!isContractWagonShipped(wagon)) return 0;
+
+  return getWagonActualWeightValue(wagon);
+};
+
+export const getWagonShippedWeightValue = getWagonShippedDocumentWeightValue;
 
 export const getWagonGroupStats = (wagons: any[]) => {
   const wagonItems = getArray(wagons);
@@ -225,15 +232,21 @@ export const getWagonGroupStats = (wagons: any[]) => {
     0
   );
   const totalShippedWeight = wagonItems.reduce(
-    (sum: number, wagon: any) => sum + getWagonShippedWeightValue(wagon),
+    (sum: number, wagon: any) => sum + getWagonShippedDocumentWeightValue(wagon),
+    0
+  );
+  const totalShippedActualWeight = wagonItems.reduce(
+    (sum: number, wagon: any) => sum + getWagonShippedActualWeightValue(wagon),
     0
   );
 
   return {
     wagonCount: wagonItems.length,
     totalCapacity,
-    totalRealWeight: totalShippedWeight,
+    totalRealWeight: totalShippedActualWeight,
     totalShippedWeight,
+    totalShippedDocumentWeight: totalShippedWeight,
+    totalShippedActualWeight,
     utilizationPercentage:
       totalCapacity > 0
         ? clamp((totalShippedWeight / totalCapacity) * 100, 0, 100)
@@ -390,11 +403,15 @@ export const getContractOpsMeta = (
   const files = getContractFiles(contract);
   const invoices = getContractInvoices(contract);
   const payments = getContractPayments(contract);
-  const shippedFromWagons = wagons.reduce(
-    (sum, wagon) => sum + getWagonShippedWeightValue(wagon),
+  const documentedShippedVolume = wagons.reduce(
+    (sum, wagon) => sum + getWagonShippedDocumentWeightValue(wagon),
     0
   );
-  const shippedVolume = shippedFromWagons;
+  const actualShippedVolume = wagons.reduce(
+    (sum, wagon) => sum + getWagonShippedActualWeightValue(wagon),
+    0
+  );
+  const shippedVolume = documentedShippedVolume;
   const progress =
     totalVolume > 0 ? clamp(Math.round((shippedVolume / totalVolume) * 100), 0, 100) : 0;
   const remainingVolume = Math.max(totalVolume - shippedVolume, 0);
@@ -443,6 +460,8 @@ export const getContractOpsMeta = (
     statusConfig: getContractStatusConfig(status),
     totalVolume,
     shippedVolume,
+    documentedShippedVolume,
+    actualShippedVolume,
     remainingVolume,
     progress,
     applicationsCount,

@@ -23,4 +23,12 @@ describe("contract inner block layout", () => {
     expect(source).toMatch(/handleFileDownload\(\s*document\.downloadUrl/);
     expect(source).not.toContain("document.file || document.downloadUrl");
   });
+
+  it("separates documented and actual shipped weight in volume usage", () => {
+    expect(source).toContain("documentedShippedVolume");
+    expect(source).toContain("actualShippedVolume");
+    expect(source).toContain("По документам");
+    expect(source).toContain("Фактически");
+    expect(source).toContain("использовано по документам");
+  });
 });
