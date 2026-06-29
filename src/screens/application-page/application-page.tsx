@@ -36,7 +36,7 @@ import { resolveBackendFileUrl } from "@/shared/contracts/contract-ops";
 export default function ApplicationPage() {
   const { id, application_id } = useParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("details");
+  const [activeTab, setActiveTab] = useState("documents");
   const { open } = usePopupStore("addWagon");
   const [isAdmin] = useState<boolean | null>(() => {
     const storedAdminStatus = localStorage.getItem("isAdmin");
@@ -276,79 +276,10 @@ export default function ApplicationPage() {
           </CardContent>
         </Card>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="details">Детали заявки</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="wagons">Вагоны</TabsTrigger>
             <TabsTrigger value="documents">Документы</TabsTrigger>
           </TabsList>
-          <TabsContent value="details" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Информация о заявке</CardTitle>
-                <CardDescription>
-                  Подробная информация о заявке и связанном договоре
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                        Информация о заявке
-                      </h3>
-                      <div className="bg-muted/50 p-4 rounded-md space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-sm">Дата:</span>
-                          <span>
-                            {application.created_at
-                              ? formatDate(application.created_at)
-                              : "Не указана"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">Объем:</span>
-                          <span>{formatNumber(application.volume)} тонн</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">Цена за тонну:</span>
-                          <span>
-                            {formatApplicationMoney(application.price_per_ton)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">Общая сумма:</span>
-                          <span className="font-medium text-green-600">
-                            {formatApplicationMoney(application.total_amount)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                        Информация о договоре
-                      </h3>
-                      <div className="bg-muted/50 p-4 rounded-md space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-sm">Номер договора:</span>
-                          <span>
-                            {application.contract?.number || "Не указан"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">Культура:</span>
-                          <span>
-                            {application.contract?.crop || "Не указана"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="wagons" className="mt-4">
             <WagonRegistry

@@ -109,7 +109,7 @@ export const ApplicationDetail = ({
     const storedAdminStatus = localStorage.getItem("isAdmin");
     return storedAdminStatus ? JSON.parse(storedAdminStatus) : null;
   });
-  const [activeTab, setActiveTab] = useState("details");
+  const [activeTab, setActiveTab] = useState("documents");
   const { open } = usePopupStore("addWagon");
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
@@ -138,17 +138,6 @@ export const ApplicationDetail = ({
   // State for editing shipping document
   const [isEditShippingDocOpen, setIsEditShippingDocOpen] = useState(false);
   const [editingShippingDoc, setEditingShippingDoc] = useState<any>(null);
-
-  // Comments state
-  const [comments, setComments] = useState<
-    Array<{
-      id: string;
-      text: string;
-      author: string;
-      created_at: string;
-    }>
-  >([]);
-  const [newComment, setNewComment] = useState("");
 
   // State for shipping document upload dialog
   const [isCreateShippingDocOpen, setIsCreateShippingDocOpen] = useState(false);
@@ -605,22 +594,6 @@ export const ApplicationDetail = ({
     }
   };
 
-  // Handle adding a comment
-  const handleAddComment = () => {
-    if (!newComment.trim()) return;
-
-    // In a real app, you would call an API to save the comment
-    const newCommentObj = {
-      id: Date.now().toString(),
-      text: newComment,
-      author: "Текущий пользователь",
-      created_at: new Date().toISOString(),
-    };
-
-    setComments([...comments, newCommentObj]);
-    setNewComment("");
-  };
-
   // Handle wagon update
   const handleUpdateWagon = async (wagonId: string | number, data: any) => {
     try {
@@ -770,6 +743,18 @@ export const ApplicationDetail = ({
             </div>
           </div>
 
+          <div className="mb-6 rounded-md border border-[#dfe7de] bg-[#fbfcfa] p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <FileText className="h-4 w-4 text-[#2f6b4f]" />
+              <p className="text-sm font-black text-[#223137]">
+                Комментарий к заявке
+              </p>
+            </div>
+            <p className="text-sm font-semibold leading-relaxed text-[#6f7774]">
+              {application?.comment || "Не указан"}
+            </p>
+          </div>
+
           {/* Payment Progress Bar */}
           <div className="mt-4 p-4 sm:p-4 bg-white-50 rounded-lg shadow-sm border border-white-200">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-2 mb-3">
@@ -818,14 +803,7 @@ export const ApplicationDetail = ({
         </CardContent>
       </Card>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto gap-1 p-1.5 sm:p-1 bg-muted/30">
-          <TabsTrigger
-            value="details"
-            className="text-xs sm:text-sm py-3 sm:py-2.5 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm"
-          >
-            <span className="hidden sm:inline">Детали заявки</span>
-            <span className="sm:hidden">Детали</span>
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1 p-1.5 sm:p-1 bg-muted/30">
           <TabsTrigger
             value="documents"
             className="text-xs sm:text-sm py-3 sm:py-2.5 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm"
@@ -855,140 +833,6 @@ export const ApplicationDetail = ({
             <span className="sm:hidden">Счета</span>
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="details" className="mt-4 sm:mt-4">
-          <Card>
-            <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
-              <CardTitle className="text-lg sm:text-lg">
-                Информация о заявке
-              </CardTitle>
-              <CardDescription className="text-sm sm:text-sm mt-1">
-                Подробная информация о заявке и связанном договоре
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-6">
-                <div className="space-y-4 sm:space-y-4">
-                  <div>
-                    <h3 className="text-sm sm:text-sm font-semibold text-foreground mb-3">
-                      Информация о заявке
-                    </h3>
-                    <div className="bg-muted/50 p-4 sm:p-4 rounded-lg space-y-3 sm:space-y-3 border border-muted">
-                      <div className="flex justify-between items-start">
-                        <span className="text-xs sm:text-sm text-muted-foreground">
-                          Дата
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-right">
-                          {application?.created_at
-                            ? formatDate(application?.created_at)
-                            : "Не указана"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-start">
-                        <span className="text-xs sm:text-sm text-muted-foreground">
-                          Объем:
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-right">
-                          {application?.volume
-                            ? formatNumber(application.volume)
-                            : 0}{" "}
-                          <span className="hidden sm:inline">тонн</span>
-                          <span className="sm:hidden">т</span>
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-start">
-                        <span className="text-xs sm:text-sm text-muted-foreground">
-                          Культура:
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-right max-w-[60%] break-words">
-                          {application?.culture === "wheat"
-                            ? "Пшеница"
-                            : application?.culture === "barley"
-                            ? "Ячмень"
-                            : application?.culture === "corn"
-                            ? "Кукуруза"
-                            : application?.culture === "sunflower"
-                            ? "Подсолнечник"
-                            : application?.culture === "flax"
-                            ? "Лен"
-                            : application?.culture === "rapeseed"
-                            ? "Рапс"
-                            : application?.culture || "Не указана"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-start">
-                        <span className="text-xs sm:text-sm text-muted-foreground">
-                          <span className="hidden sm:inline">
-                            Цена за тонну:
-                          </span>
-                          <span className="sm:hidden">Цена:</span>
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-right">
-                          {application?.price_per_ton
-                            ? formatApplicationMoney(application.price_per_ton)
-                            : formatApplicationMoney(0)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-start">
-                        <span className="text-xs sm:text-sm text-muted-foreground">
-                          Валюта:
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium">
-                          {applicationCurrencyLabel}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-start">
-                        <span className="text-xs sm:text-sm text-muted-foreground">
-                          <span className="hidden sm:inline">Общая сумма:</span>
-                          <span className="sm:hidden">Сумма:</span>
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-right">
-                          {formatApplicationMoney(application?.total_amount || 0)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4 sm:space-y-4">
-                  <div>
-                    <h3 className="text-sm sm:text-sm font-semibold text-foreground mb-3">
-                      Информация о договоре
-                    </h3>
-                    <div className="bg-muted/50 p-4 sm:p-4 rounded-lg space-y-3 sm:space-y-3 border border-muted">
-                      <div className="flex justify-between items-start">
-                        <span className="text-xs sm:text-sm text-muted-foreground">
-                          <span className="hidden sm:inline">
-                            Номер договора:
-                          </span>
-                          <span className="sm:hidden">Номер:</span>
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-right max-w-[60%] break-words">
-                          {application?.contract?.number || "Не указан"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-start">
-                        <span className="text-xs sm:text-sm text-muted-foreground">
-                          Культура:
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-right max-w-[60%] break-words">
-                          {application?.contract?.crop || "Не указана"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-start">
-                        <span className="text-xs sm:text-sm text-muted-foreground">
-                          Комментарий:
-                        </span>
-                        <span className="text-xs sm:text-sm font-medium text-right max-w-[60%] break-words">
-                          {application?.comment || "Не указан"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
         <TabsContent value="wagons-details" className="mt-4">
           <WagonDetails
             wagons={application?.wagons}
