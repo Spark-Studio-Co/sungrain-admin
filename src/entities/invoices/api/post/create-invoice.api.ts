@@ -26,9 +26,8 @@ export const createInvoice = async (params: CreateInvoiceParams) => {
     formData.append("files", file);
   }
 
-  // Send request
   const response = await apiClient.post(
-    `/application/${applicationId}/invoice`,
+    `/application/add-invoice/${applicationId}/invoice`,
     formData,
     {
       headers: {
