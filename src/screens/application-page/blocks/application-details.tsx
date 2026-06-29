@@ -174,6 +174,9 @@ export const ApplicationDetail = ({
     ? applicationData[0]
     : applicationData;
   const applicationScopedWagons = getApplicationScopedWagons(application);
+  const currentApplicationWagonContext = application
+    ? { applications: [application] }
+    : undefined;
 
   const updateWagonMutation = useUpdateWagon();
   const deleteWagonMutation = useDeleteWagon();
@@ -839,6 +842,7 @@ export const ApplicationDetail = ({
           <WagonDetails
             wagons={applicationScopedWagons}
             handleFileDownload={handleFileDownload}
+            contractData={currentApplicationWagonContext}
           />
         </TabsContent>
         <TabsContent value="documents" className="mt-4 sm:mt-4">

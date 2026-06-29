@@ -24,4 +24,9 @@ describe("application detail tabs", () => {
     expect(source).toContain("wagons={applicationScopedWagons}");
     expect(source).not.toContain("wagons={application?.wagons");
   });
+
+  it("passes current application context to wagon details instead of showing raw database ids", () => {
+    expect(source).toContain("currentApplicationWagonContext");
+    expect(source).toContain("contractData={currentApplicationWagonContext}");
+  });
 });
