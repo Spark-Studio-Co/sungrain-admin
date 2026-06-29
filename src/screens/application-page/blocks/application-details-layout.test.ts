@@ -18,4 +18,10 @@ describe("application detail tabs", () => {
     expect(source).toContain("Комментарий к заявке");
     expect(source).toContain("application?.comment || \"Не указан\"");
   });
+
+  it("passes only current application wagons into wagon tabs", () => {
+    expect(source).toContain("getApplicationScopedWagons(application)");
+    expect(source).toContain("wagons={applicationScopedWagons}");
+    expect(source).not.toContain("wagons={application?.wagons");
+  });
 });

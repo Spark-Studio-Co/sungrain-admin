@@ -73,6 +73,7 @@ import { apiClient } from "@/shared/api/apiClient";
 import { resolveBackendFileUrl } from "@/shared/contracts/contract-ops";
 import { usePopupStore } from "@/shared/model/popup-store";
 import { format } from "date-fns";
+import { getApplicationScopedWagons } from "./application-wagons";
 import {
   ArrowLeft,
   Calendar,
@@ -172,6 +173,7 @@ export const ApplicationDetail = ({
   const application = Array.isArray(applicationData)
     ? applicationData[0]
     : applicationData;
+  const applicationScopedWagons = getApplicationScopedWagons(application);
 
   const updateWagonMutation = useUpdateWagon();
   const deleteWagonMutation = useDeleteWagon();
@@ -835,7 +837,7 @@ export const ApplicationDetail = ({
         </TabsList>
         <TabsContent value="wagons-details" className="mt-4">
           <WagonDetails
-            wagons={application?.wagons}
+            wagons={applicationScopedWagons}
             handleFileDownload={handleFileDownload}
           />
         </TabsContent>
@@ -982,7 +984,7 @@ export const ApplicationDetail = ({
         </TabsContent>
         <TabsContent value="wagons" className="mt-4">
           <WagonRegistry
-            wagons={application?.wagons || []}
+            wagons={applicationScopedWagons}
             onAddWagon={open}
             onUpdateWagon={handleUpdateWagon}
             onDeleteWagon={handleDeleteWagon}
