@@ -41,6 +41,21 @@ export type FinanceInvoice = {
   details?: Record<string, string>;
 };
 
+export type FinanceCurrencySummary = {
+  currency: string;
+  total: number;
+  paid: number;
+  pending: number;
+  overdue: number;
+  balance: number;
+  invoiceCount: number;
+  paidCount: number;
+  pendingCount: number;
+  partialCount: number;
+  overdueCount: number;
+  openCount: number;
+};
+
 type BackendInvoiceContext = {
   invoice: Record<string, any>;
   application?: Record<string, any>;
@@ -70,6 +85,81 @@ export const formatBackendDate = (value: unknown) => {
   }
 
   return format(date, "dd.MM.yyyy");
+};
+
+const normalizeFinanceCurrency = (currency: unknown) => {
+  const normalized = pickString(currency, "USD").toUpperCase();
+  return normalized === "₸" ? "KZT" : normalized;
+};
+
+export const getFinanceInvoicePaidAmount = (invoice: FinanceInvoice) => {
+  if (invoice.status === "paid") {
+    return invoice.amount;
+  }
+
+  return Math.min(invoice.amount, Math.max(invoice.paidAmount || 0, 0));
+};
+
+export const getFinanceInvoiceBalance = (invoice: FinanceInvoice) =>
+  Math.max(invoice.amount - getFinanceInvoicePaidAmount(invoice), 0);
+
+export const buildFinanceCurrencySummaries = (
+  invoices: FinanceInvoice[]
+): FinanceCurrencySummary[] => {
+  const summaries = new Map<string, FinanceCurrencySummary>();
+
+  invoices.forEach((invoice) => {
+    const currency = normalizeFinanceCurrency(invoice.currency);
+    const current =
+      summaries.get(currency) ||
+      ({
+        currency,
+        total: 0,
+        paid: 0,
+        pending: 0,
+        overdue: 0,
+        balance: 0,
+        invoiceCount: 0,
+        paidCount: 0,
+        pendingCount: 0,
+        partialCount: 0,
+        overdueCount: 0,
+        openCount: 0,
+      } satisfies FinanceCurrencySummary);
+
+    const paid = getFinanceInvoicePaidAmount(invoice);
+    const balance = getFinanceInvoiceBalance(invoice);
+
+    current.total += invoice.amount;
+    current.paid += paid;
+    current.balance += balance;
+    current.invoiceCount += 1;
+
+    if (invoice.status === "paid") {
+      current.paidCount += 1;
+    } else {
+      current.openCount += 1;
+    }
+
+    if (invoice.status === "pending") {
+      current.pending += balance;
+      current.pendingCount += 1;
+    }
+
+    if (invoice.status === "partial") {
+      current.pending += balance;
+      current.partialCount += 1;
+    }
+
+    if (invoice.status === "overdue") {
+      current.overdue += balance;
+      current.overdueCount += 1;
+    }
+
+    summaries.set(currency, current);
+  });
+
+  return Array.from(summaries.values());
 };
 
 const pickString = (...values: unknown[]) => {

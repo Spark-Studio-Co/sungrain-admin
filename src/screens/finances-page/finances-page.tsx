@@ -80,9 +80,13 @@ import { getInvoices } from "@/entities/invoices/api/get/get-invoices.api";
 import { useCreateInvoice } from "@/entities/invoices/hooks/mutations/use-create-invoice.mutation";
 import { useUpdateInvoice } from "@/entities/invoices/hooks/mutations/use-update-invoice.mutation";
 import {
+  buildFinanceCurrencySummaries,
+  getFinanceInvoiceBalance,
+  getFinanceInvoicePaidAmount,
   mapBackendInvoiceToFinanceInvoice,
   toEntityArray,
   type FinanceDocument,
+  type FinanceCurrencySummary,
   type FinanceHistoryItem,
   type FinanceInvoice,
   type InvoiceStatus,
@@ -1030,11 +1034,8 @@ export default function FinancesPage() {
     }
   };
 
-  const getInvoicePaidAmount = (invoice: FinanceInvoice) =>
-    Math.min(invoice.amount, invoice.paidAmount || 0);
-
-  const getInvoiceBalance = (invoice: FinanceInvoice) =>
-    Math.max(invoice.amount - getInvoicePaidAmount(invoice), 0);
+  const getInvoicePaidAmount = getFinanceInvoicePaidAmount;
+  const getInvoiceBalance = getFinanceInvoiceBalance;
 
   const getInvoiceProgress = (invoice: FinanceInvoice) => {
     if (!invoice.amount) {
@@ -1065,35 +1066,89 @@ export default function FinancesPage() {
     return nextPaidAmount > 0 ? "partial" : "pending";
   };
 
+  const financeSummaryRows = useMemo<FinanceCurrencySummary[]>(() => {
+    const summaries = buildFinanceCurrencySummaries(allInvoices);
+
+    if (summaries.length) {
+      return summaries;
+    }
+
+    return [
+      {
+        currency: "USD",
+        total: 0,
+        paid: 0,
+        pending: 0,
+        overdue: 0,
+        balance: 0,
+        invoiceCount: 0,
+        paidCount: 0,
+        pendingCount: 0,
+        partialCount: 0,
+        overdueCount: 0,
+        openCount: 0,
+      },
+    ];
+  }, [allInvoices]);
+  const formatFinanceSummary = (
+    selector: (summary: FinanceCurrencySummary) => number
+  ) =>
+    financeSummaryRows
+      .map((summary) => formatMoney(selector(summary), summary.currency))
+      .join(" / ");
   const invoiceStats = {
-    total: allInvoices.reduce((sum, invoice) => sum + invoice.amount, 0),
-    paid: allInvoices.reduce(
-      (sum, invoice) => sum + getInvoicePaidAmount(invoice),
-      0
-    ),
-    pending: allInvoices
-      .filter((invoice) => invoice.status === "pending" || invoice.status === "partial")
-      .reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0),
-    overdue: allInvoices
-      .filter((invoice) => invoice.status === "overdue")
-      .reduce((sum, invoice) => sum + getInvoiceBalance(invoice), 0),
+    total: formatFinanceSummary((summary) => summary.total),
+    paid: formatFinanceSummary((summary) => summary.paid),
+    pending: formatFinanceSummary((summary) => summary.pending),
+    overdue: formatFinanceSummary((summary) => summary.overdue),
+    balance: formatFinanceSummary((summary) => summary.balance),
   };
-  const paymentTotal = allPayments.reduce(
-    (sum, payment) => sum + payment.amount,
+  const paidCount = financeSummaryRows.reduce(
+    (sum, summary) => sum + summary.paidCount,
     0
   );
-  const paidCount = allInvoices.filter(
-    (invoice) => invoice.status === "paid"
-  ).length;
-  const pendingCount = allInvoices.filter(
-    (invoice) => invoice.status === "pending"
-  ).length;
-  const partialCount = allInvoices.filter(
-    (invoice) => invoice.status === "partial"
-  ).length;
-  const overdueCount = allInvoices.filter(
-    (invoice) => invoice.status === "overdue"
-  ).length;
+  const pendingCount = financeSummaryRows.reduce(
+    (sum, summary) => sum + summary.pendingCount,
+    0
+  );
+  const partialCount = financeSummaryRows.reduce(
+    (sum, summary) => sum + summary.partialCount,
+    0
+  );
+  const overdueCount = financeSummaryRows.reduce(
+    (sum, summary) => sum + summary.overdueCount,
+    0
+  );
+  const openInvoiceCount = financeSummaryRows.reduce(
+    (sum, summary) => sum + summary.openCount,
+    0
+  );
+  const paymentCurrencyTotals = useMemo(() => {
+    const totals = new Map<string, number>();
+
+    allPayments.forEach((payment) => {
+      const currency = (payment.currency || financeSummaryRows[0]?.currency || "USD")
+        .trim()
+        .toUpperCase();
+      const normalizedCurrency = currency === "₸" ? "KZT" : currency;
+      totals.set(
+        normalizedCurrency,
+        (totals.get(normalizedCurrency) || 0) + payment.amount
+      );
+    });
+
+    if (!totals.size) {
+      totals.set(financeSummaryRows[0]?.currency || "USD", 0);
+    }
+
+    return Array.from(totals.entries()).map(([currency, total]) => ({
+      currency,
+      total,
+    }));
+  }, [allPayments, financeSummaryRows]);
+  const paymentTotalText = paymentCurrencyTotals
+    .map((summary) => formatMoney(summary.total, summary.currency))
+    .join(" / ");
 
   const getStatusLabel = (status: string) => {
     if (status === "paid") return "Оплачен";
@@ -1392,7 +1447,7 @@ export default function FinancesPage() {
                     Оплачено
                   </div>
                   <div className="mt-1 text-lg font-black text-[#2f6b4f]">
-                    {formatCurrency(invoiceStats.paid)}
+                    {invoiceStats.paid}
                   </div>
                   <div className="mt-1 text-xs text-[#7b857f]">
                     {paidCount} счетов
@@ -1403,7 +1458,7 @@ export default function FinancesPage() {
                     Остаток в работе
                   </div>
                   <div className="mt-1 text-lg font-black text-[#d5740b]">
-                    {formatCurrency(invoiceStats.pending)}
+                    {invoiceStats.pending}
                   </div>
                   <div className="mt-1 text-xs text-[#7b857f]">
                     {pendingCount + partialCount} счетов
@@ -1414,7 +1469,7 @@ export default function FinancesPage() {
                     Просрочка
                   </div>
                   <div className="mt-1 text-lg font-black text-[#b9472d]">
-                    {formatCurrency(invoiceStats.overdue)}
+                    {invoiceStats.overdue}
                   </div>
                   <div className="mt-1 text-xs text-[#7b857f]">
                     {overdueCount} счетов
@@ -1432,7 +1487,7 @@ export default function FinancesPage() {
                       Сумма счетов
                     </div>
                     <div className="mt-2 text-2xl font-black text-[#223137]">
-                      {formatCurrency(invoiceStats.total)}
+                      {invoiceStats.total}
                     </div>
                   </div>
                   <div className="flex size-10 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
@@ -1447,7 +1502,7 @@ export default function FinancesPage() {
                       Поступления
                     </div>
                     <div className="mt-2 text-2xl font-black text-[#223137]">
-                      {formatCurrency(paymentTotal)}
+                      {invoiceStats.paid}
                     </div>
                   </div>
                   <div className="flex size-10 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
@@ -1462,7 +1517,7 @@ export default function FinancesPage() {
                       В работе
                     </div>
                     <div className="mt-2 text-2xl font-black text-[#223137]">
-                      {filteredInvoices.length}
+                      {openInvoiceCount}
                     </div>
                   </div>
                   <div className="flex size-10 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
@@ -1477,7 +1532,7 @@ export default function FinancesPage() {
                       Баланс
                     </div>
                     <div className="mt-2 text-2xl font-black text-[#d5740b]">
-                      {formatCurrency(invoiceStats.total - paymentTotal)}
+                      {invoiceStats.balance}
                     </div>
                   </div>
                   <div className="flex size-10 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
@@ -3155,7 +3210,7 @@ export default function FinancesPage() {
                       Всего поступило
                     </div>
                     <div className="text-lg font-black text-[#2f6b4f]">
-                      {formatMoney(paymentTotal, "KZT")}
+                      {paymentTotalText}
                     </div>
                   </div>
                 </div>

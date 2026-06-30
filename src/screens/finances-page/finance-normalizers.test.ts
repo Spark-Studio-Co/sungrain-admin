@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildFinanceCurrencySummaries,
   mapBackendInvoiceToFinanceInvoice,
   normalizeInvoiceStatus,
+  type FinanceInvoice,
 } from "./finance-normalizers";
 
 describe("finance normalizers", () => {
@@ -58,5 +60,96 @@ describe("finance normalizers", () => {
 
   it("falls back unknown invoice statuses to pending", () => {
     expect(normalizeInvoiceStatus("sent_to_client")).toBe("pending");
+  });
+
+  it("counts paid USD invoices as paid even when there are no payment rows", () => {
+    const invoices: FinanceInvoice[] = [
+      {
+        id: "INV-001",
+        contract: "SG-1",
+        contractId: "SG-1",
+        contractTitle: "Контракт",
+        counterparty: "Клиент",
+        date: "28.06.2026",
+        dueDate: "Не указан",
+        amount: 212660,
+        paidAmount: 0,
+        currency: "USD",
+        status: "paid",
+        paymentTerms: "Счет закрыт",
+        documents: [],
+        history: [],
+      },
+    ];
+
+    expect(buildFinanceCurrencySummaries(invoices)).toEqual([
+      {
+        currency: "USD",
+        total: 212660,
+        paid: 212660,
+        pending: 0,
+        overdue: 0,
+        balance: 0,
+        invoiceCount: 1,
+        paidCount: 1,
+        pendingCount: 0,
+        partialCount: 0,
+        overdueCount: 0,
+        openCount: 0,
+      },
+    ]);
+  });
+
+  it("keeps finance totals separated by currency", () => {
+    const invoices: FinanceInvoice[] = [
+      {
+        id: "INV-USD",
+        contract: "SG-1",
+        contractId: "SG-1",
+        contractTitle: "Контракт",
+        counterparty: "Клиент",
+        date: "28.06.2026",
+        dueDate: "Не указан",
+        amount: 100,
+        paidAmount: 25,
+        currency: "USD",
+        status: "partial",
+        paymentTerms: "Частичная оплата",
+        documents: [],
+        history: [],
+      },
+      {
+        id: "INV-KZT",
+        contract: "SG-2",
+        contractId: "SG-2",
+        contractTitle: "Контракт",
+        counterparty: "Клиент",
+        date: "28.06.2026",
+        dueDate: "Не указан",
+        amount: 1000,
+        paidAmount: 0,
+        currency: "KZT",
+        status: "pending",
+        paymentTerms: "Ожидает оплаты",
+        documents: [],
+        history: [],
+      },
+    ];
+
+    const result = buildFinanceCurrencySummaries(invoices);
+
+    expect(result).toHaveLength(2);
+    expect(result.find((summary) => summary.currency === "USD")).toMatchObject({
+      total: 100,
+      paid: 25,
+      balance: 75,
+      openCount: 1,
+    });
+    expect(result.find((summary) => summary.currency === "KZT")).toMatchObject({
+      total: 1000,
+      paid: 0,
+      balance: 1000,
+      openCount: 1,
+    });
   });
 });
