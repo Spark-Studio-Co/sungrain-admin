@@ -1460,7 +1460,7 @@ export const ContractsBlock = () => {
                                 />
                               </div>
                               <div className="text-xs font-semibold text-[#7b857f]">
-                                {meta.invoiceCount} счетов · {meta.paymentsCount} платежей
+                                {meta.invoiceCount} счетов · {meta.paidInvoiceCount} оплачено
                               </div>
                             </div>
                           </TableCell>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useQueries } from "@tanstack/react-query";
 import {
   AlertCircle,
   Banknote,
@@ -35,6 +36,8 @@ import { useGetUserContractById } from "@/entities/contracts/hooks/query/use-get
 import { useGetContractsId } from "@/entities/contracts/hooks/query/use-get-contract-id.query";
 import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 import { useGetWagonContracts } from "@/entities/wagon/hooks/query/use-get-contract-wagon.query";
+import { useGetApplications } from "@/entities/applications/hooks/query/use-get-applications.query";
+import { getInvoices } from "@/entities/invoices/api/get/get-invoices.api";
 import { ContractHeader } from "./contract-header";
 import { WagonDetails } from "./wagon-details";
 import { ApplicationDetail } from "@/screens/application-page/blocks/application-details";
@@ -51,6 +54,12 @@ import {
 interface ContractInnerBlockProps {
   contractId: string;
 }
+
+const toEntityArray = <T = any,>(value: any): T[] => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  return [];
+};
 
 export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   const { id } = useParams();
@@ -93,6 +102,11 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   const isDataError = isAdmin ? isError : isUserError;
   const handleRefetch = isAdmin ? refetch : userRefetch;
 
+  const {
+    data: contractApplicationsData,
+    isLoading: isContractApplicationsLoading,
+  } = useGetApplications(contractId);
+
   // Get company name from ID
   const getCompanyName = (companyId: number) => {
     if (isCompaniesLoading || !companiesData?.data) return "Загрузка...";
@@ -109,6 +123,49 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     [contractData, wagonContractsData]
   );
 
+  const contractApplications = useMemo(() => {
+    const backendApplications = toEntityArray<Record<string, any>>(
+      contractApplicationsData
+    );
+
+    if (backendApplications.length > 0) {
+      return backendApplications;
+    }
+
+    return toEntityArray<Record<string, any>>((contractData as any)?.applications);
+  }, [contractApplicationsData, contractData]);
+
+  const invoiceQueries = useQueries({
+    queries: contractApplications.map((application) => ({
+      queryKey: ["invoices", String(application.id)],
+      queryFn: () => getInvoices(String(application.id)),
+      enabled: Boolean(application.id),
+    })),
+  });
+
+  const contractInvoices = useMemo(
+    () =>
+      contractApplications.flatMap((application, index) =>
+        toEntityArray<Record<string, any>>(invoiceQueries[index]?.data).map(
+          (invoice) => ({
+            ...invoice,
+            applicationId: invoice.applicationId || invoice.application_id || application.id,
+            application,
+            currency:
+              invoice.currency ||
+              application.currency ||
+              (contractData as any)?.currency ||
+              "USD",
+          })
+        )
+      ),
+    [contractApplications, contractData, invoiceQueries]
+  );
+
+  const isContractFinanceLoading =
+    isContractApplicationsLoading ||
+    invoiceQueries.some((query) => query.isLoading);
+
   // const renderedFiles =
   //   wagons
   //     ?.flatMap((wagon: any) => {
@@ -122,8 +179,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   //     .filter(Boolean) || [];
 
   const contractOps = useMemo(
-    () => getContractOpsMeta(contractData, { wagons }),
-    [contractData, wagons]
+    () => getContractOpsMeta(contractData, { wagons, invoices: contractInvoices }),
+    [contractData, wagons, contractInvoices]
   );
 
   // Calculate shipment usage from the same source as the operational center.
@@ -176,8 +233,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     [contractData]
   );
   const contractFinanceLinks = useMemo(
-    () => getContractFinanceLinks(contractData),
-    [contractData]
+    () => getContractFinanceLinks(contractData, { invoices: contractInvoices }),
+    [contractData, contractInvoices]
   );
 
   const handleDownload = () => {
@@ -300,6 +357,19 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
       </div>
     );
   }
+
+  const paidInvoiceCaption =
+    contractOps.invoiceCount > 0
+      ? `${contractOps.paidInvoiceCount} из ${contractOps.invoiceCount} счетов`
+      : "счетов пока нет";
+  const balanceInvoiceCaption =
+    contractOps.invoiceCount > 0
+      ? `${contractOps.openInvoiceCount} счетов к оплате`
+      : "счетов пока нет";
+  const contractCurrency =
+    (contractData as any)?.currency ||
+    contractFinanceLinks.invoices[0]?.currency ||
+    "USD";
 
   return (
     <>
@@ -435,7 +505,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                     {contractOps.paymentProgress}%
                   </div>
                   <div className="mt-1 text-xs text-[#7b857f]">
-                    {contractOps.paymentsCount} платежей
+                    {paidInvoiceCaption}
                   </div>
                 </div>
                 <div className="rounded-md border border-[#f2dfca] bg-[#fffdf9] p-4">
@@ -450,7 +520,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                     )}
                   </div>
                   <div className="mt-1 text-xs text-[#7b857f]">
-                    {contractOps.invoiceCount} счетов
+                    {balanceInvoiceCaption}
                   </div>
                 </div>
               </div>
@@ -585,6 +655,11 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                   </div>
                 </CardHeader>
                 <CardContent className="px-4 py-4 sm:px-5 lg:px-6">
+                  {isContractFinanceLoading && (
+                    <div className="mb-4 rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-4 py-3 text-sm font-semibold text-[#6f7774]">
+                      Загружаем счета по заявкам...
+                    </div>
+                  )}
                   <div className="grid gap-4 lg:grid-cols-2">
                     <div className="space-y-3">
                       <div className="text-xs font-black uppercase text-[#7b857f]">
@@ -645,13 +720,42 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
 
                     <div className="space-y-3">
                       <div className="text-xs font-black uppercase text-[#7b857f]">
-                        Платежи
+                        Итог оплаты
                       </div>
-                      {contractFinanceLinks.payments.length === 0 ? (
-                        <div className="rounded-md border border-dashed border-[#dfe7de] bg-[#fbfcfa] p-4 text-sm font-semibold text-[#7b857f]">
-                          Платежи пока не добавлены
+                      <div className="rounded-md border border-[#dfe7de] bg-white p-3 shadow-[0_10px_22px_rgba(34,49,55,0.04)]">
+                        <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
+                          <div className="rounded-md bg-[#fbfcfa] p-3">
+                            <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                              Сумма счетов
+                            </div>
+                            <div className="mt-1 text-lg font-black text-[#223137]">
+                              {formatContractMoney(contractOps.invoiceTotal, contractCurrency)}
+                            </div>
+                          </div>
+                          <div className="rounded-md bg-[#f5faf5] p-3">
+                            <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                              Оплачено
+                            </div>
+                            <div className="mt-1 text-lg font-black text-[#2f6b4f]">
+                              {formatContractMoney(contractOps.paidAmount, contractCurrency)}
+                            </div>
+                          </div>
+                          <div className="rounded-md bg-[#fffdf9] p-3">
+                            <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                              Остаток
+                            </div>
+                            <div className="mt-1 text-lg font-black text-[#d5740b]">
+                              {formatContractMoney(contractOps.balance, contractCurrency)}
+                            </div>
+                          </div>
                         </div>
-                      ) : (
+                        <div className="mt-3 flex items-center justify-between gap-3 rounded-md border border-[#edf1eb] bg-[#fbfcfa] px-3 py-2 text-xs font-semibold text-[#6f7774]">
+                          <span>{paidInvoiceCaption}</span>
+                          <span>{contractOps.paymentProgress}% оплачено</span>
+                        </div>
+                      </div>
+
+                      {contractFinanceLinks.payments.length > 0 ? (
                         contractFinanceLinks.payments.map((payment) => (
                         <div
                           key={payment.id}
@@ -679,6 +783,10 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                           </div>
                         </div>
                         ))
+                      ) : (
+                        <div className="rounded-md border border-dashed border-[#dfe7de] bg-[#fbfcfa] p-4 text-sm font-semibold text-[#7b857f]">
+                          Отдельные платежи backend пока не хранит. Оплату берем из статусов счетов.
+                        </div>
                       )}
                     </div>
                   </div>

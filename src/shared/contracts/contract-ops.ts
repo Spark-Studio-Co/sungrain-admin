@@ -4,10 +4,17 @@ export type ContractOperationStatus = "active" | "risk" | "completed" | "draft";
 
 type ContractOpsOptions = {
   wagons?: any[];
+  invoices?: any[];
+  payments?: any[];
 };
 
 type ContractDocumentsOptions = {
   backendUrl?: string;
+};
+
+type ContractFinanceOptions = {
+  invoices?: any[];
+  payments?: any[];
 };
 
 const statusConfig: Record<
@@ -361,17 +368,43 @@ const getContractInvoices = (contract: any) => {
   );
 };
 
-const getContractPayments = (contract: any) => {
+const getContractPayments = (contract: any, invoices?: any[]) => {
   const directPayments = getArray(contract?.payments || contract?.finance?.payments);
   if (directPayments.length > 0) return directPayments;
 
-  return getContractInvoices(contract).flatMap((invoice: any) =>
+  return (invoices || getContractInvoices(contract)).flatMap((invoice: any) =>
     getArray(invoice?.payments)
   );
 };
 
 const getMoneyValue = (value: any) =>
   toNumber(value?.amount ?? value?.total_amount ?? value?.totalAmount ?? value?.sum ?? value);
+
+const getInvoicePaidValue = (invoice: any) => {
+  const amount = getMoneyValue(invoice);
+  const status = getStatusValue(invoice?.status);
+
+  if (status === "paid") {
+    return amount;
+  }
+
+  const explicitPaid = toNumber(
+    invoice?.paid_amount ??
+      invoice?.paidAmount ??
+      invoice?.paid ??
+      invoice?.paid_total ??
+      invoice?.paidTotal
+  );
+  const paymentsPaid = getArray(invoice?.payments).reduce(
+    (sum, payment) => sum + getMoneyValue(payment),
+    0
+  );
+
+  return Math.min(amount, Math.max(explicitPaid + paymentsPaid, 0));
+};
+
+const getInvoiceBalanceValue = (invoice: any) =>
+  Math.max(getMoneyValue(invoice) - getInvoicePaidValue(invoice), 0);
 
 export const getContractStatusConfig = (status: ContractOperationStatus) =>
   statusConfig[status] || statusConfig.active;
@@ -401,8 +434,8 @@ export const getContractOpsMeta = (
   const wagons = options.wagons || getArray(contract?.wagons);
   const applications = getContractApplications(contract);
   const files = getContractFiles(contract);
-  const invoices = getContractInvoices(contract);
-  const payments = getContractPayments(contract);
+  const invoices = options.invoices || getContractInvoices(contract);
+  const payments = options.payments || getContractPayments(contract, invoices);
   const documentedShippedVolume = wagons.reduce(
     (sum, wagon) => sum + getWagonShippedDocumentWeightValue(wagon),
     0
@@ -441,8 +474,8 @@ export const getContractOpsMeta = (
     (sum, invoice) => sum + getMoneyValue(invoice),
     0
   );
-  const paidAmount = payments.reduce(
-    (sum, payment) => sum + getMoneyValue(payment),
+  const paidAmount = invoices.reduce(
+    (sum, invoice) => sum + getInvoicePaidValue(invoice),
     0
   );
   const balance = Math.max(invoiceTotal - paidAmount, 0);
@@ -450,6 +483,12 @@ export const getContractOpsMeta = (
     invoiceTotal > 0 ? clamp(Math.round((paidAmount / invoiceTotal) * 100), 0, 100) : 0;
   const invoiceCount = invoices.length || getCount(contract?.invoice_count);
   const paymentsCount = payments.length || getCount(contract?.payments_count);
+  const paidInvoiceCount = invoices.filter(
+    (invoice) => getMoneyValue(invoice) > 0 && getInvoiceBalanceValue(invoice) <= 0
+  ).length;
+  const openInvoiceCount = invoices.filter(
+    (invoice) => getInvoiceBalanceValue(invoice) > 0
+  ).length;
   const departure =
     contract?.departure_station || contract?.departureStation || "Станция отправления";
   const destination =
@@ -473,6 +512,8 @@ export const getContractOpsMeta = (
     paymentProgress,
     invoiceCount,
     paymentsCount,
+    paidInvoiceCount,
+    openInvoiceCount,
     overdueCount: status === "risk" ? 1 : 0,
     route: {
       departure,
@@ -552,14 +593,15 @@ export const getContractDocuments = (
   return [];
 };
 
-export const getContractFinanceLinks = (contract: any) => {
+export const getContractFinanceLinks = (
+  contract: any,
+  options: ContractFinanceOptions = {}
+) => {
   const currency = contract?.currency || "USD";
-  const invoices = getContractInvoices(contract).map((invoice: any, index) => {
+  const sourceInvoices = options.invoices || getContractInvoices(contract);
+  const invoices = sourceInvoices.map((invoice: any, index) => {
     const amount = getMoneyValue(invoice);
-    const paid = getArray(invoice?.payments).reduce(
-      (sum, payment) => sum + getMoneyValue(payment),
-      toNumber(invoice?.paid_amount ?? invoice?.paidAmount)
-    );
+    const paid = getInvoicePaidValue(invoice);
     const status = getStatusValue(invoice?.status);
 
     return {
@@ -577,7 +619,7 @@ export const getContractFinanceLinks = (contract: any) => {
       currency: invoice?.currency || currency,
     };
   });
-  const payments = getContractPayments(contract).map((payment: any, index) => ({
+  const payments = (options.payments || getContractPayments(contract, sourceInvoices)).map((payment: any, index) => ({
     id: payment?.number || payment?.id || `PAY-${String(index + 1).padStart(3, "0")}`,
     amount: getMoneyValue(payment),
     status: payment?.status || "Проведен",

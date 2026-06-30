@@ -72,6 +72,39 @@ describe("contract operational metadata", () => {
     expect(meta.remainingVolume).toBe(4020);
   });
 
+  it("counts fetched paid application invoices as paid contract finance", () => {
+    const invoices = [
+      {
+        id: 42,
+        number: "Инвойс",
+        name: "Счет по заявке",
+        amount: 212660,
+        currency: "USD",
+        status: "paid",
+      },
+    ];
+
+    const meta = getContractOpsMeta(baseContract, { invoices } as any);
+    const links = getContractFinanceLinks(baseContract, { invoices } as any);
+
+    expect(meta.invoiceTotal).toBe(212660);
+    expect(meta.paidAmount).toBe(212660);
+    expect(meta.balance).toBe(0);
+    expect(meta.paymentProgress).toBe(100);
+    expect(meta.invoiceCount).toBe(1);
+    expect(meta.paymentsCount).toBe(0);
+    expect(meta.paidInvoiceCount).toBe(1);
+    expect(meta.openInvoiceCount).toBe(0);
+    expect(links.invoices[0]).toMatchObject({
+      id: "Инвойс",
+      amount: 212660,
+      paid: 212660,
+      balance: 0,
+      status: "Оплачен",
+      currency: "USD",
+    });
+  });
+
   it("uses backend wagon weight fields for wagon detail group totals", () => {
     const stats = getWagonGroupStats([
       {
