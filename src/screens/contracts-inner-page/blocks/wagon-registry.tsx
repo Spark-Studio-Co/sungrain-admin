@@ -750,9 +750,9 @@ export const WagonRegistry = ({
           open={!!editingWagon}
           onOpenChange={(open) => !open && setEditingWagon(null)}
         >
-          <DialogContent className="grid h-[94vh] max-h-[880px] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden border-[#dfe7de] bg-[#f8faf7] p-0 shadow-[0_28px_90px_rgba(22,42,35,0.24)] sm:w-[92vw] sm:max-w-[980px]">
-            <DialogHeader className="border-b border-[#dfe7de] bg-white px-5 py-5 pr-20 sm:px-7">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <DialogContent className="grid h-[94vh] max-h-[880px] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden border-[#dfe7de] bg-[#f8faf7] p-0 shadow-[0_28px_90px_rgba(22,42,35,0.24)] sm:w-[94vw] sm:max-w-[1180px]">
+            <DialogHeader className="border-b border-[#dfe7de] bg-white px-5 py-5 pr-16 sm:pr-20 sm:pl-7">
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(500px,540px)] lg:items-start">
                 <div className="min-w-0">
                   <Badge
                     variant="outline"
@@ -769,8 +769,8 @@ export const WagonRegistry = ({
                   </DialogDescription>
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[430px]">
-                  <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-3 py-2">
+                <div className="grid min-w-0 gap-2 sm:grid-cols-3">
+                  <div className="min-h-[76px] rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-3 py-2">
                     <div className="text-[11px] font-black uppercase text-[#7b857f]">
                       Вагон
                     </div>
@@ -778,7 +778,7 @@ export const WagonRegistry = ({
                       {editingWagon.number || "Не указан"}
                     </div>
                   </div>
-                  <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-3 py-2">
+                  <div className="min-h-[76px] rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-3 py-2">
                     <div className="text-[11px] font-black uppercase text-[#7b857f]">
                       Статус
                     </div>
@@ -786,7 +786,7 @@ export const WagonRegistry = ({
                       {editStatusLabel}
                     </div>
                   </div>
-                  <div className="rounded-md border border-[#f2dfca] bg-[#fff8ed] px-3 py-2">
+                  <div className="min-h-[76px] rounded-md border border-[#f2dfca] bg-[#fff8ed] px-3 py-2">
                     <div className="text-[11px] font-black uppercase text-[#b56c12]">
                       Заполнено
                     </div>
@@ -798,8 +798,8 @@ export const WagonRegistry = ({
               </div>
             </DialogHeader>
 
-            <div className="crm-scrollbar min-h-0 overflow-y-auto px-4 py-4 sm:px-7 sm:py-6">
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+            <div className="crm-scrollbar min-h-0 overflow-y-auto px-4 py-4 pb-24 sm:px-7 sm:py-6 sm:pb-24">
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
                 <div className="space-y-4">
                   <section className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_14px_34px_rgba(34,49,55,0.06)] sm:p-5">
                     <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#edf1eb] pb-4">
@@ -1040,8 +1040,8 @@ export const WagonRegistry = ({
                             key={index}
                             className="rounded-md border border-[#e5ece4] bg-[#fbfcfa] p-3"
                           >
-                            <div className="grid gap-3 lg:grid-cols-[44px_minmax(0,1fr)_minmax(220px,260px)_40px] lg:items-start">
-                              <div className="flex size-10 items-center justify-center rounded-md bg-white text-sm font-black text-[#2f6b4f] shadow-sm">
+                            <div className="grid gap-3 lg:grid-cols-[48px_minmax(220px,1fr)_minmax(280px,340px)_40px] lg:items-start">
+                              <div className="flex size-11 items-center justify-center rounded-md bg-white text-sm font-black text-[#2f6b4f] shadow-sm">
                                 {String(index + 1).padStart(2, "0")}
                               </div>
 
@@ -1164,7 +1164,7 @@ export const WagonRegistry = ({
                   </section>
                 </div>
 
-                <aside className="space-y-3">
+                <aside className="space-y-3 xl:sticky xl:top-0">
                   <div className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_14px_34px_rgba(34,49,55,0.06)]">
                     <div className="flex items-center gap-3">
                       <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
@@ -1224,7 +1224,7 @@ export const WagonRegistry = ({
               </div>
             </div>
 
-            <DialogFooter className="shrink-0 border-t border-[#dfe7de] bg-white px-4 py-4 sm:px-7">
+            <DialogFooter className="shrink-0 border-t border-[#dfe7de] bg-white/95 px-4 py-4 shadow-[0_-12px_28px_rgba(34,49,55,0.06)] backdrop-blur sm:px-7">
               <Button
                 variant="outline"
                 onClick={() => setEditingWagon(null)}

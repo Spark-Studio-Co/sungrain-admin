@@ -9,6 +9,12 @@ describe("wagon edit dialog layout", () => {
     expect(source).toContain("grid h-[94vh] max-h-[880px]");
     expect(source).toContain("grid-rows-[auto_minmax(0,1fr)_auto]");
     expect(source).toContain("crm-scrollbar min-h-0 overflow-y-auto");
+    expect(source).toContain("sm:max-w-[1180px]");
+    expect(source).toContain("lg:grid-cols-[minmax(0,1fr)_minmax(500px,540px)]");
+    expect(source).toContain("pr-16 sm:pr-20");
+    expect(source).toContain("pb-24");
+    expect(source).toContain("xl:grid-cols-[minmax(0,1fr)_320px]");
+    expect(source).toContain("xl:items-start");
     expect(source).toContain("Операционная карточка вагона");
     expect(source).toContain("Параметры вагона");
     expect(source).toContain("Документы вагона");
