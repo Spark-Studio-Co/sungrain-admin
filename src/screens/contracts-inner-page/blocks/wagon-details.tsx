@@ -39,7 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { format, isValid, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
@@ -49,6 +49,11 @@ import {
   getWagonActualWeightValue,
   getWagonCapacityValue,
 } from "@/shared/contracts/contract-ops";
+import {
+  getOrderedWagonStatuses,
+  sortWagonsByStatusGroup,
+  type WagonDateSortOrder,
+} from "@/shared/contracts/wagon-sort";
 
 interface WagonDetailsProps {
   wagons: any[];
@@ -62,17 +67,6 @@ const formatDateSafe = (dateString: string) => {
     return format(new Date(dateString), "dd MMMM yyyy", { locale: ru });
   } catch {
     return dateString;
-  }
-};
-
-const parseDateSafe = (dateString: string | null | undefined) => {
-  if (!dateString) return null;
-
-  try {
-    const date = parseISO(dateString);
-    return isValid(date) ? date : null;
-  } catch {
-    return null;
   }
 };
 
@@ -201,9 +195,7 @@ export const WagonDetails = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
-  const [dateSortOrder, setDateSortOrder] = useState<
-    "newest" | "oldest" | null
-  >(null);
+  const [dateSortOrder, setDateSortOrder] = useState<WagonDateSortOrder>(null);
 
   const applicationLookup = useMemo(
     () => buildApplicationLookup(contractData?.applications || []),
@@ -244,28 +236,13 @@ export const WagonDetails = ({
       return matchesSearch && matchesTab;
     });
 
-    if (!dateSortOrder) {
-      return rows;
-    }
-
-    return [...rows].sort((a, b) => {
-      const dateA = parseDateSafe(a.wagon.date_of_unloading);
-      const dateB = parseDateSafe(b.wagon.date_of_unloading);
-
-      if (!dateA && !dateB) return 0;
-      if (!dateA) return 1;
-      if (!dateB) return -1;
-
-      return dateSortOrder === "newest"
-        ? dateB.getTime() - dateA.getTime()
-        : dateA.getTime() - dateB.getTime();
-    });
+    return sortWagonsByStatusGroup(rows, dateSortOrder);
   }, [rawWagonRows, searchTerm, activeTab, dateSortOrder]);
 
   const statuses = useMemo(
     () =>
-      Array.from(
-        new Set(rawWagonRows.map(({ wagon }) => getWagonData(wagon).wagonStatus))
+      getOrderedWagonStatuses(
+        rawWagonRows.map(({ wagon }) => getWagonData(wagon).wagonStatus)
       ),
     [rawWagonRows]
   );
