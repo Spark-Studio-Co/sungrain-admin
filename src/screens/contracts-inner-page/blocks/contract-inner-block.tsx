@@ -7,7 +7,6 @@ import {
   Banknote,
   BarChart3,
   CheckCircle2,
-  Download,
   FileDown,
   FileText,
   Link2,
@@ -45,7 +44,6 @@ import { ApplicationBlock } from "./contracts-application-block";
 import { useParams } from "react-router-dom";
 import {
   formatContractMoney,
-  getContractDocuments,
   getContractFinanceLinks,
   getContractOpsMeta,
   resolveBackendFileUrl,
@@ -228,10 +226,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     };
   }, [wagons]);
 
-  const contractDocuments = useMemo(
-    () => getContractDocuments(contractData),
-    [contractData]
-  );
   const contractFinanceLinks = useMemo(
     () => getContractFinanceLinks(contractData, { invoices: contractInvoices }),
     [contractData, contractInvoices]
@@ -637,7 +631,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
             )}
           </TabsContent>
           <TabsContent value="finance" className="mt-4">
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+            <div className="space-y-4">
               <Card className="sungrain-analytics-card overflow-hidden">
                 <CardHeader className="border-b border-[#e5ece4] bg-[#fbfcfa] px-4 py-4 sm:px-5 lg:px-6">
                   <div className="flex items-center gap-3">
@@ -790,55 +784,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                       )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card className="sungrain-analytics-card overflow-hidden">
-                <CardHeader className="border-b border-[#e5ece4] bg-[#fbfcfa] px-4 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
-                      <FileDown className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg font-black text-[#223137]">
-                        Документы сделки
-                      </CardTitle>
-                      <CardDescription className="mt-1 text-sm text-[#6f7774]">
-                        Договор, маршрутные листы и приложения.
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2 px-4 py-4">
-                  {contractDocuments.length === 0 ? (
-                    <div className="rounded-md border border-dashed border-[#dfe7de] bg-[#fbfcfa] p-4 text-sm font-semibold text-[#7b857f]">
-                      Документы пока не загружены
-                    </div>
-                  ) : (
-                    contractDocuments.map((document) => (
-                    <button
-                      key={document.id}
-                      type="button"
-                      onClick={() =>
-                        handleFileDownload(
-                          document.downloadUrl,
-                          document.name
-                        )
-                      }
-                      className="flex w-full items-center justify-between gap-3 rounded-md border border-[#edf1eb] bg-[#fbfcfa] px-3 py-2 text-left transition hover:border-[#f2c184] hover:bg-[#fff8ed]"
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-black text-[#223137]">
-                          {document.name}
-                        </span>
-                        <span className="mt-0.5 block text-xs text-[#7b857f]">
-                          {document.type} · {document.size} · {document.date}
-                        </span>
-                      </span>
-                      <Download className="h-4 w-4 shrink-0 text-[#f38810]" />
-                    </button>
-                    ))
-                  )}
                 </CardContent>
               </Card>
             </div>

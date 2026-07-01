@@ -19,9 +19,16 @@ describe("contract inner block layout", () => {
     );
   });
 
-  it("downloads deal documents from normalized file URLs only", () => {
-    expect(source).toMatch(/handleFileDownload\(\s*document\.downloadUrl/);
-    expect(source).not.toContain("document.file || document.downloadUrl");
+  it("does not render deal documents inside the contract finance tab", () => {
+    const financeStart = source.indexOf('<TabsContent value="finance"');
+    const financeEnd = source.indexOf("</TabsContent>", financeStart);
+    const financeSource = source.slice(financeStart, financeEnd);
+
+    expect(financeStart).toBeGreaterThan(-1);
+    expect(financeEnd).toBeGreaterThan(financeStart);
+    expect(financeSource).not.toContain("Документы сделки");
+    expect(financeSource).not.toContain("contractDocuments.map");
+    expect(financeSource).not.toContain("xl:grid-cols-[minmax(0,1fr)_380px]");
   });
 
   it("separates documented and actual shipped weight in volume usage", () => {
