@@ -68,8 +68,9 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiClient } from "@/shared/api/apiClient";
+import { sortWagonsByStatusGroup } from "@/shared/contracts/wagon-sort";
 
 interface WagonRegistryProps {
   wagons: any[];
@@ -98,6 +99,10 @@ export const WagonRegistry = ({
     isLoading: isLoadingOwners,
     isError: isErrorOwners,
   } = useGetOwners(1, 100);
+  const sortedWagons = useMemo(
+    () => sortWagonsByStatusGroup(wagons || []),
+    [wagons]
+  );
 
   // Add a separate state for tracking the unloading date
   const [unloadingDate, setUnloadingDate] = useState<string | null>(null);
@@ -497,8 +502,8 @@ export const WagonRegistry = ({
         <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
           {/* Mobile Card Layout */}
           <div className="block sm:hidden space-y-3">
-            {wagons?.length > 0 ? (
-              wagons.map((wagon: any) => (
+            {sortedWagons.length > 0 ? (
+              sortedWagons.map((wagon: any) => (
                 <div
                   key={wagon.id}
                   className={`border rounded-lg p-3 ${
@@ -643,8 +648,8 @@ export const WagonRegistry = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {wagons?.length > 0 ? (
-                  wagons.map((wagon: any) => (
+                {sortedWagons.length > 0 ? (
+                  sortedWagons.map((wagon: any) => (
                     <TableRow
                       key={wagon.id}
                       className={

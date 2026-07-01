@@ -34,4 +34,11 @@ describe("wagon edit dialog layout", () => {
     expect(ownerFieldSource).toContain("Выберите собственника");
     expect(ownerFieldSource).not.toContain("<Input");
   });
+
+  it("renders wagons through the shared status sorter", () => {
+    expect(source).toContain("sortWagonsByStatusGroup");
+    expect(source).toContain("const sortedWagons = useMemo");
+    expect(source).toContain("sortedWagons.map");
+    expect(source).not.toContain("wagons.map((wagon");
+  });
 });

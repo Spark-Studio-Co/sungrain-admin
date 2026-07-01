@@ -14,6 +14,8 @@ const getStatusValue = (value: unknown) =>
 const getWagonStatus = (wagon: any) =>
   getStatusValue(wagon?.status || wagon?.wagon?.status);
 
+const resolveWagon = (row: any) => row?.wagon || row;
+
 const parseWagonDate = (value: unknown) => {
   if (!value) return null;
 
@@ -34,22 +36,24 @@ export const getOrderedWagonStatuses = (statuses: string[]) => {
   });
 };
 
-export const sortWagonsByStatusGroup = <T extends { wagon: any }>(
+export const sortWagonsByStatusGroup = <T>(
   rows: T[],
   dateSortOrder: WagonDateSortOrder = null
 ) =>
   rows
     .map((row, index) => ({ row, index }))
     .sort((a, b) => {
-      const statusA = getWagonStatus(a.row.wagon);
-      const statusB = getWagonStatus(b.row.wagon);
+      const wagonA = resolveWagon(a.row);
+      const wagonB = resolveWagon(b.row);
+      const statusA = getWagonStatus(wagonA);
+      const statusB = getWagonStatus(wagonB);
       const rankDiff = getStatusRank(statusA) - getStatusRank(statusB);
 
       if (rankDiff !== 0) return rankDiff;
 
       if (dateSortOrder) {
-        const dateA = parseWagonDate(a.row.wagon?.date_of_unloading);
-        const dateB = parseWagonDate(b.row.wagon?.date_of_unloading);
+        const dateA = parseWagonDate(wagonA?.date_of_unloading);
+        const dateB = parseWagonDate(wagonB?.date_of_unloading);
 
         if (dateA && dateB) {
           const dateDiff = dateA.getTime() - dateB.getTime();

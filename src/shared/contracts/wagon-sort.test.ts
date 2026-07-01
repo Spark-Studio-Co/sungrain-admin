@@ -46,4 +46,20 @@ describe("wagon status sorting", () => {
       "at_elevator",
     ]);
   });
+
+  it("groups plain wagon objects for admin registries", () => {
+    const wagons = [
+      { number: "1", status: "at_elevator" },
+      { number: "2", status: "shipped" },
+      { number: "3", status: "at_elevator" },
+      { number: "4", status: "shipped" },
+    ];
+
+    expect(sortWagonsByStatusGroup(wagons).map((wagon) => wagon.status)).toEqual([
+      "shipped",
+      "shipped",
+      "at_elevator",
+      "at_elevator",
+    ]);
+  });
 });
