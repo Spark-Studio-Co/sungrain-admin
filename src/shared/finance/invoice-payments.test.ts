@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildInvoicePaymentUpdatePayload,
   buildInvoicePaymentPatch,
   getInvoiceBalance,
   getInvoiceComputedStatus,
@@ -50,5 +51,29 @@ describe("invoice payment helpers", () => {
 
   it("treats paid invoices as fully paid even without a paidAmount field", () => {
     expect(getInvoicePaidAmount({ amount: 300, status: "paid" })).toBe(300);
+  });
+
+  it("builds the full backend update payload for saving a payment", () => {
+    const payload = buildInvoicePaymentUpdatePayload(
+      {
+        name: "Инвойс",
+        amount: 393_289_000,
+        paidAmount: 0,
+        status: "pending",
+        date: "15.03.2024",
+        description: "Счет по заявке",
+      },
+      200_000_000,
+      "2026-07-04"
+    );
+
+    expect(payload).toEqual({
+      name: "Инвойс",
+      amount: 393_289_000,
+      paidAmount: 200_000_000,
+      status: "partial",
+      date: "2024-03-15",
+      description: "Счет по заявке",
+    });
   });
 });

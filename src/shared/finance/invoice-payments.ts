@@ -5,6 +5,13 @@ export type InvoicePaymentPatch = {
   status: "pending" | "partial" | "paid";
 };
 
+export type InvoicePaymentUpdatePayload = InvoicePaymentPatch & {
+  name: string;
+  amount: number;
+  date: string;
+  description: string;
+};
+
 const parseAmount = (value: unknown) => {
   if (value === null || value === undefined || value === "") return 0;
 
@@ -21,6 +28,38 @@ const getArray = (value: unknown) => (Array.isArray(value) ? value : []);
 
 const clampAmount = (value: number, max: number) =>
   Math.min(Math.max(value, 0), Math.max(max, 0));
+
+const pickString = (...values: unknown[]) => {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+
+  return "";
+};
+
+const toBackendDate = (value: unknown, fallbackDate?: string) => {
+  const fallback = pickString(fallbackDate) || new Date().toISOString().slice(0, 10);
+  const raw = pickString(value);
+
+  if (!raw || raw === "Не указан") return fallback;
+
+  const ruMatch = raw.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  if (ruMatch) {
+    const [, day, month, year] = ruMatch;
+    return `${year}-${month}-${day}`;
+  }
+
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) return isoMatch[0];
+
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString().slice(0, 10);
+  }
+
+  return fallback;
+};
 
 export const getInvoiceAmount = (invoice: InvoiceLike) =>
   parseAmount(
@@ -95,5 +134,25 @@ export const buildInvoicePaymentPatch = (
       paidAmount: nextPaidAmount,
       status: "pending",
     }),
+  };
+};
+
+export const buildInvoicePaymentUpdatePayload = (
+  invoice: InvoiceLike,
+  paymentAmount: unknown,
+  fallbackDate?: string
+): InvoicePaymentUpdatePayload => {
+  const patch = buildInvoicePaymentPatch(invoice, paymentAmount);
+
+  return {
+    name: pickString(invoice?.name, invoice?.number, invoice?.id, "Счет"),
+    amount: getInvoiceAmount(invoice),
+    paidAmount: patch.paidAmount,
+    status: patch.status,
+    date: toBackendDate(
+      invoice?.date || invoice?.invoice_date || invoice?.createdAt || invoice?.created_at,
+      fallbackDate
+    ),
+    description: pickString(invoice?.description, invoice?.details?.description),
   };
 };

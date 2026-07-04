@@ -79,6 +79,7 @@ import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contra
 import { getInvoices } from "@/entities/invoices/api/get/get-invoices.api";
 import { useCreateInvoice } from "@/entities/invoices/hooks/mutations/use-create-invoice.mutation";
 import { useUpdateInvoice } from "@/entities/invoices/hooks/mutations/use-update-invoice.mutation";
+import { buildInvoicePaymentUpdatePayload } from "@/shared/finance/invoice-payments";
 import {
   buildFinanceCurrencySummaries,
   getFinanceInvoiceBalance,
@@ -89,7 +90,6 @@ import {
   type FinanceCurrencySummary,
   type FinanceHistoryItem,
   type FinanceInvoice,
-  type InvoiceStatus,
 } from "./finance-normalizers";
 
 type PaymentStatus = "completed" | "processing" | "reconciled" | "failed";
@@ -950,19 +950,19 @@ export default function FinancesPage() {
       const formattedDate =
         formatDisplayDate(newPayment.payment_date) ||
         format(new Date(), "dd.MM.yyyy");
-      const nextPaidAmount = Math.min(
-        linkedInvoice.amount,
-        linkedInvoice.paidAmount + paymentAmount
+      const invoicePaymentPayload = buildInvoicePaymentUpdatePayload(
+        linkedInvoice,
+        paymentAmount,
+        format(new Date(), "yyyy-MM-dd")
       );
-      const nextStatus = getNextInvoiceStatus(linkedInvoice, nextPaidAmount);
+      const nextPaidAmount = invoicePaymentPayload.paidAmount;
+      const nextStatus = invoicePaymentPayload.status;
 
       if (linkedInvoice.backendId && linkedInvoice.applicationId) {
         await updateInvoiceMutation.mutateAsync({
           id: linkedInvoice.backendId,
           applicationId: linkedInvoice.applicationId,
-          data: {
-            status: nextStatus,
-          },
+          data: invoicePaymentPayload,
         });
       }
 
@@ -1050,21 +1050,6 @@ export default function FinancesPage() {
 
   const getInvoicePayments = (invoiceId: string) =>
     allPayments.filter((payment) => payment.invoice === invoiceId);
-
-  const getNextInvoiceStatus = (
-    invoice: FinanceInvoice,
-    nextPaidAmount: number
-  ): InvoiceStatus => {
-    if (nextPaidAmount >= invoice.amount) {
-      return "paid";
-    }
-
-    if (invoice.status === "overdue") {
-      return "overdue";
-    }
-
-    return nextPaidAmount > 0 ? "partial" : "pending";
-  };
 
   const financeSummaryRows = useMemo<FinanceCurrencySummary[]>(() => {
     const summaries = buildFinanceCurrencySummaries(allInvoices);
