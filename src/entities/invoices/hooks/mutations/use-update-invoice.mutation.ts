@@ -8,6 +8,8 @@ interface UpdateInvoiceParams {
     name?: string;
     number?: string;
     amount?: number;
+    paidAmount?: number;
+    paid_amount?: number;
     date?: string;
     status?: string;
     description?: string;

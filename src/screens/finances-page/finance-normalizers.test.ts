@@ -62,6 +62,31 @@ describe("finance normalizers", () => {
     expect(normalizeInvoiceStatus("sent_to_client")).toBe("pending");
   });
 
+  it("normalizes partial backend invoice payments from snake_case fields", () => {
+    const result = mapBackendInvoiceToFinanceInvoice({
+      invoice: {
+        id: 91,
+        name: "Инвойс",
+        amount: 393_289_000,
+        paid_amount: 200_000_000,
+        status: "pending",
+      },
+      application: {
+        id: 44,
+        total_amount: 393_289_000,
+        currency: "KZT",
+      },
+    });
+
+    expect(result).toMatchObject({
+      amount: 393_289_000,
+      paidAmount: 200_000_000,
+      currency: "KZT",
+      status: "partial",
+      paymentTerms: "Частичная оплата",
+    });
+  });
+
   it("counts paid USD invoices as paid even when there are no payment rows", () => {
     const invoices: FinanceInvoice[] = [
       {

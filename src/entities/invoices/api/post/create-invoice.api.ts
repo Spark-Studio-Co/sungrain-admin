@@ -5,6 +5,7 @@ interface CreateInvoiceParams {
   name: string;
   number?: string;
   amount: number;
+  paidAmount?: number;
   date: string;
   status: string;
   description?: string;

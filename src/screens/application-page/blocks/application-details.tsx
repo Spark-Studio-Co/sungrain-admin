@@ -71,6 +71,13 @@ import { WagonDetails } from "@/screens/contracts-inner-page/blocks/wagon-detail
 import { WagonRegistry } from "@/screens/contracts-inner-page/blocks/wagon-registry";
 import { apiClient } from "@/shared/api/apiClient";
 import { resolveBackendFileUrl } from "@/shared/contracts/contract-ops";
+import {
+  buildInvoicePaymentPatch,
+  getInvoiceAmount,
+  getInvoiceBalance,
+  getInvoiceComputedStatus,
+  getInvoicePaidAmount,
+} from "@/shared/finance/invoice-payments";
 import { usePopupStore } from "@/shared/model/popup-store";
 import { format } from "date-fns";
 import { getApplicationScopedWagons } from "./application-wagons";
@@ -85,6 +92,7 @@ import {
   Edit,
   type File,
   FileText,
+  HandCoins,
   Loader2,
   Package,
   Pencil,
@@ -133,8 +141,13 @@ export const ApplicationDetail = ({
   const [isEditInvoiceDialogOpen, setIsEditInvoiceDialogOpen] = useState(false);
   const [isDeleteInvoiceDialogOpen, setIsDeleteInvoiceDialogOpen] =
     useState(false);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<any>(null);
   const [deletingInvoice, setDeletingInvoice] = useState<any>(null);
+  const [paymentInvoice, setPaymentInvoice] = useState<any>(null);
+  const [newPayment, setNewPayment] = useState({
+    amount: "",
+  });
 
   // State for editing shipping document
   const [isEditShippingDocOpen, setIsEditShippingDocOpen] = useState(false);
@@ -199,12 +212,33 @@ export const ApplicationDetail = ({
     value: number | string | null | undefined
   ) => formatMoney(value, applicationCurrency);
   const invoices = Array.isArray(invoicesData) ? invoicesData : [];
-  const paidAmount = invoices
-    .filter((invoice) => invoice.status === "paid")
-    .reduce((sum, invoice) => sum + (invoice.amount || 0), 0);
+  const invoicesWithFinance = invoices.map((invoice: any) => {
+    const amount = getInvoiceAmount(invoice);
+    const paidAmount = getInvoicePaidAmount(invoice);
+    const balance = getInvoiceBalance(invoice);
 
+    return {
+      ...invoice,
+      financeAmount: amount,
+      financePaidAmount: paidAmount,
+      financeBalance: balance,
+      financeStatus: getInvoiceComputedStatus(invoice),
+    };
+  });
+  const invoiceTotalAmount = invoicesWithFinance.reduce(
+    (sum, invoice) => sum + invoice.financeAmount,
+    0
+  );
+  const paymentBaseAmount = invoiceTotalAmount || totalAmount;
+  const paidAmount = invoicesWithFinance.reduce(
+    (sum, invoice) => sum + invoice.financePaidAmount,
+    0
+  );
+  const remainingPaymentAmount = Math.max(paymentBaseAmount - paidAmount, 0);
   const paymentProgress =
-    totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0;
+    paymentBaseAmount > 0
+      ? Math.min(100, (paidAmount / paymentBaseAmount) * 100)
+      : 0;
 
   // Get shipping documents from documents_for_upload array
   const shippingDocuments = application?.documents_for_upload || [];
@@ -225,6 +259,29 @@ export const ApplicationDetail = ({
     } catch (e) {
       return dateString;
     }
+  };
+
+  const parsePaymentAmount = (value: string) => {
+    const amount = Number(value.replace(/\s/g, "").replace(",", "."));
+    return Number.isFinite(amount) ? amount : 0;
+  };
+
+  const getInvoiceStatusLabel = (status: string) => {
+    if (status === "paid") return "Оплачен";
+    if (status === "partial") return "Частично";
+    return "Ожидает оплаты";
+  };
+
+  const getInvoiceStatusClassName = (status: string) => {
+    if (status === "paid") {
+      return "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50";
+    }
+
+    if (status === "partial") {
+      return "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-50";
+    }
+
+    return "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-50";
   };
 
   const handleFileDownload = (fileUrl: string, fileName: string) => {
@@ -493,11 +550,14 @@ export const ApplicationDetail = ({
     }
 
     try {
+      const parsedAmount = Number.parseFloat(newInvoice.amount);
+      const amount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
       const invoiceData = {
         applicationId,
         name: newInvoice.name,
         date: newInvoice.date || format(new Date(), "yyyy-MM-dd"),
-        amount: Number.parseFloat(newInvoice.amount),
+        amount,
+        paidAmount: newInvoice.status === "paid" ? amount : 0,
         status: newInvoice.status,
         description: newInvoice.description,
         file: newInvoice.file,
@@ -544,14 +604,24 @@ export const ApplicationDetail = ({
     if (!editingInvoice || !editingInvoice.id) return;
 
     try {
+      const parsedAmount = Number.parseFloat(editingInvoice.amount);
+      const amount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
+      const paidAmount = Math.min(getInvoicePaidAmount(editingInvoice), amount);
+      const status =
+        paidAmount >= amount && amount > 0
+          ? "paid"
+          : paidAmount > 0
+            ? "partial"
+            : editingInvoice.status;
       const invoiceData: any = {
         id: editingInvoice.id,
         applicationId: applicationId,
         data: {
           name: editingInvoice.name,
           date: editingInvoice.date || format(new Date(), "yyyy-MM-dd"),
-          amount: Number.parseFloat(editingInvoice.amount),
-          status: editingInvoice.status,
+          amount,
+          paidAmount,
+          status,
           description: editingInvoice.description,
         },
       };
@@ -567,6 +637,55 @@ export const ApplicationDetail = ({
       });
     } catch (error) {
       console.error("Error updating invoice:", error);
+    }
+  };
+
+  const handleOpenPaymentDialog = (invoice: any) => {
+    setPaymentInvoice(invoice);
+    setNewPayment({
+      amount: "",
+    });
+    setIsPaymentDialogOpen(true);
+  };
+
+  const handleAddInvoicePayment = async () => {
+    if (!paymentInvoice?.id) return;
+
+    const paymentAmount = parsePaymentAmount(newPayment.amount);
+    if (paymentAmount <= 0) return;
+
+    try {
+      const patch = buildInvoicePaymentPatch(paymentInvoice, paymentAmount);
+      await updateInvoiceMutation.mutateAsync(
+        {
+          id: paymentInvoice.id,
+          applicationId,
+          data: {
+            name: paymentInvoice.name || paymentInvoice.number || "Счет",
+            date: paymentInvoice.date || format(new Date(), "yyyy-MM-dd"),
+            amount: getInvoiceAmount(paymentInvoice),
+            paidAmount: patch.paidAmount,
+            status: patch.status,
+            description: paymentInvoice.description || "",
+          },
+        },
+        {
+          onSuccess: () => {
+            setIsPaymentDialogOpen(false);
+            setPaymentInvoice(null);
+            setNewPayment({
+              amount: "",
+            });
+            refetchInvoices();
+            refetch();
+          },
+          onError: (error: any) => {
+            console.error("Invoice payment update failed:", error);
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error adding invoice payment:", error);
     }
   };
 
@@ -650,6 +769,25 @@ export const ApplicationDetail = ({
       </Card>
     );
   }
+
+  const paymentDialogInvoiceAmount = paymentInvoice
+    ? getInvoiceAmount(paymentInvoice)
+    : 0;
+  const paymentDialogPaidAmount = paymentInvoice
+    ? getInvoicePaidAmount(paymentInvoice)
+    : 0;
+  const paymentDialogBalance = paymentInvoice
+    ? getInvoiceBalance(paymentInvoice)
+    : 0;
+  const paymentDialogAmount = parsePaymentAmount(newPayment.amount);
+  const paymentDialogNextPaidAmount = Math.min(
+    paymentDialogInvoiceAmount,
+    paymentDialogPaidAmount + Math.max(paymentDialogAmount, 0)
+  );
+  const paymentDialogNextBalance = Math.max(
+    paymentDialogInvoiceAmount - paymentDialogNextPaidAmount,
+    0
+  );
 
   return (
     <div className="space-y-4 sm:space-y-6 px-3 sm:px-0">
@@ -792,7 +930,7 @@ export const ApplicationDetail = ({
                 <span>
                   Всего:{" "}
                   <span className="font-semibold">
-                    {formatApplicationMoney(totalAmount)}
+                    {formatApplicationMoney(paymentBaseAmount)}
                   </span>
                 </span>
               </div>
@@ -800,7 +938,7 @@ export const ApplicationDetail = ({
               <div className="flex justify-between items-center text-xs text-muted-foreground">
                 <span>{paymentProgress.toFixed(0)}% выполнено</span>
                 <span>
-                  Осталось: {formatApplicationMoney(totalAmount - paidAmount)}
+                  Осталось: {formatApplicationMoney(remainingPaymentAmount)}
                 </span>
               </div>
             </div>
@@ -1024,7 +1162,7 @@ export const ApplicationDetail = ({
                     Загрузка счетов...
                   </span>
                 </div>
-              ) : invoices.length > 0 ? (
+              ) : invoicesWithFinance.length > 0 ? (
                 <div className="rounded-md border overflow-x-auto">
                   <Table className="min-w-full">
                     <TableHeader>
@@ -1055,7 +1193,7 @@ export const ApplicationDetail = ({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {invoices.map((invoice: any) => (
+                      {invoicesWithFinance.map((invoice: any) => (
                         <TableRow key={invoice.id}>
                           <TableCell className="font-medium text-xs sm:text-sm p-2 sm:p-4">
                             <div className="max-w-[120px] sm:max-w-none truncate">
@@ -1070,41 +1208,47 @@ export const ApplicationDetail = ({
                           </TableCell>
                           <TableCell className="text-xs sm:text-sm p-2 sm:p-4">
                             <div className="font-medium">
-                              {invoice.amount?.toLocaleString()}{" "}
-                              <span className="hidden sm:inline">
-                                {applicationCurrencyLabel}
-                              </span>
-                              <span className="sm:hidden">
-                                {applicationCurrencyLabel}
-                              </span>
+                              {formatApplicationMoney(invoice.financeAmount)}
+                            </div>
+                            <div className="mt-1 space-y-0.5 text-[11px] leading-tight text-muted-foreground">
+                              <div>
+                                Оплачено:{" "}
+                                <span className="font-semibold text-emerald-700">
+                                  {formatApplicationMoney(
+                                    invoice.financePaidAmount
+                                  )}
+                                </span>
+                              </div>
+                              <div>
+                                Долг:{" "}
+                                <span className="font-semibold text-orange-700">
+                                  {formatApplicationMoney(invoice.financeBalance)}
+                                </span>
+                              </div>
                             </div>
                             <div className="md:hidden mt-1">
                               <Badge
                                 variant="outline"
-                                className={
-                                  invoice.status === "paid"
-                                    ? "bg-green-100 text-green-800 hover:bg-green-100 text-xs border-green-200"
-                                    : "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 text-xs border-yellow-200"
-                                }
+                                className={cn(
+                                  "text-xs",
+                                  getInvoiceStatusClassName(
+                                    invoice.financeStatus
+                                  )
+                                )}
                               >
-                                {invoice.status === "paid"
-                                  ? "Оплачен"
-                                  : "Ожидает"}
+                                {getInvoiceStatusLabel(invoice.financeStatus)}
                               </Badge>
                             </div>
                           </TableCell>
                           <TableCell className="text-xs sm:text-sm p-2 sm:p-4 hidden md:table-cell">
                             <Badge
                               variant="outline"
-                              className={
-                                invoice.status === "paid"
-                                  ? "bg-green-100 text-green-800 hover:bg-green-100 text-xs sm:text-sm border-green-200"
-                                  : "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 text-xs sm:text-sm border-yellow-200"
-                              }
+                              className={cn(
+                                "text-xs sm:text-sm",
+                                getInvoiceStatusClassName(invoice.financeStatus)
+                              )}
                             >
-                              {invoice.status === "paid"
-                                ? "Оплачен"
-                                : "Ожидает оплаты"}
+                              {getInvoiceStatusLabel(invoice.financeStatus)}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-xs sm:text-sm p-2 sm:p-4 hidden lg:table-cell">
@@ -1144,6 +1288,15 @@ export const ApplicationDetail = ({
                           {isAdmin && (
                             <TableCell className="text-right text-xs sm:text-sm p-2 sm:p-4">
                               <div className="flex justify-end gap-1 sm:gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-6 w-6 sm:h-8 sm:w-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                  disabled={invoice.financeBalance <= 0}
+                                  onClick={() => handleOpenPaymentDialog(invoice)}
+                                >
+                                  <HandCoins className="h-3 w-3 sm:h-4 sm:w-4" />
+                                </Button>
                                 <Button
                                   variant="outline"
                                   size="icon"
@@ -1208,7 +1361,7 @@ export const ApplicationDetail = ({
                     </span>{" "}
                     /{" "}
                     <span className="text-gray-600">
-                      {totalAmount.toLocaleString()}
+                      {paymentBaseAmount.toLocaleString()}
                     </span>{" "}
                     {applicationCurrencyLabel}
                   </span>
@@ -1222,7 +1375,7 @@ export const ApplicationDetail = ({
                     <span className="hidden sm:inline">Осталось: </span>
                     <span className="sm:hidden">Осталось: </span>
                     <span className="text-orange-600">
-                      {(totalAmount - paidAmount).toLocaleString()}
+                      {remainingPaymentAmount.toLocaleString()}
                     </span>{" "}
                     {applicationCurrencyLabel}
                   </span>
@@ -1634,6 +1787,7 @@ export const ApplicationDetail = ({
                 </SelectTrigger>
                 <SelectContent className="w-full">
                   <SelectItem value="pending">Ожидает оплаты</SelectItem>
+                  <SelectItem value="partial">Частично оплачен</SelectItem>
                   <SelectItem value="paid">Оплачен</SelectItem>
                 </SelectContent>
               </Select>
@@ -1717,6 +1871,144 @@ export const ApplicationDetail = ({
                 </>
               ) : (
                 "Создать счет"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={isPaymentDialogOpen}
+        onOpenChange={setIsPaymentDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                <HandCoins className="h-4 w-4" />
+              </span>
+              Добавить оплату
+            </DialogTitle>
+            <DialogDescription>
+              Зафиксируйте поступление по выбранному счету без загрузки файла.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg border border-[#dfe7de] bg-[#fbfcfa] p-4">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wide text-muted-foreground">
+                    Счет
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-[#223137]">
+                    {paymentInvoice?.name ||
+                      paymentInvoice?.number ||
+                      "Выбранный счет"}
+                  </p>
+                </div>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "shrink-0",
+                    getInvoiceStatusClassName(
+                      paymentInvoice
+                        ? getInvoiceComputedStatus(paymentInvoice)
+                        : "pending"
+                    )
+                  )}
+                >
+                  {getInvoiceStatusLabel(
+                    paymentInvoice
+                      ? getInvoiceComputedStatus(paymentInvoice)
+                      : "pending"
+                  )}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-sm">
+                <div className="rounded-md bg-white p-3">
+                  <p className="text-[11px] font-bold uppercase text-muted-foreground">
+                    Сумма
+                  </p>
+                  <p className="mt-1 font-black text-[#223137]">
+                    {formatApplicationMoney(paymentDialogInvoiceAmount)}
+                  </p>
+                </div>
+                <div className="rounded-md bg-emerald-50 p-3">
+                  <p className="text-[11px] font-bold uppercase text-emerald-700">
+                    Оплачено
+                  </p>
+                  <p className="mt-1 font-black text-emerald-700">
+                    {formatApplicationMoney(paymentDialogPaidAmount)}
+                  </p>
+                </div>
+                <div className="rounded-md bg-orange-50 p-3">
+                  <p className="text-[11px] font-bold uppercase text-orange-700">
+                    Долг
+                  </p>
+                  <p className="mt-1 font-black text-orange-700">
+                    {formatApplicationMoney(paymentDialogBalance)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="payment-amount">
+                Сумма оплаты <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="payment-amount"
+                inputMode="decimal"
+                value={newPayment.amount}
+                placeholder="Например: 200000000"
+                onChange={(event) =>
+                  setNewPayment({ ...newPayment, amount: event.target.value })
+                }
+              />
+            </div>
+
+            <div className="rounded-lg border border-orange-100 bg-orange-50/60 p-4 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-semibold text-[#6f7774]">
+                  Остаток после оплаты
+                </span>
+                <span className="text-base font-black text-orange-700">
+                  {formatApplicationMoney(paymentDialogNextBalance)}
+                </span>
+              </div>
+              {paymentDialogAmount > paymentDialogBalance &&
+                paymentDialogBalance > 0 && (
+                  <p className="mt-2 text-xs font-semibold text-orange-700">
+                    Сумма больше долга, система закроет только остаток по счету.
+                  </p>
+                )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsPaymentDialogOpen(false)}
+            >
+              Отмена
+            </Button>
+            <Button
+              type="button"
+              onClick={handleAddInvoicePayment}
+              disabled={
+                updateInvoiceMutation.isPending ||
+                paymentDialogAmount <= 0 ||
+                paymentDialogBalance <= 0
+              }
+              className="bg-orange-500 hover:bg-orange-600"
+            >
+              {updateInvoiceMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Сохранение...
+                </>
+              ) : (
+                "Добавить оплату"
               )}
             </Button>
           </DialogFooter>
@@ -1841,6 +2133,7 @@ export const ApplicationDetail = ({
                 </SelectTrigger>
                 <SelectContent className="w-full">
                   <SelectItem value="pending">Ожидает оплаты</SelectItem>
+                  <SelectItem value="partial">Частично оплачен</SelectItem>
                   <SelectItem value="paid">Оплачен</SelectItem>
                 </SelectContent>
               </Select>

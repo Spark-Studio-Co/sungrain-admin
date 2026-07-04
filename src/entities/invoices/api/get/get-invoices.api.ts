@@ -5,6 +5,8 @@ interface Invoice {
   name: string;
   number?: string;
   amount: number;
+  paidAmount?: number;
+  paid_amount?: number;
   date: string;
   file_url?: string;
   status: string;
@@ -12,6 +14,7 @@ interface Invoice {
   applicationId: number | string;
   createdAt?: string;
   updatedAt?: string;
+  payments?: Array<Record<string, unknown>>;
 }
 
 export const getInvoices = async (

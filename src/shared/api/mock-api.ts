@@ -714,15 +714,26 @@ const updateWagon = (id: string | number, body: AnyRecord) => {
 
 const createInvoice = (applicationId: string | number, body: AnyRecord) => {
   const id = `${applicationId}-${Date.now()}`;
+  const amount = toNumber(body.amount, 0);
+  const paidAmount =
+    body.status === "paid"
+      ? amount
+      : toNumber(body.paidAmount ?? body.paid_amount, 0);
   const invoice = {
     id,
     applicationId,
     name: body.name || "Новый инвойс",
     number: body.number || `INV-${id}`,
-    amount: toNumber(body.amount, 0),
+    amount,
+    paidAmount,
     date: body.date || new Date().toISOString(),
     file_url: "#",
-    status: body.status || "pending",
+    status:
+      paidAmount >= amount && amount > 0
+        ? "paid"
+        : paidAmount > 0
+          ? "partial"
+          : body.status || "pending",
     description: body.description || "",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

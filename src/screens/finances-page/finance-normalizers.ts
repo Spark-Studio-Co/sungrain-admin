@@ -1,4 +1,8 @@
 import { format } from "date-fns";
+import {
+  getInvoiceComputedStatus,
+  getInvoicePaidAmount as getBackendInvoicePaidAmount,
+} from "../../shared/finance/invoice-payments";
 
 export type InvoiceStatus = "paid" | "pending" | "partial" | "overdue";
 
@@ -214,7 +218,12 @@ export const mapBackendInvoiceToFinanceInvoice = ({
     invoice.total_amount,
     application?.total_amount
   );
-  const paidAmount = status === "paid" ? amount : pickNumber(invoice.paidAmount);
+  const paidAmount = getBackendInvoicePaidAmount({ ...invoice, amount });
+  const computedStatus = getInvoiceComputedStatus({
+    ...invoice,
+    amount,
+    paidAmount,
+  });
   const currency = pickString(
     invoice.currency,
     application?.currency,
@@ -271,16 +280,25 @@ export const mapBackendInvoiceToFinanceInvoice = ({
     amount,
     paidAmount,
     currency,
-    status,
+    status: computedStatus === "pending" ? status : computedStatus,
     paymentTerms:
-      status === "paid" ? "Счет закрыт по данным backend" : "Ожидает оплаты",
+      computedStatus === "paid"
+        ? "Счет закрыт по данным backend"
+        : computedStatus === "partial"
+          ? "Частичная оплата"
+          : "Ожидает оплаты",
     documents,
     history: [
       {
         date,
         title: "Счет загружен из backend",
         description: `${displayId} привязан к заявке ${applicationId || "без номера"}.`,
-        tone: status === "paid" ? "green" : "slate",
+        tone:
+          computedStatus === "paid"
+            ? "green"
+            : computedStatus === "partial"
+              ? "orange"
+              : "slate",
       },
     ],
     details: {
