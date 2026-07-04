@@ -39,8 +39,10 @@ export const getOrderedWagonStatuses = (statuses: string[]) => {
 export const sortWagonsByStatusGroup = <T>(
   rows: T[],
   dateSortOrder: WagonDateSortOrder = null
-) =>
-  rows
+) => {
+  const effectiveDateSortOrder = dateSortOrder ?? "newest";
+
+  return rows
     .map((row, index) => ({ row, index }))
     .sort((a, b) => {
       const wagonA = resolveWagon(a.row);
@@ -51,22 +53,21 @@ export const sortWagonsByStatusGroup = <T>(
 
       if (rankDiff !== 0) return rankDiff;
 
-      if (dateSortOrder) {
-        const dateA = parseWagonDate(wagonA?.date_of_unloading);
-        const dateB = parseWagonDate(wagonB?.date_of_unloading);
+      const dateA = parseWagonDate(wagonA?.date_of_unloading);
+      const dateB = parseWagonDate(wagonB?.date_of_unloading);
 
-        if (dateA && dateB) {
-          const dateDiff = dateA.getTime() - dateB.getTime();
+      if (dateA && dateB) {
+        const dateDiff = dateA.getTime() - dateB.getTime();
 
-          if (dateDiff !== 0) {
-            return dateSortOrder === "newest" ? -dateDiff : dateDiff;
-          }
+        if (dateDiff !== 0) {
+          return effectiveDateSortOrder === "newest" ? -dateDiff : dateDiff;
         }
-
-        if (dateA && !dateB) return -1;
-        if (!dateA && dateB) return 1;
       }
+
+      if (dateA && !dateB) return -1;
+      if (!dateA && dateB) return 1;
 
       return a.index - b.index;
     })
     .map(({ row }) => row);
+};

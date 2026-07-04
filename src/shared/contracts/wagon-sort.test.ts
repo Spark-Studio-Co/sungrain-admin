@@ -39,6 +39,22 @@ describe("wagon status sorting", () => {
     ]);
   });
 
+  it("defaults to newest dates inside each status group", () => {
+    const rows = [
+      { wagon: { number: "1", status: "shipped", date_of_unloading: "2026-06-27" } },
+      { wagon: { number: "2", status: "shipped", date_of_unloading: "2026-06-25" } },
+      { wagon: { number: "3", status: "shipped", date_of_unloading: "2026-06-26" } },
+      { wagon: { number: "4", status: "at_elevator", date_of_unloading: null } },
+    ];
+
+    expect(sortWagonsByStatusGroup(rows).map((row) => row.wagon.number)).toEqual([
+      "1",
+      "3",
+      "2",
+      "4",
+    ]);
+  });
+
   it("returns status tabs in the same fixed order as rows", () => {
     expect(getOrderedWagonStatuses(["at_elevator", "shipped", "in_transit"])).toEqual([
       "shipped",
