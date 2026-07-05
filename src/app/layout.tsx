@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description: "SUNGRAIN admin CRM",
   icons: {
     icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/favicon.ico", sizes: "any" },
     ],
     shortcut: "/favicon.ico",
