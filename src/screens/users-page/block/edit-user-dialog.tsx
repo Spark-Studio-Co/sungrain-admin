@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MultiSelect } from "@/components/ui/multi-select";
 import {
   Building2,
   FileText,
@@ -27,30 +28,31 @@ import {
   Mail,
   Save,
   ShieldCheck,
-  Trash2,
   UserRound,
 } from "lucide-react";
 import { useGetUserById } from "@/entities/users/hooks/query/use-get-user-by-id.query";
 import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contracts.query";
 import { useUpdateUsers } from "@/entities/users/hooks/mutations/use-update-user.mutation";
-
-const roleOptions = [
-  { label: "Администратор", value: "admin" },
-  { label: "Менеджер", value: "manager" },
-  { label: "Логистика", value: "logist" },
-  { label: "Финансы", value: "finance" },
-  { label: "Пользователь", value: "user" },
-];
+import {
+  createUserRoles,
+  isCompanyRequiredForRole,
+} from "@/shared/users/create-user-payload";
+import {
+  getCompanyOptions,
+  getContractOptions,
+  getContractsForCompanies,
+  pruneContractIdsForCompanies,
+} from "@/shared/users/user-access-options";
 
 const inputClassName =
   "h-11 rounded-md border-[#dce4da] bg-white text-[#223137] shadow-sm focus-visible:border-[#f38810] focus-visible:ring-[#f38810]/20";
 
 const getRoleLabel = (role?: string) => {
-  const normalizedRole = String(role || "").toLowerCase();
+  const normalizedRole = String(role || "").toUpperCase();
 
   return (
-    roleOptions.find((option) => option.value === normalizedRole)?.label ||
+    createUserRoles.find((option) => option.value === normalizedRole)?.label ||
     role ||
     "Без роли"
   );
@@ -58,9 +60,6 @@ const getRoleLabel = (role?: string) => {
 
 const getCompanyId = (companyRelation: any) =>
   String(companyRelation?.company?.id || companyRelation?.id || "");
-
-const getCompanyName = (companyRelation: any) =>
-  companyRelation?.company?.name || companyRelation?.name || "Компания";
 
 const getContractId = (userContract: any) =>
   String(
@@ -70,9 +69,6 @@ const getContractId = (userContract: any) =>
       userContract?.id ||
       ""
   );
-
-const getContractTitle = (contract: any) =>
-  contract?.name || contract?.title || "Без названия";
 
 interface EditUserDialogProps {
   userId: number;
@@ -99,6 +95,15 @@ export default function EditUserDialog({
 
   const companies = companiesData?.data || [];
   const contracts = contractsData?.data || [];
+  const selectedCompanyIds = editingUser?.companies || [];
+  const selectedContractIds = editingUser?.contractIds || [];
+  const companyOptions = getCompanyOptions(companies);
+  const contractOptions = getContractOptions(
+    getContractsForCompanies(contracts, selectedCompanyIds)
+  );
+  const isCompanyRequired = editingUser
+    ? isCompanyRequiredForRole(editingUser.role)
+    : true;
 
   useEffect(() => {
     if (!userDetailData || !userId) return;
@@ -118,7 +123,7 @@ export default function EditUserDialog({
 
     setEditingUser({
       ...userDetailData,
-      role: String(userDetailData.role || "user").toLowerCase(),
+      role: String(userDetailData.role || "USER").toUpperCase(),
       companies: companyIds,
       contractIds,
       contractDetails,
@@ -131,94 +136,16 @@ export default function EditUserDialog({
     }
   }, [isOpen, onClose]);
 
-  const selectedCompanies = editingUser?.companies
-    ? editingUser.companies
-        .map((companyId: string) =>
-          companies.find(
-            (company: any) => String(company.id) === String(companyId)
-          )
-        )
-        .filter(Boolean)
-    : [];
-
-  const selectedContracts = editingUser?.contractIds
-    ? editingUser.contractIds
-        .map((contractId: string) => {
-          const fromAllContracts = contracts.find(
-            (contract: any) => String(contract.id) === String(contractId)
-          );
-          const fromDetails = editingUser.contractDetails?.find(
-            (contract: any) => String(contract?.id) === String(contractId)
-          );
-
-          return fromAllContracts || fromDetails;
-        })
-        .filter(Boolean)
-    : [];
-
-  const availableContracts = editingUser?.companies?.length
-    ? contracts.filter((contract: any) => {
-        const belongsToSelectedCompany = editingUser.companies.some(
-          (companyId: string) => String(contract.companyId) === String(companyId)
-        );
-        const alreadyAssigned = editingUser.contractIds?.some(
-          (contractId: string) => String(contract.id) === String(contractId)
-        );
-
-        return belongsToSelectedCompany && !alreadyAssigned;
-      })
-    : [];
-
-  const handleCompanyChange = (companyId: string) => {
-    if (companyId === "none" || !editingUser) return;
-
-    if (!editingUser.companies?.includes(companyId)) {
-      setEditingUser({
-        ...editingUser,
-        companies: [...(editingUser.companies || []), companyId],
-      });
-    }
-  };
-
-  const handleRemoveCompany = (companyId: string) => {
-    if (!editingUser) return;
-
-    const nextCompanyIds = editingUser.companies.filter(
-      (id: string) => String(id) !== String(companyId)
-    );
-    const nextContractIds = editingUser.contractIds.filter((contractId: string) => {
-      const contract = contracts.find(
-        (item: any) => String(item.id) === String(contractId)
-      );
-
-      return !contract || nextCompanyIds.includes(String(contract.companyId));
-    });
-
-    setEditingUser({
-      ...editingUser,
-      companies: nextCompanyIds,
-      contractIds: nextContractIds,
-    });
-  };
-
-  const handleAddContract = (contractId: string) => {
-    if (contractId === "none" || !editingUser) return;
-
-    if (!editingUser.contractIds?.includes(contractId)) {
-      setEditingUser({
-        ...editingUser,
-        contractIds: [...(editingUser.contractIds || []), contractId],
-      });
-    }
-  };
-
-  const handleRemoveContract = (contractId: string) => {
+  const handleCompanySelectionChange = (companyIds: string[]) => {
     if (!editingUser) return;
 
     setEditingUser({
       ...editingUser,
-      contractIds: editingUser.contractIds.filter(
-        (id: string) => String(id) !== String(contractId)
+      companies: companyIds,
+      contractIds: pruneContractIdsForCompanies(
+        editingUser.contractIds,
+        contracts,
+        companyIds
       ),
     });
   };
@@ -230,8 +157,8 @@ export default function EditUserDialog({
       !editingUser.email.trim() ||
       !editingUser.full_name?.trim() ||
       !editingUser.role ||
-      !editingUser.companies ||
-      editingUser.companies.length === 0
+      (isCompanyRequired &&
+        (!editingUser.companies || editingUser.companies.length === 0))
     ) {
       return;
     }
@@ -267,8 +194,8 @@ export default function EditUserDialog({
     !editingUser?.email?.trim() ||
     !editingUser?.full_name?.trim() ||
     !editingUser?.role ||
-    !editingUser?.companies ||
-    editingUser.companies.length === 0;
+    (isCompanyRequired &&
+      (!editingUser?.companies || editingUser.companies.length === 0));
 
   const loadingContent = isUserDetailLoading || !editingUser;
 
@@ -406,7 +333,7 @@ export default function EditUserDialog({
                       Роль <span className="text-[#f38810]">*</span>
                     </Label>
                     <Select
-                      value={String(editingUser.role || "").toLowerCase()}
+                      value={String(editingUser.role || "").toUpperCase()}
                       onValueChange={(value) =>
                         setEditingUser({ ...editingUser, role: value })
                       }
@@ -418,7 +345,7 @@ export default function EditUserDialog({
                         <SelectValue placeholder="Выберите роль" />
                       </SelectTrigger>
                       <SelectContent>
-                        {roleOptions.map((role) => (
+                        {createUserRoles.map((role) => (
                           <SelectItem key={role.value} value={role.value}>
                             {role.label}
                           </SelectItem>
@@ -430,74 +357,33 @@ export default function EditUserDialog({
               </section>
 
               <section className="rounded-md border border-[#e5ece4] bg-white p-4">
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="flex size-9 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
-                      <Building2 className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <h3 className="font-black text-[#223137]">
-                        Компании
-                        <span className="ml-1 text-[#f38810]">*</span>
-                      </h3>
-                      <p className="text-xs text-[#7b857f]">
-                        Пользователь видит данные выбранных компаний.
-                      </p>
-                    </div>
+                <div className="mb-4 flex items-center gap-2">
+                  <div className="flex size-9 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
+                    <Building2 className="h-4 w-4" />
                   </div>
-                  <div className="sm:w-[260px]">
-                    {isCompaniesLoading ? (
-                      <Skeleton className="h-10 w-full rounded-md" />
-                    ) : (
-                      <Select onValueChange={handleCompanyChange}>
-                        <SelectTrigger className={`${inputClassName} w-full`}>
-                          <SelectValue placeholder="Добавить компанию" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Выберите компанию</SelectItem>
-                          {companies.map((company: any) => (
-                            <SelectItem
-                              key={company.id}
-                              value={String(company.id)}
-                            >
-                              {company.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                  <div>
+                    <h3 className="font-black text-[#223137]">
+                      Компании
+                      {isCompanyRequired && (
+                        <span className="ml-1 text-[#f38810]">*</span>
+                      )}
+                    </h3>
+                    <p className="text-xs text-[#7b857f]">
+                      Выберите одну или несколько компаний в одном поле.
+                    </p>
                   </div>
                 </div>
 
-                {selectedCompanies.length > 0 ? (
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {selectedCompanies.map((company: any) => (
-                      <div
-                        key={company.id}
-                        className="flex items-center justify-between gap-3 rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-3 py-2.5"
-                      >
-                        <div className="flex min-w-0 items-center gap-2">
-                          <Building2 className="h-4 w-4 shrink-0 text-[#2f6b4f]" />
-                          <span className="truncate text-sm font-bold text-[#223137]">
-                            {getCompanyName(company)}
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveCompany(String(company.id))}
-                          className="h-8 w-8 shrink-0 rounded-md text-[#9aa49f] hover:bg-[#fff1ed] hover:text-[#b9472d]"
-                          aria-label="Удалить компанию"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+                {isCompaniesLoading ? (
+                  <Skeleton className="h-11 w-full rounded-md" />
                 ) : (
-                  <div className="rounded-md border border-dashed border-[#dfe7de] bg-[#fbfcfa] px-4 py-5 text-sm font-medium text-[#7b857f]">
-                    Добавьте хотя бы одну компанию.
-                  </div>
+                  <MultiSelect
+                    options={companyOptions}
+                    selected={selectedCompanyIds}
+                    onChange={handleCompanySelectionChange}
+                    placeholder="Выберите компании"
+                    emptyMessage="Компании не найдены"
+                  />
                 )}
               </section>
 
@@ -514,80 +400,30 @@ export default function EditUserDialog({
                       <p className="text-xs text-[#7b857f]">
                         Сейчас назначено:{" "}
                         <span className="font-black text-[#223137]">
-                          {selectedContracts.length}
+                          {selectedContractIds.length}
                         </span>
                       </p>
                     </div>
                   </div>
-                  <div className="sm:w-[300px]">
-                    {isContractsLoading ? (
-                      <Skeleton className="h-10 w-full rounded-md" />
-                    ) : (
-                      <Select onValueChange={handleAddContract}>
-                        <SelectTrigger className={`${inputClassName} w-full`}>
-                          <SelectValue placeholder="Добавить контракт" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Выберите контракт</SelectItem>
-                          {availableContracts.map((contract: any) => (
-                            <SelectItem
-                              key={contract.id}
-                              value={String(contract.id)}
-                            >
-                              {contract.number} - {getContractTitle(contract)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
                 </div>
 
-                {selectedContracts.length > 0 ? (
-                  <div className="max-h-[300px] space-y-2 overflow-y-auto pr-1">
-                    {selectedContracts.map((contract: any) => (
-                      <div
-                        key={contract.id}
-                        className="grid gap-3 rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-3 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-                      >
-                        <div className="flex min-w-0 items-start gap-2">
-                          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-white text-[#2f6b4f] shadow-sm">
-                            <FileText className="h-4 w-4" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-black text-[#223137]">
-                              {contract.number} - {getContractTitle(contract)}
-                            </div>
-                            <div className="mt-1 flex flex-wrap gap-1.5">
-                              {contract.crop && (
-                                <span className="rounded-md border border-[#dce8dc] bg-white px-2 py-0.5 text-[11px] font-bold text-[#2f6b4f]">
-                                  {contract.crop}
-                                </span>
-                              )}
-                              {contract.currency && (
-                                <span className="rounded-md border border-[#f2dfca] bg-white px-2 py-0.5 text-[11px] font-bold text-[#d5740b]">
-                                  {contract.currency}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveContract(String(contract.id))}
-                          className="h-8 w-8 justify-self-end rounded-md text-[#9aa49f] hover:bg-[#fff1ed] hover:text-[#b9472d]"
-                          aria-label="Удалить контракт"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+                {isContractsLoading ? (
+                  <Skeleton className="h-11 w-full rounded-md" />
                 ) : (
-                  <div className="rounded-md border border-dashed border-[#dfe7de] bg-[#fbfcfa] px-4 py-5 text-sm font-medium text-[#7b857f]">
-                    Контракты не назначены. Выберите компанию и добавьте контракт.
-                  </div>
+                  <MultiSelect
+                    options={contractOptions}
+                    selected={selectedContractIds}
+                    onChange={(contractIds) =>
+                      setEditingUser({ ...editingUser, contractIds })
+                    }
+                    placeholder={
+                      selectedCompanyIds.length > 0
+                        ? "Выберите контракты"
+                        : "Сначала выберите компанию"
+                    }
+                    emptyMessage="Доступных контрактов нет"
+                    disabled={selectedCompanyIds.length === 0}
+                  />
                 )}
               </section>
             </div>
