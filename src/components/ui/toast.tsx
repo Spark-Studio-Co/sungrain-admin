@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -12,6 +13,10 @@ import {
 import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import {
+  API_ERROR_TOAST_EVENT,
+  type ApiErrorToastDetail,
+} from "@/shared/api/api-error-toast";
 
 type ToastVariant = "success" | "error" | "info";
 
@@ -115,13 +120,34 @@ function ToastProvider({ children }: { children: ReactNode }) {
     [dismiss, toast]
   );
 
+  useEffect(() => {
+    const handleApiError = (event: Event) => {
+      const detail = (event as CustomEvent<ApiErrorToastDetail>).detail;
+
+      if (!detail?.description) return;
+
+      toast({
+        title: detail.title || "Ошибка backend",
+        description: detail.description,
+        duration: detail.duration ?? 5600,
+        variant: "error",
+      });
+    };
+
+    window.addEventListener(API_ERROR_TOAST_EVENT, handleApiError);
+
+    return () => {
+      window.removeEventListener(API_ERROR_TOAST_EVENT, handleApiError);
+    };
+  }, [toast]);
+
   return (
     <ToastContext.Provider value={value}>
       {children}
       <div
         aria-live="polite"
         aria-relevant="additions text"
-        className="pointer-events-none fixed right-3 top-3 z-[100] flex w-[calc(100vw-1.5rem)] max-w-sm flex-col gap-2 sm:right-5 sm:top-5"
+        className="pointer-events-none fixed bottom-3 left-3 z-[100] flex w-[calc(100vw-1.5rem)] max-w-sm flex-col-reverse gap-2 sm:bottom-5 sm:left-5"
       >
         {items.map((item) => {
           const config = variantStyles[item.variant];
@@ -130,7 +156,7 @@ function ToastProvider({ children }: { children: ReactNode }) {
           return (
             <div
               key={item.id}
-              className="pointer-events-auto relative overflow-hidden rounded-md border border-[#dfe7de] bg-white p-3 pr-10 shadow-[0_18px_42px_rgba(34,49,55,0.18)] animate-in slide-in-from-right-4 fade-in-0"
+              className="pointer-events-auto relative overflow-hidden rounded-md border border-[#dfe7de] bg-white p-3 pr-10 shadow-[0_18px_42px_rgba(34,49,55,0.18)] animate-in slide-in-from-left-4 fade-in-0"
             >
               <div
                 className={cn(

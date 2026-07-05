@@ -21,20 +21,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
 import { Building, FileText, Trash2, UserPlus } from "lucide-react";
 import { useAddUser } from "@/entities/users/hooks/mutations/use-add-user.mutation";
 import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contracts.query";
-
-const roles = ["ADMIN", "USER", "ACCOUNTANT"];
-
-const getRoleLabel = (role: string) => {
-  if (role === "ADMIN") return "Администратор";
-  if (role === "ACCOUNTANT") return "Финансы";
-  if (role === "USER") return "Пользователь";
-
-  return role;
-};
+import {
+  buildCreateUserPayload,
+  createUserRoles,
+  getCreateUserValidationError,
+  isCompanyRequiredForRole,
+} from "@/shared/users/create-user-payload";
 
 interface AddUserDialogProps {
   isOpen: boolean;
@@ -53,10 +50,6 @@ export default function AddUserDialog({
     companyId: [] as string[],
     contractIds: [] as string[],
   });
-  // Track contracts for each company
-  const [contractsByCompany, setContractsByCompany] = useState<
-    Record<string, any[]>
-  >({});
 
   // API hooks
   const { data: companiesData, isLoading: isCompaniesLoading } =
@@ -64,33 +57,16 @@ export default function AddUserDialog({
   const { data: contractsData, isLoading: isContractsLoading } =
     useGetContracts({ page: 1, limit: 1000 });
   const addUserMutation = useAddUser();
+  const toast = useToast();
 
   const handleAddUser = () => {
-    // Validate all required fields
-    if (
-      !newUser.email.trim() ||
-      !newUser.password.trim() ||
-      !newUser.full_name.trim() ||
-      !newUser.role
-    ) {
+    const validationError = getCreateUserValidationError(newUser);
+    if (validationError) {
+      toast.error("Не получилось создать пользователя", validationError);
       return;
     }
 
-    // For accountant role, company is not required
-    if (newUser.role !== "ACCOUNTANT" && newUser.companyId.length === 0) {
-      return;
-    }
-
-    const userData = {
-      email: newUser.email,
-      password: newUser.password,
-      full_name: newUser.full_name,
-      role: newUser.role,
-      ...(newUser.companyId.length > 0 && { companyId: newUser.companyId }),
-      ...(newUser.contractIds.length > 0 && {
-        contractIds: newUser.contractIds,
-      }),
-    };
+    const userData = buildCreateUserPayload(newUser);
 
     addUserMutation.mutate(userData, {
       onSuccess: () => {
@@ -103,15 +79,9 @@ export default function AddUserDialog({
           contractIds: [],
         });
         onOpenChange(false);
+        toast.success("Пользователь создан");
       },
     });
-  };
-
-  const filterContractsByCompany = (companyId: string) => {
-    if (!contractsData?.data) return [];
-    return contractsData.data.filter(
-      (contract: any) => contract.companyId === companyId
-    );
   };
 
   // Get all contracts for all selected companies
@@ -136,18 +106,11 @@ export default function AddUserDialog({
         companyId: updatedCompanyIds,
         // Don't clear contracts when adding a company
       });
-
-      // Store contracts for this company
-      const companyContracts = filterContractsByCompany(companyId);
-      setContractsByCompany((prev) => ({
-        ...prev,
-        [companyId]: companyContracts,
-      }));
     }
   };
 
   // Check if company selection is required based on role
-  const isCompanyRequired = newUser.role !== "ACCOUNTANT";
+  const isCompanyRequired = isCompanyRequiredForRole(newUser.role);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -276,9 +239,9 @@ export default function AddUserDialog({
                 <SelectValue placeholder="Выберите роль" />
               </SelectTrigger>
               <SelectContent>
-                {roles.map((role) => (
-                  <SelectItem key={role} value={role}>
-                    {getRoleLabel(role)}
+                {createUserRoles.map((role) => (
+                  <SelectItem key={role.value} value={role.value}>
+                    {role.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -301,9 +264,9 @@ export default function AddUserDialog({
                   <SelectValue placeholder="Выберите роль" />
                 </SelectTrigger>
                 <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {getRoleLabel(role)}
+                  {createUserRoles.map((role) => (
+                    <SelectItem key={role.value} value={role.value}>
+                      {role.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

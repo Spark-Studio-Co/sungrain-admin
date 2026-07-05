@@ -1,5 +1,6 @@
 import { useAuthData } from "@/entities/auth/model/use-auth-store";
 import axios from "axios";
+import { notifyApiError } from "./api-error-toast";
 import { mockApiAdapter, shouldUseMockApi } from "./mock-api";
 
 const API_BASE_URL =
@@ -92,6 +93,8 @@ apiClient.interceptors.response.use(
         isRefreshing = false;
       }
     }
+
+    notifyApiError(error);
 
     return Promise.reject(error);
   }

@@ -4,6 +4,7 @@ export interface AddUserRequest {
   full_name?: string;
   name?: string;
   companyId?: any;
+  contractIds?: string[];
   email?: string;
   password?: string;
   role?: string;
