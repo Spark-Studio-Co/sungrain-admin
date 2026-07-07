@@ -6,6 +6,7 @@ import {
   getContractDocuments,
   getContractFinanceLinks,
   getContractOpsMeta,
+  sortApplicationsByNaturalOrder,
 } from "./contract-ops";
 
 const baseContract = {
@@ -20,6 +21,27 @@ const baseContract = {
 };
 
 describe("contract operational metadata", () => {
+  it("sorts contract applications by their natural application number", () => {
+    const applications = [
+      { id: "b", name: "Приложение №2", created_at: "2026-06-20" },
+      { id: "c", name: "Приложение №10", created_at: "2026-06-19" },
+      { id: "a", name: "Приложение №1", created_at: "2026-06-21" },
+    ];
+
+    const sorted = sortApplicationsByNaturalOrder(applications);
+
+    expect(sorted.map((application) => application.name)).toEqual([
+      "Приложение №1",
+      "Приложение №2",
+      "Приложение №10",
+    ]);
+    expect(applications.map((application) => application.name)).toEqual([
+      "Приложение №2",
+      "Приложение №10",
+      "Приложение №1",
+    ]);
+  });
+
   it("does not invent shipment progress for a new contract without wagons", () => {
     const meta = getContractOpsMeta(baseContract);
 

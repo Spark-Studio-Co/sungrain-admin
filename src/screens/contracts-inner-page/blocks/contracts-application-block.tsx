@@ -71,6 +71,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   getApplicationShipmentSummary,
+  sortApplicationsByNaturalOrder,
   type ApplicationShipmentStatus,
 } from "@/shared/contracts/contract-ops";
 
@@ -247,25 +248,27 @@ export const ApplicationBlock = ({
     );
   };
 
-  // Filter applications based on search term
-  const filteredApplications = Array.isArray(applications)
-    ? applications.filter((app: any) => {
-        const searchLower = searchTerm.toLowerCase();
-        return (
-          app.id?.toString().includes(searchLower) ||
-          app.name?.toLowerCase().includes(searchLower) ||
-          app.price_per_ton?.toString().includes(searchLower) ||
-          app.volume?.toString().includes(searchLower) ||
-          app.total_amount?.toString().includes(searchLower) ||
-          app.currency?.toLowerCase().includes(searchLower) ||
-          (app.created_at &&
-            formatDate(app.created_at).toLowerCase().includes(searchLower)) ||
-          (app.culture &&
-            (app.culture.toLowerCase().includes(searchLower) ||
-              getCultureName(app.culture).toLowerCase().includes(searchLower)))
-        );
-      })
+  const orderedApplications = Array.isArray(applications)
+    ? sortApplicationsByNaturalOrder(applications)
     : [];
+
+  // Filter applications based on search term
+  const filteredApplications = orderedApplications.filter((app: any) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      app.id?.toString().includes(searchLower) ||
+      app.name?.toLowerCase().includes(searchLower) ||
+      app.price_per_ton?.toString().includes(searchLower) ||
+      app.volume?.toString().includes(searchLower) ||
+      app.total_amount?.toString().includes(searchLower) ||
+      app.currency?.toLowerCase().includes(searchLower) ||
+      (app.created_at &&
+        formatDate(app.created_at).toLowerCase().includes(searchLower)) ||
+      (app.culture &&
+        (app.culture.toLowerCase().includes(searchLower) ||
+          getCultureName(app.culture).toLowerCase().includes(searchLower)))
+    );
+  });
 
   // Handle dialog close and refresh data
   const handleDialogClose = (shouldRefresh: boolean) => {
@@ -304,7 +307,7 @@ export const ApplicationBlock = ({
 
   // Export applications to CSV
   const exportToCSV = () => {
-    if (!applications || applications.length === 0) {
+    if (orderedApplications.length === 0) {
       return;
     }
 
@@ -325,7 +328,7 @@ export const ApplicationBlock = ({
       ];
 
       // Create CSV rows
-      const rows = applications.map((app: any) => {
+      const rows = orderedApplications.map((app: any) => {
         const shipmentSummary = getApplicationShipmentSummary(app);
 
         return [

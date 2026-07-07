@@ -47,6 +47,7 @@ import {
   getContractFinanceLinks,
   getContractOpsMeta,
   resolveBackendFileUrl,
+  sortApplicationsByNaturalOrder,
 } from "@/shared/contracts/contract-ops";
 
 interface ContractInnerBlockProps {
@@ -127,10 +128,12 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     );
 
     if (backendApplications.length > 0) {
-      return backendApplications;
+      return sortApplicationsByNaturalOrder(backendApplications);
     }
 
-    return toEntityArray<Record<string, any>>((contractData as any)?.applications);
+    return sortApplicationsByNaturalOrder(
+      toEntityArray<Record<string, any>>((contractData as any)?.applications)
+    );
   }, [contractApplicationsData, contractData]);
 
   const invoiceQueries = useQueries({

@@ -189,6 +189,92 @@ const getCount = (value: unknown) => {
 const getStatusValue = (value: unknown) =>
   typeof value === "string" ? value.toLowerCase() : "";
 
+const getPositiveOrderNumber = (value: unknown) => {
+  const numericValue = toNumber(value);
+  return numericValue > 0 ? numericValue : null;
+};
+
+const applicationNumberPattern =
+  /(?:приложени[ея]|application|app|заявк[аи]|№|#|n[оo]?\.?)\s*[-№#:]?\s*(\d+)/i;
+const trailingNumberPattern = /(\d+)\s*$/;
+
+const getApplicationSortNumber = (application: any) => {
+  const explicitOrder = [
+    application?.sort_order,
+    application?.sortOrder,
+    application?.position,
+    application?.application_number,
+    application?.applicationNumber,
+    application?.order,
+  ];
+
+  for (const value of explicitOrder) {
+    const orderNumber = getPositiveOrderNumber(value);
+    if (orderNumber !== null) return orderNumber;
+  }
+
+  const textCandidates = [
+    application?.name,
+    application?.title,
+    application?.number,
+    application?.application_name,
+    application?.applicationName,
+  ];
+
+  for (const value of textCandidates) {
+    if (typeof value !== "string") continue;
+
+    const normalizedValue = value.trim();
+    const markerMatch = normalizedValue.match(applicationNumberPattern);
+    const fallbackMatch = normalizedValue.match(trailingNumberPattern);
+    const matchedValue = markerMatch?.[1] || fallbackMatch?.[1];
+
+    if (matchedValue) {
+      const orderNumber = getPositiveOrderNumber(matchedValue);
+      if (orderNumber !== null) return orderNumber;
+    }
+  }
+
+  return null;
+};
+
+const getApplicationSortDate = (application: any) => {
+  const dateValue =
+    application?.created_at ||
+    application?.createdAt ||
+    application?.date ||
+    application?.updated_at ||
+    application?.updatedAt;
+  const timestamp = dateValue ? new Date(dateValue).getTime() : Number.NaN;
+
+  return Number.isFinite(timestamp) ? timestamp : null;
+};
+
+export const sortApplicationsByNaturalOrder = <T,>(applications: T[]) =>
+  applications
+    .map((application: T, index) => ({ application, index }))
+    .sort((a, b) => {
+      const aOrder = getApplicationSortNumber(a.application);
+      const bOrder = getApplicationSortNumber(b.application);
+
+      if (aOrder !== null && bOrder !== null && aOrder !== bOrder) {
+        return aOrder - bOrder;
+      }
+
+      if (aOrder !== null && bOrder === null) return -1;
+      if (aOrder === null && bOrder !== null) return 1;
+
+      const aDate = getApplicationSortDate(a.application);
+      const bDate = getApplicationSortDate(b.application);
+
+      if (aDate !== null && bDate !== null && aDate !== bDate) {
+        return aDate - bDate;
+      }
+
+      return a.index - b.index;
+    })
+    .map(({ application }) => application);
+
 const getFirstPositiveNumber = (...values: unknown[]) => {
   for (const value of values) {
     const numericValue = toNumber(value);
