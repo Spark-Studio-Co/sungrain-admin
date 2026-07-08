@@ -13,4 +13,17 @@ describe("AddContractDialog UNK field", () => {
     expect(source).toContain('newContract.unk.trim()');
     expect(source).toContain('formData.append("unk",');
   });
+
+  it("keeps route fields out of contract creation", () => {
+    expect(source).not.toContain('value="route"');
+    expect(source).not.toContain("Маршрут и участники");
+    expect(source).not.toContain('formData.append("sender"');
+    expect(source).not.toContain('formData.append("receiver"');
+    expect(source).not.toContain('formData.append("departure_station"');
+    expect(source).not.toContain('formData.append("destination_station"');
+    expect(source).not.toContain("nextErrors.sender");
+    expect(source).not.toContain("nextErrors.receiver");
+    expect(source).not.toContain("nextErrors.departure_station");
+    expect(source).not.toContain("nextErrors.destination_station");
+  });
 });

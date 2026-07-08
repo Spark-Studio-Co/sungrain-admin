@@ -2,10 +2,6 @@ import { apiClient } from "@/shared/api/apiClient";
 
 export interface AddContractRequest {
   crop: string;
-  sender: string;
-  receiver: string;
-  departureStation: string;
-  destinationStation: string;
   totalVolume: number;
 }
 

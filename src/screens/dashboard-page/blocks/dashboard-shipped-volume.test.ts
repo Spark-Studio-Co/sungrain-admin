@@ -15,4 +15,16 @@ describe("dashboard shipped volume", () => {
     expect(source).not.toContain("Calculate shipped volume from applications");
     expect(source).not.toContain("(sum: number, app: any) => sum + (Number(app.volume) || 0)");
   });
+
+  it("uses computed application totals for dashboard finance cards", () => {
+    expect(source).toContain("const computedContractValue");
+    expect(source).toContain("estimatedCost: computedContractValue");
+    expect(source).toContain("acc[company].totalValue[contract.currency] += contract.totalValue");
+  });
+
+  it("keeps dashboard finance money labels compact and contained", () => {
+    expect(source).toContain("formatCompactCurrencyValue");
+    expect(source).toContain("max-w-full break-words");
+    expect(source).toContain("shrink-0 text-right");
+  });
 });

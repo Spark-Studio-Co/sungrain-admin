@@ -27,10 +27,8 @@ import {
   FileText,
   AlertCircle,
   Loader2,
-  MapPin,
   Package,
   Plus,
-  Route,
   Upload,
   X,
 } from "lucide-react";
@@ -38,11 +36,8 @@ import { useAddContract } from "../api/post/use-create-contract";
 import { useState } from "react";
 import { useContractDialogStore } from "../model/use-contract-dialog";
 import { useFetchCultures } from "@/entities/cultures/hooks/query/use-get-cultures.query";
-import { useGetSenders } from "@/entities/sender/hooks/query/use-get-senders.query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useGetReceivers } from "@/entities/receiver/hooks/query/use-get-receiver.query";
-import { useFetchStations } from "@/entities/stations/hooks/query/use-get-stations.query";
 import { useGetCompanies } from "@/entities/companies/hooks/query/use-get-company.query";
 
 type AddContractErrors = Partial<
@@ -54,11 +49,7 @@ type AddContractErrors = Partial<
     | "companyId"
     | "crop"
     | "total_volume"
-    | "currency"
-    | "sender"
-    | "receiver"
-    | "departure_station"
-    | "destination_station",
+    | "currency",
     string
   >
 >;
@@ -68,11 +59,7 @@ type AddContractDraft = {
   unk: string;
   name: string;
   crop: string;
-  sender: string;
-  receiver: string;
   estimated_cost: number;
-  departure_station: string;
-  destination_station: string;
   companyId: string | number | undefined;
   total_volume: string;
   currency: string;
@@ -86,9 +73,6 @@ export const AddContractDialog = () => {
   const { isAddDialogOpen, setDialogOpen } = useContractDialogStore();
   const toast = useToast();
   const { data: cultures } = useFetchCultures();
-  const { data: sendersData } = useGetSenders(1, 100);
-  const { data: receiversData } = useGetReceivers(1, 100);
-  const { data: stationsData } = useFetchStations(1, 100);
   const { data: companiesData, isLoading: isCompaniesLoading } =
     useGetCompanies(1, 100);
 
@@ -97,11 +81,7 @@ export const AddContractDialog = () => {
     unk: "",
     name: "",
     crop: "",
-    sender: "",
-    receiver: "",
     estimated_cost: 0,
-    departure_station: "",
-    destination_station: "",
     companyId: undefined,
     total_volume: "",
     currency: "USD",
@@ -186,18 +166,6 @@ export const AddContractDialog = () => {
     if (!newContract.currency) {
       nextErrors.currency = "Выберите валюту.";
     }
-    if (!newContract.sender) {
-      nextErrors.sender = "Выберите грузоотправителя.";
-    }
-    if (!newContract.receiver) {
-      nextErrors.receiver = "Выберите грузополучателя.";
-    }
-    if (!newContract.departure_station) {
-      nextErrors.departure_station = "Выберите станцию отправления.";
-    }
-    if (!newContract.destination_station) {
-      nextErrors.destination_station = "Выберите станцию назначения.";
-    }
 
     setErrors(nextErrors);
     return nextErrors;
@@ -256,11 +224,7 @@ export const AddContractDialog = () => {
         unk: "",
         name: "",
         crop: "",
-        sender: "",
-        receiver: "",
         estimated_cost: 0,
-        departure_station: "",
-        destination_station: "",
         companyId: undefined,
         total_volume: "",
         currency: "USD",
@@ -295,10 +259,6 @@ export const AddContractDialog = () => {
     }
     formData.append("name", newContract.name);
     formData.append("crop", newContract.crop);
-    formData.append("sender", newContract.sender);
-    formData.append("receiver", newContract.receiver);
-    formData.append("departure_station", newContract.departure_station);
-    formData.append("destination_station", newContract.destination_station);
     formData.append("companyId", Number(newContract.companyId) as any);
 
     // Use parseFloat for total_volume to support decimal values
@@ -380,7 +340,7 @@ export const AddContractDialog = () => {
                 Добавить новый контракт
               </DialogTitle>
               <DialogDescription className="mt-2 text-sm text-[#6f7774]">
-                Заполните основные параметры, маршрут и документы сделки.
+                Заполните основные параметры и документы сделки.
               </DialogDescription>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:mr-16 lg:min-w-[440px]">
@@ -438,7 +398,7 @@ export const AddContractDialog = () => {
             defaultValue="basic"
             className={`${centeredContentClass} min-h-full`}
           >
-            <TabsList className="mx-auto mb-5 grid h-auto w-full max-w-[760px] grid-cols-1 gap-2 rounded-md border border-[#dfe7de] bg-white p-1 shadow-sm md:grid-cols-3">
+            <TabsList className="mx-auto mb-5 grid h-auto w-full max-w-[560px] grid-cols-1 gap-2 rounded-md border border-[#dfe7de] bg-white p-1 shadow-sm md:grid-cols-2">
               <TabsTrigger
                 value="basic"
                 className="h-12 rounded-md px-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_12px_24px_rgba(243,136,16,0.22)]"
@@ -449,20 +409,11 @@ export const AddContractDialog = () => {
                 Основная информация
               </TabsTrigger>
               <TabsTrigger
-                value="route"
-                className="h-12 rounded-md px-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_12px_24px_rgba(243,136,16,0.22)]"
-              >
-                <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-md bg-black/5 text-xs">
-                  02
-                </span>
-                Маршрут
-              </TabsTrigger>
-              <TabsTrigger
                 value="documents"
                 className="h-12 rounded-md px-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_12px_24px_rgba(243,136,16,0.22)]"
               >
                 <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-md bg-black/5 text-xs">
-                  03
+                  02
                 </span>
                 Документы
               </TabsTrigger>
@@ -673,161 +624,6 @@ export const AddContractDialog = () => {
                     <FormError message={errors.currency} />
                   </div>
                 </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="route" className="mt-0 space-y-4">
-              <div className={formShellClass}>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <div className={sectionTitleClass}>
-                      <Route className="h-4 w-4 text-[#2f6b4f]" />
-                      Маршрут и участники
-                    </div>
-                    <p className="mt-2 text-sm text-[#7b857f]">
-                      Выберите отправителя, получателя и станции движения.
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-3 py-2 text-xs font-black uppercase text-[#7b857f]">
-                    <MapPin className="h-3.5 w-3.5 text-[#f38810]" />
-                    Логистика
-                  </div>
-                </div>
-                <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="sender" className={labelClass}>
-                    Грузоотправитель <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={newContract.sender}
-                    onValueChange={(value) =>
-                      updateContractDraft({ sender: value })
-                    }
-                  >
-                    <SelectTrigger
-                      aria-invalid={Boolean(errors.sender)}
-                      className={selectTriggerClass}
-                    >
-                      <SelectValue placeholder="Выберите грузоотправителя" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sendersData?.data ? (
-                        sendersData.data.map((sender) => (
-                          <SelectItem key={sender.id} value={sender.name}>
-                            {sender.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="loading" disabled>
-                          Загрузка...
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormError message={errors.sender} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="receiver" className={labelClass}>
-                    Грузополучатель <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={newContract.receiver}
-                    onValueChange={(value) =>
-                      updateContractDraft({ receiver: value })
-                    }
-                  >
-                    <SelectTrigger
-                      aria-invalid={Boolean(errors.receiver)}
-                      className={selectTriggerClass}
-                    >
-                      <SelectValue placeholder="Выберите грузополучателя" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {receiversData?.data ? (
-                        receiversData.data.map((receiver) => (
-                          <SelectItem key={receiver.id} value={receiver.name}>
-                            {receiver.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="loading" disabled>
-                          Загрузка...
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormError message={errors.receiver} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="departure_station" className={labelClass}>
-                    Станция отправления{" "}
-                    <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={newContract.departure_station}
-                    onValueChange={(value) =>
-                      updateContractDraft({ departure_station: value })
-                    }
-                  >
-                    <SelectTrigger
-                      aria-invalid={Boolean(errors.departure_station)}
-                      className={selectTriggerClass}
-                    >
-                      <SelectValue placeholder="Выберите станцию отправления" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {stationsData?.data ? (
-                        stationsData.data.map((station) => (
-                          <SelectItem key={station.id} value={station.name}>
-                            {station.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="loading" disabled>
-                          Загрузка...
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormError message={errors.departure_station} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="destination_station" className={labelClass}>
-                    Станция назначения{" "}
-                    <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={newContract.destination_station}
-                    onValueChange={(value) =>
-                      updateContractDraft({ destination_station: value })
-                    }
-                  >
-                    <SelectTrigger
-                      aria-invalid={Boolean(errors.destination_station)}
-                      className={selectTriggerClass}
-                    >
-                      <SelectValue placeholder="Выберите станцию назначения" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {stationsData?.data ? (
-                        stationsData.data.map((station) => (
-                          <SelectItem key={station.id} value={station.name}>
-                            {station.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="loading" disabled>
-                          Загрузка...
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormError message={errors.destination_station} />
-                </div>
-              </div>
               </div>
             </TabsContent>
 

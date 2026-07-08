@@ -62,6 +62,62 @@ describe("contract operational metadata", () => {
     });
   });
 
+  it("does not require route fields on the contract itself", () => {
+    const meta = getContractOpsMeta({
+      id: 8,
+      number: "SG-2026-008",
+      name: "Контракт без маршрута",
+      crop: "Пшеница",
+      companyId: 1,
+      total_volume: 3000,
+      currency: "USD",
+    });
+
+    expect(meta.status).toBe("active");
+    expect(meta.statusConfig.label).toBe("В работе");
+  });
+
+  it("collects distinct application routes for contract operations", () => {
+    const meta = getContractOpsMeta({
+      ...baseContract,
+      applications: [
+        {
+          id: 1,
+          departure_station: "Павлодар-Южный",
+          destination_station: "Янгер",
+        },
+        {
+          id: 2,
+          departure_station: "Павлодар-Южный",
+          destination_station: "Янгер",
+        },
+        {
+          id: 3,
+          departure_station: "Астана",
+          destination_station: "Алматы",
+        },
+      ],
+    });
+
+    expect(meta.routes).toEqual([
+      {
+        departure: "Павлодар-Южный",
+        destination: "Янгер",
+        label: "Павлодар-Южный → Янгер",
+        applicationsCount: 2,
+      },
+      {
+        departure: "Астана",
+        destination: "Алматы",
+        label: "Астана → Алматы",
+        applicationsCount: 1,
+      },
+    ]);
+    expect(meta.route.label).toBe("2 маршрута");
+    expect(meta.route.departure).toBe("2 отправления");
+    expect(meta.route.destination).toBe("2 назначения");
+  });
+
   it("counts only shipped wagons as shipped volume", () => {
     const meta = getContractOpsMeta(baseContract, {
       wagons: [

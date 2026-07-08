@@ -104,16 +104,62 @@ const donutTooltipProps = {
   wrapperStyle: chartTooltipWrapperStyle,
 };
 
+const toDashboardNumber = (value) => {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().replace(/\s/g, "").replace(",", ".");
+    const parsed = Number(normalized);
+
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  return 0;
+};
+
+const formatCompactCurrencyValue = (value, maximumFractionDigits = 1) =>
+  new Intl.NumberFormat("ru-RU", {
+    maximumFractionDigits,
+    minimumFractionDigits: maximumFractionDigits > 0 && value < 10 ? 1 : 0,
+  }).format(value);
+
+const getApplicationContractValue = (application) => {
+  const explicitTotal = toDashboardNumber(
+    application?.total_amount || application?.totalAmount
+  );
+
+  if (explicitTotal > 0) return explicitTotal;
+
+  return (
+    toDashboardNumber(application?.price_per_ton || application?.pricePerTon) *
+    toDashboardNumber(application?.volume)
+  );
+};
+
 const formatCompactCurrency = (value) => {
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)} млн`;
+  const normalizedValue = Math.max(0, toDashboardNumber(value));
+
+  if (normalizedValue >= 1_000_000_000) {
+    return `${formatCompactCurrencyValue(
+      normalizedValue / 1_000_000_000,
+      normalizedValue >= 10_000_000_000 ? 0 : 1
+    )} млрд`;
   }
 
-  if (value >= 1_000) {
-    return `${Math.round(value / 1_000).toLocaleString()} тыс`;
+  if (normalizedValue >= 1_000_000) {
+    return `${formatCompactCurrencyValue(
+      normalizedValue / 1_000_000,
+      normalizedValue >= 10_000_000 ? 0 : 1
+    )} млн`;
   }
 
-  return value.toLocaleString();
+  if (normalizedValue >= 1_000) {
+    return `${Math.round(normalizedValue / 1_000).toLocaleString("ru-RU")} тыс`;
+  }
+
+  return Math.round(normalizedValue).toLocaleString("ru-RU");
 };
 
 export const DashboardBlock = () => {
@@ -140,12 +186,14 @@ export const DashboardBlock = () => {
       const fulfillmentPercentage = opsMeta.progress;
 
       // Calculate average price per ton from applications
-      const totalValue =
+      const computedContractValue =
         contract.applications?.reduce(
-          (sum: number, app: any) =>
-            sum + (Number(app.price_per_ton) * Number(app.volume) || 0),
+          (sum: number, app: any) => sum + getApplicationContractValue(app),
           0
         ) || 0;
+      const fallbackEstimatedCost = toDashboardNumber(contract.estimated_cost);
+      const totalValue =
+        computedContractValue > 0 ? computedContractValue : fallbackEstimatedCost;
 
       const avgPricePerTon =
         shippedVolume > 0
@@ -179,7 +227,7 @@ export const DashboardBlock = () => {
         volume: contract.total_volume || 0,
         shippedVolume: shippedVolume,
         fulfillmentPercentage: fulfillmentPercentage,
-        estimatedCost: contract.estimated_cost || 0,
+        estimatedCost: computedContractValue > 0 ? computedContractValue : fallbackEstimatedCost,
         totalValue: totalValue,
         avgPricePerTon: avgPricePerTon,
         currency: contract.currency || "USD",
@@ -548,7 +596,7 @@ export const DashboardBlock = () => {
       acc[company].totalVolume += contract.volume;
       acc[company].shippedVolume += contract.shippedVolume;
       acc[company].contractCount += 1;
-      acc[company].totalValue[contract.currency] += contract.estimatedCost;
+      acc[company].totalValue[contract.currency] += contract.totalValue;
 
       return acc;
     }, {});
@@ -969,7 +1017,7 @@ export const DashboardBlock = () => {
         if (!acc[contract.currency]) {
           acc[contract.currency] = 0;
         }
-        acc[contract.currency] += Number(contract.estimatedCost);
+        acc[contract.currency] += Number(contract.totalValue);
         return acc;
       }, {})
     );
@@ -3433,16 +3481,16 @@ export const DashboardBlock = () => {
                         className="rounded-lg border border-[#dfe7de] bg-[#fbfcfa] p-4"
                       >
                         <div className="mb-4 flex items-start justify-between gap-3">
-                          <div>
+                          <div className="min-w-0">
                             <div className="text-xs font-bold uppercase tracking-[0.08em] text-[#7b857f]">
                               {card.currency}
                             </div>
-                            <div className="mt-1 text-3xl font-black text-[#223137]">
+                            <div className="mt-1 max-w-full break-words text-2xl font-black leading-tight text-[#223137] sm:text-3xl">
                               {formatCompactCurrency(card.total)}
                             </div>
                           </div>
                           <div
-                            className="rounded-md px-3 py-1 text-sm font-bold"
+                            className="shrink-0 rounded-md px-3 py-1 text-sm font-bold"
                             style={{
                               backgroundColor: card.softColor,
                               color: card.color,
@@ -3465,7 +3513,7 @@ export const DashboardBlock = () => {
                                       {company.volume.toLocaleString()} т
                                     </div>
                                   </div>
-                                  <div className="shrink-0 text-right text-sm font-black text-[#223137]">
+                                  <div className="max-w-[46%] shrink-0 break-words text-right text-sm font-black leading-tight text-[#223137]">
                                     {card.symbol}
                                     {formatCompactCurrency(company.value)}
                                   </div>

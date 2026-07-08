@@ -60,6 +60,19 @@ const toEntityArray = <T = any,>(value: any): T[] => {
   return [];
 };
 
+const formatRouteApplicationsCount = (count: number) => {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  const label =
+    mod10 === 1 && mod100 !== 11
+      ? "заявка"
+      : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
+        ? "заявки"
+        : "заявок";
+
+  return `${count} ${label}`;
+};
+
 export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   const { id } = useParams();
   const isAdmin = localStorage.getItem("isAdmin") === "true";
@@ -180,8 +193,13 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   //     .filter(Boolean) || [];
 
   const contractOps = useMemo(
-    () => getContractOpsMeta(contractData, { wagons, invoices: contractInvoices }),
-    [contractData, wagons, contractInvoices]
+    () =>
+      getContractOpsMeta(contractData, {
+        wagons,
+        applications: contractApplications,
+        invoices: contractInvoices,
+      }),
+    [contractData, wagons, contractApplications, contractInvoices]
   );
 
   // Calculate shipment usage from the same source as the operational center.
@@ -367,6 +385,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     (contractData as any)?.currency ||
     contractFinanceLinks.invoices[0]?.currency ||
     "USD";
+  const isApplicationDetailOpen = Boolean(selectedApplicationId);
+  const hasMultipleRoutes = contractOps.routes.length > 1;
 
   return (
     <>
@@ -417,29 +437,87 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           <CardContent className="px-4 py-4 sm:px-5 lg:px-6">
             <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
               <div className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_12px_28px_rgba(34,49,55,0.045)]">
-                <div className="grid gap-3 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
+                {hasMultipleRoutes ? (
                   <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-4">
-                    <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
-                      <TrainFront className="h-4 w-4 text-[#2f6b4f]" />
-                      Отправление
+                    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
+                        <Route className="h-4 w-4 text-[#f38810]" />
+                        Маршруты по приложениям
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className="w-fit border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]"
+                      >
+                        {contractOps.route.label}
+                      </Badge>
                     </div>
-                    <div className="truncate text-lg font-black text-[#223137]">
-                      {contractOps.route.departure}
+
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {contractOps.routes.map((route, index) => (
+                        <div
+                          key={`${route.label}-${index}`}
+                          className="rounded-md border border-[#dfe7de] bg-white p-3"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-black uppercase text-[#7b857f]">
+                              Маршрут {index + 1}
+                            </span>
+                            <span className="rounded-sm bg-[#f5faf5] px-2 py-1 text-[10px] font-black uppercase text-[#2f6b4f]">
+                              {formatRouteApplicationsCount(route.applicationsCount)}
+                            </span>
+                          </div>
+                          <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[#7b857f]">
+                                <TrainFront className="h-3.5 w-3.5 text-[#2f6b4f]" />
+                                Отправление
+                              </div>
+                              <div className="mt-1 truncate text-sm font-black text-[#223137]">
+                                {route.departure}
+                              </div>
+                            </div>
+                            <div className="hidden size-8 items-center justify-center rounded-full border border-[#f2dfca] bg-[#fff3e5] text-[#f38810] sm:flex">
+                              <Route className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[#7b857f]">
+                                <MapPin className="h-3.5 w-3.5 text-[#f38810]" />
+                                Назначение
+                              </div>
+                              <div className="mt-1 truncate text-sm font-black text-[#223137]">
+                                {route.destination}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <div className="hidden size-11 items-center justify-center rounded-full border border-[#f2dfca] bg-[#fff3e5] text-[#f38810] lg:flex">
-                    <Route className="h-5 w-5" />
-                  </div>
-                  <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-4">
-                    <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
-                      <MapPin className="h-4 w-4 text-[#f38810]" />
-                      Назначение
+                ) : (
+                  <div className="grid gap-3 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
+                    <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-4">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
+                        <TrainFront className="h-4 w-4 text-[#2f6b4f]" />
+                        Отправление
+                      </div>
+                      <div className="truncate text-lg font-black text-[#223137]">
+                        {contractOps.route.departure}
+                      </div>
                     </div>
-                    <div className="truncate text-lg font-black text-[#223137]">
-                      {contractOps.route.destination}
+                    <div className="hidden size-11 items-center justify-center rounded-full border border-[#f2dfca] bg-[#fff3e5] text-[#f38810] lg:flex">
+                      <Route className="h-5 w-5" />
+                    </div>
+                    <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-4">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
+                        <MapPin className="h-4 w-4 text-[#f38810]" />
+                        Назначение
+                      </div>
+                      <div className="truncate text-lg font-black text-[#223137]">
+                        {contractOps.route.destination}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="mt-4">
                   <div className="mb-2 flex items-center justify-between text-xs">
@@ -490,7 +568,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                     {contractOps.documentsCount}
                   </div>
                   <div className="mt-1 text-xs text-[#7b857f]">
-                    договор, маршрут, заявки
+                    договор, маршруты, заявки
                   </div>
                 </div>
                 <div className="rounded-md border border-[#dce8dc] bg-[#f5faf5] p-4">
@@ -598,28 +676,33 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           </CardContent>
         </Card>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid h-auto w-full grid-cols-3 rounded-md border border-[#dfe7de] bg-white p-1 shadow-[0_12px_28px_rgba(34,49,55,0.05)]">
-            <TabsTrigger
-              value="applications"
-              className="rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
-            >
-              Заявки
-            </TabsTrigger>
-            <TabsTrigger
-              value="finance"
-              className="rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
-            >
-              Финансы
-            </TabsTrigger>
-            <TabsTrigger
-              value="details"
-              className="rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
-            >
-              <span className="hidden sm:inline">Вагоны</span>
-              <span className="sm:hidden">Вагоны</span>
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="applications" className="mt-4">
+          {!isApplicationDetailOpen && (
+            <TabsList className="grid h-auto w-full grid-cols-3 rounded-md border border-[#dfe7de] bg-white p-1 shadow-[0_12px_28px_rgba(34,49,55,0.05)]">
+              <TabsTrigger
+                value="applications"
+                className="rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
+              >
+                Заявки
+              </TabsTrigger>
+              <TabsTrigger
+                value="finance"
+                className="rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
+              >
+                Финансы
+              </TabsTrigger>
+              <TabsTrigger
+                value="details"
+                className="rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
+              >
+                <span className="hidden sm:inline">Вагоны</span>
+                <span className="sm:hidden">Вагоны</span>
+              </TabsTrigger>
+            </TabsList>
+          )}
+          <TabsContent
+            value="applications"
+            className={isApplicationDetailOpen ? "mt-0" : "mt-4"}
+          >
             {selectedApplicationId ? (
               <ApplicationDetail
                 contractId={id as any}

@@ -4,6 +4,7 @@ export type ContractOperationStatus = "active" | "risk" | "completed" | "draft";
 
 type ContractOpsOptions = {
   wagons?: any[];
+  applications?: any[];
   invoices?: any[];
   payments?: any[];
 };
@@ -463,6 +464,187 @@ const getContractPayments = (contract: any, invoices?: any[]) => {
   );
 };
 
+const getTextValue = (value: unknown) => {
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value).trim();
+  }
+
+  if (value && typeof value === "object") {
+    const source = value as Record<string, unknown>;
+    const nestedValue =
+      source.name ||
+      source.title ||
+      source.station_name ||
+      source.stationName ||
+      source.label ||
+      source.value;
+
+    return getTextValue(nestedValue);
+  }
+
+  return "";
+};
+
+const routeSourceKeys = ["route", "logistics", "transport", "shipping"];
+
+const getRouteTextValue = (source: any, keys: string[]) => {
+  const sources = [
+    source,
+    ...routeSourceKeys.map((key) => source?.[key]).filter(Boolean),
+  ];
+
+  for (const currentSource of sources) {
+    for (const key of keys) {
+      const value = getTextValue(currentSource?.[key]);
+
+      if (value) return value;
+    }
+  }
+
+  return "";
+};
+
+const routeDepartureKeys = [
+  "departure_station",
+  "departureStation",
+  "departure",
+  "from_station",
+  "fromStation",
+  "from",
+  "loading_station",
+  "loadingStation",
+  "origin_station",
+  "originStation",
+  "origin",
+  "station_from",
+  "stationFrom",
+  "sender_station",
+  "senderStation",
+];
+
+const routeDestinationKeys = [
+  "destination_station",
+  "destinationStation",
+  "destination",
+  "to_station",
+  "toStation",
+  "to",
+  "unloading_station",
+  "unloadingStation",
+  "arrival_station",
+  "arrivalStation",
+  "arrival",
+  "station_to",
+  "stationTo",
+  "receiver_station",
+  "receiverStation",
+];
+
+const getRussianPlural = (
+  count: number,
+  one: string,
+  few: string,
+  many: string
+) => {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+
+  return many;
+};
+
+const formatCount = (
+  count: number,
+  one: string,
+  few: string,
+  many: string
+) => `${count} ${getRussianPlural(count, one, few, many)}`;
+
+const getContractRoute = (contract: any, applicationsCount: number) => {
+  const departure =
+    getRouteTextValue(contract, routeDepartureKeys) || "Станция отправления";
+  const destination =
+    getRouteTextValue(contract, routeDestinationKeys) || "Станция назначения";
+
+  return {
+    departure,
+    destination,
+    label: `${departure} → ${destination}`,
+    applicationsCount,
+  };
+};
+
+const getApplicationRoutes = (applications: any[]) => {
+  const routes = new Map<
+    string,
+    {
+      departure: string;
+      destination: string;
+      label: string;
+      applicationsCount: number;
+    }
+  >();
+
+  applications.forEach((application) => {
+    const departure = getRouteTextValue(application, routeDepartureKeys);
+    const destination = getRouteTextValue(application, routeDestinationKeys);
+
+    if (!departure || !destination) return;
+
+    const routeKey = `${departure.toLocaleLowerCase()}|${destination.toLocaleLowerCase()}`;
+    const existingRoute = routes.get(routeKey);
+
+    if (existingRoute) {
+      existingRoute.applicationsCount += 1;
+      return;
+    }
+
+    routes.set(routeKey, {
+      departure,
+      destination,
+      label: `${departure} → ${destination}`,
+      applicationsCount: 1,
+    });
+  });
+
+  return Array.from(routes.values());
+};
+
+const getRouteSummary = (
+  routes: ReturnType<typeof getApplicationRoutes>,
+  status: ContractOperationStatus,
+  shippedVolume: number
+) => {
+  const eta =
+    status === "risk"
+      ? "требует контроля"
+      : shippedVolume > 0
+        ? "в работе"
+        : "отгрузок нет";
+
+  if (routes.length <= 1) {
+    const route = routes[0];
+
+    return {
+      departure: route.departure,
+      destination: route.destination,
+      label: route.label,
+      eta,
+      count: routes.length,
+    };
+  }
+
+  return {
+    departure: formatCount(routes.length, "отправление", "отправления", "отправлений"),
+    destination: formatCount(routes.length, "назначение", "назначения", "назначений"),
+    label: formatCount(routes.length, "маршрут", "маршрута", "маршрутов"),
+    eta,
+    count: routes.length,
+  };
+};
+
 const getMoneyValue = (value: any) =>
   toNumber(value?.amount ?? value?.total_amount ?? value?.totalAmount ?? value?.sum ?? value);
 
@@ -518,7 +700,7 @@ export const getContractOpsMeta = (
 ) => {
   const totalVolume = getContractVolume(contract);
   const wagons = options.wagons || getArray(contract?.wagons);
-  const applications = getContractApplications(contract);
+  const applications = options.applications || getContractApplications(contract);
   const files = getContractFiles(contract);
   const invoices = options.invoices || getContractInvoices(contract);
   const payments = options.payments || getContractPayments(contract, invoices);
@@ -542,10 +724,8 @@ export const getContractOpsMeta = (
     files.length || getCount(contract?.documents_count);
   const hasCoreData =
     Boolean(contract?.number) &&
-    Boolean(contract?.sender) &&
-    Boolean(contract?.receiver) &&
-    Boolean(contract?.departure_station || contract?.departureStation) &&
-    Boolean(contract?.destination_station || contract?.destinationStation);
+    Boolean(contract?.crop) &&
+    totalVolume > 0;
   const overdueSignal =
     contract?.status === "overdue" ||
     contract?.payment_status === "overdue";
@@ -575,10 +755,12 @@ export const getContractOpsMeta = (
   const openInvoiceCount = invoices.filter(
     (invoice) => getInvoiceBalanceValue(invoice) > 0
   ).length;
-  const departure =
-    contract?.departure_station || contract?.departureStation || "Станция отправления";
-  const destination =
-    contract?.destination_station || contract?.destinationStation || "Станция назначения";
+  const applicationRoutes = getApplicationRoutes(applications);
+  const routes =
+    applicationRoutes.length > 0
+      ? applicationRoutes
+      : [getContractRoute(contract, applicationsCount)];
+  const route = getRouteSummary(routes, status, shippedVolume);
 
   return {
     status,
@@ -601,20 +783,11 @@ export const getContractOpsMeta = (
     paidInvoiceCount,
     openInvoiceCount,
     overdueCount: status === "risk" ? 1 : 0,
-    route: {
-      departure,
-      destination,
-      label: `${departure} → ${destination}`,
-      eta:
-        status === "risk"
-          ? "требует контроля"
-          : shippedVolume > 0
-            ? "в работе"
-            : "отгрузок нет",
-    },
+    route,
+    routes,
     nextAction:
       status === "draft"
-        ? "Заполнить маршрут"
+        ? "Заполнить данные договора"
         : status === "risk"
           ? "Проверить просрочки"
           : status === "completed"

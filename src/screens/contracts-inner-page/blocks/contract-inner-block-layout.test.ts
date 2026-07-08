@@ -19,6 +19,11 @@ describe("contract inner block layout", () => {
     );
   });
 
+  it("hides contract operation tabs while an application detail is open", () => {
+    expect(source).toContain("isApplicationDetailOpen");
+    expect(source).toMatch(/\{!isApplicationDetailOpen && \(\s*<TabsList/);
+  });
+
   it("does not render deal documents inside the contract finance tab", () => {
     const financeStart = source.indexOf('<TabsContent value="finance"');
     const financeEnd = source.indexOf("</TabsContent>", financeStart);
@@ -37,5 +42,12 @@ describe("contract inner block layout", () => {
     expect(source).toContain("По документам");
     expect(source).toContain("Фактически");
     expect(source).toContain("использовано по документам");
+  });
+
+  it("renders application routes in the deal control block", () => {
+    expect(source).toContain("applications: contractApplications");
+    expect(source).toContain("contractOps.routes");
+    expect(source).toContain("Маршруты по приложениям");
+    expect(source).toContain("applicationsCount");
   });
 });
