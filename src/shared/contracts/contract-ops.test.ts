@@ -279,6 +279,27 @@ describe("contract operational metadata", () => {
     });
   });
 
+  it("summarizes the new wagon workflow statuses", () => {
+    const summary = getApplicationShipmentSummary({
+      wagons: [
+        { status: "en_route_to_loading" },
+        { status: "registered" },
+        { status: "en_route_to_recipient" },
+        { status: "shipped" },
+      ],
+    });
+
+    expect(summary).toMatchObject({
+      status: "loading",
+      label: "Следует к получателю",
+      total: 4,
+      shipped: 1,
+      enRouteToLoading: 1,
+      registered: 1,
+      enRouteToRecipient: 1,
+    });
+  });
+
   it("keeps a safe backend download target for contract documents", () => {
     const file = {
       id: 12,

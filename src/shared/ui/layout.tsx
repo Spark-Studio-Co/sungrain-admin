@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   ShieldCheck,
+  Sheet,
   TrainFront,
   TrainTrack,
   UserCheck,
@@ -109,6 +110,12 @@ const adminNavigationItems = [
     icon: TrainFront,
     url: "/admin/stations",
   },
+  {
+    title: "Дислокации",
+    eyebrow: "Мониторинг",
+    icon: Sheet,
+    url: "/admin/dislocations",
+  },
 ];
 
 const userNavigationItems = [
@@ -131,6 +138,7 @@ const sectionTitles: Record<string, string> = {
   "/admin/sender": "Грузоотправители",
   "/admin/receiver": "Грузополучатели",
   "/admin/stations": "Станции",
+  "/admin/dislocations": "Дислокации",
   "/contracts": "Мои контракты",
 };
 

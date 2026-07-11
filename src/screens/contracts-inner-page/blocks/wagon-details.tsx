@@ -4,9 +4,6 @@ import { Fragment, useMemo, useState } from "react";
 import { formatNumber } from "@/lib/utils";
 import {
   Search,
-  Building2,
-  CheckCircle2,
-  Circle,
   File,
   Download,
   Calendar,
@@ -20,6 +17,7 @@ import {
   FileBox,
   ChevronDownIcon,
   ChevronUpIcon,
+  MapPin,
 } from "lucide-react";
 import {
   Card,
@@ -54,6 +52,8 @@ import {
   sortWagonsByStatusGroup,
   type WagonDateSortOrder,
 } from "@/shared/contracts/wagon-sort";
+import { getWagonStatusMeta } from "@/shared/contracts/wagon-status";
+import { normalizeWagonStatus } from "@/shared/contracts/wagon-status-data";
 
 interface WagonDetailsProps {
   wagons: any[];
@@ -70,33 +70,24 @@ const formatDateSafe = (dateString: string) => {
   }
 };
 
-const getStatusInfo = (status: string) => {
-  switch (status) {
-    case "shipped":
-      return {
-        icon: <CheckCircle2 className="h-3.5 w-3.5" />,
-        label: "Отгружен",
-        className: "bg-green-100 text-green-800 hover:bg-green-100",
-      };
-    case "in_transit":
-      return {
-        icon: <TrainFront className="h-3.5 w-3.5" />,
-        label: "В пути",
-        className: "bg-amber-100 text-amber-800 hover:bg-amber-100",
-      };
-    case "at_elevator":
-      return {
-        icon: <Building2 className="h-3.5 w-3.5" />,
-        label: "На элеваторе",
-        className: "bg-blue-100 text-blue-800 hover:bg-blue-100",
-      };
-    default:
-      return {
-        icon: <Circle className="h-3.5 w-3.5" />,
-        label: status || "Не указан",
-        className: "bg-slate-100 text-slate-800 hover:bg-slate-100",
-      };
+const formatDateTimeSafe = (dateString?: string) => {
+  if (!dateString) return "—";
+  try {
+    return format(new Date(dateString), "dd.MM.yyyy, HH:mm", { locale: ru });
+  } catch {
+    return dateString;
   }
+};
+
+const getStatusInfo = (status: string) => {
+  const meta = getWagonStatusMeta(status);
+  const Icon = meta.icon;
+
+  return {
+    icon: <Icon className="h-3.5 w-3.5" />,
+    label: meta.label,
+    className: meta.className,
+  };
 };
 
 const getWagonData = (wagon: any) => {
@@ -106,7 +97,11 @@ const getWagonData = (wagon: any) => {
   const wagonNumber =
     wagon.number || wagon.wagon?.number || `Вагон ${wagonId}`;
   const wagonOwner = wagon.owner || wagon.wagon?.owner || "Не указан";
-  const wagonStatus = wagon.status || wagon.wagon?.status || "unknown";
+  const wagonStatus = normalizeWagonStatus(
+    wagon.status || wagon.wagon?.status || "unknown"
+  );
+  const dislocation =
+    wagon.dislocations?.[0] || wagon.wagon?.dislocations?.[0] || null;
 
   return {
     capacity,
@@ -115,6 +110,7 @@ const getWagonData = (wagon: any) => {
     wagonNumber,
     wagonOwner,
     wagonStatus,
+    dislocation,
   };
 };
 
@@ -218,12 +214,21 @@ export const WagonDetails = ({
   const filteredWagonRows = useMemo(() => {
     const searchLower = searchTerm.toLowerCase();
     const rows = rawWagonRows.filter(({ wagon, applicationLabel }) => {
-      const { capacity, realWeight, wagonId, wagonNumber, wagonOwner, wagonStatus } =
-        getWagonData(wagon);
+      const {
+        capacity,
+        realWeight,
+        wagonId,
+        wagonNumber,
+        wagonOwner,
+        wagonStatus,
+        dislocation,
+      } = getWagonData(wagon);
       const matchesSearch =
         wagonNumber?.toLowerCase().includes(searchLower) ||
         wagonOwner?.toLowerCase().includes(searchLower) ||
         wagonStatus?.toLowerCase().includes(searchLower) ||
+        dislocation?.lastOperationStation?.toLowerCase().includes(searchLower) ||
+        dislocation?.operation?.toLowerCase().includes(searchLower) ||
         wagonId?.toString().includes(searchLower) ||
         applicationLabel.toLowerCase().includes(searchLower) ||
         capacity?.toString().includes(searchLower) ||
@@ -448,6 +453,7 @@ export const WagonDetails = ({
                     wagonStatus,
                     capacity,
                     realWeight,
+                    dislocation,
                   } = getWagonData(wagon);
                   const statusInfo = getStatusInfo(wagonStatus);
                   const isExpanded = expandedRows[wagonId] || false;
@@ -537,6 +543,23 @@ export const WagonDetails = ({
                                 : "—"}
                             </div>
                           </div>
+                        </div>
+                        <div className="mt-2 rounded-md border border-[#dce8dc] bg-[#f5faf5] px-2.5 py-2 text-xs">
+                          <div className="flex items-center gap-1.5 font-semibold text-[#2f6b4f]">
+                            <MapPin className="h-3.5 w-3.5" />
+                            {dislocation?.lastOperationStation ||
+                              "Дислокация ещё не получена"}
+                          </div>
+                          {dislocation && (
+                            <div className="mt-1 text-[#6f7f76]">
+                              {dislocation.operation || "Операция не указана"}
+                              {Number.isFinite(
+                                dislocation.distanceToDestinationKm
+                              )
+                                ? ` · ${dislocation.distanceToDestinationKm} км до назначения`
+                                : ""}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -726,13 +749,16 @@ export const WagonDetails = ({
               </div>
 
               <div className="hidden sm:block">
-                <Table className="min-w-[960px]">
+                <Table className="min-w-[1160px]">
                   <TableHeader className="bg-muted/20">
                     <TableRow>
                       <TableHead className="w-[220px]">Приложение</TableHead>
                       <TableHead>Номер вагона</TableHead>
                       <TableHead>Владелец</TableHead>
                       <TableHead>Статус</TableHead>
+                      <TableHead className="hidden lg:table-cell">
+                        Текущая дислокация
+                      </TableHead>
                       <TableHead className="hidden md:table-cell">
                         Дата отгрузки
                       </TableHead>
@@ -751,6 +777,7 @@ export const WagonDetails = ({
                           wagonStatus,
                           capacity,
                           realWeight,
+                          dislocation,
                         } = getWagonData(wagon);
                         const statusInfo = getStatusInfo(wagonStatus);
                         const isExpanded = expandedRows[wagonId] || false;
@@ -815,6 +842,36 @@ export const WagonDetails = ({
                                   {statusInfo.label}
                                 </Badge>
                               </TableCell>
+                              <TableCell className="hidden lg:table-cell">
+                                {dislocation ? (
+                                  <div className="max-w-[280px]">
+                                    <div className="flex items-center gap-1.5 font-semibold text-[#2f6b4f]">
+                                      <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                      <span className="truncate">
+                                        {dislocation.lastOperationStation || "—"}
+                                      </span>
+                                    </div>
+                                    <div className="mt-1 truncate text-xs text-[#7b857f]">
+                                      {dislocation.operation || "Операция не указана"}
+                                    </div>
+                                    <div className="mt-0.5 text-[11px] text-[#8b948f]">
+                                      {Number.isFinite(
+                                        dislocation.distanceToDestinationKm
+                                      )
+                                        ? `${dislocation.distanceToDestinationKm} км · `
+                                        : ""}
+                                      {formatDateTimeSafe(
+                                        dislocation.lastOperationAt ||
+                                          dislocation.observedAt
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-[#9aa39e]">
+                                    Нет данных
+                                  </span>
+                                )}
+                              </TableCell>
                               <TableCell className="hidden md:table-cell">
                                 {wagon.date_of_unloading
                                   ? formatDateSafe(wagon.date_of_unloading)
@@ -828,7 +885,7 @@ export const WagonDetails = ({
                             </TableRow>
                             {isExpanded && (
                               <TableRow className="border-t border-slate-100 bg-slate-50">
-                                <TableCell colSpan={6} className="p-0">
+                                <TableCell colSpan={7} className="p-0">
                                   <div className="animate-in fade-in-50 space-y-4 p-5 duration-200">
                                     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
                                       <div className="grid grid-cols-1 divide-y divide-slate-200 md:grid-cols-2 md:divide-x md:divide-y-0">

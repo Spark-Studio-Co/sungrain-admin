@@ -55,10 +55,8 @@ import { deleteWagonFiles } from "@/entities/wagon/api/delete/delete-wagon-files
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import {
-  Building2,
   CalendarIcon,
   CheckCircle2,
-  Circle,
   FileText,
   Loader2,
   Pencil,
@@ -71,6 +69,11 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { apiClient } from "@/shared/api/apiClient";
 import { sortWagonsByStatusGroup } from "@/shared/contracts/wagon-sort";
+import {
+  getWagonStatusMeta,
+  WAGON_STATUS_OPTIONS,
+  WagonStatusBadge,
+} from "@/shared/contracts/wagon-status";
 
 interface WagonRegistryProps {
   wagons: any[];
@@ -239,11 +242,16 @@ export const WagonRegistry = ({
         updatedDocs.length > 0 &&
         updatedDocs.every((doc) => doc.file || doc.location);
 
-      // Only update status to shipped, don't set any date automatically
+      // Documents make the wagon ready for shipment, but do not complete it.
       if (allDocumentsHaveFiles) {
         setEditingWagon((prevWagon: any) => ({
           ...prevWagon,
-          status: "shipped",
+          status:
+            prevWagon?.status === "en_route_to_loading" ||
+            prevWagon?.status === "at_elevator" ||
+            prevWagon?.status === "in_transit"
+              ? "registered"
+              : prevWagon?.status,
         }));
       }
 
@@ -276,14 +284,19 @@ export const WagonRegistry = ({
         date_of_unloading: formattedDate,
       }));
 
-      // If the wagon has documents and a date is set, update status to shipped
+      // A date and documents mean the wagon is оформлен, not yet completed.
       if (
         documents.length > 0 &&
         documents.every((doc) => doc.file || doc.location)
       ) {
         setEditingWagon((prev: any) => ({
           ...prev,
-          status: "shipped",
+          status:
+            prev?.status === "en_route_to_loading" ||
+            prev?.status === "at_elevator" ||
+            prev?.status === "in_transit"
+              ? "registered"
+              : prev?.status,
         }));
       }
     } else {
@@ -450,14 +463,7 @@ export const WagonRegistry = ({
     Number.parseFloat(editingWagon?.real_weight || "0") || 0;
   const editCompletion =
     editCapacity > 0 ? Math.min((editRealWeight / editCapacity) * 100, 100) : 0;
-  const editStatusLabel =
-    editingWagon?.status === "shipped"
-      ? "Отгружен"
-      : editingWagon?.status === "in_transit"
-        ? "В пути"
-        : editingWagon?.status === "at_elevator"
-          ? "На элеваторе"
-          : "Не указан";
+  const editStatusLabel = getWagonStatusMeta(editingWagon?.status).label;
   const ownerOptions = (ownersData?.data || []).filter(
     (ownerItem: any) => typeof ownerItem?.owner === "string" && ownerItem.owner.trim()
   );
@@ -522,39 +528,10 @@ export const WagonRegistry = ({
                       </div>
                     </div>
                     <div className="flex gap-1">
-                      <Badge
-                        variant={
-                          wagon.status === "shipped"
-                            ? "default"
-                            : wagon.status === "in_transit"
-                            ? "secondary"
-                            : "outline"
-                        }
-                        className={`text-xs ${
-                          wagon.status === "shipped"
-                            ? "bg-green-100 text-green-800"
-                            : wagon.status === "in_transit"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-slate-100 text-slate-800"
-                        }`}
-                      >
-                        {wagon.status === "shipped" ? (
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                        ) : wagon.status === "in_transit" ? (
-                          <TrainFront className="h-3 w-3 mr-1" />
-                        ) : wagon.status === "at_elevator" ? (
-                          <Building2 className="h-3 w-3 mr-1" />
-                        ) : (
-                          <Circle className="h-3 w-3 mr-1" />
-                        )}
-                        {wagon.status === "shipped"
-                          ? "Отгружен"
-                          : wagon.status === "in_transit"
-                          ? "В пути"
-                          : wagon.status === "at_elevator"
-                          ? "На элеваторе"
-                          : wagon.status || "Не указан"}
-                      </Badge>
+                      <WagonStatusBadge
+                        status={wagon.status}
+                        className="text-xs"
+                      />
                     </div>
                   </div>
 
@@ -675,39 +652,10 @@ export const WagonRegistry = ({
                           : "Не указана"}
                       </TableCell>
                       <TableCell className="text-xs sm:text-sm p-2 sm:p-4">
-                        <Badge
-                          variant={
-                            wagon.status === "shipped"
-                              ? "default"
-                              : wagon.status === "in_transit"
-                              ? "secondary"
-                              : "outline"
-                          }
-                          className={`flex w-fit items-center gap-1 text-xs sm:text-sm ${
-                            wagon.status === "shipped"
-                              ? "bg-green-100 text-green-800 hover:bg-green-100"
-                              : wagon.status === "in_transit"
-                              ? "bg-amber-100 text-amber-800 hover:bg-amber-100"
-                              : "bg-slate-100 text-slate-800 hover:bg-slate-100"
-                          }`}
-                        >
-                          {wagon.status === "shipped" ? (
-                            <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                          ) : wagon.status === "in_transit" ? (
-                            <TrainFront className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                          ) : wagon.status === "at_elevator" ? (
-                            <Building2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                          ) : (
-                            <Circle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                          )}
-                          {wagon.status === "shipped"
-                            ? "Отгружен"
-                            : wagon.status === "in_transit"
-                            ? "В пути"
-                            : wagon.status === "at_elevator"
-                            ? "На элеваторе"
-                            : wagon.status || "Не указан"}
-                        </Badge>
+                        <WagonStatusBadge
+                          status={wagon.status}
+                          className="text-xs sm:text-sm"
+                        />
                       </TableCell>
                       {isAdmin && (
                         <TableCell className="text-right text-xs sm:text-sm p-2 sm:p-4">
@@ -952,11 +900,20 @@ export const WagonRegistry = ({
                             <SelectValue placeholder="Выберите статус" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="at_elevator">
-                              На элеваторе
-                            </SelectItem>
-                            <SelectItem value="in_transit">В пути</SelectItem>
-                            <SelectItem value="shipped">Отгружен</SelectItem>
+                            {editingWagon?.status &&
+                              !WAGON_STATUS_OPTIONS.some(
+                                (status) => status.value === editingWagon.status
+                              ) && (
+                                <SelectItem value={editingWagon.status}>
+                                  {getWagonStatusMeta(editingWagon.status).label}
+                                  {" (текущий)"}
+                                </SelectItem>
+                              )}
+                            {WAGON_STATUS_OPTIONS.map((status) => (
+                              <SelectItem key={status.value} value={status.value}>
+                                {status.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>

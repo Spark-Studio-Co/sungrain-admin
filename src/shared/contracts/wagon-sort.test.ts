@@ -17,9 +17,9 @@ describe("wagon status sorting", () => {
     expect(sortWagonsByStatusGroup(rows).map((row) => row.wagon.status)).toEqual([
       "shipped",
       "shipped",
+      "at_elevator",
+      "at_elevator",
       "in_transit",
-      "at_elevator",
-      "at_elevator",
     ]);
   });
 
@@ -58,8 +58,24 @@ describe("wagon status sorting", () => {
   it("returns status tabs in the same fixed order as rows", () => {
     expect(getOrderedWagonStatuses(["at_elevator", "shipped", "in_transit"])).toEqual([
       "shipped",
-      "in_transit",
       "at_elevator",
+      "in_transit",
+    ]);
+  });
+
+  it("sorts the new workflow statuses from completed to preparation", () => {
+    const rows = [
+      { status: "registered" },
+      { status: "en_route_to_loading" },
+      { status: "shipped" },
+      { status: "en_route_to_recipient" },
+    ];
+
+    expect(sortWagonsByStatusGroup(rows).map((wagon) => wagon.status)).toEqual([
+      "shipped",
+      "en_route_to_recipient",
+      "registered",
+      "en_route_to_loading",
     ]);
   });
 

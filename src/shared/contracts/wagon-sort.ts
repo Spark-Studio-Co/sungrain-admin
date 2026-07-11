@@ -1,18 +1,12 @@
+import {
+  getWagonStatusRank,
+  normalizeWagonStatus,
+} from "./wagon-status-data";
+
 export type WagonDateSortOrder = "newest" | "oldest" | null;
 
-const wagonStatusOrder = ["shipped", "in_transit", "at_elevator"];
-
-const getStatusRank = (status: string) => {
-  const rank = wagonStatusOrder.indexOf(status);
-
-  return rank === -1 ? wagonStatusOrder.length : rank;
-};
-
-const getStatusValue = (value: unknown) =>
-  typeof value === "string" ? value.toLowerCase() : "";
-
 const getWagonStatus = (wagon: any) =>
-  getStatusValue(wagon?.status || wagon?.wagon?.status);
+  normalizeWagonStatus(wagon?.status || wagon?.wagon?.status);
 
 const resolveWagon = (row: any) => row?.wagon || row;
 
@@ -25,10 +19,12 @@ const parseWagonDate = (value: unknown) => {
 };
 
 export const getOrderedWagonStatuses = (statuses: string[]) => {
-  const uniqueStatuses = Array.from(new Set(statuses.map(getStatusValue).filter(Boolean)));
+  const uniqueStatuses = Array.from(
+    new Set(statuses.map(normalizeWagonStatus).filter(Boolean))
+  );
 
   return uniqueStatuses.sort((a, b) => {
-    const rankDiff = getStatusRank(a) - getStatusRank(b);
+    const rankDiff = getWagonStatusRank(a) - getWagonStatusRank(b);
 
     if (rankDiff !== 0) return rankDiff;
 
@@ -49,7 +45,8 @@ export const sortWagonsByStatusGroup = <T>(
       const wagonB = resolveWagon(b.row);
       const statusA = getWagonStatus(wagonA);
       const statusB = getWagonStatus(wagonB);
-      const rankDiff = getStatusRank(statusA) - getStatusRank(statusB);
+      const rankDiff =
+        getWagonStatusRank(statusA) - getWagonStatusRank(statusB);
 
       if (rankDiff !== 0) return rankDiff;
 

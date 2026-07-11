@@ -131,6 +131,42 @@
 }
 
 @layer utilities {
+  @keyframes crm-shimmer-slide {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .crm-shimmer {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: #edf2ec;
+  }
+
+  .crm-shimmer::after {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 55%;
+    transform: translateX(-130%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.82),
+      rgba(243, 136, 16, 0.12),
+      transparent
+    );
+    animation: crm-shimmer-slide 1.55s ease-in-out infinite;
+    content: "";
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .crm-shimmer::after {
+      animation: none;
+    }
+  }
+
   .crm-panel {
     border: 1px solid color-mix(in srgb, var(--crm-line) 88%, transparent);
     background: rgba(255, 255, 255, 0.94);

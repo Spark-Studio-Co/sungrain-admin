@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { useAddWagon } from "../hooks/mutations/use-add-wagon.mutation";
 import { useGetOwners } from "@/entities/owner/hooks/query/use-get-owners.query";
+import { WAGON_STATUS_OPTIONS } from "@/shared/contracts/wagon-status";
 
 interface AddWagonPopupProps {
   contractId: string;
@@ -56,7 +57,7 @@ export const AddWagonPopup = ({
     capacity: "",
     real_weight: "",
     owner: "",
-    status: "at_elevator",
+    status: "en_route_to_loading",
     date_of_departure: "",
     date_of_unloading: "",
   });
@@ -85,7 +86,11 @@ export const AddWagonPopup = ({
     if (documents.length > 0) {
       const allFilesUploaded = documents.every((doc) => doc.file);
       if (allFilesUploaded) {
-        setNewWagon((prev) => ({ ...prev, status: "shipped" }));
+        setNewWagon((prev) =>
+          prev.status === "en_route_to_loading" || prev.status === "at_elevator"
+            ? { ...prev, status: "registered" }
+            : prev
+        );
       }
     }
   }, [documents]);
@@ -165,7 +170,7 @@ export const AddWagonPopup = ({
           capacity: "",
           real_weight: "",
           owner: "",
-          status: "at_elevator",
+          status: "en_route_to_loading",
           date_of_departure: "",
           date_of_unloading: "",
         });
@@ -319,9 +324,11 @@ export const AddWagonPopup = ({
                     <SelectValue placeholder="Выберите статус" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="at_elevator">На элеваторе</SelectItem>
-                    <SelectItem value="in_transit">В пути</SelectItem>
-                    <SelectItem value="shipped">Отгружен</SelectItem>
+                    {WAGON_STATUS_OPTIONS.map((status) => (
+                      <SelectItem key={status.value} value={status.value}>
+                        {status.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

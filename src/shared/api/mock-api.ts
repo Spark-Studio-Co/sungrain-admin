@@ -1,4 +1,8 @@
-import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from "axios";
+import type {
+  AxiosAdapter,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from "axios";
 
 type AnyRecord = Record<string, any>;
 
@@ -98,7 +102,11 @@ const users = [
   },
 ];
 
-const makeFile = (id: string | number, name: string, extra: AnyRecord = {}) => ({
+const makeFile = (
+  id: string | number,
+  name: string,
+  extra: AnyRecord = {},
+) => ({
   id,
   name,
   number: extra.number || `DOC-${id}`,
@@ -121,7 +129,7 @@ const makeWagon = (
   capacity: number,
   realWeight: number,
   owner: string,
-  daysOffset: number
+  daysOffset: number,
 ) => {
   const wagon = {
     id,
@@ -157,7 +165,7 @@ const makeApplication = (
   pricePerTon: number,
   currency: string,
   culture: string,
-  daysOffset: number
+  daysOffset: number,
 ) => ({
   id,
   contractId,
@@ -200,13 +208,52 @@ const contracts = [
     updated_at: isoDate(-6),
     files: [makeFile(1, "Контракт SG-2026-001.pdf")],
     applications: [
-      makeApplication(101, 1, "Отгрузка февраль", 2200, 82, "USD", "wheat", -118),
+      makeApplication(
+        101,
+        1,
+        "Отгрузка февраль",
+        2200,
+        82,
+        "USD",
+        "wheat",
+        -118,
+      ),
       makeApplication(102, 1, "Отгрузка март", 1750, 84, "USD", "wheat", -88),
     ],
     wagons: [
-      makeWagon(1001, 1, 101, "54781234", "shipped", 68, 67.4, "KTZ Express", -116),
-      makeWagon(1002, 1, 101, "54781235", "shipped", 69, 68.1, "KTZ Express", -115),
-      makeWagon(1003, 1, 102, "54781236", "in_transit", 70, 69.2, "Sungrain Rail", -20),
+      makeWagon(
+        1001,
+        1,
+        101,
+        "54781234",
+        "shipped",
+        68,
+        67.4,
+        "KTZ Express",
+        -116,
+      ),
+      makeWagon(
+        1002,
+        1,
+        101,
+        "54781235",
+        "shipped",
+        69,
+        68.1,
+        "KTZ Express",
+        -115,
+      ),
+      makeWagon(
+        1003,
+        1,
+        102,
+        "54781236",
+        "en_route_to_recipient",
+        70,
+        69.2,
+        "Sungrain Rail",
+        -20,
+      ),
     ],
   },
   {
@@ -229,12 +276,50 @@ const contracts = [
     updated_at: isoDate(-12),
     files: [makeFile(2, "Контракт SG-2026-002.pdf")],
     applications: [
-      makeApplication(201, 2, "Алматы партия 1", 1400, 51000, "KZT", "barley", -90),
-      makeApplication(202, 2, "Алматы партия 2", 950, 51200, "KZT", "barley", -45),
+      makeApplication(
+        201,
+        2,
+        "Алматы партия 1",
+        1400,
+        51000,
+        "KZT",
+        "barley",
+        -90,
+      ),
+      makeApplication(
+        202,
+        2,
+        "Алматы партия 2",
+        950,
+        51200,
+        "KZT",
+        "barley",
+        -45,
+      ),
     ],
     wagons: [
-      makeWagon(2001, 2, 201, "62133418", "shipped", 66, 65.8, "TransAsia Logistic", -88),
-      makeWagon(2002, 2, 202, "62133419", "at_elevator", 66, 0, "TransAsia Logistic", -2),
+      makeWagon(
+        2001,
+        2,
+        201,
+        "62133418",
+        "shipped",
+        66,
+        65.8,
+        "TransAsia Logistic",
+        -88,
+      ),
+      makeWagon(
+        2002,
+        2,
+        202,
+        "62133419",
+        "registered",
+        66,
+        0,
+        "TransAsia Logistic",
+        -2,
+      ),
     ],
   },
   {
@@ -261,8 +346,28 @@ const contracts = [
       makeApplication(302, 3, "Лен доп. партия", 700, 352, "USD", "flax", -18),
     ],
     wagons: [
-      makeWagon(3001, 3, 301, "58900121", "shipped", 64, 63.9, "Sungrain Rail", -78),
-      makeWagon(3002, 3, 302, "58900122", "in_transit", 65, 64.5, "Sungrain Rail", -12),
+      makeWagon(
+        3001,
+        3,
+        301,
+        "58900121",
+        "shipped",
+        64,
+        63.9,
+        "Sungrain Rail",
+        -78,
+      ),
+      makeWagon(
+        3002,
+        3,
+        302,
+        "58900122",
+        "en_route_to_loading",
+        65,
+        64.5,
+        "Sungrain Rail",
+        -12,
+      ),
     ],
   },
   {
@@ -285,13 +390,61 @@ const contracts = [
     updated_at: isoDate(-9),
     files: [makeFile(4, "Контракт SG-2026-004.pdf")],
     applications: [
-      makeApplication(401, 4, "Рапс партия A", 1600, 340, "USD", "rapeseed", -58),
-      makeApplication(402, 4, "Рапс партия B", 1200, 342, "USD", "rapeseed", -31),
+      makeApplication(
+        401,
+        4,
+        "Рапс партия A",
+        1600,
+        340,
+        "USD",
+        "rapeseed",
+        -58,
+      ),
+      makeApplication(
+        402,
+        4,
+        "Рапс партия B",
+        1200,
+        342,
+        "USD",
+        "rapeseed",
+        -31,
+      ),
     ],
     wagons: [
-      makeWagon(4001, 4, 401, "73319845", "shipped", 67, 66.7, "Astana Wagon Service", -55),
-      makeWagon(4002, 4, 402, "73319846", "in_transit", 68, 67.5, "KTZ Express", -10),
-      makeWagon(4003, 4, 402, "73319847", "at_elevator", 68, 0, "KTZ Express", 0),
+      makeWagon(
+        4001,
+        4,
+        401,
+        "73319845",
+        "shipped",
+        67,
+        66.7,
+        "Astana Wagon Service",
+        -55,
+      ),
+      makeWagon(
+        4002,
+        4,
+        402,
+        "73319846",
+        "en_route_to_recipient",
+        68,
+        67.5,
+        "KTZ Express",
+        -10,
+      ),
+      makeWagon(
+        4003,
+        4,
+        402,
+        "73319847",
+        "registered",
+        68,
+        0,
+        "KTZ Express",
+        0,
+      ),
     ],
   },
   {
@@ -314,12 +467,50 @@ const contracts = [
     updated_at: isoDate(-3),
     files: [makeFile(5, "Контракт SG-2026-005.pdf")],
     applications: [
-      makeApplication(501, 5, "Майская отгрузка", 760, 66000, "KZT", "sunflower", -39),
-      makeApplication(502, 5, "Июньская отгрузка", 520, 66500, "KZT", "sunflower", -8),
+      makeApplication(
+        501,
+        5,
+        "Майская отгрузка",
+        760,
+        66000,
+        "KZT",
+        "sunflower",
+        -39,
+      ),
+      makeApplication(
+        502,
+        5,
+        "Июньская отгрузка",
+        520,
+        66500,
+        "KZT",
+        "sunflower",
+        -8,
+      ),
     ],
     wagons: [
-      makeWagon(5001, 5, 501, "61230077", "shipped", 65, 64.8, "TransAsia Logistic", -38),
-      makeWagon(5002, 5, 502, "61230078", "in_transit", 66, 65.2, "TransAsia Logistic", -4),
+      makeWagon(
+        5001,
+        5,
+        501,
+        "61230077",
+        "shipped",
+        65,
+        64.8,
+        "TransAsia Logistic",
+        -38,
+      ),
+      makeWagon(
+        5002,
+        5,
+        502,
+        "61230078",
+        "en_route_to_loading",
+        66,
+        65.2,
+        "TransAsia Logistic",
+        -4,
+      ),
     ],
   },
   {
@@ -342,13 +533,61 @@ const contracts = [
     updated_at: isoDate(-1),
     files: [makeFile(6, "Контракт SG-2026-006.pdf")],
     applications: [
-      makeApplication(601, 6, "Первая южная партия", 1800, 72, "USD", "wheat", -14),
-      makeApplication(602, 6, "Вторая южная партия", 1250, 73, "USD", "wheat", -5),
+      makeApplication(
+        601,
+        6,
+        "Первая южная партия",
+        1800,
+        72,
+        "USD",
+        "wheat",
+        -14,
+      ),
+      makeApplication(
+        602,
+        6,
+        "Вторая южная партия",
+        1250,
+        73,
+        "USD",
+        "wheat",
+        -5,
+      ),
     ],
     wagons: [
-      makeWagon(6001, 6, 601, "54799101", "in_transit", 70, 69.4, "Sungrain Rail", -12),
-      makeWagon(6002, 6, 601, "54799102", "in_transit", 70, 69.7, "Sungrain Rail", -11),
-      makeWagon(6003, 6, 602, "54799103", "at_elevator", 70, 0, "KTZ Express", 1),
+      makeWagon(
+        6001,
+        6,
+        601,
+        "54799101",
+        "en_route_to_recipient",
+        70,
+        69.4,
+        "Sungrain Rail",
+        -12,
+      ),
+      makeWagon(
+        6002,
+        6,
+        601,
+        "54799102",
+        "registered",
+        70,
+        69.7,
+        "Sungrain Rail",
+        -11,
+      ),
+      makeWagon(
+        6003,
+        6,
+        602,
+        "54799103",
+        "en_route_to_loading",
+        70,
+        0,
+        "KTZ Express",
+        1,
+      ),
     ],
   },
 ];
@@ -357,13 +596,15 @@ contracts.forEach((contract) => {
   contract.applications.forEach((application) => {
     (application as AnyRecord).contract = contract;
     application.wagons = contract.wagons.filter(
-      (wagon) => wagon.applicationId === application.id
+      (wagon) => wagon.applicationId === application.id,
     );
   });
 });
 
 users[0].userContracts = contracts.map((contract) => ({ contract }));
-users[1].userContracts = contracts.slice(0, 3).map((contract) => ({ contract }));
+users[1].userContracts = contracts
+  .slice(0, 3)
+  .map((contract) => ({ contract }));
 users[2].userContracts = contracts.slice(3).map((contract) => ({ contract }));
 
 const invoices: AnyRecord[] = contracts.flatMap((contract) =>
@@ -379,7 +620,7 @@ const invoices: AnyRecord[] = contracts.flatMap((contract) =>
     description: `Счет по контракту ${contract.number}`,
     createdAt: application.created_at,
     updatedAt: application.updated_at,
-  }))
+  })),
 );
 
 const activities = [
@@ -417,6 +658,77 @@ const tableRows: AnyRecord[] = contracts.map((contract) => ({
   currency: contract.currency,
   company: contract.company.name,
 }));
+
+const loginAudits: AnyRecord[] = [
+  {
+    id: 1,
+    userId: 1,
+    email: "admin@sungrain.test",
+    ipAddress: "185.125.44.17",
+    userAgent:
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/126.0 Safari/537.36",
+    success: true,
+    failureReason: null,
+    createdAt: new Date().toISOString(),
+    user: {
+      id: 1,
+      email: "admin@sungrain.test",
+      full_name: "Администратор SUNGRAIN",
+      role: "ADMIN",
+    },
+  },
+  {
+    id: 2,
+    userId: null,
+    email: "unknown@sungrain.kz",
+    ipAddress: "92.47.18.204",
+    userAgent:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36",
+    success: false,
+    failureReason: "USER_NOT_FOUND",
+    createdAt: new Date(Date.now() - 42 * 60 * 1000).toISOString(),
+    user: null,
+  },
+];
+
+const dislocationImports: AnyRecord[] = [
+  {
+    id: 2,
+    sourceMessageId: "<dislocation-20260711@sungrain.kz>",
+    sourceUid: 814,
+    sender: "logistics@sungrain.kz",
+    subject: "Ежедневная дислокация вагонов",
+    attachmentName: "dislocation_2026-07-11_10-12.xlsx",
+    attachmentHash: "mock-dislocation-2",
+    sourceCreatedAt: "2026-07-11T05:12:04.000Z",
+    receivedAt: "2026-07-11T05:13:18.000Z",
+    status: "COMPLETED",
+    rowsTotal: 29,
+    matchedRows: 22,
+    unmatchedRows: 7,
+    errorMessage: null,
+    createdAt: "2026-07-11T05:13:22.000Z",
+    completedAt: "2026-07-11T05:13:24.000Z",
+  },
+  {
+    id: 1,
+    sourceMessageId: null,
+    sourceUid: null,
+    sender: null,
+    subject: "Ручной импорт",
+    attachmentName: "dislocation_2026-07-11_09-04.xlsx",
+    attachmentHash: "mock-dislocation-1",
+    sourceCreatedAt: "2026-07-11T04:04:43.000Z",
+    receivedAt: "2026-07-11T04:05:02.000Z",
+    status: "COMPLETED",
+    rowsTotal: 16,
+    matchedRows: 16,
+    unmatchedRows: 0,
+    errorMessage: null,
+    createdAt: "2026-07-11T04:05:02.000Z",
+    completedAt: "2026-07-11T04:05:03.000Z",
+  },
+];
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -475,10 +787,7 @@ const includesSearch = (item: AnyRecord, search?: string) => {
   return JSON.stringify(item).toLowerCase().includes(search.toLowerCase());
 };
 
-const paginate = <T extends AnyRecord>(
-  items: T[],
-  params: AnyRecord = {}
-) => {
+const paginate = <T extends AnyRecord>(items: T[], params: AnyRecord = {}) => {
   const page = Math.max(1, toNumber(params.page, 1));
   const limit = Math.max(1, toNumber(params.limit, items.length || 10));
   const searched = items.filter((item) => includesSearch(item, params.search));
@@ -497,7 +806,8 @@ const paginate = <T extends AnyRecord>(
 };
 
 const findContract = (id: string | number) =>
-  contracts.find((contract) => String(contract.id) === String(id)) || contracts[0];
+  contracts.find((contract) => String(contract.id) === String(id)) ||
+  contracts[0];
 
 const allApplications = () =>
   contracts.flatMap((contract) =>
@@ -505,19 +815,20 @@ const allApplications = () =>
       ...application,
       contract,
       wagons: contract.wagons.filter(
-        (wagon) => wagon.applicationId === application.id
+        (wagon) => wagon.applicationId === application.id,
       ),
-    }))
+    })),
   );
 
 const findApplication = (id: string | number) =>
-  allApplications().find((application) => String(application.id) === String(id)) ||
-  allApplications()[0];
+  allApplications().find(
+    (application) => String(application.id) === String(id),
+  ) || allApplications()[0];
 
 const response = (
   config: InternalAxiosRequestConfig,
   data: any,
-  status = 200
+  status = 200,
 ): AxiosResponse => ({
   data,
   status,
@@ -536,7 +847,8 @@ const collectionMap: Record<string, AnyRecord[]> = {
   owner: owners,
 };
 
-const ownerName = (body: AnyRecord) => body.owner || body.name || "Новый собственник";
+const ownerName = (body: AnyRecord) =>
+  body.owner || body.name || "Новый собственник";
 
 const createCollectionItem = (collection: string, body: AnyRecord) => {
   const items = collectionMap[collection];
@@ -545,8 +857,8 @@ const createCollectionItem = (collection: string, body: AnyRecord) => {
     collection === "owner"
       ? { id, owner: ownerName(body) }
       : collection === "stations"
-      ? { id, name: body.name || "Новая станция", code: body.code || "" }
-      : { id, name: body.name || "Новая запись" };
+        ? { id, name: body.name || "Новая станция", code: body.code || "" }
+        : { id, name: body.name || "Новая запись" };
 
   items.unshift(item);
   return item;
@@ -555,14 +867,14 @@ const createCollectionItem = (collection: string, body: AnyRecord) => {
 const updateCollectionItem = (
   collection: string,
   idOrName: string | number | undefined,
-  body: AnyRecord
+  body: AnyRecord,
 ) => {
   const items = collectionMap[collection];
   const index = items.findIndex(
     (item) =>
       String(item.id) === String(idOrName) ||
       item.name === idOrName ||
-      item.owner === idOrName
+      item.owner === idOrName,
   );
 
   if (index === -1) return body;
@@ -577,14 +889,14 @@ const updateCollectionItem = (
 
 const deleteCollectionItem = (
   collection: string,
-  idOrName: string | number | undefined
+  idOrName: string | number | undefined,
 ) => {
   const items = collectionMap[collection];
   const index = items.findIndex(
     (item) =>
       String(item.id) === String(idOrName) ||
       item.name === idOrName ||
-      item.owner === idOrName
+      item.owner === idOrName,
   );
 
   if (index >= 0) items.splice(index, 1);
@@ -593,7 +905,9 @@ const deleteCollectionItem = (
 
 const createContract = (body: AnyRecord) => {
   const id = nextId(contracts);
-  const company = companies.find((item) => item.id === toNumber(body.companyId, 1)) || companies[0];
+  const company =
+    companies.find((item) => item.id === toNumber(body.companyId, 1)) ||
+    companies[0];
   const totalVolume = toNumber(body.totalVolume ?? body.total_volume, 1000);
   const contract = {
     id,
@@ -627,18 +941,26 @@ const createContract = (body: AnyRecord) => {
 const updateContract = (id: string | number, body: AnyRecord) => {
   const contract = findContract(id);
   const company =
-    companies.find((item) => item.id === toNumber(body.companyId, contract.companyId)) ||
-    contract.company;
+    companies.find(
+      (item) => item.id === toNumber(body.companyId, contract.companyId),
+    ) || contract.company;
 
   Object.assign(contract, {
     ...body,
     company,
     companyId: company.id,
-    total_volume: toNumber(body.totalVolume ?? body.total_volume, contract.total_volume),
+    total_volume: toNumber(
+      body.totalVolume ?? body.total_volume,
+      contract.total_volume,
+    ),
     departure_station:
-      body.departureStation || body.departure_station || contract.departure_station,
+      body.departureStation ||
+      body.departure_station ||
+      contract.departure_station,
     destination_station:
-      body.destinationStation || body.destination_station || contract.destination_station,
+      body.destinationStation ||
+      body.destination_station ||
+      contract.destination_station,
     updated_at: new Date().toISOString(),
   });
 
@@ -646,10 +968,15 @@ const updateContract = (id: string | number, body: AnyRecord) => {
 };
 
 const createApplication = (body: AnyRecord) => {
-  const contract = findContract(body.contractId || body.contract_id || contracts[0].id);
+  const contract = findContract(
+    body.contractId || body.contract_id || contracts[0].id,
+  );
   const id = nextId(allApplications());
   const volume = toNumber(body.volume, 500);
-  const pricePerTon = toNumber(body.price_per_ton, contract.currency === "KZT" ? 50000 : 80);
+  const pricePerTon = toNumber(
+    body.price_per_ton,
+    contract.currency === "KZT" ? 50000 : 80,
+  );
   const application = makeApplication(
     id,
     contract.id,
@@ -658,7 +985,7 @@ const createApplication = (body: AnyRecord) => {
     pricePerTon,
     body.currency || contract.currency,
     body.culture || contract.crop,
-    0
+    0,
   );
 
   (application as AnyRecord).contract = contract;
@@ -678,24 +1005,27 @@ const updateApplication = (id: string | number, body: AnyRecord) => {
 };
 
 const createWagon = (body: AnyRecord) => {
-  const contract = findContract(body.contract_id || body.contractId || contracts[0].id);
-  const application = contract.applications[0] || createApplication({ contractId: contract.id });
+  const contract = findContract(
+    body.contract_id || body.contractId || contracts[0].id,
+  );
+  const application =
+    contract.applications[0] || createApplication({ contractId: contract.id });
   const id = nextId(contracts.flatMap((contractItem) => contractItem.wagons));
   const wagon = makeWagon(
     id,
     contract.id,
     application.id,
     String(body.number || `7000${id}`),
-    body.status || "at_elevator",
+    body.status || "en_route_to_loading",
     toNumber(body.capacity, 68),
     toNumber(body.real_weight, 0),
     body.owner || owners[0].owner,
-    0
+    0,
   );
 
   contract.wagons.unshift(wagon);
   application.wagons = contract.wagons.filter(
-    (item) => item.applicationId === application.id
+    (item) => item.applicationId === application.id,
   );
   return wagon;
 };
@@ -746,10 +1076,10 @@ const createInvoice = (applicationId: string | number, body: AnyRecord) => {
 const getMyFiles = () => [
   ...contracts.flatMap((contract) => contract.files),
   ...contracts.flatMap((contract) =>
-    contract.applications.flatMap((application) => application.files)
+    contract.applications.flatMap((application) => application.files),
   ),
   ...contracts.flatMap((contract) =>
-    contract.wagons.flatMap((wagon) => wagon.files)
+    contract.wagons.flatMap((wagon) => wagon.files),
   ),
 ];
 
@@ -770,7 +1100,7 @@ const csvExport = () => {
       contract.receiver,
       contract.total_volume,
       contract.currency,
-    ].join(";")
+    ].join(";"),
   );
   const csv = [headers.join(";"), ...rows].join("\n");
 
@@ -817,7 +1147,13 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
       name: body.name || body.full_name || "Новый пользователь",
       username: body.username || body.email || "user",
       role: body.role || "manager",
-      companies: [{ company: companies.find((item) => item.id === toNumber(body.companyId, 1)) || companies[0] }],
+      companies: [
+        {
+          company:
+            companies.find((item) => item.id === toNumber(body.companyId, 1)) ||
+            companies[0],
+        },
+      ],
       userContracts: [],
     };
     users.unshift(user);
@@ -825,6 +1161,91 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
   }
 
   if (path === "/user/is-admin" && method === "get") return true;
+  if (path === "/dislocation/imports" && method === "get") {
+    return dislocationImports.slice(0, Math.max(1, toNumber(params.limit, 50)));
+  }
+  if (
+    parts[0] === "dislocation" &&
+    parts[1] === "imports" &&
+    parts[3] === "unmatched" &&
+    method === "get"
+  ) {
+    const unmatchedNumbers = [
+      "95308419",
+      "95308652",
+      "95308736",
+      "95309112",
+      "95309487",
+      "95607215",
+      "95607504",
+    ];
+
+    return String(parts[2]) === "2"
+      ? unmatchedNumbers.map((wagonNumber, index) => ({
+          id: 100 + index,
+          wagonNumber,
+          departureStation: index < 4 ? "Сарыагаш" : "Шымкент",
+          destinationStation: "Актау-Порт",
+          lastOperationStation: index < 3 ? "Арыс-1" : "Шу",
+          operation: index < 3 ? "Прибытие на станцию" : "Следование в составе поезда",
+          distanceToDestinationKm: 1180 - index * 64,
+          lastOperationAt: `2026-07-11T0${Math.min(index + 2, 9)}:20:00.000Z`,
+          observedAt: "2026-07-11T05:12:04.000Z",
+        }))
+      : [];
+  }
+  if (path === "/dislocation/import" && method === "post") {
+    const file = body.file as File | undefined;
+    const now = new Date().toISOString();
+    const item = {
+      id: nextId(dislocationImports),
+      sourceMessageId: null,
+      sourceUid: null,
+      sender: null,
+      subject: "Ручной импорт",
+      attachmentName: file?.name || "dislocation.xlsx",
+      attachmentHash: `mock-dislocation-${Date.now()}`,
+      sourceCreatedAt: now,
+      receivedAt: now,
+      status: "COMPLETED",
+      rowsTotal: 18,
+      matchedRows: 17,
+      unmatchedRows: 1,
+      errorMessage: null,
+      createdAt: now,
+      completedAt: now,
+    };
+    dislocationImports.unshift(item);
+    return { duplicate: false, import: item };
+  }
+  if (path === "/dislocation/sync-email" && method === "post") {
+    return { skipped: false, processed: 0, results: [] };
+  }
+  if (path === "/user/login-audits" && method === "get") {
+    const successFilter =
+      params.success === "true"
+        ? true
+        : params.success === "false"
+          ? false
+          : undefined;
+    const filteredAudits = loginAudits.filter(
+      (audit) =>
+        (typeof successFilter !== "boolean" ||
+          audit.success === successFilter) &&
+        includesSearch(audit, params.search),
+    );
+    const paginated = paginate(filteredAudits, params);
+
+    return {
+      ...paginated,
+      stats: {
+        successful: loginAudits.filter((audit) => audit.success).length,
+        failed: loginAudits.filter((audit) => !audit.success).length,
+        recent: loginAudits.length,
+        uniqueIps: new Set(loginAudits.map((audit) => audit.ipAddress)).size,
+      },
+    };
+  }
   if (path === "/user/all" && method === "get") return paginate(users, params);
   if (path === "/user/my-contracts" && method === "get") {
     return paginate(contracts.slice(0, 4), params);
@@ -852,15 +1273,29 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
     return { success: true };
   }
 
-  if (path === "/contract" && method === "get") return paginate(contracts, params);
-  if (path === "/contract/add-data" && method === "post") return createContract(body);
-  if (parts[0] === "contract" && parts[1] === "contract-wagons" && method === "get") {
+  if (path === "/contract" && method === "get")
+    return paginate(contracts, params);
+  if (path === "/contract/add-data" && method === "post")
+    return createContract(body);
+  if (
+    parts[0] === "contract" &&
+    parts[1] === "contract-wagons" &&
+    method === "get"
+  ) {
     return findContract(parts[2]).wagons;
   }
-  if (parts[0] === "contract" && parts[1] === "upload-files" && method === "post") {
+  if (
+    parts[0] === "contract" &&
+    parts[1] === "upload-files" &&
+    method === "post"
+  ) {
     return { success: true, files: findContract(parts[2]).files };
   }
-  if (parts[0] === "contract" && parts[1] === "delete-files" && method === "patch") {
+  if (
+    parts[0] === "contract" &&
+    parts[1] === "delete-files" &&
+    method === "patch"
+  ) {
     return { success: true };
   }
   if (parts[0] === "contract" && parts[1] && method === "get") {
@@ -870,26 +1305,44 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
     return updateContract(parts[1], body);
   }
   if (parts[0] === "contract" && parts[1] && method === "delete") {
-    const index = contracts.findIndex((contract) => String(contract.id) === parts[1]);
+    const index = contracts.findIndex(
+      (contract) => String(contract.id) === parts[1],
+    );
     if (index >= 0) contracts.splice(index, 1);
     return { success: true };
   }
   if (path === "/contracts/statistics" && method === "get") {
     return {
       totalContracts: contracts.length,
-      totalVolume: contracts.reduce((sum, contract) => sum + contract.total_volume, 0),
+      totalVolume: contracts.reduce(
+        (sum, contract) => sum + contract.total_volume,
+        0,
+      ),
       totalApplications: allApplications().length,
-      totalWagons: contracts.reduce((sum, contract) => sum + contract.wagons.length, 0),
-      totalAmount: contracts.reduce((sum, contract) => sum + contract.estimated_cost, 0),
+      totalWagons: contracts.reduce(
+        (sum, contract) => sum + contract.wagons.length,
+        0,
+      ),
+      totalAmount: contracts.reduce(
+        (sum, contract) => sum + contract.estimated_cost,
+        0,
+      ),
     };
   }
 
-  if (path === "/application" && method === "post") return createApplication(body);
+  if (path === "/application" && method === "post")
+    return createApplication(body);
   if (parts[0] === "application" && parts[1] === "by-id" && method === "get") {
     return findApplication(parts[2]);
   }
-  if (parts[0] === "application" && parts[1] === "get-invoice" && method === "get") {
-    return invoices.filter((invoice) => String(invoice.applicationId) === parts[2]);
+  if (
+    parts[0] === "application" &&
+    parts[1] === "get-invoice" &&
+    method === "get"
+  ) {
+    return invoices.filter(
+      (invoice) => String(invoice.applicationId) === parts[2],
+    );
   }
   if (
     parts[0] === "application" &&
@@ -899,30 +1352,58 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
     const applicationId = parts[1] === "add-invoice" ? parts[2] : parts[1];
     return createInvoice(applicationId, body);
   }
-  if (parts[0] === "application" && parts[1] === "update-invoice" && method === "patch") {
+  if (
+    parts[0] === "application" &&
+    parts[1] === "update-invoice" &&
+    method === "patch"
+  ) {
     const invoice = invoices.find((item) => String(item.id) === parts[3]);
     if (!invoice) return body;
     Object.assign(invoice, body, { updatedAt: new Date().toISOString() });
     return invoice;
   }
-  if (parts[0] === "application" && parts[1] === "delete-invoice" && method === "delete") {
+  if (
+    parts[0] === "application" &&
+    parts[1] === "delete-invoice" &&
+    method === "delete"
+  ) {
     const index = invoices.findIndex((item) => String(item.id) === parts[3]);
     if (index >= 0) invoices.splice(index, 1);
     return { success: true };
   }
-  if (parts[0] === "application" && parts[1] === "upload-files" && method === "patch") {
+  if (
+    parts[0] === "application" &&
+    parts[1] === "upload-files" &&
+    method === "patch"
+  ) {
     return { success: true, files: findApplication(parts[2]).files };
   }
-  if (parts[0] === "application" && parts[1] === "update-file" && method === "patch") {
+  if (
+    parts[0] === "application" &&
+    parts[1] === "update-file" &&
+    method === "patch"
+  ) {
     return { success: true };
   }
-  if (parts[0] === "application" && parts[1] === "delete-files" && method === "delete") {
+  if (
+    parts[0] === "application" &&
+    parts[1] === "delete-files" &&
+    method === "delete"
+  ) {
     return { success: true };
   }
-  if (parts[0] === "application" && parts[1] === "create-for-upload-documents" && method === "post") {
+  if (
+    parts[0] === "application" &&
+    parts[1] === "create-for-upload-documents" &&
+    method === "post"
+  ) {
     return makeFile(Date.now(), body.name || "Документ заявки");
   }
-  if (parts[0] === "application" && parts[1] === "delete-upload-documents" && method === "delete") {
+  if (
+    parts[0] === "application" &&
+    parts[1] === "delete-upload-documents" &&
+    method === "delete"
+  ) {
     return { success: true };
   }
   if (parts[0] === "application" && parts[1] && method === "get") {
@@ -934,7 +1415,7 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
   if (parts[0] === "application" && parts[1] && method === "delete") {
     contracts.forEach((contract) => {
       const index = contract.applications.findIndex(
-        (application) => String(application.id) === parts[1]
+        (application) => String(application.id) === parts[1],
       );
       if (index >= 0) contract.applications.splice(index, 1);
     });
@@ -942,10 +1423,18 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
   }
 
   if (path === "/wagon" && method === "post") return createWagon(body);
-  if (parts[0] === "wagon" && parts[1] === "upload-files" && method === "post") {
+  if (
+    parts[0] === "wagon" &&
+    parts[1] === "upload-files" &&
+    method === "post"
+  ) {
     return { success: true };
   }
-  if (parts[0] === "wagon" && parts[1] === "delete-files" && method === "patch") {
+  if (
+    parts[0] === "wagon" &&
+    parts[1] === "delete-files" &&
+    method === "patch"
+  ) {
     return { success: true };
   }
   if (parts[0] === "wagon" && parts[1] && method === "patch") {
@@ -953,7 +1442,9 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
   }
   if (parts[0] === "wagon" && parts[1] && method === "delete") {
     contracts.forEach((contract) => {
-      const index = contract.wagons.findIndex((wagon) => String(wagon.id) === parts[1]);
+      const index = contract.wagons.findIndex(
+        (wagon) => String(wagon.id) === parts[1],
+      );
       if (index >= 0) contract.wagons.splice(index, 1);
     });
     return { success: true };
@@ -975,8 +1466,10 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
 
   const collection = parts[0];
   if (collectionMap[collection]) {
-    if (parts.length === 1 && method === "get") return paginate(collectionMap[collection], params);
-    if (parts.length === 1 && method === "post") return createCollectionItem(collection, body);
+    if (parts.length === 1 && method === "get")
+      return paginate(collectionMap[collection], params);
+    if (parts.length === 1 && method === "post")
+      return createCollectionItem(collection, body);
     if (parts.length === 1 && method === "patch") {
       const idOrName = body.id || body.old_name || body.name;
       return updateCollectionItem(collection, idOrName, body);
@@ -984,12 +1477,19 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
     if (parts[1] && method === "get") {
       return (
         collectionMap[collection].find(
-          (item) => String(item.id) === parts[1] || item.name === parts[1] || item.owner === parts[1]
+          (item) =>
+            String(item.id) === parts[1] ||
+            item.name === parts[1] ||
+            item.owner === parts[1],
         ) || collectionMap[collection][0]
       );
     }
     if (parts[1] && (method === "patch" || method === "put")) {
-      return updateCollectionItem(collection, decodeURIComponent(parts[1]), body);
+      return updateCollectionItem(
+        collection,
+        decodeURIComponent(parts[1]),
+        body,
+      );
     }
     if (parts[1] && method === "delete") {
       return deleteCollectionItem(collection, decodeURIComponent(parts[1]));
@@ -1003,6 +1503,6 @@ export const mockApiAdapter: AxiosAdapter = async (config) => {
   await wait(120);
   return response(
     config as InternalAxiosRequestConfig,
-    handleMockRequest(config as InternalAxiosRequestConfig)
+    handleMockRequest(config as InternalAxiosRequestConfig),
   );
 };

@@ -29,4 +29,10 @@ describe("application detail tabs", () => {
     expect(source).toContain("currentApplicationWagonContext");
     expect(source).toContain("contractData={currentApplicationWagonContext}");
   });
+
+  it("keeps all four mobile tabs in an even two-column grid", () => {
+    expect(source).toContain("grid-cols-2");
+    expect(source).toContain("sm:grid-cols-4");
+    expect(source).not.toContain("col-span-2 sm:col-span-1");
+  });
 });

@@ -946,31 +946,31 @@ export const ApplicationDetail = ({
         </CardContent>
       </Card>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1 p-1.5 sm:p-1 bg-muted/30">
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-[#f7f9f6] p-2 sm:grid-cols-4 sm:gap-1 sm:p-1">
           <TabsTrigger
             value="documents"
-            className="text-xs sm:text-sm py-3 sm:py-2.5 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            className="min-h-11 px-2 py-2.5 text-xs sm:min-h-10 sm:px-3 sm:py-2.5 sm:text-sm"
           >
             <span className="hidden sm:inline">Документы</span>
             <span className="sm:hidden">Документы</span>
           </TabsTrigger>
           <TabsTrigger
             value="wagons-details"
-            className="text-xs sm:text-sm py-3 sm:py-2.5 px-1 sm:px-3 col-span-2 sm:col-span-1 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            className="min-h-11 px-2 py-2.5 text-xs sm:min-h-10 sm:px-3 sm:py-2.5 sm:text-sm"
           >
             <span className="hidden sm:inline">Детали вагонов</span>
             <span className="sm:hidden">Вагоны</span>
           </TabsTrigger>
           <TabsTrigger
             value="wagons"
-            className="text-xs sm:text-sm py-3 sm:py-2.5 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            className="min-h-11 px-2 py-2.5 text-xs sm:min-h-10 sm:px-3 sm:py-2.5 sm:text-sm"
           >
             <span className="hidden sm:inline">Вагоны</span>
             <span className="sm:hidden">Реестр</span>
           </TabsTrigger>
           <TabsTrigger
             value="invoices"
-            className="text-xs sm:text-sm py-3 sm:py-2.5 px-2 sm:px-3 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            className="min-h-11 px-2 py-2.5 text-xs sm:min-h-10 sm:px-3 sm:py-2.5 sm:text-sm"
           >
             <span className="hidden sm:inline">Счета</span>
             <span className="sm:hidden">Счета</span>

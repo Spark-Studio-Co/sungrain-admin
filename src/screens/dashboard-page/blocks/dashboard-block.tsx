@@ -868,38 +868,6 @@ export const DashboardBlock = () => {
     };
   }, [transportRows]);
 
-  // Delivery time analysis
-  const deliveryTimeAnalysis = useMemo(() => {
-    const contractsWithDelivery = recentContracts.filter(
-      (c) => c.timeToComplete > 0
-    );
-
-    const byRoute = contractsWithDelivery.reduce((acc, contract) => {
-      const route = `${contract.departureStation} → ${contract.destinationStation}`;
-      if (!acc[route]) {
-        acc[route] = {
-          route,
-          contracts: [],
-          totalDays: 0,
-        };
-      }
-      acc[route].contracts.push(contract);
-      acc[route].totalDays += contract.timeToComplete;
-      return acc;
-    }, {});
-
-    return Object.values(byRoute)
-      .map((route) => ({
-        ...route,
-        avgDeliveryDays:
-          route.contracts.length > 0
-            ? Math.round((route.totalDays / route.contracts.length) * 10) / 10
-            : 0,
-        contractCount: route.contracts.length,
-      }))
-      .sort((a, b) => a.avgDeliveryDays - b.avgDeliveryDays);
-  }, [recentContracts]);
-
   // Price trend analysis
   const priceTrendAnalysis = useMemo(() => {
     const pricesByMonthUSD = {};
@@ -985,32 +953,6 @@ export const DashboardBlock = () => {
     ];
   }, [priceTrendAnalysis]);
 
-  // Seasonal analysis
-  const seasonalAnalysis = useMemo(() => {
-    const quarterData = recentContracts.reduce((acc, contract) => {
-      const key = contract.yearQuarter;
-      if (!acc[key]) {
-        acc[key] = {
-          name: key,
-          totalVolume: 0,
-          shippedVolume: 0,
-          contractCount: 0,
-          year: contract.year,
-          quarter: contract.quarter,
-        };
-      }
-      acc[key].totalVolume += contract.volume;
-      acc[key].shippedVolume += contract.shippedVolume;
-      acc[key].contractCount += 1;
-      return acc;
-    }, {});
-
-    return Object.values(quarterData).sort((a, b) => {
-      if (a.year !== b.year) return a.year - b.year;
-      return a.quarter - b.quarter;
-    });
-  }, [recentContracts]);
-
   const kpiValueByCurrency = useMemo(() => {
     return Object.entries(
       recentContracts.reduce((acc, contract) => {
@@ -1050,48 +992,6 @@ export const DashboardBlock = () => {
           ) / transportationEfficiency.length
         )
       : 0;
-
-  const averageDeliveryDays =
-    deliveryTimeAnalysis.length > 0
-      ? Math.round(
-          deliveryTimeAnalysis.reduce(
-            (sum, route) => sum + route.avgDeliveryDays * route.contractCount,
-            0
-          ) /
-            deliveryTimeAnalysis.reduce(
-              (sum, route) => sum + route.contractCount,
-              0
-            )
-        )
-      : 0;
-
-  const peakQuarter =
-    seasonalAnalysis.length > 0
-      ? seasonalAnalysis.reduce(
-          (max, quarter) =>
-            quarter.totalVolume > max.totalVolume ? quarter : max,
-          seasonalAnalysis[0]
-        )
-      : null;
-
-  const seasonalVariation =
-    seasonalAnalysis.length > 1
-      ? Math.round(
-          (seasonalAnalysis.reduce(
-            (max, quarter) =>
-              quarter.totalVolume > max ? quarter.totalVolume : max,
-            0
-          ) /
-            seasonalAnalysis.reduce(
-              (min, quarter) =>
-                quarter.totalVolume < min && quarter.totalVolume > 0
-                  ? quarter.totalVolume
-                  : min,
-              Number.POSITIVE_INFINITY
-            )) *
-            100
-        ) / 100
-      : null;
 
   // Correlation analysis (volume vs price)
   const volumePriceCorrelation = useMemo(() => {
@@ -1174,7 +1074,7 @@ export const DashboardBlock = () => {
         </div>
         <Button
           asChild
-          className="w-full sm:w-auto rounded-md bg-[#f38810] px-5 shadow-[0_10px_22px_rgba(243,136,16,0.22)] hover:bg-[#dc790c]"
+          className="w-full rounded-md bg-[#f38810] px-5 text-white shadow-[0_10px_22px_rgba(243,136,16,0.22)] hover:bg-[#dc790c] sm:w-auto"
         >
           <Link
             to="/admin/contracts"
@@ -1333,82 +1233,6 @@ export const DashboardBlock = () => {
                   <div className="sungrain-kpi-line">
                     <span>Коэффициент использования:</span>
                     <strong>{transportationUtilization}%</strong>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="sungrain-kpi-card sungrain-kpi-card-wide">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle>Время доставки</CardTitle>
-            <span className="sungrain-kpi-icon">
-              <Calendar className="h-4 w-4" />
-            </span>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <div className="space-y-3">
-                <div className="sungrain-kpi-value">
-                  {averageDeliveryDays} дней
-                </div>
-                <div className="grid gap-1.5">
-                  <div className="sungrain-kpi-line">
-                    <span>Самый быстрый маршрут:</span>
-                    <strong>
-                      {deliveryTimeAnalysis.length > 0
-                        ? `${deliveryTimeAnalysis[0].avgDeliveryDays} дней`
-                        : "Н/Д"}
-                    </strong>
-                  </div>
-                  <div className="sungrain-kpi-line">
-                    <span>Самый долгий маршрут:</span>
-                    <strong>
-                      {deliveryTimeAnalysis.length > 0
-                        ? `${
-                            deliveryTimeAnalysis[
-                              deliveryTimeAnalysis.length - 1
-                            ].avgDeliveryDays
-                          } дней`
-                        : "Н/Д"}
-                    </strong>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="sungrain-kpi-card sungrain-kpi-card-wide">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle>Сезонность</CardTitle>
-            <span className="sungrain-kpi-icon">
-              <TrendingUp className="h-4 w-4" />
-            </span>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-20" />
-            ) : (
-              <div className="space-y-3">
-                <div className="sungrain-kpi-value">
-                  {peakQuarter ? peakQuarter.name : "Нет данных"}
-                </div>
-                <div className="grid gap-1.5">
-                  <div className="sungrain-kpi-line">
-                    <span>Пиковый квартал:</span>
-                    <strong>
-                      {peakQuarter
-                        ? `${peakQuarter.totalVolume.toLocaleString()} т`
-                        : "Н/Д"}
-                    </strong>
-                  </div>
-                  <div className="sungrain-kpi-line">
-                    <span>Сезонная вариация:</span>
-                    <strong>
-                      {seasonalVariation ? `${seasonalVariation}x` : "Н/Д"}
-                    </strong>
                   </div>
                 </div>
               </div>
@@ -2221,7 +2045,7 @@ export const DashboardBlock = () => {
 
         {/* Time Analysis Tab */}
         <TabsContent value="time" className="space-y-6 relative">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4">
             <Card className="sungrain-analytics-card">
               <CardHeader className="pb-3">
                 <CardTitle className="sungrain-card-title flex items-center gap-2">
@@ -2433,182 +2257,6 @@ export const DashboardBlock = () => {
               </CardContent>
             </Card>
 
-            <Card className="sungrain-analytics-card">
-              <CardHeader className="pb-3">
-                <CardTitle className="sungrain-card-title flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-[#2f6b4f]" />
-                  Сезонный анализ
-                </CardTitle>
-                <CardDescription className="text-slate-600">
-                  Объемы контрактов по кварталам
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
-                {isLoading ? (
-                  <div className="h-[22rem] w-full flex items-center justify-center">
-                    <Skeleton className="h-full w-full" />
-                  </div>
-                ) : seasonalAnalysis.length > 0 ? (
-                  <div className="space-y-4">
-                    <div className="grid gap-2 sm:grid-cols-3">
-                      <div className="sungrain-chart-chip">
-                        <span>Пиковый квартал</span>
-                        <strong>{peakQuarter?.name ?? "Н/Д"}</strong>
-                      </div>
-                      <div className="sungrain-chart-chip">
-                        <span>Объем пика</span>
-                        <strong>
-                          {peakQuarter
-                            ? `${peakQuarter.totalVolume.toLocaleString()} т`
-                            : "Н/Д"}
-                        </strong>
-                      </div>
-                      <div className="sungrain-chart-chip">
-                        <span>Вариация</span>
-                        <strong>
-                          {seasonalVariation ? `${seasonalVariation}x` : "Н/Д"}
-                        </strong>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-[#6f7f76]">
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="size-2.5 rounded-full bg-[#f38810]" />
-                        Общий объем
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="size-2.5 rounded-full bg-[#2f6b4f]" />
-                        Отгруженный объем
-                      </span>
-                    </div>
-
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <ComposedChart
-                          data={seasonalAnalysis}
-                          barGap={8}
-                          barCategoryGap="42%"
-                          margin={{
-                            top: 12,
-                            right: 12,
-                            left: window.innerWidth < 640 ? -18 : -8,
-                            bottom: 4,
-                          }}
-                        >
-                          <defs>
-                            <linearGradient
-                              id="seasonalTotalBarGradient"
-                              x1="0"
-                              y1="0"
-                              x2="0"
-                              y2="1"
-                            >
-                              <stop
-                                offset="5%"
-                                stopColor="#f38810"
-                                stopOpacity={0.92}
-                              />
-                              <stop
-                                offset="95%"
-                                stopColor="#f38810"
-                                stopOpacity={0.5}
-                              />
-                            </linearGradient>
-                            <linearGradient
-                              id="seasonalShippedBarGradient"
-                              x1="0"
-                              y1="0"
-                              x2="0"
-                              y2="1"
-                            >
-                              <stop
-                                offset="5%"
-                                stopColor="#2f6b4f"
-                                stopOpacity={0.92}
-                              />
-                              <stop
-                                offset="95%"
-                                stopColor="#4d7c5d"
-                                stopOpacity={0.5}
-                              />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid
-                            vertical={false}
-                            stroke="#e7ece7"
-                            strokeDasharray="4 6"
-                          />
-                          <XAxis
-                            dataKey="name"
-                            axisLine={false}
-                            tickLine={false}
-                            height={28}
-                            tick={{
-                              fontSize: window.innerWidth < 640 ? 10 : 12,
-                              fill: "#6f7f76",
-                              fontWeight: 600,
-                            }}
-                          />
-                          <YAxis
-                            axisLine={false}
-                            tickLine={false}
-                            tickFormatter={(value) =>
-                              value > 1000
-                                ? `${(value / 1000).toFixed(0)}k`
-                                : value.toString()
-                            }
-                            tick={{
-                              fontSize: window.innerWidth < 640 ? 10 : 12,
-                              fill: "#7b857f",
-                            }}
-                            width={window.innerWidth < 640 ? 32 : 42}
-                          />
-                          <Tooltip
-                            wrapperStyle={chartTooltipWrapperStyle}
-                            cursor={{
-                              fill: "rgba(77, 124, 93, 0.055)",
-                            }}
-                            contentStyle={{
-                              backgroundColor: "white",
-                              border: "1px solid #e2e8f0",
-                              borderRadius: "8px",
-                              boxShadow:
-                                "0 12px 30px rgba(34, 49, 55, 0.12)",
-                              fontSize: "13px",
-                            }}
-                            formatter={(value, name) => [
-                              `${Number(value).toLocaleString()} т`,
-                              name === "totalVolume"
-                                ? "Общий объем"
-                                : "Отгруженный объем",
-                            ]}
-                            labelFormatter={(label) => `Квартал: ${label}`}
-                          />
-                          <Bar
-                            dataKey="totalVolume"
-                            name="Общий объем"
-                            fill="url(#seasonalTotalBarGradient)"
-                            radius={[7, 7, 0, 0]}
-                            maxBarSize={48}
-                          />
-                          <Bar
-                            dataKey="shippedVolume"
-                            name="Отгруженный объем"
-                            fill="url(#seasonalShippedBarGradient)"
-                            radius={[7, 7, 0, 0]}
-                            maxBarSize={48}
-                          />
-                        </ComposedChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center text-muted-foreground">
-                    Нет данных для отображения
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
 
           <div className="grid gap-4">

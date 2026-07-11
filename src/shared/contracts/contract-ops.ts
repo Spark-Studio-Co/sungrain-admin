@@ -1,4 +1,5 @@
 import { formatMoney, formatNumber } from "../../lib/utils";
+import { normalizeWagonStatus } from "./wagon-status-data";
 
 export type ContractOperationStatus = "active" | "risk" | "completed" | "draft";
 
@@ -187,8 +188,7 @@ const getCount = (value: unknown) => {
   return count > 0 ? Math.round(count) : 0;
 };
 
-const getStatusValue = (value: unknown) =>
-  typeof value === "string" ? value.toLowerCase() : "";
+const getStatusValue = (value: unknown) => normalizeWagonStatus(value);
 
 const getPositiveOrderNumber = (value: unknown) => {
   const numericValue = toNumber(value);
@@ -287,11 +287,7 @@ const getFirstPositiveNumber = (...values: unknown[]) => {
 
 export const isContractWagonShipped = (wagon: any) => {
   const status = getStatusValue(wagon?.status || wagon?.wagon?.status);
-  return (
-    status === "shipped" ||
-    status === "completed" ||
-    Boolean(wagon?.date_of_unloading || wagon?.dateOfUnloading || wagon?.wagon?.date_of_unloading)
-  );
+  return status === "shipped" || status === "completed";
 };
 
 export const getWagonCapacityValue = (wagon: any) =>
@@ -394,6 +390,14 @@ export const getApplicationShipmentSummary = (application: any) => {
 
         if (status === "in_transit") {
           acc.inTransit += 1;
+        } else if (status === "en_route_to_loading") {
+          acc.enRouteToLoading += 1;
+          acc.inTransit += 1;
+        } else if (status === "registered") {
+          acc.registered += 1;
+        } else if (status === "en_route_to_recipient") {
+          acc.enRouteToRecipient += 1;
+          acc.inTransit += 1;
         } else if (status === "at_elevator") {
           acc.atElevator += 1;
         } else {
@@ -408,6 +412,9 @@ export const getApplicationShipmentSummary = (application: any) => {
       shipped: 0,
       inTransit: 0,
       atElevator: 0,
+      enRouteToLoading: 0,
+      registered: 0,
+      enRouteToRecipient: 0,
       other: 0,
     }
   );
@@ -417,17 +424,23 @@ export const getApplicationShipmentSummary = (application: any) => {
       ? "empty"
       : counts.shipped === counts.total
         ? "shipped"
-        : counts.inTransit > 0 || counts.shipped > 0
+        : counts.inTransit > 0 || counts.registered > 0 || counts.shipped > 0
           ? "loading"
           : "at_elevator";
   const label =
     status === "shipped"
       ? "Отгружено"
-      : status === "loading"
-        ? "Грузится"
-        : status === "at_elevator"
-          ? "На элеваторе"
-          : "Нет вагонов";
+      : counts.enRouteToRecipient > 0
+        ? "Следует к получателю"
+        : counts.registered > 0
+          ? "Оформлено"
+          : counts.enRouteToLoading > 0
+            ? "Под погрузку"
+            : status === "loading"
+              ? "Грузится"
+              : status === "at_elevator"
+                ? "На элеваторе"
+                : "Нет вагонов";
   const progress =
     counts.total > 0
       ? clamp(Math.round((counts.shipped / counts.total) * 100), 0, 100)

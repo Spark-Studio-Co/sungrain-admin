@@ -181,6 +181,12 @@ export const ApplicationBlock = ({
     const summary = getApplicationShipmentSummary(application);
     const config = shipmentStatusConfig[summary.status];
     const StatusIcon = config.icon;
+    const legacyInTransit = Math.max(
+      summary.inTransit -
+        summary.enRouteToLoading -
+        summary.enRouteToRecipient,
+      0
+    );
     const counters = [
       {
         label: "Отгружено",
@@ -188,15 +194,40 @@ export const ApplicationBlock = ({
         activeClassName: "border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]",
       },
       {
-        label: "В пути",
-        value: summary.inTransit,
-        activeClassName: "border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]",
+        label: "К получателю",
+        value: summary.enRouteToRecipient,
+        activeClassName: "border-[#cde2dc] bg-[#edf7f4] text-[#256a5a]",
       },
       {
-        label: "Элеватор",
-        value: summary.atElevator,
-        activeClassName: "border-[#dce8dc] bg-[#eef5ef] text-[#1f5a43]",
+        label: "Оформлено",
+        value: summary.registered,
+        activeClassName: "border-[#d7e3eb] bg-[#f0f6fa] text-[#3f6679]",
       },
+      {
+        label: "Под погрузку",
+        value: summary.enRouteToLoading,
+        activeClassName: "border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]",
+      },
+      ...(legacyInTransit > 0
+        ? [
+            {
+              label: "В пути",
+              value: legacyInTransit,
+              activeClassName:
+                "border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]",
+            },
+          ]
+        : []),
+      ...(summary.atElevator > 0
+        ? [
+            {
+              label: "Элеватор",
+              value: summary.atElevator,
+              activeClassName:
+                "border-[#dce8dc] bg-[#eef5ef] text-[#1f5a43]",
+            },
+          ]
+        : []),
     ];
 
     return (
@@ -342,7 +373,7 @@ export const ApplicationBlock = ({
           app.total_amount || 0,
           app.files?.length || 0,
           app.wagons?.length || 0,
-          `${shipmentSummary.label}: отгружено ${shipmentSummary.shipped}, в пути ${shipmentSummary.inTransit}, элеватор ${shipmentSummary.atElevator}`,
+          `${shipmentSummary.label}: отгружено ${shipmentSummary.shipped}, к получателю ${shipmentSummary.enRouteToRecipient}, оформлено ${shipmentSummary.registered}, под погрузку ${shipmentSummary.enRouteToLoading}`,
         ];
       });
 
