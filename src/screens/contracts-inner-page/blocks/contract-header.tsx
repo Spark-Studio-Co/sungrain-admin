@@ -21,7 +21,10 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { formatMoney, formatNumber } from "@/lib/utils";
-import { resolveBackendFileUrl } from "@/shared/contracts/contract-ops";
+import {
+  getContractStationNames,
+  resolveBackendFileUrl,
+} from "@/shared/contracts/contract-ops";
 
 interface ContractHeaderProps {
   contractData: any;
@@ -33,6 +36,15 @@ export const ContractHeader = ({
   contractData,
   getCompanyName,
 }: ContractHeaderProps) => {
+  const departureStations = getContractStationNames(
+    contractData,
+    "departure"
+  );
+  const destinationStations = getContractStationNames(
+    contractData,
+    "destination"
+  );
+
   // Format date
   const formatDate = (dateString: string) => {
     try {
@@ -111,12 +123,10 @@ export const ContractHeader = ({
               </div>
               <div className="min-w-0">
                 <div className="text-xs font-black uppercase text-[#7b857f]">
-                  Станция отправления
+                  Станции отправления
                 </div>
-                <div className="mt-1 truncate text-lg font-black text-[#223137]">
-                  {contractData?.departure_station ||
-                    contractData?.departureStation ||
-                    "Не указана"}
+                <div className="mt-1 text-lg font-black text-[#223137]">
+                  {departureStations.join(" · ") || "Не указаны"}
                 </div>
               </div>
             </div>
@@ -131,12 +141,10 @@ export const ContractHeader = ({
               </div>
               <div className="min-w-0">
                 <div className="text-xs font-black uppercase text-[#7b857f]">
-                  Станция назначения
+                  Станции назначения
                 </div>
-                <div className="mt-1 truncate text-lg font-black text-[#223137]">
-                  {contractData?.destination_station ||
-                    contractData?.destinationStation ||
-                    "Не указана"}
+                <div className="mt-1 text-lg font-black text-[#223137]">
+                  {destinationStations.join(" · ") || "Не указаны"}
                 </div>
               </div>
             </div>

@@ -27,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGetUserContracts } from "@/entities/contracts/hooks/query/use-get-user-contracts.query";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { getContractStationNames } from "@/shared/contracts/contract-ops";
 
 export const UserContractsBlock = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -189,10 +190,14 @@ export const UserContractsBlock = () => {
                         {contract.receiver}
                       </TableCell>
                       <TableCell className="text-center">
-                        {contract.departure_station}
+                        {getContractStationNames(contract, "departure").join(
+                          " · "
+                        ) || "—"}
                       </TableCell>
                       <TableCell className="text-center">
-                        {contract.destination_station}
+                        {getContractStationNames(contract, "destination").join(
+                          " · "
+                        ) || "—"}
                       </TableCell>
                       <TableCell className="text-center font-medium">
                         {contract.total_volume}

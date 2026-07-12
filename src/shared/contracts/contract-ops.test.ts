@@ -118,6 +118,17 @@ describe("contract operational metadata", () => {
     expect(meta.route.destination).toBe("2 назначения");
   });
 
+  it("keeps every selected contract station in the route summary", () => {
+    const meta = getContractOpsMeta({
+      ...baseContract,
+      departure_stations: ["Шарбакты", "Павлодар-Южный"],
+      destination_stations: ["Худжанд", "Янгер"],
+    });
+
+    expect(meta.route.departure).toBe("Шарбакты · Павлодар-Южный");
+    expect(meta.route.destination).toBe("Худжанд · Янгер");
+  });
+
   it("counts only shipped wagons as shipped volume", () => {
     const meta = getContractOpsMeta(baseContract, {
       wagons: [

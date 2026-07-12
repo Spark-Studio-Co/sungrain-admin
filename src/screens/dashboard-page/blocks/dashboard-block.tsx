@@ -42,7 +42,10 @@ import { useGetContracts } from "@/entities/contracts/hooks/query/use-get-contra
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert } from "@/components/ui/alert";
 import { useMemo } from "react";
-import { getContractOpsMeta } from "@/shared/contracts/contract-ops";
+import {
+  getContractOpsMeta,
+  getContractStationNames,
+} from "@/shared/contracts/contract-ops";
 import {
   BarChart,
   Bar,
@@ -236,8 +239,12 @@ export const DashboardBlock = () => {
         applicationCount: contract.applications?.length || 0,
         wagonCount: totalWagons,
         hasDocuments: (contract.files?.length || 0) > 0,
-        departureStation: contract.departure_station || "Не указано",
-        destinationStation: contract.destination_station || "Не указано",
+        departureStation:
+          getContractStationNames(contract, "departure").join(" · ") ||
+          "Не указано",
+        destinationStation:
+          getContractStationNames(contract, "destination").join(" · ") ||
+          "Не указано",
         avgVolumePerWagon: avgVolumePerWagon,
         month: month,
         monthName: monthName,

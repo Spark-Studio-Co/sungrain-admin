@@ -478,6 +478,12 @@ const getContractPayments = (contract: any, invoices?: any[]) => {
 };
 
 const getTextValue = (value: unknown) => {
+  if (Array.isArray(value)) {
+    return Array.from(
+      new Set(value.map((item) => getTextValue(item)).filter(Boolean))
+    ).join(" · ");
+  }
+
   if (typeof value === "string" || typeof value === "number") {
     return String(value).trim();
   }
@@ -518,6 +524,8 @@ const getRouteTextValue = (source: any, keys: string[]) => {
 };
 
 const routeDepartureKeys = [
+  "departure_stations",
+  "departureStations",
   "departure_station",
   "departureStation",
   "departure",
@@ -536,6 +544,8 @@ const routeDepartureKeys = [
 ];
 
 const routeDestinationKeys = [
+  "destination_stations",
+  "destinationStations",
   "destination_station",
   "destinationStation",
   "destination",
@@ -552,6 +562,37 @@ const routeDestinationKeys = [
   "receiver_station",
   "receiverStation",
 ];
+
+export const getContractStationNames = (
+  contract: any,
+  direction: "departure" | "destination"
+) => {
+  const arrayKeys =
+    direction === "departure"
+      ? ["departure_stations", "departureStations"]
+      : ["destination_stations", "destinationStations"];
+  const legacyKeys =
+    direction === "departure"
+      ? ["departure_station", "departureStation"]
+      : ["destination_station", "destinationStation"];
+
+  for (const key of arrayKeys) {
+    const value = contract?.[key];
+    if (!Array.isArray(value)) continue;
+
+    const stations = Array.from(
+      new Set(value.map((item) => getTextValue(item)).filter(Boolean))
+    );
+    if (stations.length > 0) return stations;
+  }
+
+  for (const key of legacyKeys) {
+    const value = getTextValue(contract?.[key]);
+    if (value) return [value];
+  }
+
+  return [];
+};
 
 const getRussianPlural = (
   count: number,

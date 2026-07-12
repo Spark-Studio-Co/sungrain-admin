@@ -96,6 +96,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { FormError } from "@/components/ui/form-error";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/components/ui/toast";
 import { usePersistentState } from "@/shared/hooks/use-persistent-state";
 import {
@@ -104,6 +105,7 @@ import {
   getContractCompanyName,
   getContractOperationSummary,
   getContractOpsMeta,
+  getContractStationNames,
   getContractStatusConfig,
   getContractVolume,
   type ContractOperationStatus,
@@ -222,10 +224,10 @@ const getContractValidationErrors = (contract: any): ContractValidationErrors =>
   if (!String(contract?.receiver || "").trim()) {
     errors.receiver = "Выберите грузополучателя.";
   }
-  if (!String(contract?.departure_station || "").trim()) {
+  if (getContractStationNames(contract, "departure").length === 0) {
     errors.departure_station = "Выберите станцию отправления.";
   }
-  if (!String(contract?.destination_station || "").trim()) {
+  if (getContractStationNames(contract, "destination").length === 0) {
     errors.destination_station = "Выберите станцию назначения.";
   }
   if (!Number.isFinite(volume) || volume <= 0) {
@@ -320,8 +322,6 @@ export const ContractsBlock = () => {
   // Dropdown states
   const [openSender, setOpenSender] = useState(false);
   const [openReceiver, setOpenReceiver] = useState(false);
-  const [openDepartureStation, setOpenDepartureStation] = useState(false);
-  const [openDestinationStation, setOpenDestinationStation] = useState(false);
 
   // Add these new state variables after the existing state declarations (around line 109)
   const [showFilters, setShowFilters] = useState(false);
@@ -359,6 +359,14 @@ export const ContractsBlock = () => {
     100
   );
   const { data: sendersData = { data: [], total: 0 } } = useGetSenders(1, 100);
+  const stationOptions = useMemo(
+    () =>
+      (stationsData.data || []).map((station: any) => ({
+        label: station.name,
+        value: station.name,
+      })),
+    [stationsData.data]
+  );
 
   // Only fetch all contracts if user is admin
   const {
@@ -660,8 +668,17 @@ export const ContractsBlock = () => {
 
   const handleEditClick = (e: React.MouseEvent, contract: any) => {
     e.stopPropagation(); // Prevent row click navigation
+    const departureStations = getContractStationNames(contract, "departure");
+    const destinationStations = getContractStationNames(
+      contract,
+      "destination"
+    );
     setContractToEdit({
       ...contract,
+      departure_stations: departureStations,
+      destination_stations: destinationStations,
+      departure_station: departureStations[0] || "",
+      destination_station: destinationStations[0] || "",
       date: contract.date || new Date().toISOString().split("T")[0],
     });
     setEditErrors({});
@@ -718,7 +735,8 @@ export const ContractsBlock = () => {
         contractToEdit[key] !== undefined &&
         contractToEdit[key] !== null
       ) {
-        formData.append(key, contractToEdit[key]);
+        const value = contractToEdit[key];
+        formData.append(key, Array.isArray(value) ? JSON.stringify(value) : value);
       }
     });
 
@@ -2077,62 +2095,28 @@ export const ContractsBlock = () => {
                     htmlFor="edit-departure"
                     className={editLabelClass}
                   >
-                    Станция отправления{" "}
+                    Станции отправления{" "}
                     <span className="text-destructive">*</span>
                   </label>
-                  <Popover
-                    open={openDepartureStation}
-                    onOpenChange={setOpenDepartureStation}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={openDepartureStation}
-                        aria-invalid={Boolean(editErrors.departure_station)}
-                        className={editComboClass}
-                      >
-                        <span className="truncate">
-                          {contractToEdit.departure_station ||
-                            "Выберите станцию отправления"}
-                        </span>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] rounded-md border-[#dfe7de] p-0 shadow-[0_18px_45px_rgba(22,42,35,0.16)]">
-                      <Command>
-                        <CommandInput placeholder="Поиск станции..." />
-                        <CommandList>
-                          <CommandEmpty>Станция не найдена.</CommandEmpty>
-                          <CommandGroup className="max-h-60 overflow-y-auto">
-                            {stationsData.data.map((station: any) => (
-                              <CommandItem
-                                key={station.id}
-                                value={station.name}
-                                onSelect={(value) => {
-                                  updateEditableContract({
-                                    departure_station: value,
-                                  });
-                                  setOpenDepartureStation(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    contractToEdit.departure_station ===
-                                      station.name
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                <span className="truncate">{station.name}</span>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                  <MultiSelect
+                    options={stationOptions}
+                    selected={getContractStationNames(
+                      contractToEdit,
+                      "departure"
+                    )}
+                    onChange={(stations) =>
+                      updateEditableContract({
+                        departure_stations: stations,
+                        departure_station: stations[0] || "",
+                      })
+                    }
+                    placeholder="Выберите одну или несколько станций"
+                    emptyMessage="Станции не найдены"
+                    className={cn(
+                      editErrors.departure_station &&
+                        "[&>div:first-of-type]:border-destructive"
+                    )}
+                  />
                   <FormError message={editErrors.departure_station} />
                 </div>
                 <div className="space-y-2">
@@ -2140,62 +2124,28 @@ export const ContractsBlock = () => {
                     htmlFor="edit-destination"
                     className={editLabelClass}
                   >
-                    Станция назначения{" "}
+                    Станции назначения{" "}
                     <span className="text-destructive">*</span>
                   </label>
-                  <Popover
-                    open={openDestinationStation}
-                    onOpenChange={setOpenDestinationStation}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={openDestinationStation}
-                        aria-invalid={Boolean(editErrors.destination_station)}
-                        className={editComboClass}
-                      >
-                        <span className="truncate">
-                          {contractToEdit.destination_station ||
-                            "Выберите станцию назначения"}
-                        </span>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] rounded-md border-[#dfe7de] p-0 shadow-[0_18px_45px_rgba(22,42,35,0.16)]">
-                      <Command>
-                        <CommandInput placeholder="Поиск станции..." />
-                        <CommandList>
-                          <CommandEmpty>Станция не найдена.</CommandEmpty>
-                          <CommandGroup className="max-h-60 overflow-y-auto">
-                            {stationsData.data.map((station: any) => (
-                              <CommandItem
-                                key={station.id}
-                                value={station.name}
-                                onSelect={(value) => {
-                                  updateEditableContract({
-                                    destination_station: value,
-                                  });
-                                  setOpenDestinationStation(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    contractToEdit.destination_station ===
-                                      station.name
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                <span className="truncate">{station.name}</span>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                  <MultiSelect
+                    options={stationOptions}
+                    selected={getContractStationNames(
+                      contractToEdit,
+                      "destination"
+                    )}
+                    onChange={(stations) =>
+                      updateEditableContract({
+                        destination_stations: stations,
+                        destination_station: stations[0] || "",
+                      })
+                    }
+                    placeholder="Выберите одну или несколько станций"
+                    emptyMessage="Станции не найдены"
+                    className={cn(
+                      editErrors.destination_station &&
+                        "[&>div:first-of-type]:border-destructive"
+                    )}
+                  />
                   <FormError message={editErrors.destination_station} />
                 </div>
                 </div>

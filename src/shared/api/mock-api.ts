@@ -779,6 +779,25 @@ const toNumber = (value: any, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const toStringArray = (value: any, fallback: string[] = []) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => String(item).trim()).filter(Boolean);
+      }
+    } catch {
+      return [value.trim()];
+    }
+  }
+
+  return fallback;
+};
+
 const nextId = (items: AnyRecord[]) =>
   items.reduce((max, item) => Math.max(max, toNumber(item.id, 0)), 0) + 1;
 
@@ -909,6 +928,12 @@ const createContract = (body: AnyRecord) => {
     companies.find((item) => item.id === toNumber(body.companyId, 1)) ||
     companies[0];
   const totalVolume = toNumber(body.totalVolume ?? body.total_volume, 1000);
+  const departureStations = toStringArray(body.departure_stations, [
+    body.departureStation || body.departure_station || stations[0].name,
+  ]);
+  const destinationStations = toStringArray(body.destination_stations, [
+    body.destinationStation || body.destination_station || stations[3].name,
+  ]);
   const contract = {
     id,
     number: body.number || `SG-2026-${String(id).padStart(3, "0")}`,
@@ -917,10 +942,10 @@ const createContract = (body: AnyRecord) => {
     crop: body.crop || "Пшеница 3 класс",
     sender: body.sender || body.senderName || senders[0].name,
     receiver: body.receiver || body.receiverName || receivers[0].name,
-    departure_station:
-      body.departureStation || body.departure_station || stations[0].name,
-    destination_station:
-      body.destinationStation || body.destination_station || stations[3].name,
+    departure_station: departureStations[0] || "",
+    destination_station: destinationStations[0] || "",
+    departure_stations: departureStations,
+    destination_stations: destinationStations,
     total_volume: totalVolume,
     estimated_cost: toNumber(body.estimated_cost, totalVolume * 80),
     currency: body.currency || "USD",
@@ -944,6 +969,16 @@ const updateContract = (id: string | number, body: AnyRecord) => {
     companies.find(
       (item) => item.id === toNumber(body.companyId, contract.companyId),
     ) || contract.company;
+  const departureStations = toStringArray(body.departure_stations, [
+    body.departureStation ||
+      body.departure_station ||
+      contract.departure_station,
+  ]);
+  const destinationStations = toStringArray(body.destination_stations, [
+    body.destinationStation ||
+      body.destination_station ||
+      contract.destination_station,
+  ]);
 
   Object.assign(contract, {
     ...body,
@@ -953,14 +988,10 @@ const updateContract = (id: string | number, body: AnyRecord) => {
       body.totalVolume ?? body.total_volume,
       contract.total_volume,
     ),
-    departure_station:
-      body.departureStation ||
-      body.departure_station ||
-      contract.departure_station,
-    destination_station:
-      body.destinationStation ||
-      body.destination_station ||
-      contract.destination_station,
+    departure_station: departureStations[0] || "",
+    destination_station: destinationStations[0] || "",
+    departure_stations: departureStations,
+    destination_stations: destinationStations,
     updated_at: new Date().toISOString(),
   });
 
