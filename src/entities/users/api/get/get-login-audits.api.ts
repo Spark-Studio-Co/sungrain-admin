@@ -9,6 +9,12 @@ export type LoginAudit = {
   success: boolean;
   failureReason: string | null;
   createdAt: string;
+  geoCountry: string | null;
+  geoRegion: string | null;
+  geoCity: string | null;
+  geoLatitude: number | null;
+  geoLongitude: number | null;
+  geoTimezone: string | null;
   user: {
     id: number;
     email: string;
@@ -36,16 +42,18 @@ export const getLoginAudits = async ({
   limit = 50,
   search = "",
   success = "all",
+  excludeAdmin = false,
 }: {
   page?: number;
   limit?: number;
   search?: string;
   success?: string;
+  excludeAdmin?: boolean;
 }) => {
   const response = await apiClient.get<LoginAuditResponse>(
     "/user/login-audits",
     {
-      params: { page, limit, search, success },
+      params: { page, limit, search, success, excludeAdmin },
     },
   );
 

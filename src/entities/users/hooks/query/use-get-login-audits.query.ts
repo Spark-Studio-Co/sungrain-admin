@@ -7,6 +7,7 @@ export const useGetLoginAudits = (
     limit?: number;
     search?: string;
     success?: string;
+    excludeAdmin?: boolean;
   },
   enabled = true,
 ) =>
@@ -17,6 +18,7 @@ export const useGetLoginAudits = (
       params.limit,
       params.search,
       params.success,
+      params.excludeAdmin,
     ],
     queryFn: () => getLoginAudits(params),
     enabled,

@@ -665,6 +665,12 @@ const loginAudits: AnyRecord[] = [
     userId: 1,
     email: "admin@sungrain.test",
     ipAddress: "185.125.44.17",
+    geoCountry: "Казахстан",
+    geoRegion: "Алматы",
+    geoCity: "Алматы",
+    geoLatitude: 43.24,
+    geoLongitude: 76.91,
+    geoTimezone: "Asia/Almaty",
     userAgent:
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/126.0 Safari/537.36",
     success: true,
@@ -682,6 +688,12 @@ const loginAudits: AnyRecord[] = [
     userId: null,
     email: "unknown@sungrain.kz",
     ipAddress: "92.47.18.204",
+    geoCountry: "Казахстан",
+    geoRegion: "Алматинская область",
+    geoCity: "Каскелен",
+    geoLatitude: 43.20,
+    geoLongitude: 76.62,
+    geoTimezone: "Asia/Almaty",
     userAgent:
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36",
     success: false,
@@ -1286,23 +1298,55 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
           : undefined;
     const filteredAudits = loginAudits.filter(
       (audit) =>
+        (params.excludeAdmin !== "true" ||
+          (audit.user?.role !== "ADMIN" &&
+            !["admin@sungrain.kz", "admin@sungrain.test"].includes(
+              String(audit.email).toLowerCase(),
+            ))) &&
         (typeof successFilter !== "boolean" ||
           audit.success === successFilter) &&
         includesSearch(audit, params.search),
     );
     const paginated = paginate(filteredAudits, params);
 
+    const scopedAudits = loginAudits.filter(
+      (audit) =>
+        params.excludeAdmin !== "true" ||
+        (audit.user?.role !== "ADMIN" &&
+          !["admin@sungrain.kz", "admin@sungrain.test"].includes(
+            String(audit.email).toLowerCase(),
+          )),
+    );
+
     return {
       ...paginated,
       stats: {
-        successful: loginAudits.filter((audit) => audit.success).length,
-        failed: loginAudits.filter((audit) => !audit.success).length,
-        recent: loginAudits.length,
-        uniqueIps: new Set(loginAudits.map((audit) => audit.ipAddress)).size,
+        successful: scopedAudits.filter((audit) => audit.success).length,
+        failed: scopedAudits.filter((audit) => !audit.success).length,
+        recent: scopedAudits.length,
+        uniqueIps: new Set(scopedAudits.map((audit) => audit.ipAddress)).size,
       },
     };
   }
-  if (path === "/user/all" && method === "get") return paginate(users, params);
+  if (path === "/user/all" && method === "get") {
+    const search = String(params.search || "").toLowerCase();
+    const role = String(params.role || "all");
+    const filteredUsers = users.filter(
+      (user) =>
+        (params.excludeAdmin !== "true" ||
+          (String(user.role).toLowerCase() !== "admin" &&
+            !["admin@sungrain.kz", "admin@sungrain.test"].includes(
+              String(user.email).toLowerCase(),
+            ))) &&
+        (role === "all" || String(user.role) === role) &&
+        (!search ||
+          [user.full_name, user.name, user.username, user.email]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(search))),
+    );
+
+    return paginate(filteredUsers, params);
+  }
   if (path === "/user/my-contracts" && method === "get") {
     return paginate(contracts.slice(0, 4), params);
   }

@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/select";
 import { CrmErrorState } from "@/components/ui/crm-state";
 import { AdminPageSizeControl } from "@/components/ui/admin-page-size-control";
+import { Switch } from "@/components/ui/switch";
 import { useGetUsers } from "@/entities/users/hooks/query/use-get-users.query";
 import { useGetLoginAudits } from "@/entities/users/hooks/query/use-get-login-audits.query";
 import AddUserDialog from "./add-user-dialog";
@@ -109,6 +110,27 @@ const getFailureLabel = (reason: string | null) => {
   return "Вход отклонен";
 };
 
+const getGeoLocationLabel = (audit: {
+  geoCity: string | null;
+  geoRegion: string | null;
+  geoCountry: string | null;
+}) =>
+  [audit.geoCity, audit.geoRegion, audit.geoCountry]
+    .filter(Boolean)
+    .join(", ") || "Геолокация не определена";
+
+const getGeoCoordinates = (audit: {
+  geoLatitude: number | null;
+  geoLongitude: number | null;
+  geoTimezone: string | null;
+}) => {
+  if (audit.geoLatitude === null || audit.geoLongitude === null) {
+    return audit.geoTimezone || "По IP недоступно";
+  }
+
+  return `${audit.geoLatitude.toFixed(2)}, ${audit.geoLongitude.toFixed(2)}${audit.geoTimezone ? ` · ${audit.geoTimezone}` : ""}`;
+};
+
 export default function UsersBlock() {
   const [activeTab, setActiveTab] = useState("users");
   const [searchTerm, setSearchTerm] = useState("");
@@ -123,6 +145,8 @@ export default function UsersBlock() {
   const [auditSearch, setAuditSearch] = useState("");
   const [auditStatus, setAuditStatus] = useState("all");
   const [auditLimit, setAuditLimit] = useState(50);
+  const [excludeAdmin, setExcludeAdmin] = useState(false);
+  const deferredSearch = useDeferredValue(searchTerm);
   const deferredAuditSearch = useDeferredValue(auditSearch);
 
   // API hooks
@@ -131,7 +155,13 @@ export default function UsersBlock() {
     isLoading,
     isError,
     error,
-  } = useGetUsers({ page, limit });
+  } = useGetUsers({
+    page,
+    limit,
+    search: deferredSearch,
+    role: roleFilter,
+    excludeAdmin,
+  });
   const {
     data: auditData,
     isLoading: isAuditLoading,
@@ -143,6 +173,7 @@ export default function UsersBlock() {
       limit: auditLimit,
       search: deferredAuditSearch,
       success: auditStatus,
+      excludeAdmin,
     },
     activeTab === "audits",
   );
@@ -414,6 +445,17 @@ export default function UsersBlock() {
                         onOpenChange={setIsAddDialogOpen}
                       />
                     </div>
+                    <div className="flex min-h-10 items-center justify-between gap-3 rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-3 py-2 xl:col-span-3">
+                      <div className="flex min-w-0 items-center gap-2 text-xs font-bold text-[#53605a]">
+                        <ShieldCheck className="h-4 w-4 shrink-0 text-[#f38810]" />
+                        <span className="truncate">Скрыть администратора из списка</span>
+                      </div>
+                      <Switch
+                        checked={excludeAdmin}
+                        onCheckedChange={setExcludeAdmin}
+                        aria-label="Скрыть администратора из списка"
+                      />
+                    </div>
                   </div>
                 </div>
               </CardHeader>
@@ -527,16 +569,28 @@ export default function UsersBlock() {
                     >
                       <RefreshCw className="h-4 w-4" />
                     </Button>
+                    <div className="flex min-h-10 items-center justify-between gap-3 rounded-md border border-[#dfe7de] bg-[#fbfcfa] px-3 py-2 sm:col-span-3">
+                      <div className="flex min-w-0 items-center gap-2 text-xs font-bold text-[#53605a]">
+                        <ShieldCheck className="h-4 w-4 shrink-0 text-[#f38810]" />
+                        <span className="truncate">Скрыть входы администратора</span>
+                      </div>
+                      <Switch
+                        checked={excludeAdmin}
+                        onCheckedChange={setExcludeAdmin}
+                        aria-label="Скрыть входы администратора"
+                      />
+                    </div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="px-0">
                 <div className="overflow-x-auto">
-                  <Table className="min-w-[960px]">
+                  <Table className="min-w-[1180px]">
                     <TableHeader className="bg-[#f7f8f5]">
                       <TableRow className="hover:bg-transparent">
                         <TableHead className="pl-5">Пользователь</TableHead>
                         <TableHead>IP-адрес</TableHead>
+                        <TableHead>Геолокация</TableHead>
                         <TableHead>Устройство</TableHead>
                         <TableHead>Дата и время</TableHead>
                         <TableHead className="pr-5 text-right">
@@ -548,7 +602,7 @@ export default function UsersBlock() {
                       {isAuditLoading ? (
                         <TableRow>
                           <TableCell
-                            colSpan={5}
+                            colSpan={6}
                             className="h-32 text-center text-[#7b857f]"
                           >
                             Загружаем журнал входов...
@@ -557,7 +611,7 @@ export default function UsersBlock() {
                       ) : isAuditError ? (
                         <TableRow>
                           <TableCell
-                            colSpan={5}
+                            colSpan={6}
                             className="h-32 text-center text-[#b9472d]"
                           >
                             Не удалось загрузить журнал входов.
@@ -582,6 +636,19 @@ export default function UsersBlock() {
                                 <Globe2 className="h-3.5 w-3.5 text-[#2f6b4f]" />
                                 {audit.ipAddress}
                               </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-start gap-2">
+                                <Globe2 className="mt-0.5 h-4 w-4 shrink-0 text-[#527f95]" />
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-[#31413b]">
+                                    {getGeoLocationLabel(audit)}
+                                  </div>
+                                  <div className="mt-0.5 text-[11px] text-[#8a928f]">
+                                    {getGeoCoordinates(audit)}
+                                  </div>
+                                </div>
+                              </div>
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2 text-sm font-semibold text-[#53605a]">
@@ -610,7 +677,7 @@ export default function UsersBlock() {
                       ) : (
                         <TableRow>
                           <TableCell
-                            colSpan={5}
+                            colSpan={6}
                             className="h-36 text-center text-[#7b857f]"
                           >
                             Журнал пока пуст. Новые входы появятся здесь
