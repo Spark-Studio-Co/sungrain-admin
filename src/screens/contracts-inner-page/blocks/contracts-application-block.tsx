@@ -2,7 +2,12 @@
 
 import type React from "react";
 import { useState } from "react";
-import { cn, formatMoney, formatNumber, normalizeCurrencyLabel } from "@/lib/utils";
+import {
+  cn,
+  formatMoney,
+  formatNumber,
+  normalizeCurrencyLabel,
+} from "@/lib/utils";
 import {
   Building2,
   CheckCircle2,
@@ -19,6 +24,7 @@ import {
   SlidersHorizontal,
   Download,
   RefreshCw,
+  Route,
 } from "lucide-react";
 import {
   Card,
@@ -70,6 +76,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  getApplicationRoute,
   getApplicationShipmentSummary,
   sortApplicationsByNaturalOrder,
   type ApplicationShipmentStatus,
@@ -144,7 +151,7 @@ export const ApplicationBlock = ({
 
   const formatApplicationMoney = (
     application: any,
-    value: number | string | null | undefined
+    value: number | string | null | undefined,
   ) => formatMoney(value, getApplicationCurrency(application));
 
   const shipmentStatusConfig: Record<
@@ -182,10 +189,8 @@ export const ApplicationBlock = ({
     const config = shipmentStatusConfig[summary.status];
     const StatusIcon = config.icon;
     const legacyInTransit = Math.max(
-      summary.inTransit -
-        summary.enRouteToLoading -
-        summary.enRouteToRecipient,
-      0
+      summary.inTransit - summary.enRouteToLoading - summary.enRouteToRecipient,
+      0,
     );
     const counters = [
       {
@@ -213,8 +218,7 @@ export const ApplicationBlock = ({
             {
               label: "В пути",
               value: legacyInTransit,
-              activeClassName:
-                "border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]",
+              activeClassName: "border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]",
             },
           ]
         : []),
@@ -223,8 +227,7 @@ export const ApplicationBlock = ({
             {
               label: "Элеватор",
               value: summary.atElevator,
-              activeClassName:
-                "border-[#dce8dc] bg-[#eef5ef] text-[#1f5a43]",
+              activeClassName: "border-[#dce8dc] bg-[#eef5ef] text-[#1f5a43]",
             },
           ]
         : []),
@@ -256,7 +259,7 @@ export const ApplicationBlock = ({
                     "rounded-md border px-2 py-1 text-[11px] font-black",
                     counter.value > 0
                       ? counter.activeClassName
-                      : "border-[#edf1eb] bg-[#fbfcfa] text-[#8a928f]"
+                      : "border-[#edf1eb] bg-[#fbfcfa] text-[#8a928f]",
                   )}
                 >
                   {counter.label}: {counter.value}
@@ -286,6 +289,7 @@ export const ApplicationBlock = ({
   // Filter applications based on search term
   const filteredApplications = orderedApplications.filter((app: any) => {
     const searchLower = searchTerm.toLowerCase();
+    const route = getApplicationRoute(app);
     return (
       app.id?.toString().includes(searchLower) ||
       app.name?.toLowerCase().includes(searchLower) ||
@@ -293,6 +297,7 @@ export const ApplicationBlock = ({
       app.volume?.toString().includes(searchLower) ||
       app.total_amount?.toString().includes(searchLower) ||
       app.currency?.toLowerCase().includes(searchLower) ||
+      route.label.toLowerCase().includes(searchLower) ||
       (app.created_at &&
         formatDate(app.created_at).toLowerCase().includes(searchLower)) ||
       (app.culture &&
@@ -347,6 +352,7 @@ export const ApplicationBlock = ({
       const headers = [
         "ID",
         "Название",
+        "Маршрут",
         "Дата создания",
         "Объем (т)",
         "Культура",
@@ -361,10 +367,12 @@ export const ApplicationBlock = ({
       // Create CSV rows
       const rows = orderedApplications.map((app: any) => {
         const shipmentSummary = getApplicationShipmentSummary(app);
+        const route = getApplicationRoute(app);
 
         return [
           app.id,
           app.name || "",
+          route.label,
           app.created_at ? formatDate(app.created_at) : "",
           app.volume || 0,
           getCultureName(app.culture) || "",
@@ -390,7 +398,7 @@ export const ApplicationBlock = ({
       link.setAttribute("href", url);
       link.setAttribute(
         "download",
-        `applications-${new Date().toISOString().slice(0, 10)}.csv`
+        `applications-${new Date().toISOString().slice(0, 10)}.csv`,
       );
       link.style.visibility = "hidden";
       document.body.appendChild(link);
@@ -571,8 +579,16 @@ export const ApplicationBlock = ({
                               }
                             >
                               <TableCell>
-                                <div className="max-w-[220px] truncate font-black text-[#223137]">
-                                  {application.name || "Без названия"}
+                                <div className="max-w-[250px]">
+                                  <div className="truncate font-black text-[#223137]">
+                                    {application.name || "Без названия"}
+                                  </div>
+                                  <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-[#718078]">
+                                    <Route className="h-3.5 w-3.5 shrink-0 text-[#f38810]" />
+                                    <span className="truncate">
+                                      {getApplicationRoute(application).label}
+                                    </span>
+                                  </div>
                                 </div>
                               </TableCell>
                               <TableCell>
@@ -599,7 +615,7 @@ export const ApplicationBlock = ({
                                   {application.price_per_ton
                                     ? formatApplicationMoney(
                                         application,
-                                        application.price_per_ton
+                                        application.price_per_ton,
                                       )
                                     : formatApplicationMoney(application, 0)}
                                 </div>
@@ -610,7 +626,7 @@ export const ApplicationBlock = ({
                                   className="border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]"
                                 >
                                   {normalizeCurrencyLabel(
-                                    getApplicationCurrency(application)
+                                    getApplicationCurrency(application),
                                   )}
                                 </Badge>
                               </TableCell>
@@ -622,7 +638,7 @@ export const ApplicationBlock = ({
                                   {application.total_amount
                                     ? formatApplicationMoney(
                                         application,
-                                        application.total_amount
+                                        application.total_amount,
                                       )
                                     : formatApplicationMoney(application, 0)}
                                 </Badge>
@@ -655,7 +671,7 @@ export const ApplicationBlock = ({
                                             onClick={(e) =>
                                               handleEditApplication(
                                                 application,
-                                                e
+                                                e,
                                               )
                                             }
                                           >
@@ -830,7 +846,7 @@ export const ApplicationBlock = ({
                                     {application.price_per_ton
                                       ? formatApplicationMoney(
                                           application,
-                                          application.price_per_ton
+                                          application.price_per_ton,
                                         )
                                       : formatApplicationMoney(application, 0)}
                                   </div>
@@ -847,10 +863,22 @@ export const ApplicationBlock = ({
                                     {application.total_amount
                                       ? formatApplicationMoney(
                                           application,
-                                          application.total_amount
+                                          application.total_amount,
                                         )
                                       : formatApplicationMoney(application, 0)}
                                   </div>
+                                </div>
+                              </div>
+
+                              <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] p-3">
+                                <div className="mb-2 text-xs font-black uppercase text-[#7b857f]">
+                                  Маршрут заявки
+                                </div>
+                                <div className="flex items-start gap-2 text-sm font-bold leading-relaxed text-[#304139]">
+                                  <Route className="mt-0.5 h-4 w-4 shrink-0 text-[#f38810]" />
+                                  <span>
+                                    {getApplicationRoute(application).label}
+                                  </span>
                                 </div>
                               </div>
 
@@ -888,7 +916,7 @@ export const ApplicationBlock = ({
                                   className="bg-blue-50 text-blue-700 text-sm px-3 py-1 font-medium"
                                 >
                                   {normalizeCurrencyLabel(
-                                    getApplicationCurrency(application)
+                                    getApplicationCurrency(application),
                                   )}
                                 </Badge>
                               </div>

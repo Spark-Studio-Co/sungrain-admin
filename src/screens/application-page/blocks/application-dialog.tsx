@@ -17,6 +17,7 @@ import {
   CheckCircle,
   ClipboardList,
   FileUp,
+  MapPin,
 } from "lucide-react";
 import {
   Dialog,
@@ -42,6 +43,19 @@ import { useUpdateApplication } from "@/entities/applications/hooks/mutations/us
 import { useUploadApplicationFiles } from "@/entities/applications/hooks/mutations/use-upload-application-files.mutation";
 import { useDeleteApplicationFile } from "@/entities/applications/hooks/mutations/use-delete-application-file.mutation";
 import { useFetchCultures } from "@/entities/cultures/hooks/query/use-get-cultures.query";
+import { useFetchStations } from "@/entities/stations/hooks/query/use-get-stations.query";
+import { MultiSelect } from "@/components/ui/multi-select";
+
+const normalizeStationValues = (value: unknown) => {
+  if (Array.isArray(value)) {
+    return Array.from(
+      new Set(value.map((item) => String(item).trim()).filter(Boolean)),
+    );
+  }
+
+  if (typeof value === "string" && value.trim()) return [value.trim()];
+  return [];
+};
 
 interface ApplicationDialogProps {
   isOpen: boolean;
@@ -62,11 +76,15 @@ export const ApplicationDialog = ({
   const contractCurrency = contract?.currency || "";
   const contractCurrencyLabel = normalizeCurrencyLabel(contractCurrency);
   const formatContractMoneyValue = (
-    value: number | string | null | undefined
+    value: number | string | null | undefined,
   ) => formatMoney(value, contractCurrency);
   const { data: culturesData, isLoading: isCulturesLoading } = useFetchCultures(
     1,
-    100
+    100,
+  );
+  const { data: stationsData, isLoading: isStationsLoading } = useFetchStations(
+    1,
+    5000,
   );
 
   // Also update the formData state to include currency from contractData
@@ -77,11 +95,17 @@ export const ApplicationDialog = ({
     volume: application?.volume || "",
     culture: application?.culture || "",
     comment: application?.comment || "",
+    departure_stations: normalizeStationValues(
+      application?.departure_stations || application?.departure_station,
+    ),
+    destination_stations: normalizeStationValues(
+      application?.destination_stations || application?.destination_station,
+    ),
     contractId: contractId,
   });
 
   const [totalAmount, setTotalAmount] = useState(
-    application?.total_amount || 0
+    application?.total_amount || 0,
   );
 
   // State for volume validation
@@ -129,6 +153,8 @@ export const ApplicationDialog = ({
         volume: "",
         culture: "",
         comment: "",
+        departure_stations: [],
+        destination_stations: [],
         contractId: contractId,
       });
 
@@ -155,6 +181,8 @@ export const ApplicationDialog = ({
         volume: "",
         culture: "",
         comment: "",
+        departure_stations: [],
+        destination_stations: [],
         contractId: contractId,
       });
 
@@ -184,7 +212,7 @@ export const ApplicationDialog = ({
           data.forEach((uploadedFile, index) => {
             if (index < uploadingDocs.length) {
               const docIndex = newDocs.findIndex(
-                (doc) => doc === uploadingDocs[index]
+                (doc) => doc === uploadingDocs[index],
               );
               if (docIndex !== -1) {
                 newDocs[docIndex] = {
@@ -221,8 +249,8 @@ export const ApplicationDialog = ({
       // Reset uploading state for documents
       setDocuments((prev) =>
         prev.map((doc) =>
-          doc.isUploading ? { ...doc, isUploading: false } : doc
-        )
+          doc.isUploading ? { ...doc, isUploading: false } : doc,
+        ),
       );
     },
   });
@@ -243,7 +271,45 @@ export const ApplicationDialog = ({
         currency: contractCurrency,
       }));
     }
-  }, [application, formData.culture, contractData, formData.currency]);
+
+    const contractDepartureStations = normalizeStationValues(
+      contract?.departure_stations?.length
+        ? contract.departure_stations
+        : contract?.departure_station,
+    );
+    const contractDestinationStations = normalizeStationValues(
+      contract?.destination_stations?.length
+        ? contract.destination_stations
+        : contract?.destination_station,
+    );
+
+    if (
+      formData.departure_stations.length === 0 &&
+      contractDepartureStations.length > 0
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        departure_stations: contractDepartureStations,
+      }));
+    }
+    if (
+      formData.destination_stations.length === 0 &&
+      contractDestinationStations.length > 0
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        destination_stations: contractDestinationStations,
+      }));
+    }
+  }, [
+    application,
+    contract,
+    contractCurrency,
+    formData.culture,
+    formData.currency,
+    formData.departure_stations.length,
+    formData.destination_stations.length,
+  ]);
 
   // Calculate total amount when price or volume changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -266,14 +332,14 @@ export const ApplicationDialog = ({
       // Если редактируем, добавляем обратно текущую заявку
       const maxAllowedVolume = Math.max(
         0,
-        availableVolume + currentApplicationVolume
+        availableVolume + currentApplicationVolume,
       );
 
       if (numValue > maxAllowedVolume) {
         setVolumeError(
           `Объем не может превышать ${formatNumber(
-            maxAllowedVolume
-          )} тонн (доступно по договору)`
+            maxAllowedVolume,
+          )} тонн (доступно по договору)`,
         );
       } else {
         setVolumeError("");
@@ -317,8 +383,8 @@ export const ApplicationDialog = ({
               fileName: file.name,
               isNew: true,
             }
-          : doc
-      )
+          : doc,
+      ),
     );
   };
 
@@ -332,8 +398,8 @@ export const ApplicationDialog = ({
               fileName: undefined,
               isNew: false,
             }
-          : doc
-      )
+          : doc,
+      ),
     );
   };
 
@@ -406,7 +472,7 @@ export const ApplicationDialog = ({
 
   const updateDocument = (index: number, field: string, value: string) => {
     setDocuments((prev) =>
-      prev.map((doc, i) => (i === index ? { ...doc, [field]: value } : doc))
+      prev.map((doc, i) => (i === index ? { ...doc, [field]: value } : doc)),
     );
   };
 
@@ -420,8 +486,8 @@ export const ApplicationDialog = ({
       // Mark documents as uploading
       setDocuments((prev) =>
         prev.map((doc) =>
-          doc.file && doc.isNew ? { ...doc, isUploading: true } : doc
-        )
+          doc.file && doc.isNew ? { ...doc, isUploading: true } : doc,
+        ),
       );
 
       // Show uploading notification
@@ -477,6 +543,8 @@ export const ApplicationDialog = ({
             currency: formData.currency,
             contractId: contractId,
             total_amount: totalAmount,
+            departure_stations: formData.departure_stations,
+            destination_stations: formData.destination_stations,
           },
         });
         applicationId = application.id;
@@ -490,6 +558,8 @@ export const ApplicationDialog = ({
           culture: formData.culture,
           contractId: contractId as any,
           total_amount: totalAmount,
+          departure_stations: formData.departure_stations,
+          destination_stations: formData.destination_stations,
         });
         applicationId = result.id;
       }
@@ -537,6 +607,11 @@ export const ApplicationDialog = ({
       value: String(culture.id || culture.value || culture.name),
       name: culture.name,
     })) || [];
+  const stationOptions =
+    stationsData?.data?.map((station: any) => ({
+      value: String(station.name),
+      label: station.code ? `${station.name} · ${station.code}` : station.name,
+    })) || [];
   const filledCoreCount = [
     formData.name,
     formData.price_per_ton,
@@ -550,7 +625,9 @@ export const ApplicationDialog = ({
     formData.culture;
   const hasSelectedCultureOption =
     !!formData.culture &&
-    cultureOptions.some((culture) => culture.value === String(formData.culture));
+    cultureOptions.some(
+      (culture) => culture.value === String(formData.culture),
+    );
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose(false)}>
@@ -670,7 +747,7 @@ export const ApplicationDialog = ({
                     applicationFieldClassName,
                     volumeError
                       ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
+                      : "",
                   )}
                 />
                 {volumeError && (
@@ -766,6 +843,71 @@ export const ApplicationDialog = ({
             <div className={applicationSectionHeaderClassName}>
               <div className="flex items-center gap-3">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
+                  <MapPin className="h-5 w-5" />
+                </span>
+                <div>
+                  <h3 className="text-base font-black text-[#223137]">
+                    Маршрут заявки
+                  </h3>
+                  <p className="text-xs text-[#7b857f]">
+                    Станции относятся только к этой заявке и ее вагонам.
+                  </p>
+                </div>
+              </div>
+              <span className="hidden rounded-md border border-[#dce8dc] bg-[#f5faf5] px-3 py-1 text-xs font-black text-[#2f6b4f] sm:inline-flex">
+                {formData.departure_stations.length} →{" "}
+                {formData.destination_stations.length}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-start">
+              <div className="space-y-2">
+                <Label className={applicationLabelClassName}>
+                  Станции отправления <span className="text-red-500">*</span>
+                </Label>
+                <MultiSelect
+                  options={stationOptions}
+                  selected={formData.departure_stations}
+                  onChange={(departure_stations) =>
+                    setFormData((prev) => ({ ...prev, departure_stations }))
+                  }
+                  placeholder={
+                    isStationsLoading
+                      ? "Загрузка станций..."
+                      : "Выберите станции отправления"
+                  }
+                  emptyMessage="Станции не найдены"
+                  disabled={isStationsLoading}
+                />
+              </div>
+              <div className="hidden h-11 items-center justify-center pt-6 text-lg font-black text-[#f38810] md:flex">
+                →
+              </div>
+              <div className="space-y-2">
+                <Label className={applicationLabelClassName}>
+                  Станции назначения <span className="text-red-500">*</span>
+                </Label>
+                <MultiSelect
+                  options={stationOptions}
+                  selected={formData.destination_stations}
+                  onChange={(destination_stations) =>
+                    setFormData((prev) => ({ ...prev, destination_stations }))
+                  }
+                  placeholder={
+                    isStationsLoading
+                      ? "Загрузка станций..."
+                      : "Выберите станции назначения"
+                  }
+                  emptyMessage="Станции не найдены"
+                  disabled={isStationsLoading}
+                />
+              </div>
+            </div>
+          </div>
+          <div className={applicationSectionClassName}>
+            <div className={applicationSectionHeaderClassName}>
+              <div className="flex items-center gap-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#eef5ef] text-[#2f6b4f]">
                   <FileUp className="h-5 w-5" />
                 </span>
                 <div>
@@ -837,7 +979,7 @@ export const ApplicationDialog = ({
                           placeholder="Название документа"
                           className={cn(
                             applicationFieldClassName,
-                            "h-10 border-dashed shadow-none"
+                            "h-10 border-dashed shadow-none",
                           )}
                         />
                       </div>
@@ -850,7 +992,7 @@ export const ApplicationDialog = ({
                           placeholder="№ документа"
                           className={cn(
                             applicationFieldClassName,
-                            "h-10 border-dashed shadow-none"
+                            "h-10 border-dashed shadow-none",
                           )}
                         />
                       </div>
@@ -861,7 +1003,7 @@ export const ApplicationDialog = ({
                               variant="outline"
                               className={cn(
                                 "h-10 w-full justify-start rounded-md border-[#dce4da] bg-white text-left font-semibold text-[#223137] shadow-none",
-                                !doc.date && "text-[#9aa49f]"
+                                !doc.date && "text-[#9aa49f]",
                               )}
                             >
                               <CalendarIcon className="mr-2 h-4 w-4 text-[#6f7774]" />
@@ -886,7 +1028,7 @@ export const ApplicationDialog = ({
                                   updateDocument(
                                     index,
                                     "date",
-                                    format(date, "yyyy-MM-dd")
+                                    format(date, "yyyy-MM-dd"),
                                   );
                                 }
                               }}
@@ -929,7 +1071,7 @@ export const ApplicationDialog = ({
                               "h-10 w-full rounded-md border-dashed bg-white font-black shadow-none",
                               doc.isUploading
                                 ? "border-[#f2dfca] text-[#d5740b] hover:bg-[#fff3e5]"
-                                : "border-[#dce8dc] text-[#2f6b4f] hover:bg-[#f5faf5]"
+                                : "border-[#dce8dc] text-[#2f6b4f] hover:bg-[#f5faf5]",
                             )}
                             onClick={() =>
                               document.getElementById(`file-${index}`)?.click()
@@ -1000,7 +1142,9 @@ export const ApplicationDialog = ({
               ) : (
                 <div className="rounded-md border border-dashed border-[#dfe7de] bg-white py-8 text-center text-[#7b857f]">
                   <FileText className="mx-auto mb-2 h-10 w-10 text-[#f38810]" />
-                  <p className="text-sm font-semibold">Нет прикрепленных документов</p>
+                  <p className="text-sm font-semibold">
+                    Нет прикрепленных документов
+                  </p>
                   <Button
                     variant="outline"
                     size="sm"
@@ -1022,7 +1166,7 @@ export const ApplicationDialog = ({
                 notification.type === "error" &&
                   "border-[#f4d6ce] bg-[#fff1ed] text-[#b9472d]",
                 notification.type === "info" &&
-                  "border-[#dfe7de] bg-[#fbfcfa] text-[#53605a]"
+                  "border-[#dfe7de] bg-[#fbfcfa] text-[#53605a]",
               )}
             >
               {notification.type === "success" && (
@@ -1056,6 +1200,8 @@ export const ApplicationDialog = ({
               !formData.price_per_ton ||
               !formData.volume ||
               !formData.culture ||
+              formData.departure_stations.length === 0 ||
+              formData.destination_stations.length === 0 ||
               !!volumeError
             }
             className="h-11 gap-2 rounded-md bg-[#f38810] px-5 font-black text-white shadow-[0_10px_24px_rgba(243,136,16,0.22)] hover:bg-[#db790c]"

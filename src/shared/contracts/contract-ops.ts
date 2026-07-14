@@ -60,7 +60,9 @@ const toNumber = (value: unknown) => {
   }
 
   if (typeof value === "string") {
-    const parsed = Number.parseFloat(value.replace(/\s/g, "").replace(",", "."));
+    const parsed = Number.parseFloat(
+      value.replace(/\s/g, "").replace(",", "."),
+    );
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
@@ -122,7 +124,7 @@ const getFileName = (file: any, index: number) => {
 
 export const resolveBackendFileUrl = (
   file: any,
-  options: ContractDocumentsOptions = {}
+  options: ContractDocumentsOptions = {},
 ) => {
   const rawUrl = String(getFileUrlValue(file) || "").trim();
 
@@ -140,7 +142,10 @@ export const resolveBackendFileUrl = (
   }
 
   const normalizedPath = rawUrl.replace(/^\/+/, "");
-  if (normalizedPath.startsWith("uploads/") || normalizedPath.includes("/uploads/")) {
+  if (
+    normalizedPath.startsWith("uploads/") ||
+    normalizedPath.includes("/uploads/")
+  ) {
     return `${backendBaseUrl}/${encodeURI(normalizedPath)}`;
   }
 
@@ -150,7 +155,11 @@ export const resolveBackendFileUrl = (
 const documentFileExtensionPattern =
   /\.(pdf|docx?|xlsx?|png|jpe?g|webp|zip|rar|txt|csv)(?:[?#].*)?$/i;
 
-const isHtmlDocumentReference = (file: any, downloadUrl: string, name: string) => {
+const isHtmlDocumentReference = (
+  file: any,
+  downloadUrl: string,
+  name: string,
+) => {
   const rawUrl = String(getFileUrlValue(file) || "");
   const mimeType = String(file?.mimetype || file?.type || "");
   const text = `${rawUrl} ${downloadUrl} ${name} ${mimeType}`;
@@ -166,7 +175,7 @@ const isHtmlDocumentReference = (file: any, downloadUrl: string, name: string) =
 const isDownloadableDocumentReference = (
   file: any,
   downloadUrl: string,
-  name: string
+  name: string,
 ) => {
   if (!downloadUrl) return false;
   if (isHtmlDocumentReference(file, downloadUrl, name)) return false;
@@ -251,7 +260,7 @@ const getApplicationSortDate = (application: any) => {
   return Number.isFinite(timestamp) ? timestamp : null;
 };
 
-export const sortApplicationsByNaturalOrder = <T,>(applications: T[]) =>
+export const sortApplicationsByNaturalOrder = <T>(applications: T[]) =>
   applications
     .map((application: T, index) => ({ application, index }))
     .sort((a, b) => {
@@ -298,7 +307,7 @@ export const getWagonActualWeightValue = (wagon: any) =>
     wagon?.real_weight,
     wagon?.realWeight,
     wagon?.wagon?.real_weight,
-    wagon?.wagon?.realWeight
+    wagon?.wagon?.realWeight,
   );
 
 export const getWagonShippedDocumentWeightValue = (wagon: any) => {
@@ -319,15 +328,16 @@ export const getWagonGroupStats = (wagons: any[]) => {
   const wagonItems = getArray(wagons);
   const totalCapacity = wagonItems.reduce(
     (sum: number, wagon: any) => sum + getWagonCapacityValue(wagon),
-    0
+    0,
   );
   const totalShippedWeight = wagonItems.reduce(
-    (sum: number, wagon: any) => sum + getWagonShippedDocumentWeightValue(wagon),
-    0
+    (sum: number, wagon: any) =>
+      sum + getWagonShippedDocumentWeightValue(wagon),
+    0,
   );
   const totalShippedActualWeight = wagonItems.reduce(
     (sum: number, wagon: any) => sum + getWagonShippedActualWeightValue(wagon),
-    0
+    0,
   );
 
   return {
@@ -350,12 +360,12 @@ export const getApplicationVolumeValue = (application: any) =>
     application?.total_volume,
     application?.totalVolume,
     application?.planned_volume,
-    application?.plannedVolume
+    application?.plannedVolume,
   );
 
 export const getApplicationWagonGroupStats = (
   application: any,
-  wagons: any[]
+  wagons: any[],
 ) => {
   const wagonStats = getWagonGroupStats(wagons);
   const applicationVolume = getApplicationVolumeValue(application);
@@ -368,16 +378,17 @@ export const getApplicationWagonGroupStats = (
     totalTargetVolume,
     utilizationPercentage:
       totalTargetVolume > 0
-        ? clamp((wagonStats.totalShippedWeight / totalTargetVolume) * 100, 0, 100)
+        ? clamp(
+            (wagonStats.totalShippedWeight / totalTargetVolume) * 100,
+            0,
+            100,
+          )
         : 0,
   };
 };
 
 export type ApplicationShipmentStatus =
-  | "empty"
-  | "at_elevator"
-  | "loading"
-  | "shipped";
+  "empty" | "at_elevator" | "loading" | "shipped";
 
 export const getApplicationShipmentSummary = (application: any) => {
   const wagons = getArray(application?.wagons);
@@ -416,7 +427,7 @@ export const getApplicationShipmentSummary = (application: any) => {
       registered: 0,
       enRouteToRecipient: 0,
       other: 0,
-    }
+    },
   );
 
   const status: ApplicationShipmentStatus =
@@ -454,33 +465,40 @@ export const getApplicationShipmentSummary = (application: any) => {
   };
 };
 
-const getContractApplications = (contract: any) => getArray(contract?.applications);
+const getContractApplications = (contract: any) =>
+  getArray(contract?.applications);
 
 const getContractFiles = (contract: any) =>
-  getArray(contract?.files || contract?.documents || contract?.documentsForUpload);
+  getArray(
+    contract?.files || contract?.documents || contract?.documentsForUpload,
+  );
 
 const getContractInvoices = (contract: any) => {
-  const directInvoices = getArray(contract?.invoices || contract?.finance?.invoices);
+  const directInvoices = getArray(
+    contract?.invoices || contract?.finance?.invoices,
+  );
   if (directInvoices.length > 0) return directInvoices;
 
   return getContractApplications(contract).flatMap((application: any) =>
-    getArray(application?.invoices)
+    getArray(application?.invoices),
   );
 };
 
 const getContractPayments = (contract: any, invoices?: any[]) => {
-  const directPayments = getArray(contract?.payments || contract?.finance?.payments);
+  const directPayments = getArray(
+    contract?.payments || contract?.finance?.payments,
+  );
   if (directPayments.length > 0) return directPayments;
 
   return (invoices || getContractInvoices(contract)).flatMap((invoice: any) =>
-    getArray(invoice?.payments)
+    getArray(invoice?.payments),
   );
 };
 
 const getTextValue = (value: unknown) => {
   if (Array.isArray(value)) {
     return Array.from(
-      new Set(value.map((item) => getTextValue(item)).filter(Boolean))
+      new Set(value.map((item) => getTextValue(item)).filter(Boolean)),
     ).join(" · ");
   }
 
@@ -565,7 +583,7 @@ const routeDestinationKeys = [
 
 export const getContractStationNames = (
   contract: any,
-  direction: "departure" | "destination"
+  direction: "departure" | "destination",
 ) => {
   const arrayKeys =
     direction === "departure"
@@ -581,7 +599,7 @@ export const getContractStationNames = (
     if (!Array.isArray(value)) continue;
 
     const stations = Array.from(
-      new Set(value.map((item) => getTextValue(item)).filter(Boolean))
+      new Set(value.map((item) => getTextValue(item)).filter(Boolean)),
     );
     if (stations.length > 0) return stations;
   }
@@ -598,7 +616,7 @@ const getRussianPlural = (
   count: number,
   one: string,
   few: string,
-  many: string
+  many: string,
 ) => {
   const mod10 = count % 10;
   const mod100 = count % 100;
@@ -609,12 +627,8 @@ const getRussianPlural = (
   return many;
 };
 
-const formatCount = (
-  count: number,
-  one: string,
-  few: string,
-  many: string
-) => `${count} ${getRussianPlural(count, one, few, many)}`;
+const formatCount = (count: number, one: string, few: string, many: string) =>
+  `${count} ${getRussianPlural(count, one, few, many)}`;
 
 const getContractRoute = (contract: any, applicationsCount: number) => {
   const departure =
@@ -627,6 +641,24 @@ const getContractRoute = (contract: any, applicationsCount: number) => {
     destination,
     label: `${departure} → ${destination}`,
     applicationsCount,
+    applications: [],
+  };
+};
+
+export const getApplicationRoute = (application: any) => {
+  const departure =
+    getRouteTextValue(application, routeDepartureKeys) ||
+    getRouteTextValue(application?.contract, routeDepartureKeys) ||
+    "Станция отправления";
+  const destination =
+    getRouteTextValue(application, routeDestinationKeys) ||
+    getRouteTextValue(application?.contract, routeDestinationKeys) ||
+    "Станция назначения";
+
+  return {
+    departure,
+    destination,
+    label: `${departure} → ${destination}`,
   };
 };
 
@@ -638,20 +670,39 @@ const getApplicationRoutes = (applications: any[]) => {
       destination: string;
       label: string;
       applicationsCount: number;
+      applications: Array<{
+        id: string | number;
+        label: string;
+        wagonsCount: number;
+      }>;
     }
   >();
 
   applications.forEach((application) => {
-    const departure = getRouteTextValue(application, routeDepartureKeys);
-    const destination = getRouteTextValue(application, routeDestinationKeys);
+    const applicationRoute = getApplicationRoute(application);
+    const departure = applicationRoute.departure;
+    const destination = applicationRoute.destination;
 
-    if (!departure || !destination) return;
+    if (
+      departure === "Станция отправления" ||
+      destination === "Станция назначения"
+    ) {
+      return;
+    }
+
+    const applicationSummary = {
+      id: application?.id || application?.name || routes.size,
+      label:
+        application?.name || `Заявка №${application?.id || routes.size + 1}`,
+      wagonsCount: getArray(application?.wagons).length,
+    };
 
     const routeKey = `${departure.toLocaleLowerCase()}|${destination.toLocaleLowerCase()}`;
     const existingRoute = routes.get(routeKey);
 
     if (existingRoute) {
       existingRoute.applicationsCount += 1;
+      existingRoute.applications.push(applicationSummary);
       return;
     }
 
@@ -660,6 +711,7 @@ const getApplicationRoutes = (applications: any[]) => {
       destination,
       label: `${departure} → ${destination}`,
       applicationsCount: 1,
+      applications: [applicationSummary],
     });
   });
 
@@ -669,7 +721,7 @@ const getApplicationRoutes = (applications: any[]) => {
 const getRouteSummary = (
   routes: ReturnType<typeof getApplicationRoutes>,
   status: ContractOperationStatus,
-  shippedVolume: number
+  shippedVolume: number,
 ) => {
   const eta =
     status === "risk"
@@ -691,8 +743,18 @@ const getRouteSummary = (
   }
 
   return {
-    departure: formatCount(routes.length, "отправление", "отправления", "отправлений"),
-    destination: formatCount(routes.length, "назначение", "назначения", "назначений"),
+    departure: formatCount(
+      routes.length,
+      "отправление",
+      "отправления",
+      "отправлений",
+    ),
+    destination: formatCount(
+      routes.length,
+      "назначение",
+      "назначения",
+      "назначений",
+    ),
     label: formatCount(routes.length, "маршрут", "маршрута", "маршрутов"),
     eta,
     count: routes.length,
@@ -700,7 +762,13 @@ const getRouteSummary = (
 };
 
 const getMoneyValue = (value: any) =>
-  toNumber(value?.amount ?? value?.total_amount ?? value?.totalAmount ?? value?.sum ?? value);
+  toNumber(
+    value?.amount ??
+      value?.total_amount ??
+      value?.totalAmount ??
+      value?.sum ??
+      value,
+  );
 
 const getInvoicePaidValue = (invoice: any) => {
   const amount = getMoneyValue(invoice);
@@ -715,11 +783,11 @@ const getInvoicePaidValue = (invoice: any) => {
       invoice?.paidAmount ??
       invoice?.paid ??
       invoice?.paid_total ??
-      invoice?.paidTotal
+      invoice?.paidTotal,
   );
   const paymentsPaid = getArray(invoice?.payments).reduce(
     (sum, payment) => sum + getMoneyValue(payment),
-    0
+    0,
   );
 
   return Math.min(amount, Math.max(explicitPaid + paymentsPaid, 0));
@@ -745,44 +813,42 @@ export const formatContractDate = (date?: string) =>
 
 export const formatContractMoney = (
   value: number | string | null | undefined,
-  currency = "USD"
+  currency = "USD",
 ) => formatMoney(value, currency, "USD");
 
 export const getContractOpsMeta = (
   contract: any,
-  options: ContractOpsOptions = {}
+  options: ContractOpsOptions = {},
 ) => {
   const totalVolume = getContractVolume(contract);
   const wagons = options.wagons || getArray(contract?.wagons);
-  const applications = options.applications || getContractApplications(contract);
+  const applications =
+    options.applications || getContractApplications(contract);
   const files = getContractFiles(contract);
   const invoices = options.invoices || getContractInvoices(contract);
   const payments = options.payments || getContractPayments(contract, invoices);
   const documentedShippedVolume = wagons.reduce(
     (sum, wagon) => sum + getWagonShippedDocumentWeightValue(wagon),
-    0
+    0,
   );
   const actualShippedVolume = wagons.reduce(
     (sum, wagon) => sum + getWagonShippedActualWeightValue(wagon),
-    0
+    0,
   );
   const shippedVolume = documentedShippedVolume;
   const progress =
-    totalVolume > 0 ? clamp(Math.round((shippedVolume / totalVolume) * 100), 0, 100) : 0;
+    totalVolume > 0
+      ? clamp(Math.round((shippedVolume / totalVolume) * 100), 0, 100)
+      : 0;
   const remainingVolume = Math.max(totalVolume - shippedVolume, 0);
   const applicationsCount =
     applications.length || getCount(contract?.applications_count);
-  const wagonsCount =
-    wagons.length || getCount(contract?.wagons_count);
-  const documentsCount =
-    files.length || getCount(contract?.documents_count);
+  const wagonsCount = wagons.length || getCount(contract?.wagons_count);
+  const documentsCount = files.length || getCount(contract?.documents_count);
   const hasCoreData =
-    Boolean(contract?.number) &&
-    Boolean(contract?.crop) &&
-    totalVolume > 0;
+    Boolean(contract?.number) && Boolean(contract?.crop) && totalVolume > 0;
   const overdueSignal =
-    contract?.status === "overdue" ||
-    contract?.payment_status === "overdue";
+    contract?.status === "overdue" || contract?.payment_status === "overdue";
   const status: ContractOperationStatus = !hasCoreData
     ? "draft"
     : progress >= 96
@@ -792,22 +858,25 @@ export const getContractOpsMeta = (
         : "active";
   const invoiceTotal = invoices.reduce(
     (sum, invoice) => sum + getMoneyValue(invoice),
-    0
+    0,
   );
   const paidAmount = invoices.reduce(
     (sum, invoice) => sum + getInvoicePaidValue(invoice),
-    0
+    0,
   );
   const balance = Math.max(invoiceTotal - paidAmount, 0);
   const paymentProgress =
-    invoiceTotal > 0 ? clamp(Math.round((paidAmount / invoiceTotal) * 100), 0, 100) : 0;
+    invoiceTotal > 0
+      ? clamp(Math.round((paidAmount / invoiceTotal) * 100), 0, 100)
+      : 0;
   const invoiceCount = invoices.length || getCount(contract?.invoice_count);
   const paymentsCount = payments.length || getCount(contract?.payments_count);
   const paidInvoiceCount = invoices.filter(
-    (invoice) => getMoneyValue(invoice) > 0 && getInvoiceBalanceValue(invoice) <= 0
+    (invoice) =>
+      getMoneyValue(invoice) > 0 && getInvoiceBalanceValue(invoice) <= 0,
   ).length;
   const openInvoiceCount = invoices.filter(
-    (invoice) => getInvoiceBalanceValue(invoice) > 0
+    (invoice) => getInvoiceBalanceValue(invoice) > 0,
   ).length;
   const applicationRoutes = getApplicationRoutes(applications);
   const routes =
@@ -854,7 +923,7 @@ export const getContractOpsMeta = (
 
 export const getContractDocuments = (
   contract: any,
-  options: ContractDocumentsOptions = {}
+  options: ContractDocumentsOptions = {},
 ) => {
   const files = getContractFiles(contract);
 
@@ -883,7 +952,7 @@ export const getContractDocuments = (
           !isDownloadableDocumentReference(
             document.file,
             document.downloadUrl,
-            document.name
+            document.name,
           )
         ) {
           return false;
@@ -891,7 +960,7 @@ export const getContractDocuments = (
 
         const dedupeKey = getDocumentDedupeKey(
           document.downloadUrl,
-          document.name
+          document.name,
         );
 
         if (seenDocuments.has(dedupeKey)) {
@@ -908,7 +977,7 @@ export const getContractDocuments = (
 
 export const getContractFinanceLinks = (
   contract: any,
-  options: ContractFinanceOptions = {}
+  options: ContractFinanceOptions = {},
 ) => {
   const currency = contract?.currency || "USD";
   const sourceInvoices = options.invoices || getContractInvoices(contract);
@@ -918,7 +987,10 @@ export const getContractFinanceLinks = (
     const status = getStatusValue(invoice?.status);
 
     return {
-      id: invoice?.number || invoice?.id || `INV-${String(index + 1).padStart(3, "0")}`,
+      id:
+        invoice?.number ||
+        invoice?.id ||
+        `INV-${String(index + 1).padStart(3, "0")}`,
       title: invoice?.name || invoice?.title || `Счет ${index + 1}`,
       amount,
       paid,
@@ -932,8 +1004,13 @@ export const getContractFinanceLinks = (
       currency: invoice?.currency || currency,
     };
   });
-  const payments = (options.payments || getContractPayments(contract, sourceInvoices)).map((payment: any, index) => ({
-    id: payment?.number || payment?.id || `PAY-${String(index + 1).padStart(3, "0")}`,
+  const payments = (
+    options.payments || getContractPayments(contract, sourceInvoices)
+  ).map((payment: any, index) => ({
+    id:
+      payment?.number ||
+      payment?.id ||
+      `PAY-${String(index + 1).padStart(3, "0")}`,
     amount: getMoneyValue(payment),
     status: payment?.status || "Проведен",
     reference: payment?.reference || payment?.ref || "-",

@@ -72,6 +72,7 @@ import {
   Treemap,
 } from "recharts";
 import { Progress } from "@/components/ui/progress";
+import { AttentionCenter } from "./attention-center";
 const COLORS = [
   "#f38810",
   "#2f6b4f",
@@ -130,7 +131,7 @@ const formatCompactCurrencyValue = (value, maximumFractionDigits = 1) =>
 
 const getApplicationContractValue = (application) => {
   const explicitTotal = toDashboardNumber(
-    application?.total_amount || application?.totalAmount
+    application?.total_amount || application?.totalAmount,
   );
 
   if (explicitTotal > 0) return explicitTotal;
@@ -147,14 +148,14 @@ const formatCompactCurrency = (value) => {
   if (normalizedValue >= 1_000_000_000) {
     return `${formatCompactCurrencyValue(
       normalizedValue / 1_000_000_000,
-      normalizedValue >= 10_000_000_000 ? 0 : 1
+      normalizedValue >= 10_000_000_000 ? 0 : 1,
     )} млрд`;
   }
 
   if (normalizedValue >= 1_000_000) {
     return `${formatCompactCurrencyValue(
       normalizedValue / 1_000_000,
-      normalizedValue >= 10_000_000 ? 0 : 1
+      normalizedValue >= 10_000_000 ? 0 : 1,
     )} млн`;
   }
 
@@ -192,18 +193,20 @@ export const DashboardBlock = () => {
       const computedContractValue =
         contract.applications?.reduce(
           (sum: number, app: any) => sum + getApplicationContractValue(app),
-          0
+          0,
         ) || 0;
       const fallbackEstimatedCost = toDashboardNumber(contract.estimated_cost);
       const totalValue =
-        computedContractValue > 0 ? computedContractValue : fallbackEstimatedCost;
+        computedContractValue > 0
+          ? computedContractValue
+          : fallbackEstimatedCost;
 
       const avgPricePerTon =
         shippedVolume > 0
           ? Math.round(totalValue / shippedVolume)
           : contract.estimated_cost && contract.total_volume
-          ? Math.round(contract.estimated_cost / contract.total_volume)
-          : 0;
+            ? Math.round(contract.estimated_cost / contract.total_volume)
+            : 0;
 
       // Calculate wagon efficiency
       const totalWagons = opsMeta.wagonsCount;
@@ -230,7 +233,10 @@ export const DashboardBlock = () => {
         volume: contract.total_volume || 0,
         shippedVolume: shippedVolume,
         fulfillmentPercentage: fulfillmentPercentage,
-        estimatedCost: computedContractValue > 0 ? computedContractValue : fallbackEstimatedCost,
+        estimatedCost:
+          computedContractValue > 0
+            ? computedContractValue
+            : fallbackEstimatedCost,
         totalValue: totalValue,
         avgPricePerTon: avgPricePerTon,
         currency: contract.currency || "USD",
@@ -258,12 +264,11 @@ export const DashboardBlock = () => {
           contract.wagons?.length > 0
             ? Math.round(
                 (new Date(
-                  contract.wagons[
-                    contract.wagons.length - 1
-                  ].wagon.date_of_unloading
+                  contract.wagons[contract.wagons.length - 1].wagon
+                    .date_of_unloading,
                 ) -
                   contractDate) /
-                  (1000 * 60 * 60 * 24)
+                  (1000 * 60 * 60 * 24),
               )
             : 0,
       };
@@ -274,19 +279,19 @@ export const DashboardBlock = () => {
   const totalContracts = contractsData?.total || recentContracts.length;
   const totalVolume = recentContracts.reduce(
     (sum: number, contract: any) => sum + Number(contract.volume),
-    0
+    0,
   );
   const totalShippedVolume = recentContracts.reduce(
     (sum, contract) => sum + Number(contract.shippedVolume),
-    0
+    0,
   );
   const averageFulfillment =
     recentContracts.length > 0
       ? Math.round(
           recentContracts.reduce(
             (sum, contract) => sum + contract.fulfillmentPercentage,
-            0
-          ) / recentContracts.length
+            0,
+          ) / recentContracts.length,
         )
       : 0;
   const uniqueCrops = [
@@ -296,7 +301,7 @@ export const DashboardBlock = () => {
   // Advanced stats
   const totalWagons = recentContracts.reduce(
     (sum, contract) => sum + contract.wagonCount,
-    0
+    0,
   );
   const avgVolumePerWagon =
     totalWagons > 0
@@ -332,16 +337,16 @@ export const DashboardBlock = () => {
   const volumeTrendSummary = useMemo(() => {
     const total = volumeByMonth.reduce(
       (sum, month) => sum + Number(month.totalVolume),
-      0
+      0,
     );
     const shipped = volumeByMonth.reduce(
       (sum, month) => sum + Number(month.shippedVolume),
-      0
+      0,
     );
     const peakMonth =
       volumeByMonth.length > 0
         ? volumeByMonth.reduce((max, month) =>
-            month.totalVolume > max.totalVolume ? month : max
+            month.totalVolume > max.totalVolume ? month : max,
           )
         : null;
 
@@ -384,7 +389,10 @@ export const DashboardBlock = () => {
     return routes.map((route, index) => ({
       ...route,
       rank: index + 1,
-      totalShare: Math.max(8, Math.round((route.totalVolume / maxVolume) * 100)),
+      totalShare: Math.max(
+        8,
+        Math.round((route.totalVolume / maxVolume) * 100),
+      ),
       shippedShare:
         route.shippedVolume > 0
           ? Math.max(6, Math.round((route.shippedVolume / maxVolume) * 100))
@@ -414,7 +422,7 @@ export const DashboardBlock = () => {
     }, {});
 
     const rows = Object.values(stations).sort(
-      (a, b) => b.totalVolume - a.totalVolume
+      (a, b) => b.totalVolume - a.totalVolume,
     );
     const total = rows.reduce((sum, station) => sum + station.totalVolume, 0);
     const maxVolume =
@@ -427,7 +435,10 @@ export const DashboardBlock = () => {
       color: getColor(index),
       rank: index + 1,
       share: total > 0 ? Math.round((station.totalVolume / total) * 100) : 0,
-      barShare: Math.max(8, Math.round((station.totalVolume / maxVolume) * 100)),
+      barShare: Math.max(
+        8,
+        Math.round((station.totalVolume / maxVolume) * 100),
+      ),
     }));
   }, [recentContracts]);
 
@@ -449,7 +460,7 @@ export const DashboardBlock = () => {
     }, {});
 
     const rows = Object.values(stations).sort(
-      (a, b) => b.totalVolume - a.totalVolume
+      (a, b) => b.totalVolume - a.totalVolume,
     );
     const total = rows.reduce((sum, station) => sum + station.totalVolume, 0);
     const maxVolume =
@@ -462,7 +473,10 @@ export const DashboardBlock = () => {
       color: getColor(index),
       rank: index + 1,
       share: total > 0 ? Math.round((station.totalVolume / total) * 100) : 0,
-      barShare: Math.max(8, Math.round((station.totalVolume / maxVolume) * 100)),
+      barShare: Math.max(
+        8,
+        Math.round((station.totalVolume / maxVolume) * 100),
+      ),
     }));
   }, [recentContracts]);
 
@@ -514,12 +528,12 @@ export const DashboardBlock = () => {
   const cropDistributionRows = useMemo(() => {
     const total = cropAnalysis.reduce(
       (sum, crop) => sum + Number(crop.totalVolume),
-      0
+      0,
     );
     const maxVolume =
       cropAnalysis.reduce(
         (max, crop) => Math.max(max, Number(crop.totalVolume)),
-        0
+        0,
       ) || 1;
 
     return cropAnalysis.slice(0, 6).map((crop, index) => ({
@@ -528,7 +542,7 @@ export const DashboardBlock = () => {
       share: total > 0 ? Math.round((crop.totalVolume / total) * 100) : 0,
       barShare: Math.max(
         8,
-        Math.round((Number(crop.totalVolume) / maxVolume) * 100)
+        Math.round((Number(crop.totalVolume) / maxVolume) * 100),
       ),
       fulfillmentRate:
         crop.totalVolume > 0
@@ -539,7 +553,7 @@ export const DashboardBlock = () => {
 
   const cropDistributionTotal = cropDistributionRows.reduce(
     (sum, crop) => sum + Number(crop.totalVolume),
-    0
+    0,
   );
 
   const cropPriceCards = useMemo(() => {
@@ -623,7 +637,7 @@ export const DashboardBlock = () => {
     const maxVolume =
       companyPerformance.reduce(
         (max, company) => Math.max(max, Number(company.totalVolume)),
-        0
+        0,
       ) || 1;
 
     return companyPerformance.map((company, index) => ({
@@ -632,13 +646,13 @@ export const DashboardBlock = () => {
       rank: index + 1,
       totalShare: Math.max(
         8,
-        Math.round((Number(company.totalVolume) / maxVolume) * 100)
+        Math.round((Number(company.totalVolume) / maxVolume) * 100),
       ),
       shippedShare:
         Number(company.shippedVolume) > 0
           ? Math.max(
               6,
-              Math.round((Number(company.shippedVolume) / maxVolume) * 100)
+              Math.round((Number(company.shippedVolume) / maxVolume) * 100),
             )
           : 0,
     }));
@@ -653,18 +667,18 @@ export const DashboardBlock = () => {
           color: getColor(index),
           rank: index + 1,
         })),
-    [companyRows]
+    [companyRows],
   );
 
   const companyContractRows = useMemo(() => {
     const totalContracts = companyRows.reduce(
       (sum, company) => sum + Number(company.contractCount),
-      0
+      0,
     );
     const maxContracts =
       companyRows.reduce(
         (max, company) => Math.max(max, Number(company.contractCount)),
-        0
+        0,
       ) || 1;
 
     return [...companyRows]
@@ -680,7 +694,7 @@ export const DashboardBlock = () => {
             : 0,
         barShare: Math.max(
           8,
-          Math.round((company.contractCount / maxContracts) * 100)
+          Math.round((company.contractCount / maxContracts) * 100),
         ),
       }));
   }, [companyRows]);
@@ -735,19 +749,19 @@ export const DashboardBlock = () => {
   const companySummary = useMemo(() => {
     const totalVolume = companyRows.reduce(
       (sum, company) => sum + Number(company.totalVolume),
-      0
+      0,
     );
     const totalContracts = companyRows.reduce(
       (sum, company) => sum + Number(company.contractCount),
-      0
+      0,
     );
     const avgFulfillment =
       companyRows.length > 0
         ? Math.round(
             companyRows.reduce(
               (sum, company) => sum + Number(company.fulfillmentRate),
-              0
-            ) / companyRows.length
+              0,
+            ) / companyRows.length,
           )
         : 0;
 
@@ -771,7 +785,7 @@ export const DashboardBlock = () => {
           realWeight: Number(wagon.wagon.real_weight) || 0,
           contract: contract.number,
           crop: contract.crop,
-        }))
+        })),
       )
       .reduce((acc, wagon) => {
         if (!acc[wagon.owner]) {
@@ -796,7 +810,7 @@ export const DashboardBlock = () => {
         utilizationRate:
           owner.totalCapacity > 0
             ? Math.round(
-                (owner.totalRealWeight / owner.totalCapacity) * 10000
+                (owner.totalRealWeight / owner.totalCapacity) * 10000,
               ) / 100
             : 0,
         avgCapacity:
@@ -812,17 +826,17 @@ export const DashboardBlock = () => {
   const transportRows = useMemo(() => {
     const totalWagons = transportationEfficiency.reduce(
       (sum, carrier) => sum + Number(carrier.wagonCount),
-      0
+      0,
     );
     const maxWagons =
       transportationEfficiency.reduce(
         (max, carrier) => Math.max(max, Number(carrier.wagonCount)),
-        0
+        0,
       ) || 1;
     const maxCapacity =
       transportationEfficiency.reduce(
         (max, carrier) => Math.max(max, Number(carrier.totalCapacity)),
-        0
+        0,
       ) || 1;
 
     return transportationEfficiency.map((carrier, index) => ({
@@ -836,11 +850,11 @@ export const DashboardBlock = () => {
           : 0,
       wagonShare: Math.max(
         8,
-        Math.round((Number(carrier.wagonCount) / maxWagons) * 100)
+        Math.round((Number(carrier.wagonCount) / maxWagons) * 100),
       ),
       capacityShare: Math.max(
         8,
-        Math.round((Number(carrier.totalCapacity) / maxCapacity) * 100)
+        Math.round((Number(carrier.totalCapacity) / maxCapacity) * 100),
       ),
     }));
   }, [transportationEfficiency]);
@@ -848,15 +862,15 @@ export const DashboardBlock = () => {
   const transportSummary = useMemo(() => {
     const totalWagons = transportRows.reduce(
       (sum, carrier) => sum + Number(carrier.wagonCount),
-      0
+      0,
     );
     const totalCapacity = transportRows.reduce(
       (sum, carrier) => sum + Number(carrier.totalCapacity),
-      0
+      0,
     );
     const totalRealWeight = transportRows.reduce(
       (sum, carrier) => sum + Number(carrier.totalRealWeight),
-      0
+      0,
     );
     const utilizationRate =
       totalCapacity > 0
@@ -940,7 +954,8 @@ export const DashboardBlock = () => {
     const makeCard = (currency, data, color, softColor, prefix = "") => {
       const first = data[0]?.avgPrice ?? 0;
       const latest = data[data.length - 1]?.avgPrice ?? 0;
-      const delta = first > 0 ? Math.round(((latest - first) / first) * 100) : 0;
+      const delta =
+        first > 0 ? Math.round(((latest - first) / first) * 100) : 0;
 
       return {
         currency,
@@ -968,7 +983,7 @@ export const DashboardBlock = () => {
         }
         acc[contract.currency] += Number(contract.totalValue);
         return acc;
-      }, {})
+      }, {}),
     );
   }, [recentContracts]);
 
@@ -986,7 +1001,7 @@ export const DashboardBlock = () => {
           acc[contract.currency].totalVolume += contract.shippedVolume;
         }
         return acc;
-      }, {})
+      }, {}),
     );
   }, [recentContracts]);
 
@@ -995,8 +1010,8 @@ export const DashboardBlock = () => {
       ? Math.round(
           transportationEfficiency.reduce(
             (sum, owner) => sum + owner.utilizationRate,
-            0
-          ) / transportationEfficiency.length
+            0,
+          ) / transportationEfficiency.length,
         )
       : 0;
 
@@ -1094,6 +1109,8 @@ export const DashboardBlock = () => {
         </Button>
       </div>
 
+      <AttentionCenter />
+
       {/* Key Performance Indicators */}
       <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="sungrain-kpi-card">
@@ -1114,8 +1131,8 @@ export const DashboardBlock = () => {
                   {uniqueCrops === 1
                     ? "культура"
                     : uniqueCrops >= 2 && uniqueCrops <= 4
-                    ? "культуры"
-                    : "культур"}
+                      ? "культуры"
+                      : "культур"}
                 </p>
               </div>
             )}
@@ -1138,10 +1155,7 @@ export const DashboardBlock = () => {
                 </div>
                 <div className="grid gap-1">
                   {kpiValueByCurrency.map(([currency, value]) => (
-                    <div
-                      key={currency}
-                      className="sungrain-kpi-line"
-                    >
+                    <div key={currency} className="sungrain-kpi-line">
                       <span>{currency}</span>
                       <strong>{Number(value).toLocaleString()}</strong>
                     </div>
@@ -1199,7 +1213,7 @@ export const DashboardBlock = () => {
                       </div>
                       <div className="text-lg font-bold leading-6 text-[#223137]">
                         {Math.round(
-                          data.totalValue / data.totalVolume
+                          data.totalValue / data.totalVolume,
                         ).toLocaleString()}{" "}
                         /т
                       </div>
@@ -1227,15 +1241,11 @@ export const DashboardBlock = () => {
               <Skeleton className="h-8 w-20" />
             ) : (
               <div className="space-y-3">
-                <div className="sungrain-kpi-value">
-                  {totalWagons} вагонов
-                </div>
+                <div className="sungrain-kpi-value">{totalWagons} вагонов</div>
                 <div className="grid gap-1.5">
                   <div className="sungrain-kpi-line">
                     <span>Средний объем на вагон:</span>
-                    <strong>
-                      {avgVolumePerWagon.toLocaleString()} т
-                    </strong>
+                    <strong>{avgVolumePerWagon.toLocaleString()} т</strong>
                   </div>
                   <div className="sungrain-kpi-line">
                     <span>Коэффициент использования:</span>
@@ -1249,59 +1259,41 @@ export const DashboardBlock = () => {
       </div>
 
       {/* Main Dashboard Tabs */}
-      <Tabs defaultValue="overview" className="sungrain-dashboard-tabs space-y-6">
+      <Tabs
+        defaultValue="overview"
+        className="sungrain-dashboard-tabs space-y-6"
+      >
         <div className="relative">
           <div className="absolute inset-0 rounded-xl sm:rounded-2xl -z-10"></div>
 
           {/* Mobile: Compact grid layout with 2 columns */}
           <div className="sm:hidden">
             <TabsList className="sungrain-tabs-list grid grid-cols-2 gap-2 w-full h-auto p-2 bg-white/80 backdrop-blur-sm border-2 border-slate-200/60 rounded-xl shadow-lg">
-              <TabsTrigger
-                value="overview"
-                className={mobileTabTriggerClass}
-              >
+              <TabsTrigger value="overview" className={mobileTabTriggerClass}>
                 <BarChart3 className="h-5 w-5" />
                 <span>Обзор</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="time"
-                className={mobileTabTriggerClass}
-              >
+              <TabsTrigger value="time" className={mobileTabTriggerClass}>
                 <Calendar className="h-5 w-5" />
                 <span>Время</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="geo"
-                className={mobileTabTriggerClass}
-              >
+              <TabsTrigger value="geo" className={mobileTabTriggerClass}>
                 <Map className="h-5 w-5" />
                 <span>География</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="crops"
-                className={mobileTabTriggerClass}
-              >
+              <TabsTrigger value="crops" className={mobileTabTriggerClass}>
                 <Warehouse className="h-5 w-5" />
                 <span>Культуры</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="companies"
-                className={mobileTabTriggerClass}
-              >
+              <TabsTrigger value="companies" className={mobileTabTriggerClass}>
                 <Building className="h-5 w-5" />
                 <span>Компании</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="transport"
-                className={mobileTabTriggerClass}
-              >
+              <TabsTrigger value="transport" className={mobileTabTriggerClass}>
                 <Truck className="h-5 w-5" />
                 <span>Транспорт</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="financial"
-                className={mobileTabTriggerClass}
-              >
+              <TabsTrigger value="financial" className={mobileTabTriggerClass}>
                 <DollarSign className="h-5 w-5" />
                 <span>Финансы</span>
               </TabsTrigger>
@@ -1310,52 +1302,31 @@ export const DashboardBlock = () => {
 
           {/* Desktop: Grid layout */}
           <TabsList className="sungrain-tabs-list hidden sm:grid grid-cols-4 md:grid-cols-5 lg:grid-cols-7 w-full h-16 p-2 bg-white/80 backdrop-blur-sm border-2 border-slate-200/60 rounded-2xl shadow-lg">
-            <TabsTrigger
-              value="overview"
-              className={desktopTabTriggerClass}
-            >
+            <TabsTrigger value="overview" className={desktopTabTriggerClass}>
               <BarChart3 className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
               <span>Обзор</span>
             </TabsTrigger>
-            <TabsTrigger
-              value="time"
-              className={desktopTabTriggerClass}
-            >
+            <TabsTrigger value="time" className={desktopTabTriggerClass}>
               <Calendar className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
               <span>Время</span>
             </TabsTrigger>
-            <TabsTrigger
-              value="geo"
-              className={desktopTabTriggerClass}
-            >
+            <TabsTrigger value="geo" className={desktopTabTriggerClass}>
               <Map className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
               <span>География</span>
             </TabsTrigger>
-            <TabsTrigger
-              value="crops"
-              className={desktopTabTriggerClass}
-            >
+            <TabsTrigger value="crops" className={desktopTabTriggerClass}>
               <Warehouse className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
               <span>Культуры</span>
             </TabsTrigger>
-            <TabsTrigger
-              value="companies"
-              className={desktopTabTriggerClass}
-            >
+            <TabsTrigger value="companies" className={desktopTabTriggerClass}>
               <Building className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
               <span>Компании</span>
             </TabsTrigger>
-            <TabsTrigger
-              value="transport"
-              className={desktopTabTriggerClass}
-            >
+            <TabsTrigger value="transport" className={desktopTabTriggerClass}>
               <Truck className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
               <span>Транспорт</span>
             </TabsTrigger>
-            <TabsTrigger
-              value="financial"
-              className={desktopTabTriggerClass}
-            >
+            <TabsTrigger value="financial" className={desktopTabTriggerClass}>
               <DollarSign className="h-4 w-4 transition-transform duration-300 group-hover:scale-110" />
               <span>Финансы</span>
             </TabsTrigger>
@@ -1719,8 +1690,7 @@ export const DashboardBlock = () => {
                               backgroundColor: "white",
                               border: "1px solid #e2e8f0",
                               borderRadius: "8px",
-                              boxShadow:
-                                "0 12px 30px rgba(34, 49, 55, 0.12)",
+                              boxShadow: "0 12px 30px rgba(34, 49, 55, 0.12)",
                               fontSize:
                                 window.innerWidth < 640 ? "12px" : "13px",
                             }}
@@ -1729,9 +1699,9 @@ export const DashboardBlock = () => {
                               name === "totalVolume" || name === "Общий объем"
                                 ? "Общий объем"
                                 : name === "shippedVolume" ||
-                                  name === "Отгруженный объем"
-                                ? "Отгруженный объем"
-                                : "Отгруженный объем",
+                                    name === "Отгруженный объем"
+                                  ? "Отгруженный объем"
+                                  : "Отгруженный объем",
                             ]}
                             labelFormatter={(label) => `Месяц: ${label}`}
                           />
@@ -2073,7 +2043,9 @@ export const DashboardBlock = () => {
                     <div className="grid gap-2 sm:grid-cols-3">
                       <div className="sungrain-chart-chip">
                         <span>Общий объем</span>
-                        <strong>{volumeTrendSummary.total.toLocaleString()} т</strong>
+                        <strong>
+                          {volumeTrendSummary.total.toLocaleString()} т
+                        </strong>
                       </div>
                       <div className="sungrain-chart-chip">
                         <span>Отгружено</span>
@@ -2199,8 +2171,7 @@ export const DashboardBlock = () => {
                               backgroundColor: "white",
                               border: "1px solid #e2e8f0",
                               borderRadius: "8px",
-                              boxShadow:
-                                "0 12px 30px rgba(34, 49, 55, 0.12)",
+                              boxShadow: "0 12px 30px rgba(34, 49, 55, 0.12)",
                               fontSize: "13px",
                             }}
                             formatter={(value, name) => {
@@ -2263,7 +2234,6 @@ export const DashboardBlock = () => {
                 )}
               </CardContent>
             </Card>
-
           </div>
 
           <div className="grid gap-4">
@@ -2460,12 +2430,15 @@ export const DashboardBlock = () => {
             ].map((stationCard) => {
               const total = stationCard.rows.reduce(
                 (sum, station) => sum + station.totalVolume,
-                0
+                0,
               );
               const topStation = stationCard.rows[0];
 
               return (
-                <Card key={stationCard.title} className="sungrain-analytics-card">
+                <Card
+                  key={stationCard.title}
+                  className="sungrain-analytics-card"
+                >
                   <CardHeader className="pb-3">
                     <CardTitle className="sungrain-card-title flex items-center gap-2">
                       <Map className="h-5 w-5 text-[#2f6b4f]" />
@@ -2505,8 +2478,12 @@ export const DashboardBlock = () => {
                                   data={stationCard.rows}
                                   cx="50%"
                                   cy="50%"
-                                  innerRadius={window.innerWidth < 640 ? 58 : 64}
-                                  outerRadius={window.innerWidth < 640 ? 84 : 92}
+                                  innerRadius={
+                                    window.innerWidth < 640 ? 58 : 64
+                                  }
+                                  outerRadius={
+                                    window.innerWidth < 640 ? 84 : 92
+                                  }
                                   paddingAngle={2}
                                   cornerRadius={5}
                                   dataKey="value"
@@ -2552,7 +2529,10 @@ export const DashboardBlock = () => {
 
                           <div className="space-y-3">
                             {stationCard.rows.map((station) => (
-                              <div key={station.station} className="space-y-1.5">
+                              <div
+                                key={station.station}
+                                className="space-y-1.5"
+                              >
                                 <div className="grid grid-cols-[2rem_minmax(0,1fr)_4.75rem] items-center gap-2">
                                   <span className="flex size-7 items-center justify-center rounded-md bg-[#eef5ef] text-xs font-semibold text-[#2f6b4f]">
                                     {String(station.rank).padStart(2, "0")}
@@ -2632,7 +2612,9 @@ export const DashboardBlock = () => {
                       </div>
                       <div className="sungrain-chart-chip">
                         <span>Лидер</span>
-                        <strong>{cropDistributionRows[0]?.crop ?? "Н/Д"}</strong>
+                        <strong>
+                          {cropDistributionRows[0]?.crop ?? "Н/Д"}
+                        </strong>
                       </div>
                     </div>
 
@@ -2663,8 +2645,7 @@ export const DashboardBlock = () => {
                                 backgroundColor: "white",
                                 border: "1px solid #e2e8f0",
                                 borderRadius: "8px",
-                                boxShadow:
-                                  "0 12px 30px rgba(34, 49, 55, 0.12)",
+                                boxShadow: "0 12px 30px rgba(34, 49, 55, 0.12)",
                                 fontSize: "13px",
                               }}
                               formatter={(value) => [
@@ -2726,7 +2707,7 @@ export const DashboardBlock = () => {
                                   style={{
                                     width: `${Math.max(
                                       6,
-                                      crop.fulfillmentRate
+                                      crop.fulfillmentRate,
                                     )}%`,
                                   }}
                                 />
@@ -2863,7 +2844,9 @@ export const DashboardBlock = () => {
                     <div className="grid gap-3 sm:grid-cols-3">
                       <div className="sungrain-chart-chip">
                         <span>Объем</span>
-                        <strong>{companySummary.totalVolume.toLocaleString()} т</strong>
+                        <strong>
+                          {companySummary.totalVolume.toLocaleString()} т
+                        </strong>
                       </div>
                       <div className="sungrain-chart-chip">
                         <span>Компаний</span>
@@ -2894,8 +2877,8 @@ export const DashboardBlock = () => {
                                     {company.company}
                                   </div>
                                   <div className="mt-1 text-xs text-[#7b857f]">
-                                    {company.contractCount} контрактов · выполнение{" "}
-                                    {company.fulfillmentRate}%
+                                    {company.contractCount} контрактов ·
+                                    выполнение {company.fulfillmentRate}%
                                   </div>
                                 </div>
                                 <div className="shrink-0 text-right">
@@ -2903,7 +2886,8 @@ export const DashboardBlock = () => {
                                     {company.totalVolume.toLocaleString()} т
                                   </div>
                                   <div className="text-xs text-[#7b857f]">
-                                    {company.shippedVolume.toLocaleString()} т отгружено
+                                    {company.shippedVolume.toLocaleString()} т
+                                    отгружено
                                   </div>
                                 </div>
                               </div>
@@ -2918,7 +2902,9 @@ export const DashboardBlock = () => {
                                 <div className="h-2.5 overflow-hidden rounded-full bg-[#e8f0ea]">
                                   <div
                                     className="h-full rounded-full bg-[#2f6b4f]"
-                                    style={{ width: `${company.shippedShare}%` }}
+                                    style={{
+                                      width: `${company.shippedShare}%`,
+                                    }}
                                   />
                                 </div>
                               </div>
@@ -2959,7 +2945,9 @@ export const DashboardBlock = () => {
                       <div className="sungrain-chart-chip">
                         <span>Лучший</span>
                         <strong>
-                          {companySummary.topFulfillmentCompany?.fulfillmentRate ?? 0}%
+                          {companySummary.topFulfillmentCompany
+                            ?.fulfillmentRate ?? 0}
+                          %
                         </strong>
                       </div>
                       <div className="sungrain-chart-chip">
@@ -3349,7 +3337,10 @@ export const DashboardBlock = () => {
                       <div className="sungrain-chart-chip">
                         <span>Емкость</span>
                         <strong>
-                          {Math.round(transportSummary.totalCapacity).toLocaleString()} т
+                          {Math.round(
+                            transportSummary.totalCapacity,
+                          ).toLocaleString()}{" "}
+                          т
                         </strong>
                       </div>
                       <div className="sungrain-chart-chip">
@@ -3389,7 +3380,9 @@ export const DashboardBlock = () => {
                               <div className="text-2xl font-black text-[#223137]">
                                 {carrier.wagonCount}
                               </div>
-                              <div className="text-xs text-[#7b857f]">вагонов</div>
+                              <div className="text-xs text-[#7b857f]">
+                                вагонов
+                              </div>
                             </div>
                           </div>
 
@@ -3407,7 +3400,7 @@ export const DashboardBlock = () => {
                                   style={{
                                     width: `${Math.min(
                                       Math.round(carrier.utilizationRate),
-                                      100
+                                      100,
                                     )}%`,
                                   }}
                                 />
@@ -3415,7 +3408,10 @@ export const DashboardBlock = () => {
                               <div className="flex items-center justify-between text-xs text-[#7b857f]">
                                 <span>Емкость</span>
                                 <span className="font-bold text-[#223137]">
-                                  {Math.round(carrier.totalCapacity).toLocaleString()} т
+                                  {Math.round(
+                                    carrier.totalCapacity,
+                                  ).toLocaleString()}{" "}
+                                  т
                                 </span>
                               </div>
                               <div className="h-2.5 overflow-hidden rounded-full bg-[#fdebd7]">
@@ -3536,7 +3532,12 @@ export const DashboardBlock = () => {
                             <ResponsiveContainer width="100%" height="100%">
                               <ComposedChart
                                 data={card.data}
-                                margin={{ top: 16, right: 12, left: 0, bottom: 0 }}
+                                margin={{
+                                  top: 16,
+                                  right: 12,
+                                  left: 0,
+                                  bottom: 0,
+                                }}
                               >
                                 <defs>
                                   <linearGradient

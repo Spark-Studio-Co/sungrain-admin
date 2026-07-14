@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getApplicationRoute,
   getWagonGroupStats,
   getApplicationWagonGroupStats,
   getApplicationShipmentSummary,
@@ -83,16 +84,21 @@ describe("contract operational metadata", () => {
       applications: [
         {
           id: 1,
+          name: "Приложение №1",
           departure_station: "Павлодар-Южный",
           destination_station: "Янгер",
+          wagons: [{ id: 1 }],
         },
         {
           id: 2,
+          name: "Приложение №2",
           departure_station: "Павлодар-Южный",
           destination_station: "Янгер",
+          wagons: [{ id: 2 }, { id: 3 }],
         },
         {
           id: 3,
+          name: "Приложение №3",
           departure_station: "Астана",
           destination_station: "Алматы",
         },
@@ -105,17 +111,40 @@ describe("contract operational metadata", () => {
         destination: "Янгер",
         label: "Павлодар-Южный → Янгер",
         applicationsCount: 2,
+        applications: [
+          { id: 1, label: "Приложение №1", wagonsCount: 1 },
+          { id: 2, label: "Приложение №2", wagonsCount: 2 },
+        ],
       },
       {
         departure: "Астана",
         destination: "Алматы",
         label: "Астана → Алматы",
         applicationsCount: 1,
+        applications: [{ id: 3, label: "Приложение №3", wagonsCount: 0 }],
       },
     ]);
     expect(meta.route.label).toBe("2 маршрута");
     expect(meta.route.departure).toBe("2 отправления");
     expect(meta.route.destination).toBe("2 назначения");
+  });
+
+  it("uses application stations first and falls back to the contract route", () => {
+    expect(
+      getApplicationRoute({
+        departure_stations: ["Шарбакты", "Павлодар-Южный"],
+        destination_stations: ["Худжанд", "Янгер"],
+        contract: baseContract,
+      }),
+    ).toEqual({
+      departure: "Шарбакты · Павлодар-Южный",
+      destination: "Худжанд · Янгер",
+      label: "Шарбакты · Павлодар-Южный → Худжанд · Янгер",
+    });
+
+    expect(getApplicationRoute({ contract: baseContract }).label).toBe(
+      "Павлодар-Южный → Янгер",
+    );
   });
 
   it("keeps every selected contract station in the route summary", () => {
@@ -240,7 +269,7 @@ describe("contract operational metadata", () => {
         status: "shipped",
         capacity: 70,
         real_weight: 70,
-      }))
+      })),
     );
 
     expect(stats.wagonCount).toBe(7);
@@ -323,7 +352,7 @@ describe("contract operational metadata", () => {
 
     const documents = getContractDocuments(
       { ...baseContract, files: [file] },
-      { backendUrl: "https://backend.sungrain.kz/api" }
+      { backendUrl: "https://backend.sungrain.kz/api" },
     );
 
     expect(documents[0]).toMatchObject({
@@ -331,7 +360,8 @@ describe("contract operational metadata", () => {
       name: "contract-signed.pdf",
       type: "application/pdf",
       size: "2 KB",
-      downloadUrl: "https://backend.sungrain.kz/uploads/contracts/contract-signed.pdf",
+      downloadUrl:
+        "https://backend.sungrain.kz/uploads/contracts/contract-signed.pdf",
       file,
     });
   });
@@ -339,7 +369,7 @@ describe("contract operational metadata", () => {
   it("resolves bare uploaded filenames against the backend uploads directory", () => {
     const documents = getContractDocuments(
       { ...baseContract, files: ["contract-final.pdf"] },
-      { backendUrl: "https://backend.sungrain.kz/api" }
+      { backendUrl: "https://backend.sungrain.kz/api" },
     );
 
     expect(documents[0]).toMatchObject({
@@ -374,14 +404,15 @@ describe("contract operational metadata", () => {
           },
         ],
       },
-      { backendUrl: "https://backend.sungrain.kz/api" }
+      { backendUrl: "https://backend.sungrain.kz/api" },
     );
 
     expect(documents).toHaveLength(1);
     expect(documents[0]).toMatchObject({
       id: "primary",
       name: "contract-final.pdf",
-      downloadUrl: "https://backend.sungrain.kz/uploads/contracts/contract-final.pdf",
+      downloadUrl:
+        "https://backend.sungrain.kz/uploads/contracts/contract-final.pdf",
     });
   });
 });

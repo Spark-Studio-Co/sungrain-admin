@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 describe("application detail tabs", () => {
   const source = readFileSync(
     resolve(__dirname, "application-details.tsx"),
-    "utf8"
+    "utf8",
   );
 
   it("opens on documents and removes the separate details tab", () => {
@@ -16,7 +16,15 @@ describe("application detail tabs", () => {
 
   it("keeps application comment in the summary instead of the details tab", () => {
     expect(source).toContain("Комментарий к заявке");
-    expect(source).toContain("application?.comment || \"Не указан\"");
+    expect(source).toContain('application?.comment || "Не указан"');
+  });
+
+  it("shows the application-specific route and its wagon count", () => {
+    expect(source).toContain("getApplicationRoute(application)");
+    expect(source).toContain("Маршрут заявки");
+    expect(source).toContain("applicationRoute.departure");
+    expect(source).toContain("applicationRoute.destination");
+    expect(source).toContain("applicationScopedWagons.length");
   });
 
   it("passes only current application wagons into wagon tabs", () => {

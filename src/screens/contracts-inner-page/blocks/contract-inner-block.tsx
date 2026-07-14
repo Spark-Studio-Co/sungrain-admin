@@ -132,12 +132,12 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
       wagonContractsData?.length > 0
         ? wagonContractsData
         : (contractData as any)?.wagons || [],
-    [contractData, wagonContractsData]
+    [contractData, wagonContractsData],
   );
 
   const contractApplications = useMemo(() => {
     const backendApplications = toEntityArray<Record<string, any>>(
-      contractApplicationsData
+      contractApplicationsData,
     );
 
     if (backendApplications.length > 0) {
@@ -145,7 +145,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     }
 
     return sortApplicationsByNaturalOrder(
-      toEntityArray<Record<string, any>>((contractData as any)?.applications)
+      toEntityArray<Record<string, any>>((contractData as any)?.applications),
     );
   }, [contractApplicationsData, contractData]);
 
@@ -163,17 +163,18 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
         toEntityArray<Record<string, any>>(invoiceQueries[index]?.data).map(
           (invoice) => ({
             ...invoice,
-            applicationId: invoice.applicationId || invoice.application_id || application.id,
+            applicationId:
+              invoice.applicationId || invoice.application_id || application.id,
             application,
             currency:
               invoice.currency ||
               application.currency ||
               (contractData as any)?.currency ||
               "USD",
-          })
-        )
+          }),
+        ),
       ),
-    [contractApplications, contractData, invoiceQueries]
+    [contractApplications, contractData, invoiceQueries],
   );
 
   const isContractFinanceLoading =
@@ -199,7 +200,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
         applications: contractApplications,
         invoices: contractInvoices,
       }),
-    [contractData, wagons, contractApplications, contractInvoices]
+    [contractData, wagons, contractApplications, contractInvoices],
   );
 
   // Calculate shipment usage from the same source as the operational center.
@@ -228,11 +229,11 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     const wagonCount = wagons.length;
     const totalCapacity = wagons.reduce(
       (sum: number, wagon: any) => sum + (wagon.capacity || 0),
-      0
+      0,
     );
     const totalRealWeight = wagons.reduce(
       (sum: number, wagon: any) => sum + (wagon.capacity || 0),
-      0
+      0,
     );
     const capacityUtilization =
       totalCapacity > 0 ? (totalRealWeight / totalCapacity) * 100 : 0;
@@ -249,7 +250,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
 
   const contractFinanceLinks = useMemo(
     () => getContractFinanceLinks(contractData, { invoices: contractInvoices }),
-    [contractData, contractInvoices]
+    [contractData, contractInvoices],
   );
 
   const handleDownload = () => {
@@ -263,7 +264,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
 
     handleFileDownload(
       (contractData as any).files[0],
-      `contract-${(contractData as any).number || (contractData as any).id}.pdf`
+      `contract-${(contractData as any).number || (contractData as any).id}.pdf`,
     );
   };
 
@@ -463,7 +464,9 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                               Маршрут {index + 1}
                             </span>
                             <span className="rounded-sm bg-[#f5faf5] px-2 py-1 text-[10px] font-black uppercase text-[#2f6b4f]">
-                              {formatRouteApplicationsCount(route.applicationsCount)}
+                              {formatRouteApplicationsCount(
+                                route.applicationsCount,
+                              )}
                             </span>
                           </div>
                           <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
@@ -489,6 +492,19 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                               </div>
                             </div>
                           </div>
+                          {route.applications?.length ? (
+                            <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[#edf1eb] pt-3">
+                              {route.applications.map((application) => (
+                                <span
+                                  key={application.id}
+                                  className="rounded-md border border-[#e3eae1] bg-[#fbfcfa] px-2 py-1 text-[10px] font-bold text-[#53605a]"
+                                >
+                                  {application.label} ·{" "}
+                                  {application.wagonsCount} ваг.
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                       ))}
                     </div>
@@ -539,8 +555,12 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                       {formatNumber(contractOps.shippedVolume)} /{" "}
                       {formatNumber(contractOps.totalVolume)} т по документам
                     </span>
-                    <span>факт {formatNumber(contractOps.actualShippedVolume)} т</span>
-                    <span>остаток {formatNumber(contractOps.remainingVolume)} т</span>
+                    <span>
+                      факт {formatNumber(contractOps.actualShippedVolume)} т
+                    </span>
+                    <span>
+                      остаток {formatNumber(contractOps.remainingVolume)} т
+                    </span>
                     <span>{contractOps.route.eta}</span>
                   </div>
                 </div>
@@ -591,7 +611,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                   <div className="mt-2 text-2xl font-black text-[#d5740b]">
                     {formatContractMoney(
                       contractOps.balance,
-                      (contractData as any)?.currency || "USD"
+                      (contractData as any)?.currency || "USD",
                     )}
                   </div>
                   <div className="mt-1 text-xs text-[#7b857f]">
@@ -660,12 +680,15 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-[#2f6b4f]" />
                   <span>
-                    {volumeStats.percentUsed.toFixed(1)}% использовано по документам
+                    {volumeStats.percentUsed.toFixed(1)}% использовано по
+                    документам
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-[#f38810]" />
-                  <span>{(contractData as any)?.applications?.length || 0} заявок</span>
+                  <span>
+                    {(contractData as any)?.applications?.length || 0} заявок
+                  </span>
                 </div>
               </div>
               <Progress
@@ -751,49 +774,55 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                         </div>
                       ) : (
                         contractFinanceLinks.invoices.map((invoice) => (
-                        <div
-                          key={invoice.id}
-                          className="rounded-md border border-[#dfe7de] bg-white p-3 shadow-[0_10px_22px_rgba(34,49,55,0.04)]"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="font-black text-[#223137]">
-                                {invoice.id}
+                          <div
+                            key={invoice.id}
+                            className="rounded-md border border-[#dfe7de] bg-white p-3 shadow-[0_10px_22px_rgba(34,49,55,0.04)]"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="font-black text-[#223137]">
+                                  {invoice.id}
+                                </div>
+                                <div className="mt-1 text-xs text-[#7b857f]">
+                                  {invoice.title}
+                                </div>
                               </div>
-                              <div className="mt-1 text-xs text-[#7b857f]">
-                                {invoice.title}
+                              <Badge
+                                variant="outline"
+                                className={
+                                  invoice.status === "Оплачен"
+                                    ? "border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]"
+                                    : "border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]"
+                                }
+                              >
+                                {invoice.status}
+                              </Badge>
+                            </div>
+                            <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                              <div className="rounded-md bg-[#fbfcfa] p-2">
+                                <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                                  Сумма
+                                </div>
+                                <div className="mt-1 font-black text-[#223137]">
+                                  {formatContractMoney(
+                                    invoice.amount,
+                                    invoice.currency,
+                                  )}
+                                </div>
+                              </div>
+                              <div className="rounded-md bg-[#fffdf9] p-2">
+                                <div className="text-[10px] font-black uppercase text-[#7b857f]">
+                                  Остаток
+                                </div>
+                                <div className="mt-1 font-black text-[#d5740b]">
+                                  {formatContractMoney(
+                                    invoice.balance,
+                                    invoice.currency,
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            <Badge
-                              variant="outline"
-                              className={
-                                invoice.status === "Оплачен"
-                                  ? "border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]"
-                                  : "border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]"
-                              }
-                            >
-                              {invoice.status}
-                            </Badge>
                           </div>
-                          <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                            <div className="rounded-md bg-[#fbfcfa] p-2">
-                              <div className="text-[10px] font-black uppercase text-[#7b857f]">
-                                Сумма
-                              </div>
-                              <div className="mt-1 font-black text-[#223137]">
-                                {formatContractMoney(invoice.amount, invoice.currency)}
-                              </div>
-                            </div>
-                            <div className="rounded-md bg-[#fffdf9] p-2">
-                              <div className="text-[10px] font-black uppercase text-[#7b857f]">
-                                Остаток
-                              </div>
-                              <div className="mt-1 font-black text-[#d5740b]">
-                                {formatContractMoney(invoice.balance, invoice.currency)}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
                         ))
                       )}
                     </div>
@@ -809,7 +838,10 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                               Сумма счетов
                             </div>
                             <div className="mt-1 text-lg font-black text-[#223137]">
-                              {formatContractMoney(contractOps.invoiceTotal, contractCurrency)}
+                              {formatContractMoney(
+                                contractOps.invoiceTotal,
+                                contractCurrency,
+                              )}
                             </div>
                           </div>
                           <div className="rounded-md bg-[#f5faf5] p-3">
@@ -817,7 +849,10 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                               Оплачено
                             </div>
                             <div className="mt-1 text-lg font-black text-[#2f6b4f]">
-                              {formatContractMoney(contractOps.paidAmount, contractCurrency)}
+                              {formatContractMoney(
+                                contractOps.paidAmount,
+                                contractCurrency,
+                              )}
                             </div>
                           </div>
                           <div className="rounded-md bg-[#fffdf9] p-3">
@@ -825,7 +860,10 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                               Остаток
                             </div>
                             <div className="mt-1 text-lg font-black text-[#d5740b]">
-                              {formatContractMoney(contractOps.balance, contractCurrency)}
+                              {formatContractMoney(
+                                contractOps.balance,
+                                contractCurrency,
+                              )}
                             </div>
                           </div>
                         </div>
@@ -837,35 +875,39 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
 
                       {contractFinanceLinks.payments.length > 0 ? (
                         contractFinanceLinks.payments.map((payment) => (
-                        <div
-                          key={payment.id}
-                          className="rounded-md border border-[#dfe7de] bg-white p-3 shadow-[0_10px_22px_rgba(34,49,55,0.04)]"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="font-black text-[#223137]">
-                                {payment.id}
+                          <div
+                            key={payment.id}
+                            className="rounded-md border border-[#dfe7de] bg-white p-3 shadow-[0_10px_22px_rgba(34,49,55,0.04)]"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="font-black text-[#223137]">
+                                  {payment.id}
+                                </div>
+                                <div className="mt-1 flex items-center gap-1.5 text-xs text-[#7b857f]">
+                                  <Link2 className="h-3.5 w-3.5" />
+                                  {payment.reference}
+                                </div>
                               </div>
-                              <div className="mt-1 flex items-center gap-1.5 text-xs text-[#7b857f]">
-                                <Link2 className="h-3.5 w-3.5" />
-                                {payment.reference}
-                              </div>
+                              <Badge
+                                variant="outline"
+                                className="border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]"
+                              >
+                                {payment.status}
+                              </Badge>
                             </div>
-                            <Badge
-                              variant="outline"
-                              className="border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]"
-                            >
-                              {payment.status}
-                            </Badge>
+                            <div className="mt-3 text-lg font-black text-[#2f6b4f]">
+                              {formatContractMoney(
+                                payment.amount,
+                                payment.currency,
+                              )}
+                            </div>
                           </div>
-                          <div className="mt-3 text-lg font-black text-[#2f6b4f]">
-                            {formatContractMoney(payment.amount, payment.currency)}
-                          </div>
-                        </div>
                         ))
                       ) : (
                         <div className="rounded-md border border-dashed border-[#dfe7de] bg-[#fbfcfa] p-4 text-sm font-semibold text-[#7b857f]">
-                          Отдельные платежи backend пока не хранит. Оплату берем из статусов счетов.
+                          Отдельные платежи backend пока не хранит. Оплату берем
+                          из статусов счетов.
                         </div>
                       )}
                     </div>

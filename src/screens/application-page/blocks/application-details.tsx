@@ -70,7 +70,10 @@ import { cn } from "@/lib/utils";
 import { WagonDetails } from "@/screens/contracts-inner-page/blocks/wagon-details";
 import { WagonRegistry } from "@/screens/contracts-inner-page/blocks/wagon-registry";
 import { apiClient } from "@/shared/api/apiClient";
-import { resolveBackendFileUrl } from "@/shared/contracts/contract-ops";
+import {
+  getApplicationRoute,
+  resolveBackendFileUrl,
+} from "@/shared/contracts/contract-ops";
 import {
   buildInvoicePaymentPatch,
   getInvoiceAmount,
@@ -94,11 +97,14 @@ import {
   FileText,
   HandCoins,
   Loader2,
+  MapPin,
   Package,
   Pencil,
   Plus,
   Receipt,
+  Route,
   Trash2,
+  TrainFront,
   Upload,
   X,
 } from "lucide-react";
@@ -187,6 +193,7 @@ export const ApplicationDetail = ({
     ? applicationData[0]
     : applicationData;
   const applicationScopedWagons = getApplicationScopedWagons(application);
+  const applicationRoute = getApplicationRoute(application);
   const currentApplicationWagonContext = application
     ? { applications: [application] }
     : undefined;
@@ -208,9 +215,8 @@ export const ApplicationDetail = ({
   const applicationCurrency =
     application?.currency || application?.contract?.currency || "KZT";
   const applicationCurrencyLabel = normalizeCurrencyLabel(applicationCurrency);
-  const formatApplicationMoney = (
-    value: number | string | null | undefined
-  ) => formatMoney(value, applicationCurrency);
+  const formatApplicationMoney = (value: number | string | null | undefined) =>
+    formatMoney(value, applicationCurrency);
   const invoices = Array.isArray(invoicesData) ? invoicesData : [];
   const invoicesWithFinance = invoices.map((invoice: any) => {
     const amount = getInvoiceAmount(invoice);
@@ -227,12 +233,12 @@ export const ApplicationDetail = ({
   });
   const invoiceTotalAmount = invoicesWithFinance.reduce(
     (sum, invoice) => sum + invoice.financeAmount,
-    0
+    0,
   );
   const paymentBaseAmount = invoiceTotalAmount || totalAmount;
   const paidAmount = invoicesWithFinance.reduce(
     (sum, invoice) => sum + invoice.financePaidAmount,
-    0
+    0,
   );
   const remainingPaymentAmount = Math.max(paymentBaseAmount - paidAmount, 0);
   const paymentProgress =
@@ -322,7 +328,7 @@ export const ApplicationDetail = ({
         document.body.removeChild(link);
 
         console.log(
-          "Opening/downloading file for mobile or special characters"
+          "Opening/downloading file for mobile or special characters",
         );
         return;
       }
@@ -403,7 +409,7 @@ export const ApplicationDetail = ({
           onError: (error) => {
             console.error("Upload failed:", error);
           },
-        }
+        },
       );
 
       setIsUploadDialogOpen(false);
@@ -434,20 +440,20 @@ export const ApplicationDetail = ({
   // Update upload status
   const updateUploadStatus = async (
     id: number | string,
-    isUploaded: boolean
+    isUploaded: boolean,
   ) => {
     try {
       console.log(
         `Updating status for document ${id} to ${
           isUploaded ? "uploaded" : "pending"
-        }`
+        }`,
       );
 
       const response = await apiClient.patch(
         `/application/${id}/upload-status`,
         {
           isUploaded,
-        }
+        },
       );
 
       // Refresh the data to show updated status
@@ -515,13 +521,13 @@ export const ApplicationDetail = ({
     try {
       // Check if this is a shipping document (from documents_for_upload)
       const isShippingDoc = shippingDocuments.some(
-        (doc: any) => doc.id === deletingDoc.id
+        (doc: any) => doc.id === deletingDoc.id,
       );
 
       if (isShippingDoc) {
         // Use deleteUploadedDocs for shipping documents with document ID
         await deleteUploadedDocs.mutateAsync(
-          deletingDoc.id // Use document ID directly
+          deletingDoc.id, // Use document ID directly
         );
       } else {
         // Use deleteFileByNumberMutation for regular documents
@@ -682,7 +688,7 @@ export const ApplicationDetail = ({
           onError: (error: any) => {
             console.error("Invoice payment update failed:", error);
           },
-        }
+        },
       );
     } catch (error) {
       console.error("Error adding invoice payment:", error);
@@ -711,7 +717,7 @@ export const ApplicationDetail = ({
           onError: (error: any) => {
             console.error("Invoice deletion failed:", error);
           },
-        }
+        },
       );
     } catch (error) {
       console.error("Error deleting invoice:", error);
@@ -782,11 +788,11 @@ export const ApplicationDetail = ({
   const paymentDialogAmount = parsePaymentAmount(newPayment.amount);
   const paymentDialogNextPaidAmount = Math.min(
     paymentDialogInvoiceAmount,
-    paymentDialogPaidAmount + Math.max(paymentDialogAmount, 0)
+    paymentDialogPaidAmount + Math.max(paymentDialogAmount, 0),
   );
   const paymentDialogNextBalance = Math.max(
     paymentDialogInvoiceAmount - paymentDialogNextPaidAmount,
-    0
+    0,
   );
 
   return (
@@ -810,7 +816,7 @@ export const ApplicationDetail = ({
             </div>
             <div className="min-w-0 flex-1">
               <CardTitle className="text-xl sm:text-xl leading-tight">
-                Заявка по договору
+                {application?.name || "Заявка по договору"}
               </CardTitle>
               <CardDescription className="flex items-center gap-2 mt-2">
                 <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -848,16 +854,16 @@ export const ApplicationDetail = ({
                   {application?.culture === "wheat"
                     ? "Пшеница мягкая 5 класса"
                     : application?.culture === "barley"
-                    ? "Ячмень"
-                    : application?.culture === "corn"
-                    ? "Кукуруза"
-                    : application?.culture === "sunflower"
-                    ? "Подсолнечник"
-                    : application?.culture === "flax"
-                    ? "Лен"
-                    : application?.culture === "rapeseed"
-                    ? "Рапс"
-                    : application?.culture || "Не указана"}
+                      ? "Ячмень"
+                      : application?.culture === "corn"
+                        ? "Кукуруза"
+                        : application?.culture === "sunflower"
+                          ? "Подсолнечник"
+                          : application?.culture === "flax"
+                            ? "Лен"
+                            : application?.culture === "rapeseed"
+                              ? "Рапс"
+                              : application?.culture || "Не указана"}
                 </p>
               </div>
             </div>
@@ -881,6 +887,46 @@ export const ApplicationDetail = ({
                 </p>
                 <p className="font-semibold text-base">
                   {formatApplicationMoney(application?.total_amount || 0)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-6 overflow-hidden rounded-md border border-[#dfe7de] bg-[#fbfcfa]">
+            <div className="flex flex-col gap-2 border-b border-[#e5ece4] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Route className="h-4 w-4 text-[#f38810]" />
+                <p className="text-sm font-black text-[#223137]">
+                  Маршрут заявки
+                </p>
+              </div>
+              <Badge
+                variant="outline"
+                className="w-fit border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]"
+              >
+                {applicationScopedWagons.length} вагонов
+              </Badge>
+            </div>
+            <div className="grid gap-3 p-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+              <div className="rounded-md border border-[#e4ebe2] bg-white p-3">
+                <div className="flex items-center gap-2 text-[11px] font-black uppercase text-[#7b857f]">
+                  <TrainFront className="h-3.5 w-3.5 text-[#2f6b4f]" />
+                  Отправление
+                </div>
+                <p className="mt-1.5 break-words text-sm font-black text-[#223137]">
+                  {applicationRoute.departure}
+                </p>
+              </div>
+              <div className="mx-auto flex size-9 rotate-90 items-center justify-center rounded-full border border-[#f2dfca] bg-[#fff3e5] text-[#f38810] sm:rotate-0">
+                <Route className="h-4 w-4" />
+              </div>
+              <div className="rounded-md border border-[#e4ebe2] bg-white p-3">
+                <div className="flex items-center gap-2 text-[11px] font-black uppercase text-[#7b857f]">
+                  <MapPin className="h-3.5 w-3.5 text-[#f38810]" />
+                  Назначение
+                </div>
+                <p className="mt-1.5 break-words text-sm font-black text-[#223137]">
+                  {applicationRoute.destination}
                 </p>
               </div>
             </div>
@@ -1071,7 +1117,7 @@ export const ApplicationDetail = ({
                               file.location || file.file || file.path || "";
                             handleFileDownload(
                               filePath,
-                              file.name || `document-${index + 1}.pdf`
+                              file.name || `document-${index + 1}.pdf`,
                             );
                           }}
                         >
@@ -1215,14 +1261,16 @@ export const ApplicationDetail = ({
                                 Оплачено:{" "}
                                 <span className="font-semibold text-emerald-700">
                                   {formatApplicationMoney(
-                                    invoice.financePaidAmount
+                                    invoice.financePaidAmount,
                                   )}
                                 </span>
                               </div>
                               <div>
                                 Долг:{" "}
                                 <span className="font-semibold text-orange-700">
-                                  {formatApplicationMoney(invoice.financeBalance)}
+                                  {formatApplicationMoney(
+                                    invoice.financeBalance,
+                                  )}
                                 </span>
                               </div>
                             </div>
@@ -1232,8 +1280,8 @@ export const ApplicationDetail = ({
                                 className={cn(
                                   "text-xs",
                                   getInvoiceStatusClassName(
-                                    invoice.financeStatus
-                                  )
+                                    invoice.financeStatus,
+                                  ),
                                 )}
                               >
                                 {getInvoiceStatusLabel(invoice.financeStatus)}
@@ -1245,7 +1293,9 @@ export const ApplicationDetail = ({
                               variant="outline"
                               className={cn(
                                 "text-xs sm:text-sm",
-                                getInvoiceStatusClassName(invoice.financeStatus)
+                                getInvoiceStatusClassName(
+                                  invoice.financeStatus,
+                                ),
                               )}
                             >
                               {getInvoiceStatusLabel(invoice.financeStatus)}
@@ -1274,7 +1324,7 @@ export const ApplicationDetail = ({
                                       invoice.name ||
                                       invoice.number ||
                                       invoice.id
-                                    }.pdf`
+                                    }.pdf`,
                                   );
                                 }}
                               >
@@ -1293,7 +1343,9 @@ export const ApplicationDetail = ({
                                   size="icon"
                                   className="h-6 w-6 sm:h-8 sm:w-8 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
                                   disabled={invoice.financeBalance <= 0}
-                                  onClick={() => handleOpenPaymentDialog(invoice)}
+                                  onClick={() =>
+                                    handleOpenPaymentDialog(invoice)
+                                  }
                                 >
                                   <HandCoins className="h-3 w-3 sm:h-4 sm:w-4" />
                                 </Button>
@@ -1436,7 +1488,7 @@ export const ApplicationDetail = ({
                       variant="outline"
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !newDocument.date && "text-muted-foreground"
+                        !newDocument.date && "text-muted-foreground",
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
@@ -1625,7 +1677,7 @@ export const ApplicationDetail = ({
                 if (editingShippingDoc && editingShippingDoc.id) {
                   updateUploadStatus(
                     editingShippingDoc.id,
-                    editingShippingDoc.isUploaded
+                    editingShippingDoc.isUploaded,
                   )
                     .then(() => {
                       setIsEditShippingDocOpen(false);
@@ -1633,7 +1685,7 @@ export const ApplicationDetail = ({
                     .catch((error) => {
                       console.error("Error updating status:", error);
                       alert(
-                        "Ошибка при обновлении статуса. Пожалуйста, попробуйте снова."
+                        "Ошибка при обновлении статуса. Пожалуйста, попробуйте снова.",
                       );
                     });
                 }
@@ -1725,7 +1777,7 @@ export const ApplicationDetail = ({
                       variant="outline"
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !newInvoice.date && "text-muted-foreground"
+                        !newInvoice.date && "text-muted-foreground",
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
@@ -1876,10 +1928,7 @@ export const ApplicationDetail = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <Dialog
-        open={isPaymentDialogOpen}
-        onOpenChange={setIsPaymentDialogOpen}
-      >
+      <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
         <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1913,14 +1962,14 @@ export const ApplicationDetail = ({
                     getInvoiceStatusClassName(
                       paymentInvoice
                         ? getInvoiceComputedStatus(paymentInvoice)
-                        : "pending"
-                    )
+                        : "pending",
+                    ),
                   )}
                 >
                   {getInvoiceStatusLabel(
                     paymentInvoice
                       ? getInvoiceComputedStatus(paymentInvoice)
-                      : "pending"
+                      : "pending",
                   )}
                 </Badge>
               </div>
@@ -2066,7 +2115,7 @@ export const ApplicationDetail = ({
                       variant="outline"
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !editingInvoice?.date && "text-muted-foreground"
+                        !editingInvoice?.date && "text-muted-foreground",
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
@@ -2273,7 +2322,7 @@ export const ApplicationDetail = ({
                       variant="outline"
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !newShippingDoc.date && "text-muted-foreground"
+                        !newShippingDoc.date && "text-muted-foreground",
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
@@ -2348,7 +2397,7 @@ export const ApplicationDetail = ({
                   onError: (error) => {
                     console.error("Error creating shipping document:", error);
                     alert(
-                      "Ошибка при создании документа. Пожалуйста, попробуйте снова."
+                      "Ошибка при создании документа. Пожалуйста, попробуйте снова.",
                     );
                   },
                 });
@@ -2429,7 +2478,7 @@ export const ApplicationDetail = ({
                       variant="outline"
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !editingDocument?.date && "text-muted-foreground"
+                        !editingDocument?.date && "text-muted-foreground",
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />

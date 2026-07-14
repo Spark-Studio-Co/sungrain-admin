@@ -1020,13 +1020,37 @@ const createApplication = (body: AnyRecord) => {
   );
 
   (application as AnyRecord).contract = contract;
+  const contractRecord = contract as AnyRecord;
+  (application as AnyRecord).departure_stations = toStringArray(
+    body.departure_stations,
+    toStringArray(contractRecord.departure_stations, [
+      contract.departure_station,
+    ]),
+  );
+  (application as AnyRecord).destination_stations = toStringArray(
+    body.destination_stations,
+    toStringArray(contractRecord.destination_stations, [
+      contract.destination_station,
+    ]),
+  );
   contract.applications.unshift(application);
   return application;
 };
 
 const updateApplication = (id: string | number, body: AnyRecord) => {
   const application = findApplication(id);
+  const applicationRecord = application as AnyRecord;
+  const departureStations = toStringArray(
+    body.departure_stations,
+    applicationRecord.departure_stations || [],
+  );
+  const destinationStations = toStringArray(
+    body.destination_stations,
+    applicationRecord.destination_stations || [],
+  );
   Object.assign(application, body, {
+    departure_stations: departureStations,
+    destination_stations: destinationStations,
     total_amount:
       toNumber(body.volume, application.volume) *
       toNumber(body.price_per_ton, application.price_per_ton),
@@ -1218,7 +1242,8 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
           departureStation: index < 4 ? "Сарыагаш" : "Шымкент",
           destinationStation: "Актау-Порт",
           lastOperationStation: index < 3 ? "Арыс-1" : "Шу",
-          operation: index < 3 ? "Прибытие на станцию" : "Следование в составе поезда",
+          operation:
+            index < 3 ? "Прибытие на станцию" : "Следование в составе поезда",
           distanceToDestinationKm: 1180 - index * 64,
           lastOperationAt: `2026-07-11T0${Math.min(index + 2, 9)}:20:00.000Z`,
           observedAt: "2026-07-11T05:12:04.000Z",
@@ -1329,7 +1354,12 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
   ) {
     return { success: true };
   }
-  if (parts[0] === "contract" && parts[1] && method === "get") {
+  if (
+    parts[0] === "contract" &&
+    parts[1] &&
+    parts[1] !== "attention-center" &&
+    method === "get"
+  ) {
     return findContract(parts[1]);
   }
   if (parts[0] === "contract" && parts[1] && method === "patch") {
@@ -1358,6 +1388,111 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
         (sum, contract) => sum + contract.estimated_cost,
         0,
       ),
+    };
+  }
+  if (path === "/contract/attention-center" && method === "get") {
+    const applications = allApplications();
+    const openInvoices = invoices
+      .map((invoice) => ({
+        ...(invoice as AnyRecord),
+        balance: Math.max(
+          toNumber((invoice as AnyRecord).amount) -
+            toNumber((invoice as AnyRecord).paidAmount),
+          0,
+        ),
+      }))
+      .filter((invoice) => invoice.balance > 0);
+    const balanceByCurrency = openInvoices.reduce(
+      (totals, invoice) => {
+        const invoiceRecord = invoice as AnyRecord;
+        const application = findApplication(invoiceRecord.applicationId);
+        const currency = application.currency || "USD";
+        totals[currency] =
+          (totals[currency] || 0) + toNumber(invoiceRecord.balance);
+        return totals;
+      },
+      {} as Record<string, number>,
+    );
+    const missingDocuments = applications.filter(
+      (application) =>
+        !Array.isArray(application.files) || application.files.length === 0,
+    );
+    const unmatchedCount = toNumber(dislocationImports[0]?.unmatchedRows);
+    const makeItem = (
+      key: string,
+      title: string,
+      description: string,
+      count: number,
+      href: string,
+      severity: "ok" | "warning" | "danger" = count ? "warning" : "ok",
+      preview: AnyRecord[] = [],
+      totals?: Record<string, number>,
+    ) => ({ key, title, description, count, href, severity, preview, totals });
+    const items = [
+      makeItem(
+        "stale_dislocations",
+        "Без свежей дислокации",
+        "Нет обновления более 36 часов",
+        0,
+        "/admin/dislocations",
+      ),
+      makeItem(
+        "idle_wagons",
+        "Вагоны с простоем",
+        "Без операции от 2 суток",
+        0,
+        "/admin/dislocations",
+      ),
+      makeItem(
+        "applications_without_documents",
+        "Заявки без документов",
+        "Нет ни одного загруженного документа",
+        missingDocuments.length,
+        "/admin/contracts",
+        missingDocuments.length ? "warning" : "ok",
+        missingDocuments.slice(0, 3).map((application) => ({
+          id: application.id,
+          label: application.name || `Заявка №${application.id}`,
+          meta: application.contract?.number || "Договор",
+          href: `/admin/contracts/${application.contractId}`,
+        })),
+      ),
+      makeItem(
+        "invoices_with_balance",
+        "Счета с остатком",
+        "Оплачены частично или ожидают оплаты",
+        openInvoices.length,
+        "/admin/finance",
+        openInvoices.length ? "warning" : "ok",
+        [],
+        balanceByCurrency,
+      ),
+      makeItem(
+        "unmatched_wagons",
+        "Неопознанные вагоны",
+        "Есть в Excel, но не найдены в CRM",
+        unmatchedCount,
+        "/admin/dislocations",
+        unmatchedCount ? "danger" : "ok",
+      ),
+      makeItem(
+        "volume_exceeded",
+        "Превышение объема",
+        "Вес по документам выше плана договора",
+        0,
+        "/admin/contracts",
+      ),
+    ];
+    return {
+      generatedAt: new Date().toISOString(),
+      thresholds: { staleDislocationHours: 36, idleDays: 2 },
+      items,
+      summary: {
+        total: items.reduce((sum, item) => sum + item.count, 0),
+        affectedContracts: new Set(
+          missingDocuments.map((application) => application.contractId),
+        ).size,
+      },
     };
   }
 

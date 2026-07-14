@@ -3,7 +3,10 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("contract inner block layout", () => {
-  const source = readFileSync(resolve(__dirname, "contract-inner-block.tsx"), "utf8");
+  const source = readFileSync(
+    resolve(__dirname, "contract-inner-block.tsx"),
+    "utf8",
+  );
 
   it("shows contract operation tabs in the requested order", () => {
     const tabsStart = source.indexOf("<TabsList");
@@ -12,10 +15,10 @@ describe("contract inner block layout", () => {
 
     expect(tabsSource.indexOf('value="applications"')).toBeGreaterThan(-1);
     expect(tabsSource.indexOf('value="finance"')).toBeGreaterThan(
-      tabsSource.indexOf('value="applications"')
+      tabsSource.indexOf('value="applications"'),
     );
     expect(tabsSource.indexOf('value="details"')).toBeGreaterThan(
-      tabsSource.indexOf('value="finance"')
+      tabsSource.indexOf('value="finance"'),
     );
   });
 
@@ -41,7 +44,7 @@ describe("contract inner block layout", () => {
     expect(source).toContain("actualShippedVolume");
     expect(source).toContain("По документам");
     expect(source).toContain("Фактически");
-    expect(source).toContain("использовано по документам");
+    expect(source).toMatch(/использовано по\s+документам/);
   });
 
   it("renders application routes in the deal control block", () => {
@@ -49,5 +52,7 @@ describe("contract inner block layout", () => {
     expect(source).toContain("contractOps.routes");
     expect(source).toContain("Маршруты по приложениям");
     expect(source).toContain("applicationsCount");
+    expect(source).toContain("route.applications.map");
+    expect(source).toContain("application.wagonsCount");
   });
 });

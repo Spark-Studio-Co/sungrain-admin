@@ -6,6 +6,9 @@ interface UpdateApplicationParams {
     price_per_ton?: number;
     volume?: number;
     files?: string[] | any[];
+    departure_stations?: string[];
+    destination_stations?: string[];
+    [key: string]: unknown;
   };
 }
 

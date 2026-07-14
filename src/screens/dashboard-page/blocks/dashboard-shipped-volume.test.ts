@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 describe("dashboard shipped volume", () => {
   const source = readFileSync(
     resolve(__dirname, "dashboard-block.tsx"),
-    "utf8"
+    "utf8",
   );
 
   it("uses actual shipped wagon metadata instead of application request volumes", () => {
@@ -13,13 +13,19 @@ describe("dashboard shipped volume", () => {
     expect(source).toContain("const opsMeta = getContractOpsMeta(contract);");
     expect(source).toContain("const shippedVolume = opsMeta.shippedVolume;");
     expect(source).not.toContain("Calculate shipped volume from applications");
-    expect(source).not.toContain("(sum: number, app: any) => sum + (Number(app.volume) || 0)");
+    expect(source).not.toContain(
+      "(sum: number, app: any) => sum + (Number(app.volume) || 0)",
+    );
   });
 
   it("uses computed application totals for dashboard finance cards", () => {
     expect(source).toContain("const computedContractValue");
-    expect(source).toContain("estimatedCost: computedContractValue");
-    expect(source).toContain("acc[company].totalValue[contract.currency] += contract.totalValue");
+    expect(source).toMatch(
+      /estimatedCost:\s*computedContractValue > 0\s*\? computedContractValue/,
+    );
+    expect(source).toContain(
+      "acc[company].totalValue[contract.currency] += contract.totalValue",
+    );
   });
 
   it("keeps dashboard finance money labels compact and contained", () => {
