@@ -2,7 +2,7 @@ export const WAGON_STATUS_OPTIONS = [
   { value: "en_route_to_loading", label: "В пути под погрузку" },
   { value: "at_elevator", label: "На элеваторе" },
   { value: "registered", label: "Оформлен" },
-  { value: "en_route_to_recipient", label: "Следует к получателю" },
+  { value: "en_route_to_recipient", label: "Отгружено" },
   { value: "shipped", label: "Отгружен" },
 ] as const;
 

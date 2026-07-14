@@ -331,7 +331,7 @@ describe("contract operational metadata", () => {
 
     expect(summary).toMatchObject({
       status: "loading",
-      label: "Следует к получателю",
+      label: "Отгружено",
       total: 4,
       shipped: 1,
       enRouteToLoading: 1,

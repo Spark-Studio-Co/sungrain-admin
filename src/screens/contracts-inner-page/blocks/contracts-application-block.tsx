@@ -195,13 +195,8 @@ export const ApplicationBlock = ({
     const counters = [
       {
         label: "Отгружено",
-        value: summary.shipped,
+        value: summary.shipped + summary.enRouteToRecipient,
         activeClassName: "border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]",
-      },
-      {
-        label: "К получателю",
-        value: summary.enRouteToRecipient,
-        activeClassName: "border-[#cde2dc] bg-[#edf7f4] text-[#256a5a]",
       },
       {
         label: "Оформлено",
@@ -381,7 +376,7 @@ export const ApplicationBlock = ({
           app.total_amount || 0,
           app.files?.length || 0,
           app.wagons?.length || 0,
-          `${shipmentSummary.label}: отгружено ${shipmentSummary.shipped}, к получателю ${shipmentSummary.enRouteToRecipient}, оформлено ${shipmentSummary.registered}, под погрузку ${shipmentSummary.enRouteToLoading}`,
+          `${shipmentSummary.label}: отгружено ${shipmentSummary.shipped + shipmentSummary.enRouteToRecipient}, оформлено ${shipmentSummary.registered}, под погрузку ${shipmentSummary.enRouteToLoading}`,
         ];
       });
 

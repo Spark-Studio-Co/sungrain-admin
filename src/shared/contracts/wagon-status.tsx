@@ -26,7 +26,7 @@ export const getWagonStatusMeta = (value: unknown) => {
     case "en_route_to_recipient":
       return {
         status,
-        label: "Следует к получателю",
+        label: "Отгружено",
         className: "border-[#cde2dc] bg-[#edf7f4] text-[#256a5a]",
         icon: Navigation,
       };

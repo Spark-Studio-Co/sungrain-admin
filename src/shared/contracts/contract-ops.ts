@@ -441,8 +441,8 @@ export const getApplicationShipmentSummary = (application: any) => {
   const label =
     status === "shipped"
       ? "Отгружено"
-      : counts.enRouteToRecipient > 0
-        ? "Следует к получателю"
+        : counts.enRouteToRecipient > 0
+        ? "Отгружено"
         : counts.registered > 0
           ? "Оформлено"
           : counts.enRouteToLoading > 0
