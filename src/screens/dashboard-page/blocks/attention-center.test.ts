@@ -23,4 +23,13 @@ describe("dashboard attention center", () => {
     expect(source).toContain("sm:grid-cols-2");
     expect(source).toContain("xl:grid-cols-3");
   });
+
+  it("opens a responsive full problem list and hides actions for empty signals", () => {
+    expect(source).toContain("selectedItem.details");
+    expect(source).toContain("Показать все");
+    expect(source).toContain("Перейти в раздел");
+    expect(source).toContain("Проверено");
+    expect(source).toContain("bottom-0");
+    expect(source).toContain("sm:top-1/2");
+  });
 });

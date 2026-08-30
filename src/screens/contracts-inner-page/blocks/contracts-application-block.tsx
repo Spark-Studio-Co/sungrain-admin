@@ -162,7 +162,12 @@ export const ApplicationBlock = ({
       progressClassName: string;
     }
   > = {
-    shipped: {
+    received: {
+      icon: CheckCircle2,
+      className: "border-[#bdddc9] bg-[#e2f5e9] text-[#195f3f]",
+      progressClassName: "bg-[#195f3f]",
+    },
+    en_route_to_recipient: {
       icon: CheckCircle2,
       className: "border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]",
       progressClassName: "bg-[#2f6b4f]",
@@ -188,14 +193,15 @@ export const ApplicationBlock = ({
     const summary = getApplicationShipmentSummary(application);
     const config = shipmentStatusConfig[summary.status];
     const StatusIcon = config.icon;
-    const legacyInTransit = Math.max(
-      summary.inTransit - summary.enRouteToLoading - summary.enRouteToRecipient,
-      0,
-    );
     const counters = [
       {
-        label: "Отгружено",
-        value: summary.shipped + summary.enRouteToRecipient,
+        label: "Клиент получил",
+        value: summary.clientReceived,
+        activeClassName: "border-[#bdddc9] bg-[#e2f5e9] text-[#195f3f]",
+      },
+      {
+        label: "Отгружен",
+        value: summary.enRouteToRecipient,
         activeClassName: "border-[#dce8dc] bg-[#f5faf5] text-[#2f6b4f]",
       },
       {
@@ -208,15 +214,6 @@ export const ApplicationBlock = ({
         value: summary.enRouteToLoading,
         activeClassName: "border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]",
       },
-      ...(legacyInTransit > 0
-        ? [
-            {
-              label: "В пути",
-              value: legacyInTransit,
-              activeClassName: "border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]",
-            },
-          ]
-        : []),
       ...(summary.atElevator > 0
         ? [
             {
@@ -376,7 +373,7 @@ export const ApplicationBlock = ({
           app.total_amount || 0,
           app.files?.length || 0,
           app.wagons?.length || 0,
-          `${shipmentSummary.label}: отгружено ${shipmentSummary.shipped + shipmentSummary.enRouteToRecipient}, оформлено ${shipmentSummary.registered}, под погрузку ${shipmentSummary.enRouteToLoading}`,
+          `${shipmentSummary.label}: отгружено ${shipmentSummary.enRouteToRecipient}, оформлено ${shipmentSummary.registered}, под погрузку ${shipmentSummary.enRouteToLoading}`,
         ];
       });
 

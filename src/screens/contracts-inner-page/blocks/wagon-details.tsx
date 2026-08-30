@@ -53,7 +53,10 @@ import {
   type WagonDateSortOrder,
 } from "@/shared/contracts/wagon-sort";
 import { getWagonStatusMeta } from "@/shared/contracts/wagon-status";
-import { normalizeWagonStatus } from "@/shared/contracts/wagon-status-data";
+import {
+  isWagonClientReceivedStatus,
+  normalizeWagonStatus,
+} from "@/shared/contracts/wagon-status-data";
 
 interface WagonDetailsProps {
   wagons: any[];
@@ -94,14 +97,15 @@ const getWagonData = (wagon: any) => {
   const capacity = getWagonCapacityValue(wagon);
   const realWeight = getWagonActualWeightValue(wagon);
   const wagonId = getWagonExpansionId(wagon);
-  const wagonNumber =
-    wagon.number || wagon.wagon?.number || `Вагон ${wagonId}`;
+  const wagonNumber = wagon.number || wagon.wagon?.number || `Вагон ${wagonId}`;
   const wagonOwner = wagon.owner || wagon.wagon?.owner || "Не указан";
   const wagonStatus = normalizeWagonStatus(
-    wagon.status || wagon.wagon?.status || "unknown"
+    wagon.status || wagon.wagon?.status || "unknown",
   );
-  const dislocation =
-    wagon.dislocations?.[0] || wagon.wagon?.dislocations?.[0] || null;
+  const isClientReceived = isWagonClientReceivedStatus(wagonStatus);
+  const dislocation = isClientReceived
+    ? null
+    : wagon.dislocations?.[0] || wagon.wagon?.dislocations?.[0] || null;
 
   return {
     capacity,
@@ -110,6 +114,7 @@ const getWagonData = (wagon: any) => {
     wagonNumber,
     wagonOwner,
     wagonStatus,
+    isClientReceived,
     dislocation,
   };
 };
@@ -124,7 +129,7 @@ const getWagonApplicationId = (wagon: any) =>
 const getApplicationDisplayLabel = (
   application: any,
   index?: number,
-  applicationId?: unknown
+  applicationId?: unknown,
 ) => {
   const explicitName =
     application?.name ||
@@ -134,7 +139,11 @@ const getApplicationDisplayLabel = (
 
   if (explicitName) return String(explicitName);
   if (typeof index === "number") return `Приложение №${index + 1}`;
-  if (applicationId !== null && applicationId !== undefined && applicationId !== "") {
+  if (
+    applicationId !== null &&
+    applicationId !== undefined &&
+    applicationId !== ""
+  ) {
     return `Приложение ${applicationId}`;
   }
 
@@ -164,7 +173,7 @@ const buildApplicationLookup = (applications: any[] = []) => {
 
 const resolveWagonApplicationLabel = (
   wagon: any,
-  applicationLookup: Record<string, string>
+  applicationLookup: Record<string, string>,
 ) => {
   const applicationId = getWagonApplicationId(wagon);
 
@@ -177,7 +186,11 @@ const resolveWagonApplicationLabel = (
   }
 
   if (wagon?.application) {
-    return getApplicationDisplayLabel(wagon.application, undefined, applicationId);
+    return getApplicationDisplayLabel(
+      wagon.application,
+      undefined,
+      applicationId,
+    );
   }
 
   return getApplicationDisplayLabel(null, undefined, applicationId);
@@ -195,7 +208,7 @@ export const WagonDetails = ({
 
   const applicationLookup = useMemo(
     () => buildApplicationLookup(contractData?.applications || []),
-    [contractData]
+    [contractData],
   );
 
   const rawWagonRows = useMemo(
@@ -204,10 +217,10 @@ export const WagonDetails = ({
         wagon,
         applicationLabel: resolveWagonApplicationLabel(
           wagon,
-          applicationLookup
+          applicationLookup,
         ),
       })),
-    [wagons, applicationLookup]
+    [wagons, applicationLookup],
   );
 
   // Единый список всех вагонов: приложение показываем внутри строки, без разбиения на группы.
@@ -227,14 +240,16 @@ export const WagonDetails = ({
         wagonNumber?.toLowerCase().includes(searchLower) ||
         wagonOwner?.toLowerCase().includes(searchLower) ||
         wagonStatus?.toLowerCase().includes(searchLower) ||
-        dislocation?.lastOperationStation?.toLowerCase().includes(searchLower) ||
+        dislocation?.lastOperationStation
+          ?.toLowerCase()
+          .includes(searchLower) ||
         dislocation?.operation?.toLowerCase().includes(searchLower) ||
         wagonId?.toString().includes(searchLower) ||
         applicationLabel.toLowerCase().includes(searchLower) ||
         capacity?.toString().includes(searchLower) ||
         realWeight?.toString().includes(searchLower) ||
         wagon.files?.some((file: any) =>
-          file.name?.toLowerCase().includes(searchLower)
+          file.name?.toLowerCase().includes(searchLower),
         );
       const matchesTab = activeTab === "all" || wagonStatus === activeTab;
 
@@ -247,17 +262,20 @@ export const WagonDetails = ({
   const statuses = useMemo(
     () =>
       getOrderedWagonStatuses(
-        rawWagonRows.map(({ wagon }) => getWagonData(wagon).wagonStatus)
+        rawWagonRows.map(({ wagon }) => getWagonData(wagon).wagonStatus),
       ),
-    [rawWagonRows]
+    [rawWagonRows],
   );
 
-  const statusCounts = statuses.reduce((acc, status) => {
-    acc[status] = rawWagonRows.filter(
-      ({ wagon }) => getWagonData(wagon).wagonStatus === status
-    ).length;
-    return acc;
-  }, {} as Record<string, number>);
+  const statusCounts = statuses.reduce(
+    (acc, status) => {
+      acc[status] = rawWagonRows.filter(
+        ({ wagon }) => getWagonData(wagon).wagonStatus === status,
+      ).length;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   const totalWagons = rawWagonRows.length;
 
@@ -278,7 +296,7 @@ export const WagonDetails = ({
         }
 
         return acc;
-      }, {})
+      }, {}),
     );
   };
 
@@ -451,6 +469,7 @@ export const WagonDetails = ({
                     wagonNumber,
                     wagonOwner,
                     wagonStatus,
+                    isClientReceived,
                     capacity,
                     realWeight,
                     dislocation,
@@ -467,7 +486,7 @@ export const WagonDetails = ({
                       <div
                         className={cn(
                           "cursor-pointer p-3 transition-colors duration-150",
-                          isExpanded ? "bg-slate-50" : "hover:bg-slate-50"
+                          isExpanded ? "bg-slate-50" : "hover:bg-slate-50",
                         )}
                         onClick={() => toggleRowExpansion(wagonId)}
                       >
@@ -495,7 +514,7 @@ export const WagonDetails = ({
                                   "h-6 w-6 flex-shrink-0 rounded-full",
                                   isExpanded
                                     ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                                    : "hover:bg-slate-100"
+                                    : "hover:bg-slate-100",
                                 )}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -544,23 +563,25 @@ export const WagonDetails = ({
                             </div>
                           </div>
                         </div>
-                        <div className="mt-2 rounded-md border border-[#dce8dc] bg-[#f5faf5] px-2.5 py-2 text-xs">
-                          <div className="flex items-center gap-1.5 font-semibold text-[#2f6b4f]">
-                            <MapPin className="h-3.5 w-3.5" />
-                            {dislocation?.lastOperationStation ||
-                              "Дислокация ещё не получена"}
-                          </div>
-                          {dislocation && (
-                            <div className="mt-1 text-[#6f7f76]">
-                              {dislocation.operation || "Операция не указана"}
-                              {Number.isFinite(
-                                dislocation.distanceToDestinationKm
-                              )
-                                ? ` · ${dislocation.distanceToDestinationKm} км до назначения`
-                                : ""}
+                        {!isClientReceived && (
+                          <div className="mt-2 rounded-md border border-[#dce8dc] bg-[#f5faf5] px-2.5 py-2 text-xs">
+                            <div className="flex items-center gap-1.5 font-semibold text-[#2f6b4f]">
+                              <MapPin className="h-3.5 w-3.5" />
+                              {dislocation?.lastOperationStation ||
+                                "Дислокация ещё не получена"}
                             </div>
-                          )}
-                        </div>
+                            {dislocation && (
+                              <div className="mt-1 text-[#6f7f76]">
+                                {dislocation.operation || "Операция не указана"}
+                                {Number.isFinite(
+                                  dislocation.distanceToDestinationKm,
+                                )
+                                  ? ` · ${dislocation.distanceToDestinationKm} км до назначения`
+                                  : ""}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {isExpanded && (
@@ -670,8 +691,8 @@ export const WagonDetails = ({
                                           realWeight > capacity
                                             ? "text-green-600"
                                             : realWeight < capacity
-                                            ? "text-red-600"
-                                            : ""
+                                              ? "text-red-600"
+                                              : ""
                                         }
                                       >
                                         {formatNumber(realWeight - capacity)} т.
@@ -715,7 +736,7 @@ export const WagonDetails = ({
                                             onClick={() =>
                                               handleFileDownload(
                                                 file.location,
-                                                file.name
+                                                file.name,
                                               )
                                             }
                                           >
@@ -725,7 +746,7 @@ export const WagonDetails = ({
                                             </span>
                                           </Button>
                                         </div>
-                                      )
+                                      ),
                                     )}
                                   </div>
                                 ) : (
@@ -775,6 +796,7 @@ export const WagonDetails = ({
                           wagonNumber,
                           wagonOwner,
                           wagonStatus,
+                          isClientReceived,
                           capacity,
                           realWeight,
                           dislocation,
@@ -790,7 +812,7 @@ export const WagonDetails = ({
                                 isExpanded
                                   ? "bg-slate-50"
                                   : "hover:bg-muted/10",
-                                "transition-colors duration-150"
+                                "transition-colors duration-150",
                               )}
                             >
                               <TableCell>
@@ -802,7 +824,7 @@ export const WagonDetails = ({
                                       "h-8 w-8 shrink-0 rounded-full transition-colors duration-150",
                                       isExpanded
                                         ? "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                                        : "hover:bg-slate-100"
+                                        : "hover:bg-slate-100",
                                     )}
                                     onClick={() => toggleRowExpansion(wagonId)}
                                   >
@@ -843,26 +865,32 @@ export const WagonDetails = ({
                                 </Badge>
                               </TableCell>
                               <TableCell className="hidden lg:table-cell">
-                                {dislocation ? (
+                                {isClientReceived ? (
+                                  <span className="text-xs text-[#9aa39e]">
+                                    —
+                                  </span>
+                                ) : dislocation ? (
                                   <div className="max-w-[280px]">
                                     <div className="flex items-center gap-1.5 font-semibold text-[#2f6b4f]">
                                       <MapPin className="h-3.5 w-3.5 shrink-0" />
                                       <span className="truncate">
-                                        {dislocation.lastOperationStation || "—"}
+                                        {dislocation.lastOperationStation ||
+                                          "—"}
                                       </span>
                                     </div>
                                     <div className="mt-1 truncate text-xs text-[#7b857f]">
-                                      {dislocation.operation || "Операция не указана"}
+                                      {dislocation.operation ||
+                                        "Операция не указана"}
                                     </div>
                                     <div className="mt-0.5 text-[11px] text-[#8b948f]">
                                       {Number.isFinite(
-                                        dislocation.distanceToDestinationKm
+                                        dislocation.distanceToDestinationKm,
                                       )
                                         ? `${dislocation.distanceToDestinationKm} км · `
                                         : ""}
                                       {formatDateTimeSafe(
                                         dislocation.lastOperationAt ||
-                                          dislocation.observedAt
+                                          dislocation.observedAt,
                                       )}
                                     </div>
                                   </div>
@@ -933,7 +961,7 @@ export const WagonDetails = ({
                                               <span className="text-sm font-medium">
                                                 {wagon.date_of_unloading
                                                   ? formatDateSafe(
-                                                      wagon.date_of_unloading
+                                                      wagon.date_of_unloading,
                                                     )
                                                   : "—"}
                                               </span>
@@ -976,7 +1004,7 @@ export const WagonDetails = ({
                                               <span className="text-sm font-medium">
                                                 {realWeight
                                                   ? `${formatNumber(
-                                                      realWeight
+                                                      realWeight,
                                                     )} т.`
                                                   : "—"}
                                               </span>
@@ -992,12 +1020,12 @@ export const WagonDetails = ({
                                                       realWeight > capacity
                                                         ? "text-green-600"
                                                         : realWeight < capacity
-                                                        ? "text-red-600"
-                                                        : ""
+                                                          ? "text-red-600"
+                                                          : ""
                                                     }
                                                   >
                                                     {formatNumber(
-                                                      realWeight - capacity
+                                                      realWeight - capacity,
                                                     )}{" "}
                                                     т.
                                                   </span>
@@ -1019,12 +1047,13 @@ export const WagonDetails = ({
                                         </h3>
                                       </div>
                                       <div className="p-4">
-                                        {wagon.files && wagon.files.length > 0 ? (
+                                        {wagon.files &&
+                                        wagon.files.length > 0 ? (
                                           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                                             {wagon.files.map(
                                               (
                                                 file: any,
-                                                fileIndex: number
+                                                fileIndex: number,
                                               ) => (
                                                 <div
                                                   key={fileIndex}
@@ -1045,7 +1074,7 @@ export const WagonDetails = ({
                                                     onClick={() =>
                                                       handleFileDownload(
                                                         file.location,
-                                                        file.name
+                                                        file.name,
                                                       )
                                                     }
                                                   >
@@ -1053,7 +1082,7 @@ export const WagonDetails = ({
                                                     Скачать
                                                   </Button>
                                                 </div>
-                                              )
+                                              ),
                                             )}
                                           </div>
                                         ) : (
@@ -1074,7 +1103,7 @@ export const WagonDetails = ({
                             )}
                           </Fragment>
                         );
-                      }
+                      },
                     )}
                   </TableBody>
                 </Table>

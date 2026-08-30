@@ -41,4 +41,11 @@ describe("wagon edit dialog layout", () => {
     expect(source).toContain("sortedWagons.map");
     expect(source).not.toContain("wagons.map((wagon");
   });
+
+  it("uses a guided document upload state instead of an opaque file input", () => {
+    expect(source).toContain('accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt"');
+    expect(source).toContain("будет загружен после сохранения");
+    expect(source).toContain("Размер файла не должен превышать 20 МБ.");
+    expect(source).toContain("Keep the modal open if this request fails");
+  });
 });

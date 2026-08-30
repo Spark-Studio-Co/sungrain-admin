@@ -142,7 +142,11 @@ const makeWagon = (
     real_weight: realWeight,
     owner,
     date_of_departure: isoDate(daysOffset),
-    date_of_unloading: status === "shipped" ? isoDate(daysOffset + 8) : "",
+    date_of_unloading:
+      status === "en_route_to_recipient" ||
+      status === "client_received"
+        ? isoDate(daysOffset + 8)
+        : "",
     files: [
       makeFile(`${id}-railway-bill`, "ЖД накладная", {
         number: `RW-${number}`,
@@ -226,7 +230,7 @@ const contracts = [
         1,
         101,
         "54781234",
-        "shipped",
+        "en_route_to_recipient",
         68,
         67.4,
         "KTZ Express",
@@ -237,7 +241,7 @@ const contracts = [
         1,
         101,
         "54781235",
-        "shipped",
+        "en_route_to_recipient",
         69,
         68.1,
         "KTZ Express",
@@ -303,7 +307,7 @@ const contracts = [
         2,
         201,
         "62133418",
-        "shipped",
+        "en_route_to_recipient",
         66,
         65.8,
         "TransAsia Logistic",
@@ -351,7 +355,7 @@ const contracts = [
         3,
         301,
         "58900121",
-        "shipped",
+        "en_route_to_recipient",
         64,
         63.9,
         "Sungrain Rail",
@@ -417,7 +421,7 @@ const contracts = [
         4,
         401,
         "73319845",
-        "shipped",
+        "en_route_to_recipient",
         67,
         66.7,
         "Astana Wagon Service",
@@ -494,7 +498,7 @@ const contracts = [
         5,
         501,
         "61230077",
-        "shipped",
+        "en_route_to_recipient",
         65,
         64.8,
         "TransAsia Logistic",
@@ -1228,6 +1232,106 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
   }
 
   if (path === "/user/is-admin" && method === "get") return true;
+  if (path === "/dispatch-map" && method === "get") {
+    const point = (name: string, latitude: number, longitude: number) => ({
+      name,
+      latitude,
+      longitude,
+    });
+    const chukursay = point("Чукурсай", 41.3755561, 69.2454829);
+    const bekobod = point("Бекобод", 40.2320291, 69.2531407);
+    const pavlodar = point("Павлодар", 52.2857573, 76.9455035);
+    const yangiyer = point("Янгиер", 40.2785641, 68.8232497);
+    const khujand = point("Худжанд", 40.2842191, 69.6191174);
+    const zhanaSemey = point("Жана-Семей", 50.3705198, 80.2439568);
+    const makeWagon = (
+      id: number,
+      number: string,
+      currentStation: AnyRecord,
+      destinationStation: AnyRecord,
+      idleDays: number,
+      distance: number,
+      contractNumber: string,
+      contractId: string,
+    ) => ({
+      id,
+      number,
+      owner: id % 2 ? 'ТОО "Самал Транс Логистикс"' : 'ТОО "Хоппер Экспресс"',
+      status: "en_route_to_recipient",
+      statusLabel: "Следует к получателю",
+      idleDays,
+      isStalled: idleDays >= 2,
+      isStale: false,
+      staleHours: 1,
+      observedAt: "2026-08-02T11:05:00.000Z",
+      lastOperationAt: "2026-08-02T08:00:00.000Z",
+      operation: "Проследование станции",
+      distanceToDestinationKm: distance,
+      estimatedArrivalAt: "2026-08-03T11:05:00.000Z",
+      etaSource: "calculated",
+      currentStation,
+      destinationStation,
+      departureStation: pavlodar,
+      contract: {
+        id: contractId,
+        number: contractNumber,
+        name: "Экспорт зерна",
+        receiver: "Кристина",
+      },
+      application: { id, name: `Приложение №${id}` },
+    });
+    const stationData = [
+      {
+        key: "чукурсай",
+        ...chukursay,
+        wagons: [
+          makeWagon(1, "95005757", chukursay, yangiyer, 0.5, 162, "№SG-ZNA-1", String(contracts[0].id)),
+          makeWagon(2, "95006607", chukursay, yangiyer, 3.2, 162, "№SG-ZNA-1", String(contracts[0].id)),
+          makeWagon(3, "95113627", chukursay, yangiyer, 1.1, 162, "№SG-ZNA-1", String(contracts[0].id)),
+        ],
+        statusCounts: { en_route_to_recipient: 3 },
+        staleCount: 0,
+        stalledCount: 1,
+      },
+      {
+        key: "бекобод",
+        ...bekobod,
+        wagons: [
+          makeWagon(4, "98227457", bekobod, khujand, 2.4, 46, "№SG-MU-1", String(contracts[1].id)),
+          makeWagon(5, "98263858", bekobod, khujand, 0.2, 46, "№SG-MU-1", String(contracts[1].id)),
+        ],
+        statusCounts: { en_route_to_recipient: 2 },
+        staleCount: 0,
+        stalledCount: 1,
+      },
+      {
+        key: "павлодар",
+        ...pavlodar,
+        wagons: [
+          makeWagon(6, "98962822", pavlodar, zhanaSemey, 0.1, 377, "№SG-TUS-1", String(contracts[2].id)),
+        ],
+        statusCounts: { en_route_to_recipient: 1 },
+        staleCount: 0,
+        stalledCount: 0,
+      },
+    ];
+
+    return {
+      updatedAt: new Date().toISOString(),
+      stats: {
+        activeWagons: 6,
+        mappedWagons: 6,
+        stations: 3,
+        stalledWagons: 2,
+        staleWagons: 0,
+        arrivingSoon: 6,
+        unresolvedWagons: 0,
+      },
+      stations: stationData,
+      unresolvedStations: [],
+      settings: { staleAfterHours: 36, stalledAfterDays: 2 },
+    };
+  }
   if (path === "/dislocation/imports" && method === "get") {
     return dislocationImports.slice(0, Math.max(1, toNumber(params.limit, 50)));
   }
@@ -1469,9 +1573,19 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
       count: number,
       href: string,
       severity: "ok" | "warning" | "danger" = count ? "warning" : "ok",
-      preview: AnyRecord[] = [],
+      details: AnyRecord[] = [],
       totals?: Record<string, number>,
-    ) => ({ key, title, description, count, href, severity, preview, totals });
+    ) => ({
+      key,
+      title,
+      description,
+      count,
+      href,
+      severity,
+      preview: details.slice(0, 3),
+      details,
+      totals,
+    });
     const items = [
       makeItem(
         "stale_dislocations",
@@ -1494,11 +1608,11 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
         missingDocuments.length,
         "/admin/contracts",
         missingDocuments.length ? "warning" : "ok",
-        missingDocuments.slice(0, 3).map((application) => ({
+        missingDocuments.map((application) => ({
           id: application.id,
           label: application.name || `Заявка №${application.id}`,
           meta: application.contract?.number || "Договор",
-          href: `/admin/contracts/${application.contractId}`,
+          href: `/admin/contracts/${application.contractId}/applications/${application.id}`,
         })),
       ),
       makeItem(
@@ -1508,7 +1622,17 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
         openInvoices.length,
         "/admin/finance",
         openInvoices.length ? "warning" : "ok",
-        [],
+        openInvoices.map((invoice) => {
+          const invoiceRecord = invoice as AnyRecord;
+          const application = findApplication(invoiceRecord.applicationId);
+          const currency = application.currency || "USD";
+          return {
+            id: invoiceRecord.id,
+            label: invoiceRecord.name || `Счет №${invoiceRecord.id}`,
+            meta: `${toNumber(invoiceRecord.balance).toLocaleString("ru-RU")} ${currency}`,
+            href: "/admin/finance",
+          };
+        }),
         balanceByCurrency,
       ),
       makeItem(

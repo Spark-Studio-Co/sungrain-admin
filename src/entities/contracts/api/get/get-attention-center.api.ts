@@ -18,6 +18,7 @@ export interface AttentionItem {
   href: string;
   totals?: Record<string, number>;
   preview: AttentionPreviewItem[];
+  details?: AttentionPreviewItem[];
 }
 
 export interface AttentionCenterResponse {

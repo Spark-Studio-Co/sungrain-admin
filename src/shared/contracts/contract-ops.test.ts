@@ -290,11 +290,11 @@ describe("contract operational metadata", () => {
     });
 
     expect(summary).toMatchObject({
-      status: "shipped",
-      label: "Отгружено",
+      status: "en_route_to_recipient",
+      label: "Отгружен",
       total: 2,
-      shipped: 2,
-      inTransit: 0,
+      enRouteToRecipient: 2,
+      inTransit: 2,
       atElevator: 0,
     });
   });
@@ -311,10 +311,11 @@ describe("contract operational metadata", () => {
 
     expect(summary).toMatchObject({
       status: "loading",
-      label: "Грузится",
+      label: "В работе",
       total: 4,
-      shipped: 1,
-      inTransit: 2,
+      enRouteToRecipient: 1,
+      enRouteToLoading: 2,
+      inTransit: 3,
       atElevator: 1,
     });
   });
@@ -331,12 +332,95 @@ describe("contract operational metadata", () => {
 
     expect(summary).toMatchObject({
       status: "loading",
-      label: "Отгружено",
+      label: "В работе",
       total: 4,
-      shipped: 1,
       enRouteToLoading: 1,
       registered: 1,
-      enRouteToRecipient: 1,
+      enRouteToRecipient: 2,
+    });
+  });
+
+  it("counts wagons marked as sent to the recipient in contract progress", () => {
+    const meta = getContractOpsMeta(
+      { ...baseContract, crop: "Пшеница", total_volume: 2000 },
+      {
+        wagons: [{ status: "en_route_to_recipient", capacity: 2000 }],
+      },
+    );
+
+    expect(meta).toMatchObject({
+      status: "completed",
+      shippedVolume: 2000,
+      progress: 100,
+    });
+  });
+
+  it("marks a fully delivered contract as received by the client", () => {
+    const meta = getContractOpsMeta(
+      { ...baseContract, crop: "Пшеница", total_volume: 2000 },
+      {
+        wagons: [
+          { status: "client_received", capacity: 1000 },
+          { status: "client_received", capacity: 1000 },
+        ],
+      },
+    );
+
+    expect(meta).toMatchObject({
+      status: "delivered",
+      progress: 100,
+      receivedWagonsCount: 2,
+      allWagonsReceived: true,
+    });
+  });
+
+  it("shows partial client receipt without closing the contract", () => {
+    const meta = getContractOpsMeta(
+      { ...baseContract, crop: "Пшеница", total_volume: 3000 },
+      {
+        wagons: [
+          { status: "client_received", capacity: 1000 },
+          { status: "at_elevator", capacity: 1000 },
+        ],
+      },
+    );
+
+    expect(meta).toMatchObject({
+      status: "active",
+      statusConfig: {
+        label: "В работе",
+        tone: "У клиента: 1",
+      },
+      receivedWagonsCount: 1,
+      allWagonsReceived: false,
+    });
+  });
+
+  it("summarizes an application received by the client", () => {
+    const summary = getApplicationShipmentSummary({
+      wagons: [{ status: "client_received" }, { status: "client_received" }],
+    });
+
+    expect(summary).toMatchObject({
+      status: "received",
+      label: "Клиент получил",
+      clientReceived: 2,
+      progress: 100,
+    });
+  });
+
+  it("labels an application with partial client receipt", () => {
+    expect(
+      getApplicationShipmentSummary({
+        wagons: [
+          { status: "client_received" },
+          { status: "en_route_to_recipient" },
+        ],
+      }),
+    ).toMatchObject({
+      status: "loading",
+      label: "В работе",
+      clientReceived: 1,
     });
   });
 

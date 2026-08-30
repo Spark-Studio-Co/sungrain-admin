@@ -12,9 +12,11 @@ import {
   Home,
   Leaf,
   LogOut,
+  MapPinned,
   Menu,
   ShieldCheck,
   Sheet,
+  Telescope,
   TrainFront,
   TrainTrack,
   UserCheck,
@@ -116,6 +118,18 @@ const adminNavigationItems = [
     icon: Sheet,
     url: "/admin/dislocations",
   },
+  {
+    title: "Карта вагонов",
+    eyebrow: "Диспетчерская",
+    icon: MapPinned,
+    url: "/admin/wagon-map",
+  },
+  {
+    title: "Подход",
+    eyebrow: "Аналитика",
+    icon: Telescope,
+    url: "/admin/approach",
+  },
 ];
 
 const userNavigationItems = [
@@ -139,6 +153,8 @@ const sectionTitles: Record<string, string> = {
   "/admin/receiver": "Грузополучатели",
   "/admin/stations": "Станции",
   "/admin/dislocations": "Дислокации",
+  "/admin/wagon-map": "Карта вагонов",
+  "/admin/approach": "Подход",
   "/contracts": "Мои контракты",
 };
 
@@ -400,7 +416,9 @@ export const Layout: React.FC<ILayout> = ({ children, isAdmin: adminStatus }) =>
             <main
               className={cn(
                 "min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden",
-                pathname === "/admin" ? "p-0" : "p-3 sm:p-5 lg:p-6"
+                pathname === "/admin" || pathname === "/admin/wagon-map"
+                  ? "p-0"
+                  : "p-3 sm:p-5 lg:p-6"
               )}
             >
               <div className="crm-workspace">{children}</div>

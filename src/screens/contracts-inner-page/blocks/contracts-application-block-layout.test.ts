@@ -12,8 +12,8 @@ describe("contract applications list layout", () => {
     expect(source).toContain("getApplicationShipmentSummary");
     expect(source).toContain("Статус отгрузки");
     expect(source).toContain("renderShipmentSummary");
-    expect(source).toContain("Отгружено");
-    expect(source).toContain("В пути");
+    expect(source).toContain("Отгружен");
+    expect(source).toContain("Под погрузку");
     expect(source).toContain("Элеватор");
   });
 

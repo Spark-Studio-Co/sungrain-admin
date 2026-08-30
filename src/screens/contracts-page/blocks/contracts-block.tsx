@@ -194,15 +194,19 @@ const deserializeContractsSearch = (value: string) => {
 };
 
 const deserializeContractsStatus = (
-  value: string
+  value: string,
 ): ContractOperationStatus | "all" => {
   const parsed = JSON.parse(value);
-  return ["all", "active", "risk", "completed", "draft"].includes(parsed)
+  return ["all", "active", "risk", "completed", "delivered", "draft"].includes(
+    parsed,
+  )
     ? parsed
     : "all";
 };
 
-const getContractValidationErrors = (contract: any): ContractValidationErrors => {
+const getContractValidationErrors = (
+  contract: any,
+): ContractValidationErrors => {
   const errors: ContractValidationErrors = {};
   const volume = Number(contract?.total_volume);
 
@@ -247,7 +251,7 @@ const hasValidationErrors = (errors: ContractValidationErrors) =>
 const uploadContractFiles = async (
   contractId: string,
   files: File[],
-  filesInfo: any[]
+  filesInfo: any[],
 ) => {
   const formData = new FormData();
 
@@ -267,7 +271,7 @@ const uploadContractFiles = async (
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      }
+      },
     );
     return response.data;
   } catch (error) {
@@ -282,7 +286,7 @@ const deleteContractFiles = async (contractId: string, filesInfo: any[]) => {
       `/contract/delete-files/${contractId}`,
       {
         files_info: filesInfo,
-      }
+      },
     );
     return response.data;
   } catch (error) {
@@ -334,7 +338,7 @@ export const ContractsBlock = () => {
     "all",
     {
       deserialize: deserializeContractsStatus,
-    }
+    },
   );
   const {
     value: filters,
@@ -346,17 +350,17 @@ export const ContractsBlock = () => {
     {
       serialize: serializeContractsFilters,
       deserialize: deserializeContractsFilters,
-    }
+    },
   );
 
   // Fetch dropdown data
   const { data: stationsData = { data: [], total: 0 } } = useFetchStations(
     1,
-    100
+    100,
   );
   const { data: receiversData = { data: [], total: 0 } } = useGetReceivers(
     1,
-    100
+    100,
   );
   const { data: sendersData = { data: [], total: 0 } } = useGetSenders(1, 100);
   const stationOptions = useMemo(
@@ -365,7 +369,7 @@ export const ContractsBlock = () => {
         label: station.name,
         value: station.name,
       })),
-    [stationsData.data]
+    [stationsData.data],
   );
 
   // Only fetch all contracts if user is admin
@@ -427,61 +431,70 @@ export const ContractsBlock = () => {
   }, [contractsToDisplay]);
 
   // Add this new applyFilters function before the handleSearchChange function (around line 190)
-  const applyFilters = useCallback((contracts: any[]) => {
-    if (!contracts || !Array.isArray(contracts)) return [];
+  const applyFilters = useCallback(
+    (contracts: any[]) => {
+      if (!contracts || !Array.isArray(contracts)) return [];
 
-    return contracts.filter((contract: any) => {
-      // Date range filter
-      if (filters.dateRange.from || filters.dateRange.to) {
-        const contractDate = contract.date ? new Date(contract.date) : null;
-        if (contractDate) {
-          if (filters.dateRange.from && contractDate < filters.dateRange.from) {
-            return false;
-          }
-          if (filters.dateRange.to) {
-            // Set time to end of day for the "to" date
-            const toDateEnd = new Date(filters.dateRange.to);
-            toDateEnd.setHours(23, 59, 59, 999);
-            if (contractDate > toDateEnd) {
+      return contracts.filter((contract: any) => {
+        // Date range filter
+        if (filters.dateRange.from || filters.dateRange.to) {
+          const contractDate = contract.date ? new Date(contract.date) : null;
+          if (contractDate) {
+            if (
+              filters.dateRange.from &&
+              contractDate < filters.dateRange.from
+            ) {
               return false;
+            }
+            if (filters.dateRange.to) {
+              // Set time to end of day for the "to" date
+              const toDateEnd = new Date(filters.dateRange.to);
+              toDateEnd.setHours(23, 59, 59, 999);
+              if (contractDate > toDateEnd) {
+                return false;
+              }
             }
           }
         }
-      }
 
-      // Culture filter
-      if (
-        filters.cultures.length > 0 &&
-        !filters.cultures.includes(contract.crop)
-      ) {
-        return false;
-      }
+        // Culture filter
+        if (
+          filters.cultures.length > 0 &&
+          !filters.cultures.includes(contract.crop)
+        ) {
+          return false;
+        }
 
-      // Sender filter
-      if (
-        filters.senders.length > 0 &&
-        !filters.senders.includes(contract.sender)
-      ) {
-        return false;
-      }
+        // Sender filter
+        if (
+          filters.senders.length > 0 &&
+          !filters.senders.includes(contract.sender)
+        ) {
+          return false;
+        }
 
-      // Receiver filter
-      if (
-        filters.receivers.length > 0 &&
-        !filters.receivers.includes(contract.receiver)
-      ) {
-        return false;
-      }
+        // Receiver filter
+        if (
+          filters.receivers.length > 0 &&
+          !filters.receivers.includes(contract.receiver)
+        ) {
+          return false;
+        }
 
-      // Volume range filter
-      const volume = Number.parseFloat(contract.total_volume) || 0;
-      if (volume < filters.volumeRange[0] || volume > filters.volumeRange[1]) {
-        return false;
-      }
+        // Volume range filter
+        const volume = Number.parseFloat(contract.total_volume) || 0;
+        if (
+          volume < filters.volumeRange[0] ||
+          volume > filters.volumeRange[1]
+        ) {
+          return false;
+        }
 
-      return true;
-    });
-  }, [filters]);
+        return true;
+      });
+    },
+    [filters],
+  );
 
   // Modify the filteredContracts useMemo to include filters (around line 165)
   const filteredContracts = useMemo(() => {
@@ -493,7 +506,8 @@ export const ContractsBlock = () => {
       opsStatusFilter === "all"
         ? filteredByType
         : filteredByType.filter(
-            (contract: any) => getContractOpsMeta(contract).status === opsStatusFilter
+            (contract: any) =>
+              getContractOpsMeta(contract).status === opsStatusFilter,
           );
 
     // Then apply search
@@ -503,8 +517,8 @@ export const ContractsBlock = () => {
           (value) =>
             value &&
             typeof value === "string" &&
-            value.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+            value.toLowerCase().includes(searchTerm.toLowerCase()),
+        ),
       );
     }
 
@@ -525,8 +539,8 @@ export const ContractsBlock = () => {
         (value) =>
           value &&
           typeof value === "string" &&
-          value.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+          value.toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
     );
   }, [contractsToDisplay, searchTerm, applyFilters]);
 
@@ -548,7 +562,7 @@ export const ContractsBlock = () => {
 
   const updateEditableContract = (patch: Record<string, unknown>) => {
     Object.keys(patch).forEach((field) =>
-      clearEditError(field as keyof ContractValidationErrors)
+      clearEditError(field as keyof ContractValidationErrors),
     );
     setContractToEdit((prev: any) => ({ ...prev, ...patch }));
   };
@@ -556,7 +570,7 @@ export const ContractsBlock = () => {
   // Add this function to handle toggling a filter item (after handleSearchChange)
   const toggleFilterItem = (
     type: "cultures" | "senders" | "receivers",
-    value: string
+    value: string,
   ) => {
     setFilters((prev) => {
       const currentItems = [...prev[type]];
@@ -597,11 +611,11 @@ export const ContractsBlock = () => {
           "Фильтры сброшены",
           includeSearch
             ? "Поиск и быстрые фильтры вернулись к исходному состоянию."
-            : "Реестр снова показывает все доступные контракты."
+            : "Реестр снова показывает все доступные контракты.",
         );
       }
     },
-    [setFilters, setOpsStatusFilter, setSearchTerm, toast]
+    [setFilters, setOpsStatusFilter, setSearchTerm, toast],
   );
 
   // Add this function to get the active filter count
@@ -619,13 +633,16 @@ export const ContractsBlock = () => {
   const handleExportPDF = async () => {
     try {
       await downloadPDF();
-      toast.success("Экспорт запущен", "PDF-файл будет сохранен на устройство.");
+      toast.success(
+        "Экспорт запущен",
+        "PDF-файл будет сохранен на устройство.",
+      );
     } catch (error) {
       toast.error(
         "Не удалось экспортировать PDF",
         error instanceof Error
           ? error.message
-          : "Попробуйте повторить экспорт чуть позже."
+          : "Попробуйте повторить экспорт чуть позже.",
       );
     }
   };
@@ -645,7 +662,7 @@ export const ContractsBlock = () => {
             "Контракт удален",
             contractToDelete.number || contractToDelete.name
               ? `${contractToDelete.number || contractToDelete.name} убран из реестра.`
-              : "Запись убрана из реестра."
+              : "Запись убрана из реестра.",
           );
         },
         onError: (error) => {
@@ -653,7 +670,7 @@ export const ContractsBlock = () => {
             "Не удалось удалить контракт",
             error instanceof Error
               ? error.message
-              : "Проверьте соединение и попробуйте еще раз."
+              : "Проверьте соединение и попробуйте еще раз.",
           );
         },
       });
@@ -662,7 +679,7 @@ export const ContractsBlock = () => {
 
   const handleRowClick = (contract: any) => {
     navigate(
-      isAdmin ? `/admin/contracts/${contract.id}` : `/contracts/${contract.id}`
+      isAdmin ? `/admin/contracts/${contract.id}` : `/contracts/${contract.id}`,
     );
   };
 
@@ -671,7 +688,7 @@ export const ContractsBlock = () => {
     const departureStations = getContractStationNames(contract, "departure");
     const destinationStations = getContractStationNames(
       contract,
-      "destination"
+      "destination",
     );
     setContractToEdit({
       ...contract,
@@ -693,7 +710,7 @@ export const ContractsBlock = () => {
       setSelectedFiles((prev) => [...prev, ...newFiles]);
       toast.info(
         "Файлы добавлены",
-        `${newFiles.length} файл(ов) будут прикреплены после сохранения.`
+        `${newFiles.length} файл(ов) будут прикреплены после сохранения.`,
       );
     }
   };
@@ -715,7 +732,7 @@ export const ContractsBlock = () => {
     if (hasValidationErrors(validationErrors)) {
       toast.error(
         "Проверьте поля контракта",
-        "Мы подсветили места, которые нужно заполнить перед сохранением."
+        "Мы подсветили места, которые нужно заполнить перед сохранением.",
       );
       return;
     }
@@ -736,7 +753,10 @@ export const ContractsBlock = () => {
         contractToEdit[key] !== null
       ) {
         const value = contractToEdit[key];
-        formData.append(key, Array.isArray(value) ? JSON.stringify(value) : value);
+        formData.append(
+          key,
+          Array.isArray(value) ? JSON.stringify(value) : value,
+        );
       }
     });
 
@@ -773,7 +793,7 @@ export const ContractsBlock = () => {
               await uploadContractFiles(
                 contractToEdit.id,
                 selectedFiles,
-                filesInfo
+                filesInfo,
               );
             }
 
@@ -805,13 +825,13 @@ export const ContractsBlock = () => {
             setFilesToRemove([]);
             toast.success(
               "Контракт сохранен",
-              `${contractToEdit.number || "Контракт"} обновлен вместе с файлами.`
+              `${contractToEdit.number || "Контракт"} обновлен вместе с файлами.`,
             );
           } catch (error) {
             console.error("Error handling files:", error);
             toast.error(
               "Контракт сохранен, но файлы не обновились",
-              "Попробуйте загрузить вложения еще раз."
+              "Попробуйте загрузить вложения еще раз.",
             );
           } finally {
             setIsUploadingFiles(false);
@@ -824,15 +844,16 @@ export const ContractsBlock = () => {
             "Не удалось сохранить контракт",
             error instanceof Error
               ? error.message
-              : "Проверьте данные и попробуйте еще раз."
+              : "Проверьте данные и попробуйте еще раз.",
           );
         },
-      }
+      },
     );
   };
 
   const activeFilterCount = getActiveFilterCount();
-  const hasSearchOrFilters = Boolean(searchTerm.trim()) || activeFilterCount > 0;
+  const hasSearchOrFilters =
+    Boolean(searchTerm.trim()) || activeFilterCount > 0;
 
   useEffect(() => {
     if (
@@ -848,7 +869,7 @@ export const ContractsBlock = () => {
     filterRestoreToastShown.current = true;
     toast.info(
       "Фильтры восстановлены",
-      "Мы вернули последний поиск и быстрые статусы для реестра контрактов."
+      "Мы вернули последний поиск и быстрые статусы для реестра контрактов.",
     );
   }, [
     activeFilterCount,
@@ -883,7 +904,9 @@ export const ContractsBlock = () => {
   }, [clearFilters, hasSearchOrFilters]);
 
   const visibleContracts =
-    searchTerm || activeFilterCount > 0 ? filteredContracts : contractsToDisplay;
+    searchTerm || activeFilterCount > 0
+      ? filteredContracts
+      : contractsToDisplay;
   const safeVisibleContracts = Array.isArray(visibleContracts)
     ? visibleContracts
     : [];
@@ -901,6 +924,7 @@ export const ContractsBlock = () => {
       active: 0,
       risk: 0,
       completed: 0,
+      delivered: 0,
       draft: 0,
       shippedVolume: 0,
       balance: 0,
@@ -911,7 +935,7 @@ export const ContractsBlock = () => {
       balance: number;
       progress: number;
       documents: number;
-    }
+    },
   );
   const statusCounts = contractsForStatusCounts.reduce(
     (acc, contract: any) => {
@@ -919,10 +943,10 @@ export const ContractsBlock = () => {
       acc[status] += 1;
       return acc;
     },
-    { active: 0, risk: 0, completed: 0, draft: 0 } as Record<
+    { active: 0, risk: 0, completed: 0, delivered: 0, draft: 0 } as Record<
       ContractOperationStatus,
       number
-    >
+    >,
   );
   const isVolumeFiltered =
     filters.volumeRange[0] > 0 || filters.volumeRange[1] < 10000;
@@ -935,12 +959,13 @@ export const ContractsBlock = () => {
     { value: "active", label: "В работе", count: statusCounts.active },
     { value: "risk", label: "Риск", count: statusCounts.risk },
     { value: "completed", label: "Завершены", count: statusCounts.completed },
+    { value: "delivered", label: "Получены", count: statusCounts.delivered },
     { value: "draft", label: "Черновики", count: statusCounts.draft },
   ];
 
   const renderFilterChip = (
     type: "cultures" | "senders" | "receivers",
-    value: string
+    value: string,
   ) => {
     const isSelected = filters[type].includes(value);
 
@@ -953,7 +978,7 @@ export const ContractsBlock = () => {
           "inline-flex h-7 max-w-full items-center gap-1 rounded-md border px-2.5 text-[11px] font-bold transition-all",
           isSelected
             ? "border-[#f38810] bg-[#fff3e5] text-[#d5740b] shadow-[0_8px_18px_rgba(243,136,16,0.12)]"
-            : "border-[#dfe7de] bg-white text-[#41514b] hover:border-[#c9d8ca] hover:bg-[#f7faf6]"
+            : "border-[#dfe7de] bg-white text-[#41514b] hover:border-[#c9d8ca] hover:bg-[#f7faf6]",
         )}
       >
         <span className="truncate">{value}</span>
@@ -1057,7 +1082,7 @@ export const ContractsBlock = () => {
                 key={item.label}
                 className={cn(
                   "inline-flex h-8 items-center gap-2 rounded-md border px-3 font-bold",
-                  item.tone
+                  item.tone,
                 )}
               >
                 <span className="text-[#7b857f]">{item.label}</span>
@@ -1135,14 +1160,14 @@ export const ContractsBlock = () => {
                       "inline-flex h-9 items-center gap-2 rounded-md px-3 text-xs font-black transition sm:px-4 sm:text-sm",
                       isActive
                         ? "bg-[#f38810] text-white shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
-                        : "text-[#6f7774] hover:bg-[#f8faf7] hover:text-[#223137]"
+                        : "text-[#6f7774] hover:bg-[#f8faf7] hover:text-[#223137]",
                     )}
                   >
                     {item.value !== "all" && (
                       <span
                         className={cn(
                           "size-2 rounded-full",
-                          config?.progressClassName
+                          config?.progressClassName,
                         )}
                       />
                     )}
@@ -1152,7 +1177,7 @@ export const ContractsBlock = () => {
                         "rounded-md px-2 py-0.5 text-xs",
                         isActive
                           ? "bg-white/18 text-white"
-                          : "bg-[#f2f5f0] text-[#7b857f]"
+                          : "bg-[#f2f5f0] text-[#7b857f]",
                       )}
                     >
                       {item.count}
@@ -1208,7 +1233,7 @@ export const ContractsBlock = () => {
                   <div className="flex max-h-20 flex-wrap gap-1.5 overflow-y-auto pr-1">
                     {availableCultures.length > 0 ? (
                       availableCultures.map((culture) =>
-                        renderFilterChip("cultures", culture)
+                        renderFilterChip("cultures", culture),
                       )
                     ) : (
                       <span className="text-sm text-[#7b857f]">
@@ -1231,12 +1256,10 @@ export const ContractsBlock = () => {
                   <div className="flex max-h-20 flex-wrap gap-1.5 overflow-y-auto pr-1">
                     {sendersData.data.length > 0 ? (
                       sendersData.data.map((sender: any) =>
-                        renderFilterChip("senders", sender.name)
+                        renderFilterChip("senders", sender.name),
                       )
                     ) : (
-                      <span className="text-sm text-[#7b857f]">
-                        Нет данных
-                      </span>
+                      <span className="text-sm text-[#7b857f]">Нет данных</span>
                     )}
                   </div>
                 </div>
@@ -1254,12 +1277,10 @@ export const ContractsBlock = () => {
                   <div className="flex max-h-20 flex-wrap gap-1.5 overflow-y-auto pr-1">
                     {receiversData.data.length > 0 ? (
                       receiversData.data.map((receiver: any) =>
-                        renderFilterChip("receivers", receiver.name)
+                        renderFilterChip("receivers", receiver.name),
                       )
                     ) : (
-                      <span className="text-sm text-[#7b857f]">
-                        Нет данных
-                      </span>
+                      <span className="text-sm text-[#7b857f]">Нет данных</span>
                     )}
                   </div>
                 </div>
@@ -1397,7 +1418,7 @@ export const ContractsBlock = () => {
                                     variant="outline"
                                     className={cn(
                                       "h-6 px-2 text-[11px] font-black",
-                                      meta.statusConfig.badgeClassName
+                                      meta.statusConfig.badgeClassName,
                                     )}
                                   >
                                     {meta.statusConfig.label}
@@ -1419,11 +1440,15 @@ export const ContractsBlock = () => {
                             <div className="min-w-0">
                               <div className="flex min-w-0 items-center gap-2 text-sm font-black text-[#223137]">
                                 <Route className="h-4 w-4 shrink-0 text-[#f38810]" />
-                                <span className="truncate">{meta.route.departure}</span>
+                                <span className="truncate">
+                                  {meta.route.departure}
+                                </span>
                               </div>
                               <div className="mt-1 flex min-w-0 items-center gap-2 text-sm font-semibold text-[#41514b]">
                                 <MapPin className="h-4 w-4 shrink-0 text-[#2f6b4f]" />
-                                <span className="truncate">{meta.route.destination}</span>
+                                <span className="truncate">
+                                  {meta.route.destination}
+                                </span>
                               </div>
                               <div className="mt-1.5 text-xs font-semibold text-[#7b857f]">
                                 {meta.route.eta}
@@ -1444,13 +1469,16 @@ export const ContractsBlock = () => {
                                 <div
                                   className={cn(
                                     "h-full rounded-full",
-                                    meta.statusConfig.progressClassName
+                                    meta.statusConfig.progressClassName,
                                   )}
                                   style={{ width: `${meta.progress}%` }}
                                 />
                               </div>
                               <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#7b857f]">
-                                <span>остаток {meta.remainingVolume.toLocaleString()} т</span>
+                                <span>
+                                  остаток{" "}
+                                  {meta.remainingVolume.toLocaleString()} т
+                                </span>
                                 <span className="h-1 w-1 rounded-full bg-[#c6d3c6]" />
                                 <span>{meta.applicationsCount} заявок</span>
                                 <span className="h-1 w-1 rounded-full bg-[#c6d3c6]" />
@@ -1464,7 +1492,7 @@ export const ContractsBlock = () => {
                                 <span className="font-black text-[#223137]">
                                   {formatContractMoney(
                                     meta.balance,
-                                    contract.currency || "USD"
+                                    contract.currency || "USD",
                                   )}
                                 </span>
                                 <span className="font-black text-[#2f6b4f]">
@@ -1478,7 +1506,8 @@ export const ContractsBlock = () => {
                                 />
                               </div>
                               <div className="text-xs font-semibold text-[#7b857f]">
-                                {meta.invoiceCount} счетов · {meta.paidInvoiceCount} оплачено
+                                {meta.invoiceCount} счетов ·{" "}
+                                {meta.paidInvoiceCount} оплачено
                               </div>
                             </div>
                           </TableCell>
@@ -1487,14 +1516,12 @@ export const ContractsBlock = () => {
                               <div className="flex min-w-0 items-center gap-2">
                                 <Building2 className="h-4 w-4 shrink-0 text-[#7b857f]" />
                                 <span className="truncate text-sm font-semibold text-[#223137]">
-                                {getContractCompanyName(contract)}
+                                  {getContractCompanyName(contract)}
                                 </span>
                               </div>
                               <div className="mt-1.5 flex min-w-0 items-center gap-2 text-xs font-semibold text-[#7b857f]">
                                 <FilePdf className="h-3.5 w-3.5 shrink-0 text-[#f38810]" />
                                 <span>{meta.documentsCount} док.</span>
-                                <span className="h-1 w-1 rounded-full bg-[#c6d3c6]" />
-                                <span className="truncate">{meta.nextAction}</span>
                               </div>
                             </div>
                           </TableCell>
@@ -1507,7 +1534,9 @@ export const ContractsBlock = () => {
                                     className="h-9 w-9 rounded-md p-0 hover:bg-[#eef5ef]"
                                     onClick={(e) => e.stopPropagation()}
                                   >
-                                    <span className="sr-only">Открыть меню</span>
+                                    <span className="sr-only">
+                                      Открыть меню
+                                    </span>
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
@@ -1546,8 +1575,8 @@ export const ContractsBlock = () => {
                         {searchTerm || activeFilterCount > 0
                           ? "Контракты не найдены."
                           : isAdmin
-                          ? "Контракты не найдены."
-                          : "У вас нет доступных контрактов."}
+                            ? "Контракты не найдены."
+                            : "У вас нет доступных контрактов."}
                       </TableCell>
                     </TableRow>
                   )}
@@ -1604,7 +1633,7 @@ export const ContractsBlock = () => {
                           variant="outline"
                           className={cn(
                             "shrink-0 px-2.5 py-1 font-black",
-                            meta.statusConfig.badgeClassName
+                            meta.statusConfig.badgeClassName,
                           )}
                         >
                           {meta.statusConfig.label}
@@ -1616,12 +1645,16 @@ export const ContractsBlock = () => {
                       <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-3">
                         <div className="flex min-w-0 items-center gap-2 text-sm font-black text-[#223137]">
                           <Route className="h-4 w-4 shrink-0 text-[#f38810]" />
-                          <span className="truncate">{meta.route.departure}</span>
+                          <span className="truncate">
+                            {meta.route.departure}
+                          </span>
                         </div>
                         <div className="my-1 ml-6 h-4 border-l border-dashed border-[#cfd9cf]" />
                         <div className="flex min-w-0 items-center gap-2 text-sm font-black text-[#223137]">
                           <MapPin className="h-4 w-4 shrink-0 text-[#2f6b4f]" />
-                          <span className="truncate">{meta.route.destination}</span>
+                          <span className="truncate">
+                            {meta.route.destination}
+                          </span>
                         </div>
                       </div>
 
@@ -1638,7 +1671,7 @@ export const ContractsBlock = () => {
                           <div
                             className={cn(
                               "h-full rounded-full",
-                              meta.statusConfig.progressClassName
+                              meta.statusConfig.progressClassName,
                             )}
                             style={{ width: `${meta.progress}%` }}
                           />
@@ -1669,7 +1702,7 @@ export const ContractsBlock = () => {
                           <div className="mt-1 text-lg font-black text-[#d5740b]">
                             {formatContractMoney(
                               meta.balance,
-                              contract.currency || "USD"
+                              contract.currency || "USD",
                             )}
                           </div>
                         </div>
@@ -1677,7 +1710,8 @@ export const ContractsBlock = () => {
 
                       <div className="flex items-center justify-between gap-3 border-t border-[#edf1eb] pt-3">
                         <span className="text-xs font-bold text-[#7b857f]">
-                          {meta.documentsCount} документов · {meta.invoiceCount} счетов
+                          {meta.documentsCount} документов · {meta.invoiceCount}{" "}
+                          счетов
                         </span>
                         {isAdmin && (
                           <DropdownMenu>
@@ -1855,7 +1889,7 @@ export const ContractsBlock = () => {
                     </p>
                     <p className="mt-1 truncate text-sm font-black text-[#223137]">
                       {getContractVolume(contractToEdit).toLocaleString(
-                        "ru-RU"
+                        "ru-RU",
                       )}{" "}
                       т
                     </p>
@@ -1894,78 +1928,76 @@ export const ContractsBlock = () => {
                 </div>
                 <Separator className="my-4 bg-[#e7eee6]" />
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label htmlFor="edit-number" className={editLabelClass}>
-                    Номер <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    id="edit-number"
-                    className={editInputClass}
-                    aria-invalid={Boolean(editErrors.number)}
-                    value={contractToEdit.number || ""}
-                    onChange={(e) =>
-                      updateEditableContract({ number: e.target.value })
-                    }
-                  />
-                  <FormError message={editErrors.number} />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="edit-unk" className={editLabelClass}>
-                    УНК
-                  </label>
-                  <Input
-                    id="edit-unk"
-                    className={editInputClass}
-                    value={contractToEdit.unk || ""}
-                    onChange={(e) =>
-                      updateEditableContract({ unk: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="edit-name" className={editLabelClass}>
-                    Название <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    id="edit-name"
-                    className={editInputClass}
-                    aria-invalid={Boolean(editErrors.name)}
-                    value={contractToEdit.name || ""}
-                    onChange={(e) =>
-                      updateEditableContract({ name: e.target.value })
-                    }
-                  />
-                  <FormError message={editErrors.name} />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="edit-crop" className={editLabelClass}>
-                    Культура <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    id="edit-crop"
-                    className={editInputClass}
-                    aria-invalid={Boolean(editErrors.crop)}
-                    value={contractToEdit.crop || ""}
-                    onChange={(e) =>
-                      updateEditableContract({ crop: e.target.value })
-                    }
-                  />
-                  <FormError message={editErrors.crop} />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="edit-date" className={editLabelClass}>
-                    Дата контракта <span className="text-destructive">*</span>
-                  </label>
-                  <DatePickerInput
-                    id="edit-date"
-                    value={contractToEdit.date}
-                    className={editInputClass}
-                    onChange={(date) =>
-                      updateEditableContract({ date })
-                    }
-                  />
-                  <FormError message={editErrors.date} />
-                </div>
+                  <div className="space-y-2">
+                    <label htmlFor="edit-number" className={editLabelClass}>
+                      Номер <span className="text-destructive">*</span>
+                    </label>
+                    <Input
+                      id="edit-number"
+                      className={editInputClass}
+                      aria-invalid={Boolean(editErrors.number)}
+                      value={contractToEdit.number || ""}
+                      onChange={(e) =>
+                        updateEditableContract({ number: e.target.value })
+                      }
+                    />
+                    <FormError message={editErrors.number} />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="edit-unk" className={editLabelClass}>
+                      УНК
+                    </label>
+                    <Input
+                      id="edit-unk"
+                      className={editInputClass}
+                      value={contractToEdit.unk || ""}
+                      onChange={(e) =>
+                        updateEditableContract({ unk: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="edit-name" className={editLabelClass}>
+                      Название <span className="text-destructive">*</span>
+                    </label>
+                    <Input
+                      id="edit-name"
+                      className={editInputClass}
+                      aria-invalid={Boolean(editErrors.name)}
+                      value={contractToEdit.name || ""}
+                      onChange={(e) =>
+                        updateEditableContract({ name: e.target.value })
+                      }
+                    />
+                    <FormError message={editErrors.name} />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="edit-crop" className={editLabelClass}>
+                      Культура <span className="text-destructive">*</span>
+                    </label>
+                    <Input
+                      id="edit-crop"
+                      className={editInputClass}
+                      aria-invalid={Boolean(editErrors.crop)}
+                      value={contractToEdit.crop || ""}
+                      onChange={(e) =>
+                        updateEditableContract({ crop: e.target.value })
+                      }
+                    />
+                    <FormError message={editErrors.crop} />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="edit-date" className={editLabelClass}>
+                      Дата контракта <span className="text-destructive">*</span>
+                    </label>
+                    <DatePickerInput
+                      id="edit-date"
+                      value={contractToEdit.date}
+                      className={editInputClass}
+                      onChange={(date) => updateEditableContract({ date })}
+                    />
+                    <FormError message={editErrors.date} />
+                  </div>
                 </div>
               </div>
 
@@ -1976,178 +2008,177 @@ export const ContractsBlock = () => {
                 </div>
                 <Separator className="my-4 bg-[#e7eee6]" />
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label htmlFor="edit-sender" className={editLabelClass}>
-                    Грузоотправитель <span className="text-destructive">*</span>
-                  </label>
-                  <Popover open={openSender} onOpenChange={setOpenSender}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={openSender}
-                        aria-invalid={Boolean(editErrors.sender)}
-                        className={editComboClass}
-                      >
-                        <span className="truncate">
-                          {contractToEdit.sender || "Выберите грузоотправителя"}
-                        </span>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] rounded-md border-[#dfe7de] p-0 shadow-[0_18px_45px_rgba(22,42,35,0.16)]">
-                      <Command>
-                        <CommandInput placeholder="Поиск грузоотправителя..." />
-                        <CommandList>
-                          <CommandEmpty>
-                            Грузоотправитель не найден.
-                          </CommandEmpty>
-                          <CommandGroup className="max-h-60 overflow-y-auto">
-                            {sendersData.data.map((sender: any) => (
-                              <CommandItem
-                                key={sender.id}
-                                value={sender.name}
-                                onSelect={(value) => {
-                                  updateEditableContract({ sender: value });
-                                  setOpenSender(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    contractToEdit.sender === sender.name
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                <span className="truncate">{sender.name}</span>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <FormError message={editErrors.sender} />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="edit-receiver"
-                    className={editLabelClass}
-                  >
-                    Грузополучатель <span className="text-destructive">*</span>
-                  </label>
-                  <Popover open={openReceiver} onOpenChange={setOpenReceiver}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={openReceiver}
-                        aria-invalid={Boolean(editErrors.receiver)}
-                        className={editComboClass}
-                      >
-                        <span className="truncate">
-                          {contractToEdit.receiver ||
-                            "Выберите грузополучателя"}
-                        </span>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] rounded-md border-[#dfe7de] p-0 shadow-[0_18px_45px_rgba(22,42,35,0.16)]">
-                      <Command>
-                        <CommandInput placeholder="Поиск грузополучателя..." />
-                        <CommandList>
-                          <CommandEmpty>
-                            Грузополучатель не найден.
-                          </CommandEmpty>
-                          <CommandGroup className="max-h-60 overflow-y-auto">
-                            {receiversData.data.map((receiver: any) => (
-                              <CommandItem
-                                key={receiver.id}
-                                value={receiver.name}
-                                onSelect={(value) => {
-                                  updateEditableContract({ receiver: value });
-                                  setOpenReceiver(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    contractToEdit.receiver === receiver.name
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                <span className="truncate">
-                                  {receiver.name}
-                                </span>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <FormError message={editErrors.receiver} />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="edit-departure"
-                    className={editLabelClass}
-                  >
-                    Станции отправления{" "}
-                    <span className="text-destructive">*</span>
-                  </label>
-                  <MultiSelect
-                    options={stationOptions}
-                    selected={getContractStationNames(
-                      contractToEdit,
-                      "departure"
-                    )}
-                    onChange={(stations) =>
-                      updateEditableContract({
-                        departure_stations: stations,
-                        departure_station: stations[0] || "",
-                      })
-                    }
-                    placeholder="Выберите одну или несколько станций"
-                    emptyMessage="Станции не найдены"
-                    className={cn(
-                      editErrors.departure_station &&
-                        "[&>div:first-of-type]:border-destructive"
-                    )}
-                  />
-                  <FormError message={editErrors.departure_station} />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="edit-destination"
-                    className={editLabelClass}
-                  >
-                    Станции назначения{" "}
-                    <span className="text-destructive">*</span>
-                  </label>
-                  <MultiSelect
-                    options={stationOptions}
-                    selected={getContractStationNames(
-                      contractToEdit,
-                      "destination"
-                    )}
-                    onChange={(stations) =>
-                      updateEditableContract({
-                        destination_stations: stations,
-                        destination_station: stations[0] || "",
-                      })
-                    }
-                    placeholder="Выберите одну или несколько станций"
-                    emptyMessage="Станции не найдены"
-                    className={cn(
-                      editErrors.destination_station &&
-                        "[&>div:first-of-type]:border-destructive"
-                    )}
-                  />
-                  <FormError message={editErrors.destination_station} />
-                </div>
+                  <div className="space-y-2">
+                    <label htmlFor="edit-sender" className={editLabelClass}>
+                      Грузоотправитель{" "}
+                      <span className="text-destructive">*</span>
+                    </label>
+                    <Popover open={openSender} onOpenChange={setOpenSender}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openSender}
+                          aria-invalid={Boolean(editErrors.sender)}
+                          className={editComboClass}
+                        >
+                          <span className="truncate">
+                            {contractToEdit.sender ||
+                              "Выберите грузоотправителя"}
+                          </span>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] rounded-md border-[#dfe7de] p-0 shadow-[0_18px_45px_rgba(22,42,35,0.16)]">
+                        <Command>
+                          <CommandInput placeholder="Поиск грузоотправителя..." />
+                          <CommandList>
+                            <CommandEmpty>
+                              Грузоотправитель не найден.
+                            </CommandEmpty>
+                            <CommandGroup className="max-h-60 overflow-y-auto">
+                              {sendersData.data.map((sender: any) => (
+                                <CommandItem
+                                  key={sender.id}
+                                  value={sender.name}
+                                  onSelect={(value) => {
+                                    updateEditableContract({ sender: value });
+                                    setOpenSender(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      contractToEdit.sender === sender.name
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                  <span className="truncate">
+                                    {sender.name}
+                                  </span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormError message={editErrors.sender} />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="edit-receiver" className={editLabelClass}>
+                      Грузополучатель{" "}
+                      <span className="text-destructive">*</span>
+                    </label>
+                    <Popover open={openReceiver} onOpenChange={setOpenReceiver}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={openReceiver}
+                          aria-invalid={Boolean(editErrors.receiver)}
+                          className={editComboClass}
+                        >
+                          <span className="truncate">
+                            {contractToEdit.receiver ||
+                              "Выберите грузополучателя"}
+                          </span>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[var(--radix-popover-trigger-width)] rounded-md border-[#dfe7de] p-0 shadow-[0_18px_45px_rgba(22,42,35,0.16)]">
+                        <Command>
+                          <CommandInput placeholder="Поиск грузополучателя..." />
+                          <CommandList>
+                            <CommandEmpty>
+                              Грузополучатель не найден.
+                            </CommandEmpty>
+                            <CommandGroup className="max-h-60 overflow-y-auto">
+                              {receiversData.data.map((receiver: any) => (
+                                <CommandItem
+                                  key={receiver.id}
+                                  value={receiver.name}
+                                  onSelect={(value) => {
+                                    updateEditableContract({ receiver: value });
+                                    setOpenReceiver(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      contractToEdit.receiver === receiver.name
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                  <span className="truncate">
+                                    {receiver.name}
+                                  </span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormError message={editErrors.receiver} />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="edit-departure" className={editLabelClass}>
+                      Станции отправления{" "}
+                      <span className="text-destructive">*</span>
+                    </label>
+                    <MultiSelect
+                      options={stationOptions}
+                      selected={getContractStationNames(
+                        contractToEdit,
+                        "departure",
+                      )}
+                      onChange={(stations) =>
+                        updateEditableContract({
+                          departure_stations: stations,
+                          departure_station: stations[0] || "",
+                        })
+                      }
+                      placeholder="Выберите одну или несколько станций"
+                      emptyMessage="Станции не найдены"
+                      className={cn(
+                        editErrors.departure_station &&
+                          "[&>div:first-of-type]:border-destructive",
+                      )}
+                    />
+                    <FormError message={editErrors.departure_station} />
+                  </div>
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="edit-destination"
+                      className={editLabelClass}
+                    >
+                      Станции назначения{" "}
+                      <span className="text-destructive">*</span>
+                    </label>
+                    <MultiSelect
+                      options={stationOptions}
+                      selected={getContractStationNames(
+                        contractToEdit,
+                        "destination",
+                      )}
+                      onChange={(stations) =>
+                        updateEditableContract({
+                          destination_stations: stations,
+                          destination_station: stations[0] || "",
+                        })
+                      }
+                      placeholder="Выберите одну или несколько станций"
+                      emptyMessage="Станции не найдены"
+                      className={cn(
+                        editErrors.destination_station &&
+                          "[&>div:first-of-type]:border-destructive",
+                      )}
+                    />
+                    <FormError message={editErrors.destination_station} />
+                  </div>
                 </div>
               </div>
 
@@ -2158,63 +2189,60 @@ export const ContractsBlock = () => {
                 </div>
                 <Separator className="my-4 bg-[#e7eee6]" />
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <label htmlFor="edit-volume" className={editLabelClass}>
-                    Общий объем (тонн){" "}
-                    <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    id="edit-volume"
-                    type="number"
-                    className={editInputClass}
-                    aria-invalid={Boolean(editErrors.total_volume)}
-                    value={contractToEdit.total_volume || ""}
-                    onChange={(e) =>
-                      updateEditableContract({
-                        total_volume: Number(e.target.value),
-                      })
-                    }
-                  />
-                  <FormError message={editErrors.total_volume} />
+                  <div className="space-y-2">
+                    <label htmlFor="edit-volume" className={editLabelClass}>
+                      Общий объем (тонн){" "}
+                      <span className="text-destructive">*</span>
+                    </label>
+                    <Input
+                      id="edit-volume"
+                      type="number"
+                      className={editInputClass}
+                      aria-invalid={Boolean(editErrors.total_volume)}
+                      value={contractToEdit.total_volume || ""}
+                      onChange={(e) =>
+                        updateEditableContract({
+                          total_volume: Number(e.target.value),
+                        })
+                      }
+                    />
+                    <FormError message={editErrors.total_volume} />
+                  </div>
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="edit-estimated-cost"
+                      className={editLabelClass}
+                    >
+                      Ориентировочная стоимость
+                    </label>
+                    <Input
+                      id="edit-estimated-cost"
+                      type="text"
+                      className={editInputClass}
+                      value={contractToEdit.estimated_cost || ""}
+                      onChange={(e) =>
+                        updateEditableContract({
+                          estimated_cost: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="edit-currency" className={editLabelClass}>
+                      Валюта <span className="text-destructive">*</span>
+                    </label>
+                    <Input
+                      id="edit-currency"
+                      className={editInputClass}
+                      aria-invalid={Boolean(editErrors.currency)}
+                      value={contractToEdit.currency || ""}
+                      onChange={(e) =>
+                        updateEditableContract({ currency: e.target.value })
+                      }
+                    />
+                    <FormError message={editErrors.currency} />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="edit-estimated-cost"
-                    className={editLabelClass}
-                  >
-                    Ориентировочная стоимость
-                  </label>
-                  <Input
-                    id="edit-estimated-cost"
-                    type="text"
-                    className={editInputClass}
-                    value={contractToEdit.estimated_cost || ""}
-                    onChange={(e) =>
-                      updateEditableContract({
-                        estimated_cost: Number(e.target.value),
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="edit-currency"
-                    className={editLabelClass}
-                  >
-                    Валюта <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    id="edit-currency"
-                    className={editInputClass}
-                    aria-invalid={Boolean(editErrors.currency)}
-                    value={contractToEdit.currency || ""}
-                    onChange={(e) =>
-                      updateEditableContract({ currency: e.target.value })
-                    }
-                  />
-                  <FormError message={editErrors.currency} />
-                </div>
-              </div>
               </div>
 
               <div className={editSectionClass}>
@@ -2241,7 +2269,7 @@ export const ContractsBlock = () => {
                       <div className="space-y-2">
                         {contractToEdit.files
                           .filter(
-                            (file: any) => !filesToRemove.includes(file.id)
+                            (file: any) => !filesToRemove.includes(file.id),
                           )
                           .map((file: any) => (
                             <div

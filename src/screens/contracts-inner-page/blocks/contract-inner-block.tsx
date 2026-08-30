@@ -412,7 +412,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                   Быстрый срез по маршруту, отгрузке, документам и финансам.
                 </CardDescription>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2 xl:min-w-[480px]">
+              <div className="xl:min-w-[260px]">
                 <div className="rounded-md border border-[#dfe7de] bg-white px-4 py-3">
                   <div className="text-[11px] font-black uppercase text-[#7b857f]">
                     Статус
@@ -423,13 +423,8 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                   >
                     {contractOps.statusConfig.label}
                   </Badge>
-                </div>
-                <div className="rounded-md border border-[#f2dfca] bg-[#fffdf9] px-4 py-3">
-                  <div className="text-[11px] font-black uppercase text-[#7b857f]">
-                    Следующее действие
-                  </div>
-                  <div className="mt-2 text-sm font-black text-[#d5740b]">
-                    {contractOps.nextAction}
+                  <div className="mt-2 text-xs font-semibold text-[#7b857f]">
+                    {contractOps.statusConfig.tone}
                   </div>
                 </div>
               </div>
@@ -577,6 +572,9 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                   </div>
                   <div className="mt-1 text-xs text-[#7b857f]">
                     {contractOps.wagonsCount} вагонов
+                    {contractOps.receivedWagonsCount > 0
+                      ? ` · ${contractOps.receivedWagonsCount} у клиента`
+                      : ""}
                   </div>
                 </div>
                 <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] p-4">

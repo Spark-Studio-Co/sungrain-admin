@@ -56,14 +56,21 @@ describe("wagon status sorting", () => {
   });
 
   it("returns status tabs in the same fixed order as rows", () => {
-    expect(getOrderedWagonStatuses(["at_elevator", "shipped", "in_transit"])).toEqual([
-      "shipped",
+    expect(
+      getOrderedWagonStatuses([
+        "at_elevator",
+        "shipped",
+        "Отгружено",
+        "in_transit",
+      ]),
+    ).toEqual([
+      "en_route_to_recipient",
       "at_elevator",
-      "in_transit",
+      "en_route_to_loading",
     ]);
   });
 
-  it("sorts the new workflow statuses from completed to preparation", () => {
+  it("sorts canonical and legacy workflow statuses as one group", () => {
     const rows = [
       { status: "registered" },
       { status: "en_route_to_loading" },

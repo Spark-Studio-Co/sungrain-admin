@@ -74,6 +74,10 @@ import {
   WAGON_STATUS_OPTIONS,
   WagonStatusBadge,
 } from "@/shared/contracts/wagon-status";
+import {
+  isWagonShipmentStartedStatus,
+  normalizeWagonStatus,
+} from "@/shared/contracts/wagon-status-data";
 
 interface WagonRegistryProps {
   wagons: any[];
@@ -122,6 +126,23 @@ export const WagonRegistry = ({
       location?: string;
     }>
   >([]);
+  const [documentFileErrors, setDocumentFileErrors] = useState<
+    Record<number, string>
+  >({});
+
+  const maxDocumentSize = 20 * 1024 * 1024;
+  const acceptedDocumentExtensions = [
+    ".pdf",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".txt",
+  ];
 
   // Update unloadingDate when editingWagon changes
   useEffect(() => {
@@ -132,8 +153,16 @@ export const WagonRegistry = ({
 
   // Open edit dialog and set up editing state
   const handleEditWagon = (wagon: any) => {
+    const normalizedStatus = normalizeWagonStatus(wagon.status);
+    const editableStatus = WAGON_STATUS_OPTIONS.some(
+      (status) => status.value === normalizedStatus
+    )
+      ? normalizedStatus
+      : wagon.status;
+
     setEditingWagon({
       ...wagon,
+      status: editableStatus,
       capacity: wagon.capacity?.toString() || "",
       real_weight: wagon.real_weight?.toString() || "",
       date_of_departure: wagon.date_of_departure || "",
@@ -158,6 +187,7 @@ export const WagonRegistry = ({
     } else {
       setDocuments([]);
     }
+    setDocumentFileErrors({});
   };
 
   // Open delete confirmation dialog
@@ -225,6 +255,30 @@ export const WagonRegistry = ({
 
   // Handle file upload for a document
   const handleFileUpload = (index: number, file: File) => {
+    const extension = `.${file.name.split(".").pop()?.toLowerCase() || ""}`;
+
+    if (!acceptedDocumentExtensions.includes(extension)) {
+      setDocumentFileErrors((prev) => ({
+        ...prev,
+        [index]: "Поддерживаются PDF, изображения, Word, Excel и TXT.",
+      }));
+      return;
+    }
+
+    if (file.size > maxDocumentSize) {
+      setDocumentFileErrors((prev) => ({
+        ...prev,
+        [index]: "Размер файла не должен превышать 20 МБ.",
+      }));
+      return;
+    }
+
+    setDocumentFileErrors((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+
     setDocuments((prev) => {
       const updatedDocs = prev.map((doc, i) =>
         i === index
@@ -247,9 +301,9 @@ export const WagonRegistry = ({
         setEditingWagon((prevWagon: any) => ({
           ...prevWagon,
           status:
-            prevWagon?.status === "en_route_to_loading" ||
-            prevWagon?.status === "at_elevator" ||
-            prevWagon?.status === "in_transit"
+            normalizeWagonStatus(prevWagon?.status) ===
+              "en_route_to_loading" ||
+            normalizeWagonStatus(prevWagon?.status) === "at_elevator"
               ? "registered"
               : prevWagon?.status,
         }));
@@ -260,6 +314,11 @@ export const WagonRegistry = ({
   };
 
   const removeFile = (index: number) => {
+    setDocumentFileErrors((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
     setDocuments((prev) =>
       prev.map((doc, i) =>
         i === index
@@ -292,9 +351,8 @@ export const WagonRegistry = ({
         setEditingWagon((prev: any) => ({
           ...prev,
           status:
-            prev?.status === "en_route_to_loading" ||
-            prev?.status === "at_elevator" ||
-            prev?.status === "in_transit"
+            normalizeWagonStatus(prev?.status) === "en_route_to_loading" ||
+            normalizeWagonStatus(prev?.status) === "at_elevator"
               ? "registered"
               : prev?.status,
         }));
@@ -336,7 +394,23 @@ export const WagonRegistry = ({
       }
 
       formData.append("owner", editingWagon.owner || "");
-      formData.append("status", editingWagon.status);
+
+      const hasRailwayWaybill = documents.some(
+        (document) =>
+          Boolean(document.file || document.location) &&
+          /(?:ж\s*д|железнодорож).*(?:накладн|ведомост)/i.test(
+            document.name || "",
+          ),
+      );
+      const currentStatus = normalizeWagonStatus(editingWagon.status);
+      const status =
+        hasRailwayWaybill &&
+        !isWagonShipmentStartedStatus(currentStatus) &&
+        currentStatus !== "client_received"
+          ? "registered"
+          : currentStatus || editingWagon.status;
+
+      formData.append("status", status);
 
       // Add date_of_departure as string
       if (editingWagon.date_of_departure) {
@@ -372,22 +446,17 @@ export const WagonRegistry = ({
         // Add files_info as JSON string
         uploadFormData.append("files_info", JSON.stringify(filesInfo));
 
-        try {
-          // Use the specific upload endpoint
-          await apiClient.post(
-            `/wagon/upload-files/${editingWagon.id}`,
-            uploadFormData,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-
-          console.log("Files uploaded successfully");
-        } catch (uploadError) {
-          console.error("Error uploading files:", uploadError);
-        }
+        // Keep the modal open if this request fails. A selected file must not
+        // look saved while the server did not receive it.
+        await apiClient.post(
+          `/wagon/upload-files/${editingWagon.id}`,
+          uploadFormData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
       }
 
       // Append files_info for existing files (without new uploads)
@@ -513,7 +582,7 @@ export const WagonRegistry = ({
                 <div
                   key={wagon.id}
                   className={`border rounded-lg p-3 ${
-                    wagon.status === "shipped"
+                    isWagonShipmentStartedStatus(wagon.status)
                       ? "bg-green-50 border-green-200"
                       : "bg-white"
                   }`}
@@ -630,7 +699,9 @@ export const WagonRegistry = ({
                     <TableRow
                       key={wagon.id}
                       className={
-                        wagon.status === "shipped" ? "bg-green-50" : ""
+                        isWagonShipmentStartedStatus(wagon.status)
+                          ? "bg-green-50"
+                          : ""
                       }
                     >
                       <TableCell className="text-xs sm:text-sm p-2 sm:p-4 font-medium">
@@ -1062,37 +1133,65 @@ export const WagonRegistry = ({
                                   type="file"
                                   id={`edit-wagon-file-${index}`}
                                   className="hidden"
+                                  accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt"
                                   onChange={(e) => {
                                     if (e.target.files && e.target.files[0]) {
                                       handleFileUpload(index, e.target.files[0]);
                                     }
+                                    e.currentTarget.value = "";
                                   }}
                                 />
                                 <div className="flex flex-col gap-2">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="h-11 justify-center gap-2 rounded-md border-dashed border-[#dce8dc] bg-white font-black text-[#2f6b4f] hover:bg-[#f5faf5]"
-                                    onClick={() =>
-                                      document
-                                        .getElementById(
-                                          `edit-wagon-file-${index}`
-                                        )
-                                        ?.click()
-                                    }
+                                  <label
+                                    htmlFor={`edit-wagon-file-${index}`}
+                                    className={cn(
+                                      "group flex min-h-20 cursor-pointer items-center gap-3 rounded-md border border-dashed px-3 py-3 transition-colors",
+                                      doc.file
+                                        ? "border-[#96d6b1] bg-[#f2faf4]"
+                                        : "border-[#dce8dc] bg-white hover:border-[#70b88c] hover:bg-[#f7fbf7]"
+                                    )}
                                   >
-                                    <Upload className="h-4 w-4" />
-                                    {doc.location && !doc.file
-                                      ? "Заменить файл"
-                                      : "Загрузить файл"}
-                                  </Button>
+                                    <span className={cn(
+                                      "flex size-10 shrink-0 items-center justify-center rounded-md transition-colors",
+                                      doc.file
+                                        ? "bg-[#dff4e5] text-[#287044]"
+                                        : "bg-[#eef5ef] text-[#2f6b4f] group-hover:bg-[#dff4e5]"
+                                    )}>
+                                      <Upload className="h-4 w-4" />
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block truncate text-sm font-black text-[#34433d]">
+                                        {doc.file
+                                          ? doc.file.name
+                                          : doc.location
+                                            ? "Загруженный файл"
+                                            : "Выбрать файл"}
+                                      </span>
+                                      <span className="mt-0.5 block text-xs text-[#7b857f]">
+                                        {doc.file
+                                          ? `${(doc.file.size / 1024 / 1024).toFixed(1)} МБ · будет загружен после сохранения`
+                                          : doc.location
+                                            ? "Нажмите, чтобы заменить файл"
+                                            : "PDF, изображение, Word или Excel · до 20 МБ"}
+                                      </span>
+                                    </span>
+                                    <span className="shrink-0 text-xs font-black text-[#2f6b4f]">
+                                      {doc.file || doc.location ? "Заменить" : "Выбрать"}
+                                    </span>
+                                  </label>
+
+                                  {documentFileErrors[index] && (
+                                    <p className="text-xs font-semibold text-[#c84b31]" role="alert">
+                                      {documentFileErrors[index]}
+                                    </p>
+                                  )}
 
                                   {(doc.fileName || doc.location) && (
                                     <div className="flex min-w-0 items-center justify-between gap-2 rounded-md border border-[#dfe7de] bg-white px-3 py-2 text-sm text-[#53605a]">
                                       <span className="flex min-w-0 items-center gap-2">
                                         <FileText className="h-4 w-4 shrink-0 text-[#2f6b4f]" />
                                         <span className="truncate">
-                                          {doc.fileName || "Документ"}
+                                          {doc.fileName || "Загруженный документ"}
                                         </span>
                                       </span>
                                       <Button
@@ -1100,7 +1199,10 @@ export const WagonRegistry = ({
                                         variant="ghost"
                                         size="icon"
                                         className="h-7 w-7 shrink-0 text-[#c84b31] hover:bg-[#fff1ed] hover:text-[#c84b31]"
-                                        onClick={() => removeFile(index)}
+                                        onClick={(event) => {
+                                          event.preventDefault();
+                                          removeFile(index);
+                                        }}
                                       >
                                         <X className="h-4 w-4" />
                                       </Button>

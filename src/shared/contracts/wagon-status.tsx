@@ -16,18 +16,18 @@ export const getWagonStatusMeta = (value: unknown) => {
   const status = normalizeWagonStatus(value);
 
   switch (status) {
-    case "shipped":
+    case "client_received":
       return {
         status,
-        label: "Отгружен",
-        className: "border-[#cfe8d7] bg-[#eaf8ef] text-[#26744e]",
+        label: "Клиент получил",
+        className: "border-[#bdddc9] bg-[#e2f5e9] text-[#195f3f]",
         icon: CheckCircle2,
       };
     case "en_route_to_recipient":
       return {
         status,
-        label: "Отгружено",
-        className: "border-[#cde2dc] bg-[#edf7f4] text-[#256a5a]",
+        label: "Отгружен",
+        className: "border-[#cfe8d7] bg-[#eaf8ef] text-[#26744e]",
         icon: Navigation,
       };
     case "registered":
@@ -50,13 +50,6 @@ export const getWagonStatusMeta = (value: unknown) => {
         label: "На элеваторе",
         className: "border-[#d8e2e8] bg-[#f1f5f7] text-[#4c6876]",
         icon: Building2,
-      };
-    case "in_transit":
-      return {
-        status,
-        label: "В пути",
-        className: "border-[#f2dfca] bg-[#fff7ed] text-[#b86a13]",
-        icon: TrainFront,
       };
     default:
       return {
@@ -84,7 +77,7 @@ export const WagonStatusBadge = ({
       className={cn(
         "inline-flex w-fit items-center gap-1.5 whitespace-nowrap font-bold hover:bg-inherit",
         meta.className,
-        className
+        className,
       )}
     >
       <Icon className="h-3.5 w-3.5 shrink-0" />

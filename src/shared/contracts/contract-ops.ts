@@ -1,7 +1,11 @@
 import { formatMoney, formatNumber } from "../../lib/utils";
-import { normalizeWagonStatus } from "./wagon-status-data";
+import {
+  isWagonShipmentStartedStatus,
+  normalizeWagonStatus,
+} from "./wagon-status-data";
 
-export type ContractOperationStatus = "active" | "risk" | "completed" | "draft";
+export type ContractOperationStatus =
+  "active" | "risk" | "completed" | "delivered" | "draft";
 
 type ContractOpsOptions = {
   wagons?: any[];
@@ -45,6 +49,12 @@ const statusConfig: Record<
     tone: "Объем закрыт",
     badgeClassName: "border-[#dce8dc] bg-[#eef5ef] text-[#1f5a43]",
     progressClassName: "bg-[#1f5a43]",
+  },
+  delivered: {
+    label: "Клиент получил",
+    tone: "Весь заявленный объем доставлен",
+    badgeClassName: "border-[#bdddc9] bg-[#e2f5e9] text-[#195f3f]",
+    progressClassName: "bg-[#195f3f]",
   },
   draft: {
     label: "Черновик",
@@ -295,8 +305,15 @@ const getFirstPositiveNumber = (...values: unknown[]) => {
 };
 
 export const isContractWagonShipped = (wagon: any) => {
-  const status = getStatusValue(wagon?.status || wagon?.wagon?.status);
-  return status === "shipped" || status === "completed";
+  return isWagonShipmentStartedStatus(
+    wagon?.status || wagon?.wagon?.status,
+  );
+};
+
+const isWagonIncludedInShippedVolume = (wagon: any) => {
+  // A wagon that has left the loading point contributes to contract
+  // shipment progress even while it is travelling to the recipient.
+  return isContractWagonShipped(wagon);
 };
 
 export const getWagonCapacityValue = (wagon: any) =>
@@ -311,13 +328,13 @@ export const getWagonActualWeightValue = (wagon: any) =>
   );
 
 export const getWagonShippedDocumentWeightValue = (wagon: any) => {
-  if (!isContractWagonShipped(wagon)) return 0;
+  if (!isWagonIncludedInShippedVolume(wagon)) return 0;
 
   return getWagonCapacityValue(wagon);
 };
 
 export const getWagonShippedActualWeightValue = (wagon: any) => {
-  if (!isContractWagonShipped(wagon)) return 0;
+  if (!isWagonIncludedInShippedVolume(wagon)) return 0;
 
   return getWagonActualWeightValue(wagon);
 };
@@ -388,27 +405,29 @@ export const getApplicationWagonGroupStats = (
 };
 
 export type ApplicationShipmentStatus =
-  "empty" | "at_elevator" | "loading" | "shipped";
+  | "empty"
+  | "at_elevator"
+  | "loading"
+  | "en_route_to_recipient"
+  | "received";
 
 export const getApplicationShipmentSummary = (application: any) => {
   const wagons = getArray(application?.wagons);
   const counts = wagons.reduce(
     (acc, wagon: any) => {
-      if (isContractWagonShipped(wagon)) {
-        acc.shipped += 1;
-      } else {
-        const status = getStatusValue(wagon?.status || wagon?.wagon?.status);
+      const status = getStatusValue(wagon?.status || wagon?.wagon?.status);
 
-        if (status === "in_transit") {
-          acc.inTransit += 1;
-        } else if (status === "en_route_to_loading") {
+      if (status === "client_received") {
+        acc.clientReceived += 1;
+      } else if (status === "en_route_to_recipient") {
+        acc.enRouteToRecipient += 1;
+        acc.inTransit += 1;
+      } else {
+        if (status === "en_route_to_loading") {
           acc.enRouteToLoading += 1;
           acc.inTransit += 1;
         } else if (status === "registered") {
           acc.registered += 1;
-        } else if (status === "en_route_to_recipient") {
-          acc.enRouteToRecipient += 1;
-          acc.inTransit += 1;
         } else if (status === "at_elevator") {
           acc.atElevator += 1;
         } else {
@@ -420,7 +439,7 @@ export const getApplicationShipmentSummary = (application: any) => {
     },
     {
       total: wagons.length,
-      shipped: 0,
+      clientReceived: 0,
       inTransit: 0,
       atElevator: 0,
       enRouteToLoading: 0,
@@ -433,28 +452,44 @@ export const getApplicationShipmentSummary = (application: any) => {
   const status: ApplicationShipmentStatus =
     counts.total === 0
       ? "empty"
-      : counts.shipped === counts.total
-        ? "shipped"
-        : counts.inTransit > 0 || counts.registered > 0 || counts.shipped > 0
-          ? "loading"
-          : "at_elevator";
+      : counts.clientReceived === counts.total
+        ? "received"
+        : counts.enRouteToRecipient === counts.total
+          ? "en_route_to_recipient"
+          : counts.inTransit > 0 ||
+              counts.registered > 0 ||
+              counts.clientReceived > 0
+            ? "loading"
+            : "at_elevator";
   const label =
-    status === "shipped"
-      ? "Отгружено"
-        : counts.enRouteToRecipient > 0
-        ? "Отгружено"
-        : counts.registered > 0
-          ? "Оформлено"
-          : counts.enRouteToLoading > 0
-            ? "Под погрузку"
-            : status === "loading"
-              ? "Грузится"
-              : status === "at_elevator"
-                ? "На элеваторе"
-                : "Нет вагонов";
+    status === "received"
+      ? "Клиент получил"
+      : counts.clientReceived > 0
+        ? "В работе"
+        : status === "en_route_to_recipient"
+          ? "Отгружен"
+          : counts.enRouteToRecipient > 0
+            ? "В работе"
+            : counts.registered > 0
+              ? "Оформлено"
+              : counts.enRouteToLoading > 0
+                ? "Под погрузку"
+                : status === "loading"
+                  ? "Грузится"
+                  : status === "at_elevator"
+                    ? "На элеваторе"
+                    : "Нет вагонов";
   const progress =
     counts.total > 0
-      ? clamp(Math.round((counts.shipped / counts.total) * 100), 0, 100)
+      ? clamp(
+          Math.round(
+            ((counts.enRouteToRecipient + counts.clientReceived) /
+              counts.total) *
+              100,
+          ),
+          0,
+          100,
+        )
       : 0;
 
   return {
@@ -849,13 +884,22 @@ export const getContractOpsMeta = (
     Boolean(contract?.number) && Boolean(contract?.crop) && totalVolume > 0;
   const overdueSignal =
     contract?.status === "overdue" || contract?.payment_status === "overdue";
+  const receivedWagonsCount = wagons.filter(
+    (wagon) =>
+      getStatusValue(wagon?.status || wagon?.wagon?.status) ===
+      "client_received",
+  ).length;
+  const allWagonsReceived =
+    wagons.length > 0 && receivedWagonsCount === wagons.length;
   const status: ContractOperationStatus = !hasCoreData
     ? "draft"
-    : progress >= 96
-      ? "completed"
-      : overdueSignal
-        ? "risk"
-        : "active";
+    : allWagonsReceived && progress >= 96
+      ? "delivered"
+      : progress >= 96
+        ? "completed"
+        : overdueSignal
+          ? "risk"
+          : "active";
   const invoiceTotal = invoices.reduce(
     (sum, invoice) => sum + getMoneyValue(invoice),
     0,
@@ -884,10 +928,18 @@ export const getContractOpsMeta = (
       ? applicationRoutes
       : [getContractRoute(contract, applicationsCount)];
   const route = getRouteSummary(routes, status, shippedVolume);
+  const baseStatusConfig = getContractStatusConfig(status);
+  const resolvedStatusConfig =
+    receivedWagonsCount > 0 && !allWagonsReceived
+      ? {
+          ...baseStatusConfig,
+          tone: `У клиента: ${receivedWagonsCount}`,
+        }
+      : baseStatusConfig;
 
   return {
     status,
-    statusConfig: getContractStatusConfig(status),
+    statusConfig: resolvedStatusConfig,
     totalVolume,
     shippedVolume,
     documentedShippedVolume,
@@ -905,19 +957,11 @@ export const getContractOpsMeta = (
     paymentsCount,
     paidInvoiceCount,
     openInvoiceCount,
+    receivedWagonsCount,
+    allWagonsReceived,
     overdueCount: status === "risk" ? 1 : 0,
     route,
     routes,
-    nextAction:
-      status === "draft"
-        ? "Заполнить данные договора"
-        : status === "risk"
-          ? "Проверить просрочки"
-          : status === "completed"
-            ? "Закрыть документы"
-            : shippedVolume > 0
-              ? "Контроль отгрузки"
-              : "Начать отгрузку",
   };
 };
 
