@@ -43,3 +43,6 @@ next-env.d.ts
 
 # local verification artifacts
 outputs/
+
+# local codebase analysis artifacts
+graphify-out/

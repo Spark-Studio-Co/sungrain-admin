@@ -1,6 +1,21 @@
 import type { ApproachRow } from "@/entities/approach/api/approach.api";
 
 const GRAIN_CARGO_CATEGORIES = [
+  {
+    name: "Шрот",
+    pattern:
+      /шрот|\bshrot\b|\b(?:soy(?:bean)?|sunflower|rapeseed|oilseed)\s+meal\b/i,
+  },
+  {
+    name: "Жмых",
+    pattern:
+      /жмых|кунжар|кунҷор|\bkunjara\b|\boil[\s-]?cake\b|\bpress(?:ed)?[\s-]?cake\b/i,
+  },
+  {
+    name: "Масло подсолнечное",
+    pattern:
+      /масло\s+подс[а-яё.]*|подсолнечн[а-яё]*\s+масло|\bsunflower\s+oil\b/i,
+  },
   { name: "Пшеница", pattern: /пшениц|wheat/i },
   { name: "Ячмень", pattern: /ячмен|barley/i },
   { name: "Кукуруза", pattern: /кукуруз|\b(?:corn|maize)\b/i },

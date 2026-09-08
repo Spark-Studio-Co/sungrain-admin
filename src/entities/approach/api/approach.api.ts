@@ -106,6 +106,7 @@ export type ApproachPreview = {
 
 export type ApproachImportResult = {
   duplicate: boolean;
+  refreshed: boolean;
   import: ApproachImport;
   dashboard: ApproachDashboard;
 };

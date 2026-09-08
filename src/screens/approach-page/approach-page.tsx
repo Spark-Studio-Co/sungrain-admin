@@ -233,7 +233,7 @@ function AnalyticsGroupsDialog({
             </DialogTitle>
             <DialogDescription className="max-w-2xl text-xs leading-5 sm:text-sm">
               {onGroupSelect
-                ? "Нажмите на культуру, чтобы увидеть текущие станции, получателей и вагоны."
+                ? "Нажмите на груз, чтобы увидеть текущие станции, получателей и вагоны."
                 : "Все позиции выбранного отчета без сокращений и скрытых строк."}
             </DialogDescription>
           </DialogHeader>
@@ -383,13 +383,13 @@ function CultureDestinationDialog({
           <DialogHeader>
             <div className="mb-2 inline-flex h-7 w-fit items-center gap-2 rounded-md border border-[#f2d7b7] bg-[#fff6eb] px-2.5 text-[10px] font-black uppercase text-[#d66f05]">
               <MapPin className="size-3.5" />
-              Направления культуры
+              Направления груза
             </div>
             <DialogTitle className="text-xl font-black text-[#223137] sm:text-2xl">
               {culture}: куда пришли вагоны
             </DialogTitle>
             <DialogDescription className="max-w-3xl text-xs leading-5 sm:text-sm">
-              Текущие станции, получатели и состав вагонов выбранной культуры.
+              Текущие станции, получатели и состав вагонов выбранного груза.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -458,7 +458,7 @@ function CultureDestinationDialog({
                       </div>
                     </div>
                     <div className="mt-3 flex items-center justify-between gap-3 text-[10px] font-bold text-[#7d8882]">
-                      <span>Доля культуры</span>
+                      <span>Доля груза</span>
                       <span className="tabular-nums text-[#3d5148]">
                         {numberFormatter.format(group.share)}%
                       </span>
@@ -531,7 +531,7 @@ function CultureDestinationDialog({
               <div className="max-w-sm px-5">
                 <TrainFront className="mx-auto size-8 text-[#bcc5bf]" />
                 <p className="mt-3 text-sm font-black text-[#596760]">
-                  Вагоны этой культуры не найдены
+                  Вагоны с этим грузом не найдены
                 </p>
                 <p className="mt-1 text-xs leading-5 text-[#8a938e]">
                   В выбранном отчете нет строк, которые можно связать со
@@ -748,7 +748,7 @@ function AnalyticsDonutChart({
                       `${formatTons(Number(value ?? 0))} · ${integerFormatter.format(
                         Number(item.payload?.wagons ?? 0),
                       )} ваг.`,
-                      String(item.payload?.name ?? "Культура"),
+                      String(item.payload?.name ?? "Груз"),
                     ]}
                   />
                 </PieChart>
@@ -774,7 +774,7 @@ function AnalyticsDonutChart({
                   key={group.name}
                   className="block w-full py-2.5 text-left transition-colors hover:bg-[#fff8ef] focus-visible:bg-[#fff8ef] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#ef850b] first:pt-0 last:pb-0"
                   onClick={() => setSelectedCulture(group.name)}
-                  aria-label={`Показать станции и получателей культуры ${group.name}`}
+                  aria-label={`Показать станции и получателей груза ${group.name}`}
                 >
                   <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2">
                     <span
@@ -1018,7 +1018,7 @@ function PreviewDialog({
                       <tr>
                         <th className="px-4 py-3">Станция</th>
                         <th className="px-4 py-3">Вагон</th>
-                        <th className="px-4 py-3">Культура</th>
+                        <th className="px-4 py-3">Груз</th>
                         <th className="px-4 py-3 text-right">Тонн</th>
                         <th className="px-4 py-3">Получатель</th>
                       </tr>
@@ -1112,7 +1112,7 @@ function UploadPanel({
           </h3>
           <p className="mt-1 text-xs leading-5 text-[#818985]">
             До {MAX_BATCH_FILES} XLSX за раз, каждый до 20 МБ. В аналитику
-            попадают только зерновые культуры.
+            попадают зерновые культуры, шрот, жмых и подсолнечное масло.
           </p>
         </div>
       </div>
@@ -1361,7 +1361,7 @@ function RowTable({
               <th className="px-4 py-3">Текущая станция</th>
               <th className="px-4 py-3">№ вагона</th>
               <th className="px-4 py-3">Код</th>
-              <th className="px-4 py-3">Культура</th>
+              <th className="px-4 py-3">Груз</th>
               <th className="px-4 py-3 text-right">Тонн</th>
               <th className="px-4 py-3">Получатель</th>
               <th className="px-4 py-3">Станция отправления</th>
@@ -1615,6 +1615,7 @@ export default function ApproachPage() {
     const importedIds: number[] = [];
     let importedCount = 0;
     let duplicateCount = 0;
+    let refreshedCount = 0;
 
     setImportProgress({ current: 0, total: previewItems.length });
     for (let index = 0; index < previewItems.length; index += 1) {
@@ -1626,8 +1627,10 @@ export default function ApproachPage() {
       try {
         const result = await importMutation.mutateAsync(item.file);
         importedIds.push(result.import.id);
-        if (result.duplicate) duplicateCount += 1;
-        else importedCount += 1;
+        if (result.duplicate) {
+          duplicateCount += 1;
+          if (result.refreshed) refreshedCount += 1;
+        } else importedCount += 1;
       } catch {
         failedItems.push(item);
       }
@@ -1650,16 +1653,16 @@ export default function ApproachPage() {
     setPreviewOpen(false);
     setPreviewItems([]);
     if (duplicateCount && !importedCount) {
-      toast.info(
-        "Таблицы уже загружены",
-        `${duplicateCount} файлов открыты без повторного импорта.`,
+      toast.success(
+        "Старые таблицы пересчитаны",
+        `${refreshedCount || duplicateCount} файлов обновлены по текущим правилам аналитики.`,
       );
     } else {
       toast.success(
         "Пакет сохранен",
         [
           `${importedCount} новых таблиц`,
-          duplicateCount ? `${duplicateCount} дубликатов пропущено` : null,
+          duplicateCount ? `${duplicateCount} старых пересчитано` : null,
         ]
           .filter(Boolean)
           .join(", "),
@@ -1773,7 +1776,7 @@ export default function ApproachPage() {
             <MetricCard
               label="Получателей"
               value={integerFormatter.format(dashboard.stats.recipients)}
-              detail={`${dashboard.stats.cargoes} зерновых культур`}
+              detail={`${dashboard.stats.cargoes} видов груза`}
               icon={Users}
               tone="orange"
             />
@@ -1820,8 +1823,8 @@ export default function ApproachPage() {
               color="orange"
             />
             <AnalyticsDonutChart
-              title="Зерновые культуры"
-              subtitle="Структура объема по культурам"
+              title="Культуры и продукты"
+              subtitle="Структура объема по сельхозгрузам"
               groups={dashboard.groups.cargoes}
               rows={dashboard.rows}
             />
@@ -1878,7 +1881,7 @@ export default function ApproachPage() {
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                   className="pl-9"
-                  placeholder="Вагон, станция, культура, получатель..."
+                  placeholder="Вагон, станция, груз, получатель..."
                 />
               </div>
               <Select value={station} onValueChange={setStation}>
@@ -1909,10 +1912,10 @@ export default function ApproachPage() {
               </Select>
               <Select value={cargo} onValueChange={setCargo}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Все культуры" />
+                  <SelectValue placeholder="Все грузы" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={ALL}>Все культуры</SelectItem>
+                  <SelectItem value={ALL}>Все грузы</SelectItem>
                   {options.cargoes.map((value) => (
                     <SelectItem key={value} value={value}>
                       {value}

@@ -35,6 +35,21 @@ describe("approach culture analytics", () => {
     );
     expect(getApproachCargoCategory("Зерно кукурузы")).toBe("Кукуруза");
     expect(getApproachCargoCategory("BARLEY")).toBe("Ячмень");
+    expect(getApproachCargoCategory("Шрот подсолнечный")).toBe("Шрот");
+    expect(getApproachCargoCategory("soybean meal")).toBe("Шрот");
+    expect(getApproachCargoCategory("Жмых рапсовый")).toBe("Жмых");
+    expect(getApproachCargoCategory("Кунжара")).toBe("Жмых");
+    expect(getApproachCargoCategory("Масло подс.")).toBe(
+      "Масло подсолнечное",
+    );
+    expect(getApproachCargoCategory("Подсолнечное масло")).toBe(
+      "Масло подсолнечное",
+    );
+    expect(getApproachCargoCategory("sunflower oil")).toBe(
+      "Масло подсолнечное",
+    );
+    expect(getApproachCargoCategory("ДСП")).toBeNull();
+    expect(getApproachCargoCategory("Бензин АИ-92")).toBeNull();
   });
 
   it("groups a selected culture by station and recipient", () => {
