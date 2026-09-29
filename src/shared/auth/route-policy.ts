@@ -1,9 +1,12 @@
 export type AdminStatus = boolean | null;
 
+export type ApproachAccessStatus = boolean | null;
+
 interface AuthRedirectInput {
   pathname: string;
   hasToken: boolean;
   isAdmin: AdminStatus;
+  canAccessApproach?: ApproachAccessStatus;
   isAuthHydrated?: boolean;
   bypassGuestAccess?: boolean;
 }
@@ -12,6 +15,7 @@ export function getAuthRedirect({
   pathname,
   hasToken,
   isAdmin,
+  canAccessApproach = false,
   isAuthHydrated = true,
   bypassGuestAccess = false,
 }: AuthRedirectInput): string | null {
@@ -33,12 +37,17 @@ export function getAuthRedirect({
     return isLogin ? null : "/login";
   }
 
-  if (isAdmin === null) {
+  if (isAdmin === null || canAccessApproach === null) {
     return null;
   }
 
   if (isAdmin) {
     return isLogin || isRoot ? "/admin" : null;
+  }
+
+  const isApproachRoute = pathname === "/admin/approach";
+  if (isApproachRoute && canAccessApproach) {
+    return null;
   }
 
   if (isLogin || isRoot || isAdminRoute) {

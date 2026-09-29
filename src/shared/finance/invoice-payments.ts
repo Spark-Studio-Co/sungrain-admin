@@ -12,6 +12,13 @@ export type InvoicePaymentUpdatePayload = InvoicePaymentPatch & {
   description: string;
 };
 
+export type ApplicationPaymentSummary = {
+  paymentBaseAmount: number;
+  paidAmount: number;
+  remainingPaymentAmount: number;
+  paymentProgress: number;
+};
+
 const parseAmount = (value: unknown) => {
   if (value === null || value === undefined || value === "") return 0;
 
@@ -114,6 +121,32 @@ export const getInvoiceComputedStatus = (
   if (amount > 0 && paidAmount >= amount) return "paid";
   if (paidAmount > 0) return "partial";
   return "pending";
+};
+
+export const getApplicationPaymentSummary = (
+  applicationTotal: unknown,
+  invoices: InvoiceLike[]
+): ApplicationPaymentSummary => {
+  const totalAmount = parseAmount(applicationTotal);
+  const invoiceTotalAmount = invoices.reduce(
+    (sum, invoice) => sum + getInvoiceAmount(invoice),
+    0
+  );
+  const paymentBaseAmount = totalAmount > 0 ? totalAmount : invoiceTotalAmount;
+  const paidAmount = invoices.reduce(
+    (sum, invoice) => sum + getInvoicePaidAmount(invoice),
+    0
+  );
+
+  return {
+    paymentBaseAmount,
+    paidAmount,
+    remainingPaymentAmount: Math.max(paymentBaseAmount - paidAmount, 0),
+    paymentProgress:
+      paymentBaseAmount > 0
+        ? Math.min(100, (paidAmount / paymentBaseAmount) * 100)
+        : 0,
+  };
 };
 
 export const buildInvoicePaymentPatch = (

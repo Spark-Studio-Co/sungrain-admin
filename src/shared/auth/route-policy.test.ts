@@ -9,8 +9,27 @@ describe("getAuthRedirect", () => {
         hasToken: false,
         isAdmin: null,
         isAuthHydrated: false,
-      })
+      }),
     ).toBeNull();
+  });
+
+  it("allows a user with approach access to open only that admin route", () => {
+    expect(
+      getAuthRedirect({
+        pathname: "/admin/approach",
+        hasToken: true,
+        isAdmin: false,
+        canAccessApproach: true,
+      }),
+    ).toBeNull();
+    expect(
+      getAuthRedirect({
+        pathname: "/admin/contracts",
+        hasToken: true,
+        isAdmin: false,
+        canAccessApproach: true,
+      }),
+    ).toBe("/contracts");
   });
 
   it("sends guests to login outside the login route", () => {
@@ -19,7 +38,7 @@ describe("getAuthRedirect", () => {
         pathname: "/admin/contracts",
         hasToken: false,
         isAdmin: null,
-      })
+      }),
     ).toBe("/login");
   });
 
@@ -30,7 +49,7 @@ describe("getAuthRedirect", () => {
         hasToken: false,
         isAdmin: null,
         bypassGuestAccess: true,
-      })
+      }),
     ).toBeNull();
   });
 
@@ -40,7 +59,7 @@ describe("getAuthRedirect", () => {
         pathname: "/login",
         hasToken: true,
         isAdmin: true,
-      })
+      }),
     ).toBe("/admin");
 
     expect(
@@ -48,7 +67,7 @@ describe("getAuthRedirect", () => {
         pathname: "/",
         hasToken: true,
         isAdmin: true,
-      })
+      }),
     ).toBe("/admin");
   });
 
@@ -58,7 +77,7 @@ describe("getAuthRedirect", () => {
         pathname: "/admin/users",
         hasToken: true,
         isAdmin: true,
-      })
+      }),
     ).toBeNull();
   });
 
@@ -68,7 +87,7 @@ describe("getAuthRedirect", () => {
         pathname: "/contracts/42",
         hasToken: true,
         isAdmin: false,
-      })
+      }),
     ).toBeNull();
 
     expect(
@@ -76,7 +95,7 @@ describe("getAuthRedirect", () => {
         pathname: "/admin/users",
         hasToken: true,
         isAdmin: false,
-      })
+      }),
     ).toBe("/contracts");
   });
 });

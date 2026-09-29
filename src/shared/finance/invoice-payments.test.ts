@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildInvoicePaymentUpdatePayload,
   buildInvoicePaymentPatch,
+  getApplicationPaymentSummary,
   getInvoiceBalance,
   getInvoiceComputedStatus,
   getInvoicePaidAmount,
@@ -74,6 +75,49 @@ describe("invoice payment helpers", () => {
       status: "partial",
       date: "2024-03-15",
       description: "Счет по заявке",
+    });
+  });
+
+  it("recalculates application payment progress from the updated application total", () => {
+    const summary = getApplicationPaymentSummary(37_477_120, [
+      {
+        amount: 31_680_000,
+        paidAmount: 31_680_000,
+        status: "paid",
+      },
+    ]);
+
+    expect(summary).toEqual({
+      paymentBaseAmount: 37_477_120,
+      paidAmount: 31_680_000,
+      remainingPaymentAmount: 5_797_120,
+      paymentProgress: (31_680_000 / 37_477_120) * 100,
+    });
+  });
+
+  it("falls back to invoice totals when an application has no total", () => {
+    const summary = getApplicationPaymentSummary(0, [
+      { amount: 500, paidAmount: 125, status: "partial" },
+    ]);
+
+    expect(summary).toEqual({
+      paymentBaseAmount: 500,
+      paidAmount: 125,
+      remainingPaymentAmount: 375,
+      paymentProgress: 25,
+    });
+  });
+
+  it("keeps the paid amount visible when the application total is reduced", () => {
+    const summary = getApplicationPaymentSummary(400, [
+      { amount: 500, paidAmount: 500, status: "paid" },
+    ]);
+
+    expect(summary).toEqual({
+      paymentBaseAmount: 400,
+      paidAmount: 500,
+      remainingPaymentAmount: 0,
+      paymentProgress: 100,
     });
   });
 });

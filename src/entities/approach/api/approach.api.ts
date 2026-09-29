@@ -79,6 +79,29 @@ export type ApproachDashboard = {
 
 export type ApproachDashboardSelection = number | "all" | undefined;
 
+export type ApproachImportPeriod = {
+  from?: string;
+  to?: string;
+};
+
+export type ApproachStationField = "currentStation" | "departureStation";
+
+export type ApproachStationSuggestion = {
+  field: ApproachStationField;
+  source: string;
+  candidate: string;
+  affectedRows: number;
+  tons: number;
+  confidence: number;
+};
+
+export type ApproachStationResolution = Pick<
+  ApproachStationSuggestion,
+  "field" | "source" | "candidate"
+> & {
+  remember?: boolean;
+};
+
 export type ApproachPreview = {
   sheetName: string;
   reportDate: string | null;
@@ -97,6 +120,7 @@ export type ApproachPreview = {
     message: string;
     value?: string;
   }>;
+  stationSuggestions: ApproachStationSuggestion[];
   sample: Array<
     Omit<ApproachRow, "id" | "importId" | "createdAt"> & {
       rawData: Record<string, string | number | null>;
@@ -111,9 +135,15 @@ export type ApproachImportResult = {
   dashboard: ApproachDashboard;
 };
 
-const toFormData = (file: File) => {
+const toFormData = (
+  file: File,
+  stationResolutions: ApproachStationResolution[] = [],
+) => {
   const formData = new FormData();
   formData.append("file", file);
+  if (stationResolutions.length) {
+    formData.append("stationResolutions", JSON.stringify(stationResolutions));
+  }
   return formData;
 };
 
@@ -125,30 +155,40 @@ export const previewApproachFile = async (file: File) => {
   return response.data;
 };
 
-export const importApproachFile = async (file: File) => {
+export const importApproachFile = async ({
+  file,
+  stationResolutions,
+}: {
+  file: File;
+  stationResolutions?: ApproachStationResolution[];
+}) => {
   const response = await apiClient.post<ApproachImportResult>(
     "/approach/import",
-    toFormData(file),
+    toFormData(file, stationResolutions),
   );
   return response.data;
 };
 
-export const getApproachImports = async (limit = 30) => {
+export const getApproachImports = async (
+  limit = 30,
+  period: ApproachImportPeriod = {},
+) => {
   const response = await apiClient.get<ApproachImport[]>("/approach/imports", {
-    params: { limit },
+    params: { limit, ...period },
   });
   return response.data;
 };
 
 export const getApproachDashboard = async (
   selection?: ApproachDashboardSelection,
+  period: ApproachImportPeriod = {},
 ) => {
   const response = await apiClient.get<ApproachDashboard | null>(
     "/approach/dashboard",
     {
       params:
         selection === "all"
-          ? { scope: "all" }
+          ? { scope: "all", ...period }
           : selection
             ? { importId: selection }
             : undefined,

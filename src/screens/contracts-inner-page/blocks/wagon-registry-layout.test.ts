@@ -48,4 +48,17 @@ describe("wagon edit dialog layout", () => {
     expect(source).toContain("Размер файла не должен превышать 20 МБ.");
     expect(source).toContain("Keep the modal open if this request fails");
   });
+
+  it("keeps document templates while leaving a new row ready for selection", () => {
+    expect(source).toContain("Тип документа");
+    expect(source).toContain("ЖД накладная");
+    expect(source).toContain("Паспорт качества");
+    expect(source).toContain("Другое название");
+    expect(source).toContain('name: "",');
+    expect(source).toContain(
+      "lg:grid-cols-[48px_minmax(220px,1fr)_minmax(280px,340px)_40px]"
+    );
+    expect(source).toContain("group flex min-h-20 cursor-pointer");
+    expect(source).toContain("Выберите тип документа");
+  });
 });

@@ -15,6 +15,10 @@ describe("contract applications list layout", () => {
     expect(source).toContain("Отгружен");
     expect(source).toContain("Под погрузку");
     expect(source).toContain("Элеватор");
+    expect(source).toContain("getApplicationWagonGroupStats");
+    expect(source).toContain("Отгружено по заявке");
+    expect(source).toContain("totalShippedWeight");
+    expect(source).toContain("totalTargetVolume");
   });
 
   it("shows the route next to each application on desktop and mobile", () => {

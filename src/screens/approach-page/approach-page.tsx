@@ -65,6 +65,7 @@ import type {
   ApproachGroup,
   ApproachPreview,
   ApproachRow,
+  ApproachStationSuggestion,
 } from "@/entities/approach/api/approach.api";
 import {
   useApproachDashboard,
@@ -90,6 +91,19 @@ type BatchProgress = {
   current: number;
   total: number;
 };
+type StationSuggestionChoice = {
+  accepted: boolean;
+  remember: boolean;
+};
+
+const getPreviewItemKey = (file: File) =>
+  `${file.name}-${file.size}-${file.lastModified}`;
+
+const getStationSuggestionKey = (
+  file: File,
+  suggestion: ApproachStationSuggestion,
+) =>
+  `${getPreviewItemKey(file)}:${suggestion.field}:${suggestion.source}:${suggestion.candidate}`;
 
 const numberFormatter = new Intl.NumberFormat("ru-RU", {
   maximumFractionDigits: 2,
@@ -842,15 +856,23 @@ function PreviewDialog({
   open,
   importing,
   importProgress,
+  stationSuggestionChoices,
   onOpenChange,
   onConfirm,
+  onStationSuggestionChange,
 }: {
   items: ApproachPreviewItem[];
   open: boolean;
   importing: boolean;
   importProgress: BatchProgress | null;
+  stationSuggestionChoices: Record<string, StationSuggestionChoice>;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
+  onStationSuggestionChange: (
+    file: File,
+    suggestion: ApproachStationSuggestion,
+    choice: Partial<StationSuggestionChoice>,
+  ) => void;
 }) {
   const totalWagons = items.reduce(
     (sum, item) => sum + item.preview.stats.wagons,
@@ -987,6 +1009,90 @@ function PreviewDialog({
                 ))}
               </div>
             </div>
+
+            {items.some(
+              (item) => item.preview.stationSuggestions.length > 0,
+            ) && (
+              <div className="border border-[#f1d8c4] bg-[#fff8f1]">
+                <div className="border-b border-[#f1dfcc] px-4 py-3">
+                  <p className="text-xs font-black uppercase text-[#9a5218]">
+                    Похожие станции
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-[#9b7457]">
+                    Объединение не произойдет автоматически. Подтвердите только
+                    те варианты, которые знаете.
+                  </p>
+                </div>
+                <div className="divide-y divide-[#f3e4d3] bg-white">
+                  {items.flatMap(({ file, preview }) =>
+                    preview.stationSuggestions.map((suggestion) => {
+                      const choice = stationSuggestionChoices[
+                        getStationSuggestionKey(file, suggestion)
+                      ] ?? { accepted: false, remember: false };
+                      const fieldLabel =
+                        suggestion.field === "currentStation"
+                          ? "Текущая станция"
+                          : "Станция отправления";
+
+                      return (
+                        <div
+                          key={getStationSuggestionKey(file, suggestion)}
+                          className="px-4 py-3.5"
+                        >
+                          <label className="flex cursor-pointer items-start gap-3">
+                            <input
+                              type="checkbox"
+                              checked={choice.accepted}
+                              disabled={importing}
+                              onChange={(event) =>
+                                onStationSuggestionChange(file, suggestion, {
+                                  accepted: event.target.checked,
+                                  remember: event.target.checked
+                                    ? choice.remember
+                                    : false,
+                                })
+                              }
+                              className="mt-0.5 size-4 accent-[#2f6b4f]"
+                            />
+                            <span className="min-w-0">
+                              <span className="block text-sm font-black text-[#34423d]">
+                                {suggestion.source}{" "}
+                                <ArrowRight className="mx-1 inline size-3.5 text-[#e77808]" />{" "}
+                                {suggestion.candidate}
+                              </span>
+                              <span className="mt-1 block text-xs text-[#7c6858]">
+                                {fieldLabel} ·{" "}
+                                {integerFormatter.format(
+                                  suggestion.affectedRows,
+                                )}{" "}
+                                ваг. · {formatTons(suggestion.tons)} ·
+                                уверенность {suggestion.confidence}%
+                              </span>
+                            </span>
+                          </label>
+                          {choice.accepted && (
+                            <label className="ml-7 mt-2 flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#6f5c4d]">
+                              <input
+                                type="checkbox"
+                                checked={choice.remember}
+                                disabled={importing}
+                                onChange={(event) =>
+                                  onStationSuggestionChange(file, suggestion, {
+                                    remember: event.target.checked,
+                                  })
+                                }
+                                className="size-3.5 accent-[#2f6b4f]"
+                              />
+                              Запомнить для следующих таблиц
+                            </label>
+                          )}
+                        </div>
+                      );
+                    }),
+                  )}
+                </div>
+              </div>
+            )}
 
             {totalIssues > 0 && (
               <div className="border border-[#f1d8c4] bg-[#fff8f1] p-4">
@@ -1171,15 +1277,26 @@ function ImportHistory({
   imports,
   selectedId,
   dateOrder,
+  dateFrom,
+  dateTo,
   onDateOrderChange,
+  onDateFromChange,
+  onDateToChange,
+  onPeriodReset,
   onSelect,
 }: {
   imports: ReturnType<typeof useApproachImports>["data"];
   selectedId?: ApproachDashboardSelection;
   dateOrder: ImportDateOrder;
+  dateFrom: string;
+  dateTo: string;
   onDateOrderChange: (value: ImportDateOrder) => void;
+  onDateFromChange: (value: string) => void;
+  onDateToChange: (value: string) => void;
+  onPeriodReset: () => void;
   onSelect: (id: Exclude<ApproachDashboardSelection, undefined>) => void;
 }) {
+  const hasPeriod = Boolean(dateFrom || dateTo);
   const items = useMemo(() => {
     const direction = dateOrder === "desc" ? -1 : 1;
 
@@ -1199,33 +1316,77 @@ function ImportHistory({
 
   return (
     <section className="border border-[#e1e8e0] bg-white shadow-[0_12px_30px_rgba(34,49,55,0.055)]">
-      <div className="flex flex-col gap-3 border-b border-[#e7ece6] px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
-        <div className="flex items-start gap-3">
-          <div className="grid size-10 shrink-0 place-items-center rounded-md bg-[#edf5ee] text-[#2f6b4f]">
-            <History className="size-4.5" />
+      <div className="border-b border-[#e7ece6] px-4 py-4 sm:px-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="grid size-10 shrink-0 place-items-center rounded-md bg-[#edf5ee] text-[#2f6b4f]">
+              <History className="size-4.5" />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-[#223137]">
+                История загрузок
+              </h3>
+              <p className="mt-1 text-xs text-[#818985]">
+                Каждый файл хранится отдельным снимком.
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-base font-black text-[#223137]">
-              История загрузок
-            </h3>
-            <p className="mt-1 text-xs text-[#818985]">
-              Каждый файл хранится отдельным снимком.
-            </p>
-          </div>
+          <Select
+            value={dateOrder}
+            onValueChange={(value) =>
+              onDateOrderChange(value as ImportDateOrder)
+            }
+          >
+            <SelectTrigger className="h-9 w-full text-xs sm:w-44">
+              <ArrowDownUp className="mr-2 size-3.5 text-[#758079]" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="desc">Сначала новые</SelectItem>
+              <SelectItem value="asc">Сначала старые</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Select
-          value={dateOrder}
-          onValueChange={(value) => onDateOrderChange(value as ImportDateOrder)}
-        >
-          <SelectTrigger className="h-9 w-full text-xs sm:w-44">
-            <ArrowDownUp className="mr-2 size-3.5 text-[#758079]" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="desc">Сначала новые</SelectItem>
-            <SelectItem value="asc">Сначала старые</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-2 border-t border-[#edf1eb] pt-3">
+          <label className="min-w-0">
+            <span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-[#7d8882]">
+              С даты
+            </span>
+            <Input
+              type="date"
+              value={dateFrom}
+              max={dateTo || undefined}
+              onChange={(event) => onDateFromChange(event.target.value)}
+              aria-label="Начало периода загрузок"
+              className="h-9 min-w-0 px-2 text-xs"
+            />
+          </label>
+          <label className="min-w-0">
+            <span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-[#7d8882]">
+              По дату
+            </span>
+            <Input
+              type="date"
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={(event) => onDateToChange(event.target.value)}
+              aria-label="Конец периода загрузок"
+              className="h-9 min-w-0 px-2 text-xs"
+            />
+          </label>
+          {(dateFrom || dateTo) && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={onPeriodReset}
+              aria-label="Сбросить период загрузок"
+              className="h-9 w-9 shrink-0 text-[#6d7972]"
+            >
+              <FilterX className="size-4" />
+            </Button>
+          )}
+        </div>
       </div>
       <button
         type="button"
@@ -1255,19 +1416,21 @@ function ImportHistory({
           <Layers3 className="size-4.5" />
         </span>
         <span className="min-w-0 flex-1">
-          <span
-            className={cn(
-              "block text-[10px] font-black uppercase tracking-normal",
+            <span
+              className={cn(
+                "block text-[10px] font-black uppercase tracking-normal",
               selectedId === "all" ? "text-[#c96c0d]" : "text-[#7c8982]",
             )}
-          >
-            Сводная аналитика
+            >
+              Сводная аналитика
           </span>
           <span className="mt-0.5 block truncate text-sm font-black text-[#24362f]">
             Общий отчёт
           </span>
           <span className="mt-0.5 block truncate text-[11px] text-[#7d8882]">
-            Последнее состояние каждого вагона
+            {hasPeriod
+              ? "Последнее состояние за выбранный период"
+              : "Последнее состояние каждого вагона"}
           </span>
         </span>
         <span className="flex shrink-0 items-center gap-2">
@@ -1278,8 +1441,8 @@ function ImportHistory({
                 ? "border-[#f2c48f] text-[#c96c0d]"
                 : "border-[#dce7dc] text-[#2f6b4f]",
             )}
-          >
-            Все таблицы
+            >
+              {hasPeriod ? "За период" : "Все таблицы"}
           </span>
           <span
             className={cn(
@@ -1441,6 +1604,9 @@ export default function ApproachPage() {
   const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewItems, setPreviewItems] = useState<ApproachPreviewItem[]>([]);
+  const [stationSuggestionChoices, setStationSuggestionChoices] = useState<
+    Record<string, StationSuggestionChoice>
+  >({});
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isBatchPreviewing, setIsBatchPreviewing] = useState(false);
   const [previewProgress, setPreviewProgress] = useState<BatchProgress | null>(
@@ -1459,9 +1625,22 @@ export default function ApproachPage() {
   const [visibleLimit, setVisibleLimit] = useState(50);
   const [importDateOrder, setImportDateOrder] =
     useState<ImportDateOrder>("desc");
+  const [historyDateFrom, setHistoryDateFrom] = useState("");
+  const [historyDateTo, setHistoryDateTo] = useState("");
 
-  const importsQuery = useApproachImports(30);
-  const dashboardQuery = useApproachDashboard(selectedImportId);
+  const importsQuery = useApproachImports(500, {
+    from: historyDateFrom || undefined,
+    to: historyDateTo || undefined,
+  });
+  const dashboardQuery = useApproachDashboard(
+    selectedImportId,
+    selectedImportId === "all"
+      ? {
+          from: historyDateFrom || undefined,
+          to: historyDateTo || undefined,
+        }
+      : undefined,
+  );
   const previewMutation = usePreviewApproach();
   const importMutation = useImportApproach();
   const dashboard = dashboardQuery.data;
@@ -1587,6 +1766,7 @@ export default function ApproachPage() {
     setIsBatchPreviewing(false);
     setPreviewProgress(null);
     setPreviewItems(prepared);
+    setStationSuggestionChoices({});
     setPreviewOpen(prepared.length > 0);
 
     if (failedCount) {
@@ -1608,6 +1788,22 @@ export default function ApproachPage() {
     void selectFiles(Array.from(event.dataTransfer.files ?? []));
   };
 
+  const handleStationSuggestionChange = (
+    file: File,
+    suggestion: ApproachStationSuggestion,
+    choice: Partial<StationSuggestionChoice>,
+  ) => {
+    const key = getStationSuggestionKey(file, suggestion);
+    setStationSuggestionChoices((current) => ({
+      ...current,
+      [key]: {
+        accepted: current[key]?.accepted ?? false,
+        remember: current[key]?.remember ?? false,
+        ...choice,
+      },
+    }));
+  };
+
   const handleImport = async () => {
     if (!previewItems.length || importProgress) return;
 
@@ -1625,7 +1821,28 @@ export default function ApproachPage() {
         total: previewItems.length,
       });
       try {
-        const result = await importMutation.mutateAsync(item.file);
+        const stationResolutions = item.preview.stationSuggestions.flatMap(
+          (suggestion) => {
+            const choice =
+              stationSuggestionChoices[
+                getStationSuggestionKey(item.file, suggestion)
+              ];
+            return choice?.accepted
+              ? [
+                  {
+                    field: suggestion.field,
+                    source: suggestion.source,
+                    candidate: suggestion.candidate,
+                    remember: choice.remember,
+                  },
+                ]
+              : [];
+          },
+        );
+        const result = await importMutation.mutateAsync({
+          file: item.file,
+          stationResolutions,
+        });
         importedIds.push(result.import.id);
         if (result.duplicate) {
           duplicateCount += 1;
@@ -1690,14 +1907,17 @@ export default function ApproachPage() {
         open={previewOpen}
         importing={Boolean(importProgress)}
         importProgress={importProgress}
+        stationSuggestionChoices={stationSuggestionChoices}
         onOpenChange={(open) => {
           if (!open && importProgress) return;
           setPreviewOpen(open);
           if (!open) {
             setPreviewItems([]);
+            setStationSuggestionChoices({});
           }
         }}
         onConfirm={() => void handleImport()}
+        onStationSuggestionChange={handleStationSuggestionChange}
       />
 
       <section className="overflow-hidden border border-[#dfe7de] bg-white shadow-[0_14px_35px_rgba(34,49,55,0.07)]">
@@ -1804,7 +2024,15 @@ export default function ApproachPage() {
               imports={imports}
               selectedId={selectedImportId ?? dashboard.import.id}
               dateOrder={importDateOrder}
+              dateFrom={historyDateFrom}
+              dateTo={historyDateTo}
               onDateOrderChange={setImportDateOrder}
+              onDateFromChange={setHistoryDateFrom}
+              onDateToChange={setHistoryDateTo}
+              onPeriodReset={() => {
+                setHistoryDateFrom("");
+                setHistoryDateTo("");
+              }}
               onSelect={setSelectedImportId}
             />
           </div>
@@ -1858,7 +2086,7 @@ export default function ApproachPage() {
                 >
                   <CalendarDays className="size-3.5" />
                   {dashboard.scope === "all"
-                    ? `Общий отчёт · ${dashboard.sourceImportCount} таблиц`
+                    ? `${historyDateFrom || historyDateTo ? "За период" : "Общий отчёт"} · ${dashboard.sourceImportCount} таблиц`
                     : formatDate(dashboard.import.reportDate)}
                 </Badge>
                 {dashboard.previousImport && (
@@ -1956,20 +2184,40 @@ export default function ApproachPage() {
             }}
             onDragLeave={() => setIsDragging(false)}
           />
-          <section className="grid min-h-80 place-items-center border border-[#e1e8e0] bg-white p-8 text-center shadow-[0_12px_30px_rgba(34,49,55,0.055)]">
-            <div>
-              <div className="mx-auto grid size-14 place-items-center rounded-md bg-[#edf5ee] text-[#2f6b4f]">
-                <CheckCircle2 className="size-6" />
+          <div className="space-y-4">
+            <ImportHistory
+              imports={imports}
+              selectedId={selectedImportId}
+              dateOrder={importDateOrder}
+              dateFrom={historyDateFrom}
+              dateTo={historyDateTo}
+              onDateOrderChange={setImportDateOrder}
+              onDateFromChange={setHistoryDateFrom}
+              onDateToChange={setHistoryDateTo}
+              onPeriodReset={() => {
+                setHistoryDateFrom("");
+                setHistoryDateTo("");
+              }}
+              onSelect={setSelectedImportId}
+            />
+            <section className="grid min-h-40 place-items-center border border-[#e1e8e0] bg-white p-6 text-center shadow-[0_12px_30px_rgba(34,49,55,0.055)]">
+              <div>
+                <div className="mx-auto grid size-12 place-items-center rounded-md bg-[#edf5ee] text-[#2f6b4f]">
+                  <CheckCircle2 className="size-5" />
+                </div>
+                <h2 className="mt-3 text-base font-black text-[#223137]">
+                  {historyDateFrom || historyDateTo
+                    ? "За выбранный период нет завершённых отчётов"
+                    : "Начните с первого отчета"}
+                </h2>
+                <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#7c8580]">
+                  {historyDateFrom || historyDateTo
+                    ? "Измените даты или сбросьте период в истории загрузок."
+                    : "После загрузки здесь появятся KPI, сравнение снимков, графики и полный реестр вагонов."}
+                </p>
               </div>
-              <h2 className="mt-4 text-lg font-black text-[#223137]">
-                Начните с первого отчета
-              </h2>
-              <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#7c8580]">
-                После загрузки здесь появятся KPI, сравнение снимков, графики и
-                полный реестр вагонов.
-              </p>
-            </div>
-          </section>
+            </section>
+          </div>
         </div>
       )}
 

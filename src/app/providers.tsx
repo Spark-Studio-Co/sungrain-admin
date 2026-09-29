@@ -6,12 +6,19 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import reactQueryClient from "@/shared/api/queryClient";
 import { useAuthData } from "@/entities/auth/model/use-auth-store";
-import { checkIsAdmin } from "@/entities/users/api/get/check-is-admin.api";
+import {
+  getUserAccess,
+  type UserAccess,
+} from "@/entities/users/api/get/get-user-access.api";
 import {
   DEV_AUTH_SESSION,
   shouldBypassAuthLocally,
 } from "@/shared/auth/dev-session";
-import { getAuthRedirect, type AdminStatus } from "@/shared/auth/route-policy";
+import {
+  getAuthRedirect,
+  type AdminStatus,
+  type ApproachAccessStatus,
+} from "@/shared/auth/route-policy";
 import { Layout } from "@/shared/ui/layout";
 import { ToastProvider } from "@/components/ui/toast";
 
@@ -44,6 +51,8 @@ function RouteGuard({ children }: { children: ReactNode }) {
     saveUserId,
   } = useAuthData();
   const [isAdmin, setIsAdmin] = useState<AdminStatus>(null);
+  const [canAccessApproach, setCanAccessApproach] =
+    useState<ApproachAccessStatus>(null);
   const [checkedAdmin, setCheckedAdmin] = useState(false);
   const [isAuthHydrated, setIsAuthHydrated] = useState(false);
 
@@ -91,6 +100,7 @@ function RouteGuard({ children }: { children: ReactNode }) {
     localStorage.setItem("id", JSON.stringify(DEV_AUTH_SESSION.uid));
     localStorage.setItem("isAdmin", "true");
     setIsAdmin(true);
+    setCanAccessApproach(true);
     setCheckedAdmin(true);
   }, [
     isAuthHydrated,
@@ -105,6 +115,7 @@ function RouteGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!token) {
       setIsAdmin(null);
+      setCanAccessApproach(null);
       setCheckedAdmin(true);
       localStorage.removeItem("isAdmin");
       return;
@@ -113,15 +124,17 @@ function RouteGuard({ children }: { children: ReactNode }) {
     let cancelled = false;
     setCheckedAdmin(false);
 
-    checkIsAdmin()
-      .then((adminStatus) => {
+    getUserAccess()
+      .then((access: UserAccess) => {
         if (cancelled) return;
-        setIsAdmin(adminStatus);
-        localStorage.setItem("isAdmin", JSON.stringify(adminStatus));
+        setIsAdmin(access.isAdmin);
+        setCanAccessApproach(access.canAccessApproach);
+        localStorage.setItem("isAdmin", JSON.stringify(access.isAdmin));
       })
       .catch(() => {
         if (cancelled) return;
         setIsAdmin(false);
+        setCanAccessApproach(false);
         localStorage.setItem("isAdmin", "false");
       })
       .finally(() => {
@@ -148,6 +161,7 @@ function RouteGuard({ children }: { children: ReactNode }) {
       pathname,
       hasToken: Boolean(token),
       isAdmin: token ? isAdmin : null,
+      canAccessApproach: token ? canAccessApproach : null,
       isAuthHydrated,
       bypassGuestAccess: isProtectedRoute && shouldBypassAuthLocally(),
     });
@@ -158,6 +172,7 @@ function RouteGuard({ children }: { children: ReactNode }) {
   }, [
     checkedAdmin,
     isAdmin,
+    canAccessApproach,
     isAuthHydrated,
     isProtectedRoute,
     pathname,
@@ -172,7 +187,9 @@ function RouteGuard({ children }: { children: ReactNode }) {
   }
 
   return shouldRenderShell ? (
-    <Layout isAdmin={isAdmin}>{children}</Layout>
+    <Layout isAdmin={isAdmin} canAccessApproach={canAccessApproach}>
+      {children}
+    </Layout>
   ) : (
     <>{children}</>
   );

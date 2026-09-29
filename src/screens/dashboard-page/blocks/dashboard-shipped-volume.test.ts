@@ -33,4 +33,9 @@ describe("dashboard shipped volume", () => {
     expect(source).toContain("max-w-full break-words");
     expect(source).toContain("shrink-0 text-right");
   });
+
+  it("keeps transport analytics in one column until the workspace is truly wide", () => {
+    expect(source).toContain("min-[1700px]:grid-cols-[0.92fr_1.08fr]");
+    expect(source).toContain("sungrain-analytics-card min-w-0");
+  });
 });

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   type ApproachDashboardSelection,
+  type ApproachImportPeriod,
   getApproachDashboard,
   getApproachImports,
   importApproachFile,
@@ -10,16 +11,32 @@ import {
 export const APPROACH_IMPORTS_QUERY_KEY = ["approach-imports"];
 export const APPROACH_DASHBOARD_QUERY_KEY = ["approach-dashboard"];
 
-export const useApproachImports = (limit = 30) =>
+export const useApproachImports = (
+  limit = 30,
+  period: ApproachImportPeriod = {},
+) =>
   useQuery({
-    queryKey: [...APPROACH_IMPORTS_QUERY_KEY, limit],
-    queryFn: () => getApproachImports(limit),
+    queryKey: [
+      ...APPROACH_IMPORTS_QUERY_KEY,
+      limit,
+      period.from ?? null,
+      period.to ?? null,
+    ],
+    queryFn: () => getApproachImports(limit, period),
   });
 
-export const useApproachDashboard = (selection?: ApproachDashboardSelection) =>
+export const useApproachDashboard = (
+  selection?: ApproachDashboardSelection,
+  period: ApproachImportPeriod = {},
+) =>
   useQuery({
-    queryKey: [...APPROACH_DASHBOARD_QUERY_KEY, selection ?? "latest"],
-    queryFn: () => getApproachDashboard(selection),
+    queryKey: [
+      ...APPROACH_DASHBOARD_QUERY_KEY,
+      selection ?? "latest",
+      period.from ?? null,
+      period.to ?? null,
+    ],
+    queryFn: () => getApproachDashboard(selection, period),
   });
 
 export const usePreviewApproach = () =>

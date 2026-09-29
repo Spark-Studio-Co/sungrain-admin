@@ -12,7 +12,6 @@ import {
   Home,
   Leaf,
   LogOut,
-  MapPinned,
   Menu,
   ShieldCheck,
   Sheet,
@@ -49,6 +48,7 @@ import { cn } from "@/lib/utils";
 interface ILayout {
   children: React.ReactNode;
   isAdmin?: boolean | null;
+  canAccessApproach?: boolean | null;
 }
 
 const adminNavigationItems = [
@@ -119,16 +119,16 @@ const adminNavigationItems = [
     url: "/admin/dislocations",
   },
   {
-    title: "Карта вагонов",
-    eyebrow: "Диспетчерская",
-    icon: MapPinned,
-    url: "/admin/wagon-map",
-  },
-  {
     title: "Подход",
     eyebrow: "Аналитика",
     icon: Telescope,
     url: "/admin/approach",
+  },
+  {
+    title: "Закуп",
+    eyebrow: "Фермеры",
+    icon: Leaf,
+    url: "/admin/procurement",
   },
 ];
 
@@ -140,6 +140,13 @@ const userNavigationItems = [
     url: "/contracts",
   },
 ];
+
+const approachNavigationItem = {
+  title: "Подход",
+  eyebrow: "Аналитика",
+  icon: Telescope,
+  url: "/admin/approach",
+};
 
 const sectionTitles: Record<string, string> = {
   "/admin": "Операционный центр",
@@ -155,10 +162,15 @@ const sectionTitles: Record<string, string> = {
   "/admin/dislocations": "Дислокации",
   "/admin/wagon-map": "Карта вагонов",
   "/admin/approach": "Подход",
+  "/admin/procurement": "Закуп",
   "/contracts": "Мои контракты",
 };
 
-export const Layout: React.FC<ILayout> = ({ children, isAdmin: adminStatus }) => {
+export const Layout: React.FC<ILayout> = ({
+  children,
+  isAdmin: adminStatus,
+  canAccessApproach: approachAccessStatus,
+}) => {
   const pathname = usePathname();
   const router = useRouter();
   const { removeRole, removeRequestId, removeUserId, removeToken, role } =
@@ -167,6 +179,7 @@ export const Layout: React.FC<ILayout> = ({ children, isAdmin: adminStatus }) =>
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [canAccessApproach, setCanAccessApproach] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebarOpen");
@@ -174,15 +187,20 @@ export const Layout: React.FC<ILayout> = ({ children, isAdmin: adminStatus }) =>
     setIsAdmin(
       typeof adminStatus === "boolean"
         ? adminStatus
-        : localStorage.getItem("isAdmin") === "true"
+        : localStorage.getItem("isAdmin") === "true",
     );
-  }, [adminStatus]);
+    setCanAccessApproach(Boolean(approachAccessStatus));
+  }, [adminStatus, approachAccessStatus]);
 
   useEffect(() => {
     localStorage.setItem("sidebarOpen", String(isSidebarOpen));
   }, [isSidebarOpen]);
 
-  const navigationItems = isAdmin ? adminNavigationItems : userNavigationItems;
+  const navigationItems = isAdmin
+    ? adminNavigationItems
+    : canAccessApproach
+      ? [...userNavigationItems, approachNavigationItem]
+      : userNavigationItems;
 
   const currentTitle = useMemo(() => {
     const exactTitle = sectionTitles[pathname];
@@ -236,13 +254,13 @@ export const Layout: React.FC<ILayout> = ({ children, isAdmin: adminStatus }) =>
                 className={cn(
                   "flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.055] p-2.5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_16px_34px_rgba(0,0,0,0.14)] transition-colors hover:bg-white/[0.08]",
                   isCollapsed &&
-                    "h-11 justify-center rounded-xl border-transparent bg-transparent p-0 shadow-none"
+                    "h-11 justify-center rounded-xl border-transparent bg-transparent p-0 shadow-none",
                 )}
               >
                 <div
                   className={cn(
                     "flex size-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-[0_10px_22px_rgba(0,0,0,0.2)]",
-                    isCollapsed && "size-9 rounded-lg"
+                    isCollapsed && "size-9 rounded-lg",
                   )}
                 >
                   <Image
@@ -265,7 +283,9 @@ export const Layout: React.FC<ILayout> = ({ children, isAdmin: adminStatus }) =>
               </Link>
             </SidebarHeader>
 
-            <SidebarContent className={cn("px-3 pb-2", isCollapsed && "px-1.5")}>
+            <SidebarContent
+              className={cn("px-3 pb-2", isCollapsed && "px-1.5")}
+            >
               <SidebarGroup className="p-0">
                 {!isCollapsed && (
                   <div className="mb-2 flex items-center justify-between px-2 text-[10px] font-semibold uppercase text-white/40">
@@ -292,14 +312,14 @@ export const Layout: React.FC<ILayout> = ({ children, isAdmin: adminStatus }) =>
                                 ? isCollapsed
                                   ? "bg-white/[0.105] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_10px_24px_rgba(0,0,0,0.16)] hover:bg-white/[0.13] hover:text-white"
                                   : "relative bg-white/[0.105] font-semibold text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),0_10px_28px_rgba(0,0,0,0.16)] before:absolute before:left-0 before:top-2.5 before:h-7 before:w-1 before:rounded-r-full before:bg-[#f38810] hover:bg-white/[0.13] hover:text-white"
-                                : "text-white/68 hover:bg-white/[0.07] hover:text-white"
+                                : "text-white/68 hover:bg-white/[0.07] hover:text-white",
                             )}
                           >
                             <Link
                               to={item.url}
                               className={cn(
                                 "flex w-full items-center",
-                                isCollapsed ? "justify-center" : "gap-2"
+                                isCollapsed ? "justify-center" : "gap-2",
                               )}
                             >
                               <span
@@ -340,7 +360,9 @@ export const Layout: React.FC<ILayout> = ({ children, isAdmin: adminStatus }) =>
               </SidebarGroup>
             </SidebarContent>
 
-            <SidebarFooter className={cn("mt-auto px-3 pb-3", isCollapsed && "px-1.5")}>
+            <SidebarFooter
+              className={cn("mt-auto px-3 pb-3", isCollapsed && "px-1.5")}
+            >
               {!isCollapsed && (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]">
                   <div className="flex items-center gap-3">
@@ -361,7 +383,9 @@ export const Layout: React.FC<ILayout> = ({ children, isAdmin: adminStatus }) =>
                   </div>
                 </div>
               )}
-              <SidebarMenu className={cn("mt-2", isCollapsed && "items-center")}>
+              <SidebarMenu
+                className={cn("mt-2", isCollapsed && "items-center")}
+              >
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     onClick={handleLogout}
@@ -370,7 +394,7 @@ export const Layout: React.FC<ILayout> = ({ children, isAdmin: adminStatus }) =>
                       "rounded-xl border border-white/10 bg-white/[0.035] text-white/62 hover:bg-red-500/12 hover:text-red-100",
                       isCollapsed
                         ? "mx-auto flex size-10 justify-center p-0"
-                        : "h-10 px-2.5"
+                        : "h-10 px-2.5",
                     )}
                   >
                     <LogOut className="size-4" />
@@ -418,7 +442,7 @@ export const Layout: React.FC<ILayout> = ({ children, isAdmin: adminStatus }) =>
                 "min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden",
                 pathname === "/admin" || pathname === "/admin/wagon-map"
                   ? "p-0"
-                  : "p-3 sm:p-5 lg:p-6"
+                  : "p-3 sm:p-5 lg:p-6",
               )}
             >
               <div className="crm-workspace">{children}</div>

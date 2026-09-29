@@ -27,6 +27,14 @@ describe("application detail tabs", () => {
     expect(source).toContain("applicationScopedWagons.length");
   });
 
+  it("shows shipment volume for this application next to payment progress", () => {
+    expect(source).toContain("getApplicationWagonGroupStats(");
+    expect(source).toContain("Отгрузка по заявке");
+    expect(source).toContain("Отгружено:");
+    expect(source).toContain("applicationShipmentTarget");
+    expect(source).toContain("applicationShipmentProgress");
+  });
+
   it("passes only current application wagons into wagon tabs", () => {
     expect(source).toContain("getApplicationScopedWagons(application)");
     expect(source).toContain("wagons={applicationScopedWagons}");

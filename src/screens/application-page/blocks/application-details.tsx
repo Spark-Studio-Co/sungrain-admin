@@ -72,10 +72,12 @@ import { WagonRegistry } from "@/screens/contracts-inner-page/blocks/wagon-regis
 import { apiClient } from "@/shared/api/apiClient";
 import {
   getApplicationRoute,
+  getApplicationWagonGroupStats,
   resolveBackendFileUrl,
 } from "@/shared/contracts/contract-ops";
 import {
   buildInvoicePaymentPatch,
+  getApplicationPaymentSummary,
   getInvoiceAmount,
   getInvoiceBalance,
   getInvoiceComputedStatus,
@@ -194,6 +196,20 @@ export const ApplicationDetail = ({
     : applicationData;
   const applicationScopedWagons = getApplicationScopedWagons(application);
   const applicationRoute = getApplicationRoute(application);
+  const applicationShipmentStats = getApplicationWagonGroupStats(
+    application,
+    applicationScopedWagons,
+  );
+  const applicationShippedVolume =
+    applicationShipmentStats.totalShippedDocumentWeight;
+  const applicationShipmentTarget = applicationShipmentStats.totalTargetVolume;
+  const applicationShipmentProgress = Math.round(
+    applicationShipmentStats.utilizationPercentage,
+  );
+  const applicationShipmentRemaining = Math.max(
+    applicationShipmentTarget - applicationShippedVolume,
+    0,
+  );
   const currentApplicationWagonContext = application
     ? { applications: [application] }
     : undefined;
@@ -231,20 +247,12 @@ export const ApplicationDetail = ({
       financeStatus: getInvoiceComputedStatus(invoice),
     };
   });
-  const invoiceTotalAmount = invoicesWithFinance.reduce(
-    (sum, invoice) => sum + invoice.financeAmount,
-    0,
-  );
-  const paymentBaseAmount = invoiceTotalAmount || totalAmount;
-  const paidAmount = invoicesWithFinance.reduce(
-    (sum, invoice) => sum + invoice.financePaidAmount,
-    0,
-  );
-  const remainingPaymentAmount = Math.max(paymentBaseAmount - paidAmount, 0);
-  const paymentProgress =
-    paymentBaseAmount > 0
-      ? Math.min(100, (paidAmount / paymentBaseAmount) * 100)
-      : 0;
+  const {
+    paymentBaseAmount,
+    paidAmount,
+    remainingPaymentAmount,
+    paymentProgress,
+  } = getApplicationPaymentSummary(totalAmount, invoices);
 
   // Get shipping documents from documents_for_upload array
   const shippingDocuments = application?.documents_for_upload || [];
@@ -986,6 +994,37 @@ export const ApplicationDetail = ({
                 <span>
                   Осталось: {formatApplicationMoney(remainingPaymentAmount)}
                 </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-lg border border-[#dce8dc] bg-[#f8fbf8] p-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-2">
+              <TrainFront className="h-5 w-5 shrink-0 text-[#2f6b4f]" />
+              <h3 className="text-base font-semibold text-[#223137]">
+                Отгрузка по заявке
+              </h3>
+            </div>
+            <div className="space-y-3">
+              <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between">
+                <span>
+                  Отгружено:{" "}
+                  <span className="font-semibold text-[#2f6b4f]">
+                    {formatNumber(applicationShippedVolume)} из{" "}
+                    {formatNumber(applicationShipmentTarget)} т
+                  </span>
+                </span>
+                <span className="text-muted-foreground">
+                  Осталось: {formatNumber(applicationShipmentRemaining)} т
+                </span>
+              </div>
+              <Progress
+                value={applicationShipmentProgress}
+                className="h-3 bg-[#e1eee3] sm:h-2"
+              />
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{applicationShipmentProgress}% от объема заявки</span>
+                <span>{applicationShipmentStats.wagonCount} ваг.</span>
               </div>
             </div>
           </div>

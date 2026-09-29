@@ -205,11 +205,11 @@ export const WagonRegistry = ({
 
   // Add a new document row
   const addDocumentRow = () => {
-    // Add a new document with a unique default name
+    // Keep the document type empty until the user selects a template or chooses a custom name.
     setDocuments((prev) => [
       ...prev,
       {
-        name: `Документ ${prev.length + 1}`,
+        name: "",
         number: "",
         date: "",
       },

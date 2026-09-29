@@ -3194,8 +3194,8 @@ export const DashboardBlock = () => {
         {/* Transport Tab */}
         <TabsContent value="transport" className="space-y-4 relative">
           <div className="absolute inset-0 bg-gradient-to-br from-orange-50/20 via-transparent to-emerald-50/20 rounded-3xl -z-10"></div>
-          <div className="grid items-start gap-4 xl:grid-cols-[0.92fr_1.08fr]">
-            <Card className="sungrain-analytics-card">
+          <div className="grid min-w-0 items-start gap-4 min-[1700px]:grid-cols-[0.92fr_1.08fr]">
+            <Card className="sungrain-analytics-card min-w-0">
               <CardHeader className="pb-3">
                 <CardTitle className="sungrain-card-title flex items-center gap-3">
                   <TruckIcon className="h-6 w-6 text-[#f38810]" />
@@ -3314,7 +3314,7 @@ export const DashboardBlock = () => {
               </CardContent>
             </Card>
 
-            <Card className="sungrain-analytics-card">
+            <Card className="sungrain-analytics-card min-w-0">
               <CardHeader className="pb-3">
                 <CardTitle className="sungrain-card-title flex items-center gap-3">
                   <Train className="h-6 w-6 text-[#2f6b4f]" />
