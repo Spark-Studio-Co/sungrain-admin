@@ -33,6 +33,8 @@ describe("application detail tabs", () => {
     expect(source).toContain("Отгружено:");
     expect(source).toContain("applicationShipmentTarget");
     expect(source).toContain("applicationShipmentProgress");
+    expect(source).toContain("applicationShipmentStats.totalShippedActualWeight");
+    expect(source).toContain("Фактически отгружено:");
   });
 
   it("passes only current application wagons into wagon tabs", () => {

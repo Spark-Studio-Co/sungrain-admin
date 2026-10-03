@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import {
   FileSpreadsheet,
   Leaf,
@@ -162,7 +162,13 @@ export default function ProcurementPage() {
   const [ruralDistrict, setRuralDistrict] = useState<string>();
   const [cultureKey, setCultureKey] = useState<string>();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [withPhone, setWithPhone] = useState(false);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => window.clearTimeout(timeout);
+  }, [search]);
 
   const importsQuery = useProcurementImports(50);
   const filters = useMemo<ProcurementFarmFilters>(
@@ -172,10 +178,10 @@ export default function ProcurementPage() {
       district,
       ruralDistrict,
       cultureKey,
-      search: search.trim() || undefined,
+      search: debouncedSearch || undefined,
       withPhone: withPhone || undefined,
     }),
-    [cultureKey, district, region, ruralDistrict, search, selectedImportId, withPhone],
+    [cultureKey, debouncedSearch, district, region, ruralDistrict, selectedImportId, withPhone],
   );
   const registryQuery = useProcurementFarmRegistry(filters);
   const importMutation = useImportProcurement();
@@ -224,6 +230,7 @@ export default function ProcurementPage() {
     setRuralDistrict(undefined);
     setCultureKey(undefined);
     setSearch("");
+    setDebouncedSearch("");
     setWithPhone(false);
   };
 
@@ -373,6 +380,11 @@ export default function ProcurementPage() {
             <p className="mt-1 text-sm text-[#7a8580]">
               {selectedCulture ? `От большего к меньшему по культуре «${selectedCulture.name}».` : "От большей общей площади к меньшей."}
             </p>
+            {registryQuery.isFetching && !registryQuery.isLoading ? (
+              <p role="status" className="mt-1 text-xs text-[#7a8580]">
+                Обновляем выборку…
+              </p>
+            ) : null}
           </div>
           {registry?.import ? <Badge variant="outline" className="w-fit border-[#cfe0d1] bg-[#f2f8f2] px-3 py-1 text-[#2f7657]">{registry.import.farmsTotal} хозяйств в снимке</Badge> : null}
         </div>

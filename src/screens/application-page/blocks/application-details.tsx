@@ -202,6 +202,8 @@ export const ApplicationDetail = ({
   );
   const applicationShippedVolume =
     applicationShipmentStats.totalShippedDocumentWeight;
+  const applicationShippedActualWeight =
+    applicationShipmentStats.totalShippedActualWeight;
   const applicationShipmentTarget = applicationShipmentStats.totalTargetVolume;
   const applicationShipmentProgress = Math.round(
     applicationShipmentStats.utilizationPercentage,
@@ -1022,8 +1024,14 @@ export const ApplicationDetail = ({
                 value={applicationShipmentProgress}
                 className="h-3 bg-[#e1eee3] sm:h-2"
               />
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="flex flex-col gap-1 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                 <span>{applicationShipmentProgress}% от объема заявки</span>
+                <span>
+                  Фактически отгружено:{" "}
+                  <span className="font-semibold text-[#2f6b4f]">
+                    {formatNumber(applicationShippedActualWeight)} т
+                  </span>
+                </span>
                 <span>{applicationShipmentStats.wagonCount} ваг.</span>
               </div>
             </div>

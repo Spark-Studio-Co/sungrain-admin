@@ -28,6 +28,7 @@ export const useProcurementFarmRegistry = (filters: ProcurementFarmFilters) =>
       filters.withPhone ?? false,
     ],
     queryFn: () => getProcurementFarmRegistry(filters),
+    placeholderData: (previousData) => previousData,
   });
 
 export const useImportProcurement = () => {
