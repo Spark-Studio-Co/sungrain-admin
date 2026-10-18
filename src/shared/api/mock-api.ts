@@ -3,6 +3,7 @@ import type {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from "axios";
+import { mockProcurement } from "./mock-procurement";
 
 type AnyRecord = Record<string, any>;
 
@@ -1189,6 +1190,8 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
   const body = parseBody(config.data);
   const params = (config.params || {}) as AnyRecord;
 
+  if (parts[0] === "procurement") return mockProcurement(config);
+
   if (path === "/auth/login" && method === "post") {
     return {
       access_token: "dev-sungrain-token",
@@ -1837,6 +1840,6 @@ export const mockApiAdapter: AxiosAdapter = async (config) => {
   await wait(120);
   return response(
     config as InternalAxiosRequestConfig,
-    handleMockRequest(config as InternalAxiosRequestConfig),
+    await handleMockRequest(config as InternalAxiosRequestConfig),
   );
 };

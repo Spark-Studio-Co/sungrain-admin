@@ -126,7 +126,7 @@ const adminNavigationItems = [
   },
   {
     title: "Закуп",
-    eyebrow: "Фермеры",
+    eyebrow: "Закупки и фермеры",
     icon: Leaf,
     url: "/admin/procurement",
   },

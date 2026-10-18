@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 const ProcurementPage = dynamic(
-  () => import("@/screens/procurement-page/procurement-page"),
+  () => import("@/screens/procurement-page/purchases-page"),
   { ssr: false },
 );
 

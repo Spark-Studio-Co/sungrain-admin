@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import Link from "next/link";
 import {
   FileSpreadsheet,
   Leaf,
@@ -117,6 +118,7 @@ function RegistryTable({
             <th className="border-y border-r border-[#e1e8e0] px-4 py-3 text-right last:rounded-r-xl">
               {cultureName ? `${cultureName}, га` : "Общая площадь, га"}
             </th>
+            <th className="px-4 py-3"><span className="sr-only">Действие</span></th>
           </tr>
         </thead>
         <tbody>
@@ -145,6 +147,7 @@ function RegistryTable({
               <td className="border-b border-[#edf1ec] px-4 py-3.5 text-right font-black text-[#243831]">
                 {formatArea(farm.selectedAreaHa ?? farm.totalAreaHa)}
               </td>
+              <td className="border-b border-[#edf1ec] px-4 py-3.5"><Link className="whitespace-nowrap font-semibold text-[#2f7657] hover:underline" href={`/admin/procurement/new?farmerId=${farm.id}`}>Создать закупку</Link></td>
             </tr>
           ))}
         </tbody>
