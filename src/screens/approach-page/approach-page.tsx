@@ -51,6 +51,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { DatePickerInput } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -1352,11 +1353,10 @@ function ImportHistory({
             <span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-[#7d8882]">
               С даты
             </span>
-            <Input
-              type="date"
+            <DatePickerInput
               value={dateFrom}
               max={dateTo || undefined}
-              onChange={(event) => onDateFromChange(event.target.value)}
+              onChange={onDateFromChange}
               aria-label="Начало периода загрузок"
               className="h-9 min-w-0 px-2 text-xs"
             />
@@ -1365,11 +1365,10 @@ function ImportHistory({
             <span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-[#7d8882]">
               По дату
             </span>
-            <Input
-              type="date"
+            <DatePickerInput
               value={dateTo}
               min={dateFrom || undefined}
-              onChange={(event) => onDateToChange(event.target.value)}
+              onChange={onDateToChange}
               aria-label="Конец периода загрузок"
               className="h-9 min-w-0 px-2 text-xs"
             />

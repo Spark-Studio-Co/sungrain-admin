@@ -7,6 +7,7 @@ import {
   Leaf,
   MapPinned,
   Phone,
+  Plus,
   Search,
   UploadCloud,
   Users,
@@ -125,7 +126,7 @@ function RegistryTable({
           {rows.map((farm) => (
             <tr key={farm.id} className="group text-sm text-[#41504b] hover:bg-[#fbfcfa]">
               <td className="border-b border-[#edf1ec] px-4 py-3.5 font-bold text-[#263630]">
-                {farm.organizationName}
+                <Link href={`/admin/procurement/farmers/${farm.id}`} className="hover:text-[#2f7657] hover:underline">{farm.organizationName}</Link>
               </td>
               <td className="border-b border-[#edf1ec] px-4 py-3.5">
                 {compact(farm.leaderName)}
@@ -147,7 +148,7 @@ function RegistryTable({
               <td className="border-b border-[#edf1ec] px-4 py-3.5 text-right font-black text-[#243831]">
                 {formatArea(farm.selectedAreaHa ?? farm.totalAreaHa)}
               </td>
-              <td className="border-b border-[#edf1ec] px-4 py-3.5"><Link className="whitespace-nowrap font-semibold text-[#2f7657] hover:underline" href={`/admin/procurement/new?farmerId=${farm.id}`}>Создать закупку</Link></td>
+              <td className="border-b border-[#edf1ec] px-4 py-3.5"><Link className="whitespace-nowrap font-semibold text-[#2f7657] hover:underline" href={`/admin/procurement/farmers/${farm.id}`}>Открыть</Link></td>
             </tr>
           ))}
         </tbody>
@@ -260,7 +261,7 @@ export default function ProcurementPage() {
               <Leaf className="size-3.5 text-[#ffad45]" />
               Закуп сельхозпродукции
             </div>
-            <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Реестр фермеров</h1>
+            <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Реестр хозяйств</h1>
             <p className="mt-3 text-sm leading-6 text-white/70 sm:text-base">
               Загружайте областные своды посева, выбирайте район и культуру — хозяйства сразу ранжируются по площади.
             </p>
@@ -389,9 +390,12 @@ export default function ProcurementPage() {
               </p>
             ) : null}
           </div>
-          {registry?.import ? <Badge variant="outline" className="w-fit border-[#cfe0d1] bg-[#f2f8f2] px-3 py-1 text-[#2f7657]">{registry.import.farmsTotal} хозяйств в снимке</Badge> : null}
+          <div className="flex flex-wrap items-center gap-2">
+            {registry?.import ? <Badge variant="outline" className="w-fit border-[#cfe0d1] bg-[#f2f8f2] px-3 py-1 text-[#2f7657]">{registry.import.farmsTotal} хозяйств в снимке</Badge> : null}
+            <Button asChild className="bg-[#2f6b4f] text-white hover:bg-[#25543f]"><Link href="/admin/procurement/farmers/new"><Plus className="size-4" /> Добавить хозяйство</Link></Button>
+          </div>
         </div>
-        {rows.length ? <RegistryTable rows={rows} cultureName={selectedCulture?.name} /> : <div className="px-5 py-16 text-center"><Users className="mx-auto size-8 text-[#a0ada5]" /><p className="mt-3 font-bold text-[#35463e]">Хозяйства не найдены</p><p className="mt-1 text-sm text-[#7a8580]">Загрузите XLSX или измените параметры фильтра.</p></div>}
+        {rows.length ? <RegistryTable rows={rows} cultureName={selectedCulture?.name} /> : <div className="px-5 py-16 text-center"><Users className="mx-auto size-8 text-[#a0ada5]" /><p className="mt-3 font-bold text-[#35463e]">Хозяйства не найдены</p><p className="mt-1 text-sm text-[#7a8580]">Добавьте хозяйство, загрузите XLSX или измените фильтр.</p></div>}
       </section>
     </div>
   );

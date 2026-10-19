@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { format, parseISO } from "date-fns";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePickerInput } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -595,24 +597,26 @@ function PurchaseForm({
               <Field name="vatMode" label="НДС">
                 {editing ? (
                   <Select
-                    value={values.vatMode}
+                    value={values.vatMode === "NONE" ? "NONE" : "INCLUSIVE"}
                     onValueChange={(value) => set("vatMode", value as VatMode)}
                   >
                     <SelectTrigger {...inputProps("vatMode")}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(VAT_LABELS).map(([mode, label]) => (
-                        <SelectItem key={mode} value={mode}>
-                          {label}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="INCLUSIVE">С НДС</SelectItem>
+                      <SelectItem value="NONE">Без НДС</SelectItem>
                     </SelectContent>
                   </Select>
                 ) : (
                   <div className="purchase-read-value">
                     {VAT_LABELS[values.vatMode]}
                   </div>
+                )}
+                {values.vatMode === "EXCLUSIVE" && (
+                  <p className="text-xs font-normal text-[#6d7976]">
+                    В этой закупке НДС начислен сверх цены по прежнему способу расчёта.
+                  </p>
                 )}
               </Field>
               {values.vatMode !== "NONE" && (
@@ -641,11 +645,20 @@ function PurchaseForm({
                 label="Дата договора"
                 error={errors.agreementDate}
               >
-                {textInput("agreementDate", {
-                  type: "date",
-                  min: "1900-01-01",
-                  max: "2200-12-31",
-                })}
+                {editing ? (
+                  <DatePickerInput
+                    id="purchase-agreementDate"
+                    value={values.agreementDate}
+                    onChange={(value) => set("agreementDate", value)}
+                    min="1900-01-01"
+                    max="2200-12-31"
+                    aria-invalid={!!errors.agreementDate}
+                    aria-describedby={errors.agreementDate ? "error-agreementDate" : undefined}
+                    aria-required
+                  />
+                ) : (
+                  <div className="purchase-read-value">{values.agreementDate ? format(parseISO(values.agreementDate), "dd.MM.yyyy") : "—"}</div>
+                )}
               </Field>
             </div>
             {(file || (purchase?.document && !removeDocument)) && (
@@ -822,7 +835,7 @@ function PurchaseForm({
               )}
               <Button
                 type="submit"
-                className="purchase-primary w-full"
+                className={purchase ? "purchase-primary w-full" : "w-full"}
                 disabled={mutation.isPending}
               >
                 {mutation.isPending ? (

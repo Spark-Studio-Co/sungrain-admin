@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePickerInput } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -89,7 +90,7 @@ export default function PurchasesPage() {
           </div>
           <p>Договоры закупки и фермерские хозяйства</p>
         </div>
-        <Button asChild className="purchase-primary">
+        <Button asChild>
           <Link href="/admin/procurement/new">
             <Plus className="size-4" />
             Создать закупку
@@ -109,7 +110,7 @@ export default function PurchasesPage() {
           aria-current={farmers ? "page" : undefined}
         >
           <Users className="size-4" />
-          Фермеры
+          Хозяйства
         </Link>
       </nav>
       {farmers ? (
@@ -155,18 +156,18 @@ export default function PurchasesPage() {
             </label>
             <label>
               <span>Дата от</span>
-              <Input
-                type="date"
+              <DatePickerInput
                 value={filters.from || ""}
-                onChange={(event) => set("from", event.target.value)}
+                onChange={(value) => set("from", value)}
+                aria-label="Начало периода закупок"
               />
             </label>
             <label>
               <span>Дата до</span>
-              <Input
-                type="date"
+              <DatePickerInput
                 value={filters.to || ""}
-                onChange={(event) => set("to", event.target.value)}
+                onChange={(value) => set("to", value)}
+                aria-label="Конец периода закупок"
               />
             </label>
             <Button
@@ -205,7 +206,7 @@ export default function PurchasesPage() {
                   ? "Измените параметры поиска."
                   : "Создайте первый договор закупки."}
               </p>
-              <Button asChild variant="outline">
+              <Button asChild>
                 <Link href="/admin/procurement/new">
                   <Plus className="size-4" />
                   Создать закупку

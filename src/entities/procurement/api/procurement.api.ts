@@ -27,8 +27,9 @@ export type ProcurementCropArea = {
 
 export type ProcurementFarmRecord = {
   id: number;
-  importId: number;
-  sourceRow: number;
+  version: number;
+  importId: number | null;
+  sourceRow: number | null;
   regionName: string | null;
   district: string | null;
   ruralDistrict: string | null;
@@ -38,6 +39,31 @@ export type ProcurementFarmRecord = {
   totalAreaHa: number | null;
   cropAreas?: ProcurementCropArea[];
   selectedAreaHa?: number;
+};
+
+export type ProcurementFarmValues = {
+  version?: number;
+  organizationName: string;
+  leaderName: string;
+  phone: string;
+  regionName: string;
+  district: string;
+  ruralDistrict: string;
+  totalAreaHa: number | null;
+};
+
+export type ProcurementFarmDetail = ProcurementFarmRecord & {
+  import: { id: number; attachmentName: string; createdAt: string } | null;
+  cropAreas: ProcurementCropArea[];
+  purchases: Array<{
+    id: string;
+    agreementNumber: string;
+    agreementDate: string;
+    cultureName: string;
+    quantity: string;
+    currency: string;
+    totalAmount: string;
+  }>;
 };
 
 export type ProcurementRegistryFilters = {
@@ -101,3 +127,12 @@ export const getProcurementFarmRegistry = async (
   );
   return response.data;
 };
+
+export const getProcurementFarm = async (id: number) =>
+  (await apiClient.get<ProcurementFarmDetail>(`/procurement/farmers/${id}`)).data;
+
+export const createProcurementFarm = async (values: ProcurementFarmValues) =>
+  (await apiClient.post<ProcurementFarmDetail>("/procurement/farmers", values)).data;
+
+export const updateProcurementFarm = async (id: number, values: ProcurementFarmValues) =>
+  (await apiClient.patch<ProcurementFarmDetail>(`/procurement/farmers/${id}`, values)).data;

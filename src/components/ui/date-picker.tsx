@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { format } from "date-fns";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -21,6 +21,12 @@ type DatePickerInputProps = {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  min?: string;
+  max?: string;
+  "aria-label"?: string;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
+  "aria-required"?: boolean;
 };
 
 const parseDateValue = (value?: string | Date | null) => {
@@ -49,9 +55,20 @@ function DatePickerInput({
   placeholder = "Выберите дату",
   className,
   disabled,
+  min,
+  max,
+  "aria-label": ariaLabel,
+  "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
+  "aria-required": ariaRequired,
 }: DatePickerInputProps) {
   const [open, setOpen] = useState(false);
   const selectedDate = parseDateValue(value);
+  const minDate = parseDateValue(min);
+  const maxDate = parseDateValue(max);
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayDisabled = (minDate && todayStart < minDate) || (maxDate && todayStart > maxDate);
 
   const selectDate = (date: Date) => {
     onChange(getOutputValue(date, outputFormat), date);
@@ -71,6 +88,10 @@ function DatePickerInput({
           type="button"
           variant="outline"
           disabled={disabled}
+          aria-label={ariaLabel}
+          aria-invalid={ariaInvalid}
+          aria-describedby={ariaDescribedBy}
+          aria-required={ariaRequired}
           className={cn(
             "crm-control h-11 w-full justify-between rounded-md bg-[#fbfcfa] px-3 text-left font-semibold transition-colors hover:translate-y-0 hover:bg-white",
             selectedDate ? "text-[#223137]" : "text-[#9aa49f]",
@@ -86,11 +107,16 @@ function DatePickerInput({
       <PopoverContent
         align="start"
         sideOffset={8}
-        className="w-auto rounded-md border-[#dfe7de] bg-white p-2 shadow-[0_18px_44px_rgba(34,49,55,0.16)]"
+        collisionPadding={8}
+        className="max-h-[min(480px,calc(100dvh-24px))] w-auto max-w-[calc(100vw-16px)] overflow-auto rounded-md border-[#dfe7de] bg-white p-2 shadow-[0_18px_44px_rgba(34,49,55,0.16)]"
       >
         <Calendar
           mode="single"
           selected={selectedDate}
+          disabled={[
+            ...(minDate ? [{ before: minDate }] : []),
+            ...(maxDate ? [{ after: maxDate }] : []),
+          ]}
           onSelect={(date) => {
             if (!date) {
               clearDate();
@@ -106,14 +132,13 @@ function DatePickerInput({
             type="button"
             variant="ghost"
             size="sm"
+            disabled={!!todayDisabled}
             className="h-8 rounded-md px-3 text-xs font-black text-[#53605a] hover:bg-[#eef5ef] hover:text-[#2f6b4f]"
             onClick={() => selectDate(new Date())}
           >
             Сегодня
           </Button>
-          <div className="rounded-md bg-[#fff8ef] px-2 py-1 text-xs font-black text-[#d26d07]">
-            {selectedDate ? format(selectedDate, "dd.MM.yyyy") : "Нет даты"}
-          </div>
+          {selectedDate ? <Button type="button" variant="ghost" size="sm" className="h-8 gap-1 px-2 text-xs font-bold" onClick={clearDate}><X className="size-3.5" /> Сбросить</Button> : <span className="px-2 text-xs text-[#7a8580]">Нет даты</span>}
         </div>
       </PopoverContent>
     </Popover>

@@ -4,10 +4,30 @@ import {
   getProcurementFarmRegistry,
   getProcurementImports,
   importProcurementFile,
+  getProcurementFarm,
+  createProcurementFarm,
+  updateProcurementFarm,
+  type ProcurementFarmValues,
 } from "../api/procurement.api";
 
 export const PROCUREMENT_IMPORTS_QUERY_KEY = ["procurement-imports"];
 export const PROCUREMENT_FARMERS_QUERY_KEY = ["procurement-farmers"];
+
+export const useProcurementFarm = (id: number) =>
+  useQuery({
+    queryKey: [...PROCUREMENT_FARMERS_QUERY_KEY, id],
+    queryFn: () => getProcurementFarm(id),
+    enabled: Number.isInteger(id) && id > 0,
+  });
+
+export const useSaveProcurementFarm = (id?: number) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (values: ProcurementFarmValues) =>
+      id ? updateProcurementFarm(id, values) : createProcurementFarm(values),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: PROCUREMENT_FARMERS_QUERY_KEY }),
+  });
+};
 
 export const useProcurementImports = (limit = 30) =>
   useQuery({

@@ -3,8 +3,8 @@ import type { PurchaseValues, VatMode } from "../api/purchases.api";
 
 export const VAT_LABELS: Record<VatMode, string> = {
   NONE: "Без НДС",
-  EXCLUSIVE: "НДС сверху",
-  INCLUSIVE: "НДС включён в цену",
+  EXCLUSIVE: "С НДС (начислен сверху)",
+  INCLUSIVE: "С НДС",
 };
 export const normalizeDecimal = (value: string) =>
   value.trim().replace(",", ".");

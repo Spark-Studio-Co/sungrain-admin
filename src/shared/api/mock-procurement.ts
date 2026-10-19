@@ -3,18 +3,20 @@ import type {
   Purchase,
   PurchaseValues,
 } from "../../entities/procurement/api/purchases.api";
+import type { ProcurementFarmRecord, ProcurementFarmValues } from "../../entities/procurement/api/procurement.api";
 import {
   calculatePurchase,
   validatePurchase,
 } from "../../entities/procurement/model/purchase-calculation";
 
-const farms = [
+const farms: ProcurementFarmRecord[] = [
   {
     id: 9101,
     organizationName: 'КХ "Демо Колос"',
     leaderName: "Демо Фермер 1",
     phone: null,
     district: "Павлодарский район",
+    importId: 9100, sourceRow: 1, version: 1, regionName: "Павлодарская область", ruralDistrict: null, totalAreaHa: 1000, cropAreas: [],
   },
   {
     id: 9102,
@@ -22,6 +24,7 @@ const farms = [
     leaderName: "Демо Фермер 2",
     phone: null,
     district: "Успенский район",
+    importId: 9100, sourceRow: 2, version: 1, regionName: "Павлодарская область", ruralDistrict: null, totalAreaHa: 1300, cropAreas: [],
   },
   {
     id: 9103,
@@ -29,6 +32,7 @@ const farms = [
     leaderName: "Демо Фермер 3",
     phone: null,
     district: "Железинский район",
+    importId: 9100, sourceRow: 3, version: 1, regionName: "Павлодарская область", ruralDistrict: null, totalAreaHa: 1600, cropAreas: [],
   },
 ];
 const cultures = [
@@ -90,12 +94,16 @@ function access<T>(
   action: (rows: StoredPurchase[]) => { result: T; save?: StoredPurchase },
 ): Promise<T> {
   return new Promise((resolve, reject) => {
-    const open = indexedDB.open("sungrain-procurement-demo-v1", 1);
+    const open = indexedDB.open("sungrain-procurement-demo-v1", 2);
     open.onupgradeneeded = () => {
-      const store = open.result.createObjectStore("purchases", {
-        keyPath: "id",
-      });
-      fixtures().forEach((row) => store.put(row));
+      if (!open.result.objectStoreNames.contains("purchases")) {
+        const store = open.result.createObjectStore("purchases", { keyPath: "id" });
+        fixtures().forEach((row) => store.put(row));
+      }
+      if (!open.result.objectStoreNames.contains("farms")) {
+        const store = open.result.createObjectStore("farms", { keyPath: "id" });
+        farms.forEach((farm) => store.put(farm));
+      }
     };
     open.onerror = () => reject(open.error);
     open.onsuccess = () => {
@@ -128,6 +136,43 @@ function access<T>(
           transaction.error || new Error("Не удалось сохранить демо-данные"),
         );
       };
+    };
+  });
+}
+
+function accessFarms<T>(action: (rows: ProcurementFarmRecord[]) => { result: T; save?: ProcurementFarmRecord }): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open("sungrain-procurement-demo-v1", 2);
+    open.onupgradeneeded = () => {
+      if (!open.result.objectStoreNames.contains("purchases")) {
+        const store = open.result.createObjectStore("purchases", { keyPath: "id" });
+        fixtures().forEach((row) => store.put(row));
+      }
+      if (!open.result.objectStoreNames.contains("farms")) {
+        const store = open.result.createObjectStore("farms", { keyPath: "id" });
+        farms.forEach((farm) => store.put(farm));
+      }
+    };
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      const transaction = db.transaction("farms", "readwrite");
+      const store = transaction.objectStore("farms");
+      const request = store.getAll();
+      let result: T;
+      request.onsuccess = () => {
+        try {
+          const next = action(request.result.map((row: ProcurementFarmRecord) => ({ ...row, version: row.version ?? 1 })));
+          result = next.result;
+          if (next.save) store.put(next.save);
+        } catch (error) {
+          transaction.abort();
+          reject(error);
+        }
+      };
+      transaction.oncomplete = () => { db.close(); resolve(result); };
+      transaction.onerror = () => { db.close(); reject(transaction.error); };
+      transaction.onabort = () => { db.close(); reject(transaction.error || new Error("Не удалось сохранить хозяйство")); };
     };
   });
 }
@@ -165,11 +210,41 @@ export async function mockProcurement(config: InternalAxiosRequestConfig) {
       "Импорт XLSX доступен при подключении к серверу. В демо используются синтетические хозяйства.",
     );
   if (path[1] === "farmers") {
-    const rows = farms
+    const currentFarms = await accessFarms((rows) => ({ result: rows }));
+    const farmValues = (typeof config.data === "string"
+      ? JSON.parse(config.data)
+      : config.data) as ProcurementFarmValues | undefined;
+    if (path[2]) {
+      const farm = currentFarms.find((row) => row.id === Number(path[2]));
+      if (!farm) fail("Хозяйство не найдено", 404);
+      if (method === "patch") {
+        const values = farmValues;
+        if (!values?.organizationName?.trim()) fail("Укажите название хозяйства");
+        if (farm.importId !== null) fail("Хозяйство из XLSX нельзя редактировать");
+        if (values.version !== farm.version) fail("Хозяйство изменено. Обновите страницу", 409);
+        const next = { ...farm, ...values, version: farm.version + 1 };
+        await accessFarms(() => ({ result: next, save: next }));
+        return { ...next, import: next.importId ? { id: 9100, attachmentName: "synthetic.xlsx", createdAt: "2026-10-18T09:00:00.000Z" } : null, purchases: [] };
+      }
+      const purchases = await access((rows) => ({ result: rows.filter((item) => item.sourceFarmId === farm.id).map((item) => ({ id: item.id, agreementNumber: item.agreementNumber, agreementDate: item.agreementDate, cultureName: item.cultureName, quantity: item.quantity, currency: item.currency, totalAmount: item.totalAmount })) }));
+      return { ...farm, import: farm.importId ? { id: 9100, attachmentName: "synthetic.xlsx", createdAt: "2026-10-18T09:00:00.000Z" } : null, purchases };
+    }
+    if (method === "post") {
+      const values = farmValues;
+      if (!values?.organizationName?.trim()) fail("Укажите название хозяйства");
+      const next: ProcurementFarmRecord = { ...values, id: Math.max(9100, ...currentFarms.map((item) => item.id)) + 1, importId: null, sourceRow: null, version: 1, cropAreas: [] };
+      await accessFarms(() => ({ result: next, save: next }));
+      return { ...next, import: null, purchases: [] };
+    }
+    if (params.importId && Number(params.importId) !== 9100) fail("Снимок закупа не найден", 404);
+    const rows = currentFarms
       .filter(
         (farm) =>
+          (!params.importId || farm.importId === Number(params.importId) || farm.importId === null) &&
+          (!params.region || farm.regionName === params.region) &&
           (!params.district || farm.district === params.district) &&
-          !params.withPhone &&
+          (!params.ruralDistrict || farm.ruralDistrict === params.ruralDistrict) &&
+          (!params.withPhone || !!farm.phone) &&
           (!params.search ||
             farm.organizationName
               .toLowerCase()
@@ -177,11 +252,6 @@ export async function mockProcurement(config: InternalAxiosRequestConfig) {
       )
       .map((farm, index) => ({
         ...farm,
-        importId: 9100,
-        sourceRow: index + 1,
-        regionName: "Павлодарская область",
-        ruralDistrict: null,
-        totalAreaHa: 1000 + index * 300,
         selectedAreaHa: params.cultureKey ? 250 + index * 100 : undefined,
       }));
     return {
@@ -194,7 +264,7 @@ export async function mockProcurement(config: InternalAxiosRequestConfig) {
       rows,
       filters: {
         regions: ["Павлодарская область"],
-        districts: farms.map((farm) => farm.district),
+        districts: currentFarms.map((farm) => farm.district).filter(Boolean),
         ruralDistricts: [],
         cultures: cultures.map((name) => ({ key: name, name })),
       },
@@ -202,7 +272,7 @@ export async function mockProcurement(config: InternalAxiosRequestConfig) {
   }
   if (path[2] === "options")
     return {
-      farms: farms.filter(
+      farms: (await accessFarms((rows) => ({ result: rows }))).filter(
         (farm) =>
           farm.id === Number(params.selectedId) ||
           farm.organizationName
@@ -235,6 +305,7 @@ export async function mockProcurement(config: InternalAxiosRequestConfig) {
     )
       fail("Договор: PDF, JPG или PNG, не больше 10 МБ");
   }
+  const currentFarms = await accessFarms((rows) => ({ result: rows }));
   return access<unknown>((rows) => {
     const existing = rows.find((row) => row.id === path[2]);
     if (path[3] === "document") {
@@ -276,6 +347,8 @@ export async function mockProcurement(config: InternalAxiosRequestConfig) {
       };
     }
     if (!values) fail("Отсутствуют данные закупки");
+    if (values.vatMode === "EXCLUSIVE" && (!existing || existing.vatMode !== "EXCLUSIVE"))
+      fail("Для новых закупок выберите «С НДС» или «Без НДС»");
     const errors = validatePurchase(values, !!existing);
     if (Object.keys(errors).length) fail(Object.values(errors).join(". "));
     if (method === "patch" && !existing) fail("Закупка не найдена", 404);
@@ -291,7 +364,7 @@ export async function mockProcurement(config: InternalAxiosRequestConfig) {
         fail("Запрос уже сохранён с другими данными", 409);
       return { result: publicPurchase(previous) };
     }
-    const farm = farms.find((item) => item.id === values.farmId);
+    const farm = currentFarms.find((item) => item.id === values.farmId);
     if (!farm && !existing) fail("Выберите фермера");
     const now = new Date().toISOString();
     const remove = form.get("removeDocument") === "true";
