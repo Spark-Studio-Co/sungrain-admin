@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useQueries } from "@tanstack/react-query";
 import {
   Card,
@@ -3643,10 +3644,10 @@ export default function FinancesPage() {
                       variant="outline"
                       className="h-10 shrink-0 rounded-md border-[#dce8dc] px-3 font-black text-[#2f6b4f] hover:bg-[#eef5ef]"
                     >
-                      <a href={selectedInvoiceContractHref}>
+                      <Link href={selectedInvoiceContractHref}>
                         Открыть контракт
                         <ArrowUpRight className="ml-2 h-4 w-4" />
-                      </a>
+                      </Link>
                     </Button>
                   </div>
 
