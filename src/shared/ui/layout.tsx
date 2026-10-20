@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Banknote,
   Building2,
+  Calculator,
   ChevronRight,
   FileText,
   Handshake,
@@ -20,6 +21,7 @@ import {
   TrainTrack,
   UserCheck,
   Users,
+  Warehouse,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAutoLogout } from "@/hooks/use-auto-logout";
@@ -130,6 +132,18 @@ const adminNavigationItems = [
     icon: Leaf,
     url: "/admin/procurement",
   },
+  {
+    title: "Калькулятор",
+    eyebrow: "Экономика сделки",
+    icon: Calculator,
+    url: "/admin/calculator",
+  },
+  {
+    title: "Элеваторы",
+    eyebrow: "Услуги и тарифы",
+    icon: Warehouse,
+    url: "/admin/elevators",
+  },
 ];
 
 const userNavigationItems = [
@@ -163,6 +177,8 @@ const sectionTitles: Record<string, string> = {
   "/admin/wagon-map": "Карта вагонов",
   "/admin/approach": "Подход",
   "/admin/procurement": "Закуп",
+  "/admin/calculator": "Калькулятор",
+  "/admin/elevators": "Элеваторы",
   "/contracts": "Мои контракты",
 };
 
