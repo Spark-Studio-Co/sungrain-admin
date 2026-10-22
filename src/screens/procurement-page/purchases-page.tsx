@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePickerInput } from "@/components/ui/date-picker";
+import { WorkspaceHeading } from "@/components/ui/workspace-heading";
 import {
   Select,
   SelectContent,
@@ -81,22 +82,25 @@ export default function PurchasesPage() {
   const pages = Math.max(1, Math.ceil((query.data?.total ?? 0) / 20));
 
   return (
-    <div className="purchase-workspace">
-      <header className="purchase-heading">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1>Закуп</h1>
+    <div className="purchase-workspace record-workspace">
+      <WorkspaceHeading
+        icon={ShoppingBasket}
+        title={
+          <>
+            Закуп{" "}
             {shouldUseMockApi() && <span className="purchase-demo">Демо</span>}
-          </div>
-          <p>Договоры закупки и фермерские хозяйства</p>
-        </div>
-        <Button asChild>
-          <Link href="/admin/procurement/new">
-            <Plus className="size-4" />
-            Создать закупку
-          </Link>
-        </Button>
-      </header>
+          </>
+        }
+        description="Договоры закупки и фермерские хозяйства"
+        actions={
+          <Button asChild>
+            <Link href="/admin/procurement/new">
+              <Plus className="size-4" />
+              Создать закупку
+            </Link>
+          </Button>
+        }
+      />
       <nav className="purchase-tabs" aria-label="Разделы закупа">
         <Link
           href="/admin/procurement"

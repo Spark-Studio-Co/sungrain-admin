@@ -7,19 +7,28 @@ import { format, parseISO } from "date-fns";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  ArrowUpRight,
+  CalendarDays,
   Check,
   ChevronsUpDown,
   Download,
   FileText,
   LoaderCircle,
   Pencil,
+  MapPin,
+  MessageSquare,
+  Phone,
   Save,
   Upload,
   X,
+  UserRound,
+  Warehouse,
+  Wheat,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePickerInput } from "@/components/ui/date-picker";
+import { WorkspaceHeading } from "@/components/ui/workspace-heading";
 import {
   Select,
   SelectContent,
@@ -353,31 +362,46 @@ function PurchaseForm({
   };
 
   return (
-    <div className="purchase-workspace">
+    <div
+      className={`purchase-workspace record-workspace ${editing ? "purchase-is-editing" : "purchase-is-reading"}`}
+    >
       <Link className="purchase-back" href="/admin/procurement">
         <ArrowLeft className="size-4" />
         Все закупки
       </Link>
-      <header className="purchase-heading">
-        <div>
-          <h1>
-            {purchase
-              ? `Закупка № ${purchase.agreementNumber}`
-              : "Новая закупка"}
-          </h1>
-          <p>
-            {purchase
-              ? purchase.farmerName
-              : "Договор закупки сельхозпродукции"}
-          </p>
-        </div>
-        {purchase && !editing && (
-          <Button variant="outline" onClick={() => setEditing(true)}>
-            <Pencil className="size-4" />
-            Редактировать
-          </Button>
-        )}
-      </header>
+      <WorkspaceHeading
+        icon={FileText}
+        title={
+          purchase ? `Закупка № ${purchase.agreementNumber}` : "Новая закупка"
+        }
+        description={
+          purchase ? (
+            <div className="record-meta">
+              <span>
+                <CalendarDays size={14} />
+                {format(
+                  parseISO(purchase.agreementDate.slice(0, 10)),
+                  "dd.MM.yyyy",
+                )}
+              </span>
+              <span className="purchase-status">
+                {editing ? "Редактирование" : "Договор закупки"}
+              </span>
+            </div>
+          ) : (
+            "Договор закупки сельхозпродукции"
+          )
+        }
+        actions={
+          purchase &&
+          !editing && (
+            <Button variant="outline" onClick={() => setEditing(true)}>
+              <Pencil className="size-4" />
+              Редактировать
+            </Button>
+          )
+        }
+      />
       {savedDraft && (
         <div
           role="status"
@@ -422,7 +446,10 @@ function PurchaseForm({
           className="min-w-0"
         >
           <section className="purchase-section">
-            <h2>Фермер</h2>
+            <h2>
+              <Warehouse size={18} />
+              Хозяйство
+            </h2>
             <Field name="farmId" label="Хозяйство" error={errors.farmId}>
               {editing ? (
                 <Popover open={farmOpen} onOpenChange={setFarmOpen}>
@@ -499,14 +526,34 @@ function PurchaseForm({
                 </Popover>
               ) : (
                 <div className="purchase-read-value">
-                  {purchase?.farmerName}
+                  {purchase?.sourceFarmId ? (
+                    <Link
+                      href={`/admin/procurement/farmers/${purchase.sourceFarmId}`}
+                      className="purchase-farm-link"
+                    >
+                      {purchase.farmerName}
+                      <ArrowUpRight size={16} />
+                    </Link>
+                  ) : (
+                    purchase?.farmerName
+                  )}
                 </div>
               )}
             </Field>
             <div className="purchase-farmer-info">
-              {farmerDetails.filter(Boolean).map((text, index) => (
-                <span key={index}>{text}</span>
-              ))}
+              {farmerDetails.map((text, index) => {
+                const Icon = [UserRound, Phone, MapPin][index];
+                return text ? (
+                  <span key={index}>
+                    <Icon size={14} />
+                    {index === 1 ? (
+                      <a href={`tel:${text.replace(/[^+\d]/g, "")}`}>{text}</a>
+                    ) : (
+                      text
+                    )}
+                  </span>
+                ) : null;
+              })}
             </div>
             {editing &&
               !options.isPending &&
@@ -522,7 +569,10 @@ function PurchaseForm({
               )}
           </section>
           <section className="purchase-section">
-            <h2>Условия закупки</h2>
+            <h2>
+              <Wheat size={18} />
+              Условия закупки
+            </h2>
             <div className="purchase-fields">
               <Field
                 name="cultureName"
@@ -615,7 +665,8 @@ function PurchaseForm({
                 )}
                 {values.vatMode === "EXCLUSIVE" && (
                   <p className="text-xs font-normal text-[#6d7976]">
-                    В этой закупке НДС начислен сверх цены по прежнему способу расчёта.
+                    В этой закупке НДС начислен сверх цены по прежнему способу
+                    расчёта.
                   </p>
                 )}
               </Field>
@@ -631,7 +682,10 @@ function PurchaseForm({
             </div>
           </section>
           <section className="purchase-section">
-            <h2>Договор</h2>
+            <h2>
+              <FileText size={18} />
+              Договор и документы
+            </h2>
             <div className="purchase-fields">
               <Field
                 name="agreementNumber"
@@ -653,11 +707,17 @@ function PurchaseForm({
                     min="1900-01-01"
                     max="2200-12-31"
                     aria-invalid={!!errors.agreementDate}
-                    aria-describedby={errors.agreementDate ? "error-agreementDate" : undefined}
+                    aria-describedby={
+                      errors.agreementDate ? "error-agreementDate" : undefined
+                    }
                     aria-required
                   />
                 ) : (
-                  <div className="purchase-read-value">{values.agreementDate ? format(parseISO(values.agreementDate), "dd.MM.yyyy") : "—"}</div>
+                  <div className="purchase-read-value">
+                    {values.agreementDate
+                      ? format(parseISO(values.agreementDate), "dd.MM.yyyy")
+                      : "—"}
+                  </div>
                 )}
               </Field>
             </div>
@@ -769,6 +829,10 @@ function PurchaseForm({
             )}
           </section>
           <section className="purchase-section">
+            <h2>
+              <MessageSquare size={18} />
+              Примечание
+            </h2>
             <Field name="notes" label="Примечание">
               {editing ? (
                 <textarea
@@ -787,7 +851,10 @@ function PurchaseForm({
           </section>
         </fieldset>
         <aside className="purchase-summary" aria-label="Расчёт закупки">
-          <h2>Расчёт закупки</h2>
+          <div className="purchase-summary-heading">
+            <h2>Расчёт закупки</h2>
+            <span className="purchase-status">{values.currency}</span>
+          </div>
           <dl>
             <div>
               <dt>Объём</dt>

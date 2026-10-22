@@ -1,0 +1,215 @@
+.record-workspace {
+  width: 100%;
+  max-width: 1480px;
+  min-width: 0;
+  margin-inline: auto;
+  color: var(--crm-ink);
+  letter-spacing: 0;
+}
+.record-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--crm-line);
+}
+.record-heading-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.record-heading-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 46px;
+  height: 46px;
+  border: 1px solid #f6d8b2;
+  border-radius: 8px;
+  color: var(--crm-orange-600);
+  background: var(--crm-orange-soft);
+}
+.record-heading-copy {
+  min-width: 0;
+}
+.record-heading h1 {
+  font-size: 26px;
+  font-weight: 760;
+  line-height: 1.25;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.record-heading-description {
+  color: var(--crm-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+.record-heading-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+.record-heading-actions [data-slot="button"] {
+  min-height: 40px;
+}
+.record-workspace :is(.trade-back, .purchase-back) {
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+.record-workspace :is(.trade-back, .purchase-back):hover {
+  color: var(--crm-green-600);
+}
+.record-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.record-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.record-label {
+  color: var(--crm-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.record-workspace
+  :is(
+    .trade-field input,
+    .trade-field button[role="combobox"],
+    .purchase-field input,
+    .purchase-field button[role="combobox"]
+  ) {
+  min-height: 44px;
+  border-color: var(--crm-line);
+  border-radius: 6px;
+  box-shadow: none;
+}
+.record-workspace :is(.trade-table th, .purchase-table th) {
+  background: var(--crm-surface-strong);
+  color: #607269;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.record-workspace :is(.trade-table td, .purchase-table td) {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.record-workspace :is(.trade-table tbody tr, .purchase-table tbody tr):hover {
+  background: var(--crm-surface);
+}
+.record-workspace :is(.trade-summary, .purchase-summary) {
+  scroll-margin-top: 90px;
+}
+.record-workspace.cost-workspace .trade-table-wrap {
+  border: 1px solid var(--crm-line);
+  border-radius: 8px;
+  background: white;
+}
+.record-workspace.cost-workspace .trade-table td {
+  padding-block: 16px;
+}
+.record-workspace .trade-details {
+  padding: 0 0 24px;
+  gap: 22px 28px;
+}
+.record-workspace .trade-details dd {
+  font-size: 15px;
+}
+.record-workspace .trade-toolbar {
+  border-bottom: 1px solid var(--crm-line);
+  margin-bottom: 24px;
+}
+.record-workspace .trade-summary {
+  box-shadow: var(--crm-shadow-sm);
+  border-radius: 8px;
+}
+@media (max-width: 1050px) {
+  .record-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 600px) {
+  .record-heading {
+    gap: 16px;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+  }
+  .record-heading h1 {
+    font-size: 22px;
+  }
+  .record-heading-icon {
+    flex-basis: 40px;
+    height: 40px;
+  }
+  .record-heading-main {
+    gap: 10px;
+  }
+  .record-heading-actions {
+    justify-content: flex-start;
+  }
+  .record-workspace
+    :is(
+      .trade-field input,
+      .trade-field button[role="combobox"],
+      .purchase-field input,
+      .purchase-field button[role="combobox"]
+    ) {
+    font-size: 16px;
+  }
+}
+@media (max-width: 760px) {
+  .record-workspace .trade-responsive-table,
+  .record-workspace .trade-responsive-table tbody {
+    display: block;
+    min-width: 0;
+  }
+  .record-workspace .trade-responsive-table thead {
+    display: none;
+  }
+  .record-workspace .trade-responsive-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 18px;
+    border-bottom: 1px solid var(--crm-line);
+  }
+  .record-workspace .trade-responsive-table tr:last-child {
+    border-bottom: 0;
+  }
+  .record-workspace.cost-workspace .trade-responsive-table td {
+    display: block;
+    border: 0;
+    padding: 0;
+    text-align: left;
+    white-space: normal;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .record-workspace .trade-responsive-table td:first-child {
+    grid-column: 1 / -1;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .record-workspace .trade-responsive-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    color: var(--crm-muted);
+    font-weight: 400;
+    margin-bottom: 4px;
+  }
+}

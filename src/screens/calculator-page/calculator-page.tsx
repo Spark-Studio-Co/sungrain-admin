@@ -13,8 +13,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { WorkspaceHeading } from "@/components/ui/workspace-heading";
+import { CrmRouteLoading } from "@/components/ui/crm-route-loading";
 import { Choice, Field, QueryError } from "./controls";
 import { CalculationSummary } from "./calculation-summary";
+import { costPerTonne } from "./calculator-model";
 import {
   dateText,
   errorText,
@@ -23,6 +26,7 @@ import {
   UNIT_SHORT,
 } from "@/entities/calculator/api";
 import "./trade.css";
+import "./cost-calculator.css";
 
 export default function CalculatorPage({ id }: { id?: string }) {
   const [search, setSearch] = useState("");
@@ -55,65 +59,66 @@ export default function CalculatorPage({ id }: { id?: string }) {
     }
   }
   return (
-    <div className="trade-workspace">
+    <div className="trade-workspace cost-workspace record-workspace">
       {id && (
         <Link href="/admin/calculator" className="trade-back">
           <ArrowLeft size={16} />
           Все расчёты
         </Link>
       )}
-      <header className="trade-heading">
-        <div>
-          <h1>{id ? record?.title || "Расчёт сделки" : "Калькулятор"}</h1>
-          <p>
-            {id && record
-              ? `${dateText(record.date)} · ${record.mode === "EXPORT" ? "Экспорт" : "Продажи по Казахстану"}`
-              : `${list.data?.total ?? 0} сохранённых расчётов`}
-          </p>
-        </div>
-        <div className="trade-heading-actions">
-          {id ? (
-            <>
-              <Button
-                variant="outline"
-                disabled={!record || exporting}
-                onClick={() => download("xlsx")}
-              >
-                <Download size={16} />
-                Excel
-              </Button>
-              <Button
-                variant="outline"
-                disabled={!record || exporting}
-                onClick={() => download("pdf")}
-              >
-                <Download size={16} />
-                PDF
-              </Button>
+      <WorkspaceHeading
+        icon={Calculator}
+        title={id ? record?.title || "Расчёт себестоимости" : "Калькулятор"}
+        description={
+          id && record
+            ? `${dateText(record.date)} · ${record.mode === "EXPORT" ? "Экспорт" : "Продажи по Казахстану"}`
+            : `${list.data?.total ?? 0} сохранённых расчётов`
+        }
+        actions={
+          <>
+            {id ? (
+              <>
+                <Button
+                  variant="outline"
+                  disabled={!record || exporting}
+                  onClick={() => download("xlsx")}
+                >
+                  <Download size={16} />
+                  Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={!record || exporting}
+                  onClick={() => download("pdf")}
+                >
+                  <Download size={16} />
+                  PDF
+                </Button>
+                <Button className="trade-primary" asChild>
+                  <Link href={`/admin/calculator/new?copy=${id}`}>
+                    <Copy size={16} />
+                    Создать копию
+                  </Link>
+                </Button>
+              </>
+            ) : (
               <Button className="trade-primary" asChild>
-                <Link href={`/admin/calculator/new?copy=${id}`}>
-                  <Copy size={16} />
-                  Создать копию
+                <Link href="/admin/calculator/new">
+                  <Plus size={16} />
+                  Новый расчёт
                 </Link>
               </Button>
-            </>
-          ) : (
-            <Button className="trade-primary" asChild>
-              <Link href="/admin/calculator/new">
-                <Plus size={16} />
-                Новый расчёт
-              </Link>
-            </Button>
-          )}
-        </div>
-      </header>
+            )}
+          </>
+        }
+      />
       {error && (
         <p className="trade-alert" role="alert">
           {error}
         </p>
       )}
       {query.isLoading ? (
-        <div className="trade-empty">Загрузка…</div>
+        <CrmRouteLoading />
       ) : query.isError ? (
         <QueryError retry={() => query.refetch()} />
       ) : !id ? (
@@ -146,7 +151,7 @@ export default function CalculatorPage({ id }: { id?: string }) {
           </div>
           {list.data?.items.length ? (
             <div className="trade-table-wrap">
-              <table className="trade-table">
+              <table className="trade-table trade-responsive-table">
                 <thead>
                   <tr>
                     <th>Расчёт</th>
@@ -154,7 +159,7 @@ export default function CalculatorPage({ id }: { id?: string }) {
                     <th>Режим</th>
                     <th className="trade-number">Объём, т</th>
                     <th className="trade-number">Себестоимость, ₸</th>
-                    <th className="trade-number">Прибыль, ₸</th>
+                    <th className="trade-number">На тонну, ₸</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -166,20 +171,25 @@ export default function CalculatorPage({ id }: { id?: string }) {
                         </Link>
                         <span className="trade-subline">{item.culture}</span>
                       </td>
-                      <td>{dateText(item.date)}</td>
-                      <td>
+                      <td data-label="Дата">{dateText(item.date)}</td>
+                      <td data-label="Режим">
                         <span className="trade-tag">
                           {item.mode === "EXPORT" ? "Экспорт" : "Казахстан"}
                         </span>
                       </td>
-                      <td className="trade-number">{moneyText(item.tonnes)}</td>
-                      <td className="trade-number">
-                        {moneyText(item.totalCostKzt)}
+                      <td data-label="Объём, т" className="trade-number">
+                        {moneyText(item.tonnes)}
                       </td>
                       <td
-                        className={`trade-number ${item.profitKzt.startsWith("-") ? "trade-negative" : ""}`}
+                        data-label="Себестоимость, ₸"
+                        className="trade-number"
                       >
-                        {moneyText(item.profitKzt)}
+                        {moneyText(item.totalCostKzt)}
+                      </td>
+                      <td data-label="На тонну, ₸" className="trade-number">
+                        {moneyText(
+                          costPerTonne(item.totalCostKzt, item.tonnes),
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -222,7 +232,7 @@ export default function CalculatorPage({ id }: { id?: string }) {
         </>
       ) : (
         record && (
-          <div className="trade-editor-layout">
+          <div className="trade-editor-layout cost-editor-layout">
             <div>
               <dl className="trade-details">
                 <div>
@@ -250,12 +260,14 @@ export default function CalculatorPage({ id }: { id?: string }) {
                   <dt>Закупочная цена</dt>
                   <dd>{moneyText(record.input.purchasePrice)} ₸/т</dd>
                 </div>
-                <div>
-                  <dt>Цена продажи</dt>
-                  <dd>
-                    {moneyText(record.input.salePrice)} {record.currency}/т
-                  </dd>
-                </div>
+                {record.input.schemaVersion !== 2 && (
+                  <div>
+                    <dt>Цена продажи</dt>
+                    <dd>
+                      {moneyText(record.input.salePrice)} {record.currency}/т
+                    </dd>
+                  </div>
+                )}
                 {record.result.purchaseReference && (
                   <div>
                     <dt>Исходная закупка</dt>
@@ -265,7 +277,11 @@ export default function CalculatorPage({ id }: { id?: string }) {
                       >
                         {record.result.purchaseReference.number}
                       </Link>
-                      <span className="trade-subline">{moneyText(record.result.purchaseReference.price)} {record.result.purchaseReference.currency}/т · {moneyText(record.result.purchaseReference.tonnes)} т</span>
+                      <span className="trade-subline">
+                        {moneyText(record.result.purchaseReference.price)}{" "}
+                        {record.result.purchaseReference.currency}/т ·{" "}
+                        {moneyText(record.result.purchaseReference.tonnes)} т
+                      </span>
                     </dd>
                   </div>
                 )}
@@ -275,14 +291,16 @@ export default function CalculatorPage({ id }: { id?: string }) {
                     <dd>
                       {record.result.applicationReference.contract} /{" "}
                       {record.result.applicationReference.name}
-                      <span className="trade-subline">{moneyText(record.result.applicationReference.price)} {record.result.applicationReference.currency}/т · {moneyText(record.result.applicationReference.tonnes)} т</span>
+                      <span className="trade-subline">
+                        {moneyText(record.result.applicationReference.tonnes)} т
+                      </span>
                     </dd>
                   </div>
                 )}
               </dl>
               <h2 className="mb-4 text-base font-bold">Состав расходов</h2>
               <div className="trade-table-wrap">
-                <table className="trade-table">
+                <table className="trade-table trade-responsive-table">
                   <thead>
                     <tr>
                       <th>Расход</th>
@@ -302,7 +320,7 @@ export default function CalculatorPage({ id }: { id?: string }) {
                             </span>
                           )}
                         </td>
-                        <td>
+                        <td data-label="Количество">
                           {moneyText(row.quantity)} {UNIT_SHORT[row.unit]}
                           {row.overtime && (
                             <span className="trade-subline">
@@ -310,8 +328,10 @@ export default function CalculatorPage({ id }: { id?: string }) {
                             </span>
                           )}
                         </td>
-                        <td className="trade-number">{moneyText(row.price)}</td>
-                        <td className="trade-number">
+                        <td data-label="Цена, ₸" className="trade-number">
+                          {moneyText(row.price)}
+                        </td>
+                        <td data-label="Сумма, ₸" className="trade-number">
                           {moneyText(row.amountKzt)}
                         </td>
                       </tr>
@@ -339,6 +359,9 @@ export default function CalculatorPage({ id }: { id?: string }) {
             <CalculationSummary
               result={record.result}
               currency={record.currency}
+              tonnes={record.input.tonnes}
+              wagons={record.input.wagons}
+              legacy={record.input.schemaVersion !== 2}
             />
           </div>
         )

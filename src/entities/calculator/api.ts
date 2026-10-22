@@ -68,6 +68,7 @@ export type CalculationLine = {
   overtime: boolean;
 };
 export type CalculationInput = {
+  schemaVersion?: 1 | 2;
   requestId?: string;
   sourceId?: string;
   title: string;
@@ -79,9 +80,9 @@ export type CalculationInput = {
   wagons: number;
   tonnes: string;
   purchasePrice: string;
-  salePrice: string;
+  salePrice?: string;
   currency: Currency;
-  techPdPerWagon: string;
+  techPdPerWagon?: string;
   elevatorId?: string;
   purchaseId?: string;
   applicationId?: number;
@@ -89,6 +90,7 @@ export type CalculationInput = {
   lines: CalculationLine[];
 };
 export type CalculationResult = {
+  schemaVersion?: number;
   fingerprint: string;
   fx: {
     currency: string;
@@ -107,19 +109,35 @@ export type CalculationResult = {
     effectiveFrom?: string;
   })[];
   elevatorName: string | null;
-  purchaseReference: { id: string; number: string; price: string; currency: string; tonnes: string } | null;
-  applicationReference: { id: number; name: string; contract: string; price: string; currency: string; tonnes: string } | null;
+  purchaseReference: {
+    id: string;
+    number: string;
+    price: string;
+    currency: string;
+    tonnes: string;
+  } | null;
+  applicationReference: {
+    id: number;
+    name: string;
+    contract: string;
+    price: string;
+    currency: string;
+    tonnes: string;
+  } | null;
   purchaseKzt: string;
   expensesKzt: string;
   totalCostKzt: string;
-  revenueKzt: string;
-  revenueCurrency: string;
-  profitKzt: string;
-  profitCurrency: string;
+  totalCostCurrency?: string;
+  wagonExpensesKzt?: string;
+  elevatorExpensesKzt?: string;
+  revenueKzt: string | null;
+  revenueCurrency: string | null;
+  profitKzt: string | null;
+  profitCurrency: string | null;
   costPerTonneKzt: string;
   costPerTonneCurrency: string;
-  profitPerTonneKzt: string;
-  profitPerTonneCurrency: string;
+  profitPerTonneKzt: string | null;
+  profitPerTonneCurrency: string | null;
   marginPercent: string | null;
 };
 export type Calculation = {
@@ -131,7 +149,7 @@ export type Calculation = {
   currency: Currency;
   tonnes: string;
   totalCostKzt: string;
-  profitKzt: string;
+  profitKzt: string | null;
   createdAt: string;
   sourceId: string | null;
   input: CalculationInput;

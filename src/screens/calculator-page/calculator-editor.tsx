@@ -1,49 +1,57 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Calculator, Plus, Save, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  Calculator,
+  Check,
+  ChevronDown,
+  Globe2,
+  Link2,
+  Loader2,
+  MapPin,
+  Plus,
+  Save,
+  TrainFront,
+  Trash2,
+  Warehouse,
+  Wheat,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DatePickerInput } from "@/components/ui/date-picker";
+import { CrmRouteLoading } from "@/components/ui/crm-route-loading";
+import { WorkspaceHeading } from "@/components/ui/workspace-heading";
 import { Choice, Field, NumberField, QueryError, TextField } from "./controls";
 import { CalculationSummary } from "./calculation-summary";
 import {
+  copyCalculation,
+  emptyInput,
+  rowAmount,
+  wagonCount,
+} from "./calculator-model";
+import {
   applicableRate,
-  CATEGORIES,
+  dateText,
   errorText,
   moneyText,
   todayKz,
   tradeApi,
-  UNITS,
+  UNIT_SHORT,
   type CalculationInput,
   type CalculationLine,
   type CalculationResult,
-  type CostUnit,
   type Currency,
+  type ElevatorService,
 } from "@/entities/calculator/api";
 import "./trade.css";
-
-const emptyInput = (elevatorId?: string): CalculationInput => ({
-  requestId: crypto.randomUUID(),
-  title: "",
-  mode: "DOMESTIC",
-  date: todayKz(),
-  culture: "",
-  departureStation: "",
-  destinationStation: "",
-  wagons: 1,
-  tonnes: "60",
-  purchasePrice: "",
-  salePrice: "",
-  currency: "KZT",
-  techPdPerWagon: "",
-  ...(elevatorId ? { elevatorId } : {}),
-  notes: "",
-  lines: [],
-});
+import "./cost-calculator.css";
 
 export default function CalculatorEditor() {
   const params = useSearchParams();
@@ -51,15 +59,19 @@ export default function CalculatorEditor() {
   const client = useQueryClient();
   const copy = params.get("copy");
   const [input, setInput] = useState<CalculationInput>(() =>
-    emptyInput(params.get("elevator") || undefined),
+    emptyInput(todayKz(), params.get("elevator") || undefined),
   );
   const inputRef = useRef(input);
+  const formRef = useRef<HTMLFormElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
   const loadedCopy = useRef<string | null>(null);
+  const [omitted, setOmitted] = useState<string[]>([]);
+  const [reconciled, setReconciled] = useState(false);
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [error, setError] = useState("");
   const [calculating, setCalculating] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [selectedService, setSelectedService] = useState("none");
+  const [serviceSearch, setServiceSearch] = useState("");
   const options = useQuery({
     queryKey: ["calculator-options"],
     queryFn: tradeApi.options,
@@ -73,30 +85,27 @@ export default function CalculatorEditor() {
     queryFn: () => tradeApi.get(copy!),
     enabled: !!copy,
   });
+
   useEffect(() => {
     if (!original.data || loadedCopy.current === original.data.id) return;
     loadedCopy.current = original.data.id;
-    const next: CalculationInput = {
-      ...original.data.input,
-      requestId: crypto.randomUUID(),
-      sourceId: original.data.id,
-      title: `${original.data.title.slice(0, 150)} (копия)`,
-      date: todayKz(),
-      lines: original.data.input.lines.map((row) => ({
-        ...row,
-        id: crypto.randomUUID(),
-      })),
-    };
-    inputRef.current = next;
-    setInput(next);
+    const next = copyCalculation(original.data, todayKz());
+    inputRef.current = next.input;
+    setInput(next.input);
+    setOmitted(next.omitted);
     setResult(null);
   }, [original.data]);
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
+
   function change(patch: Partial<CalculationInput>) {
     const next = {
       ...inputRef.current,
       ...patch,
       requestId: crypto.randomUUID(),
     };
+    next.wagons = wagonCount(next.lines);
     inputRef.current = next;
     setInput(next);
     setResult(null);
@@ -110,41 +119,91 @@ export default function CalculatorEditor() {
     });
   }
   const elevator = elevators.data?.find((item) => item.id === input.elevatorId);
-  const availableServices =
+  const wagonLines = input.lines.filter((line) => !line.serviceId);
+  const serviceLines = input.lines.filter((line) => line.serviceId);
+  const services =
     elevator?.services.filter(
       (service) =>
-        !service.archived &&
-        !input.lines.some((row) => row.serviceId === service.id),
+        !service.archived ||
+        serviceLines.some((line) => line.serviceId === service.id),
     ) || [];
-  const canAddService = availableServices.some(
-    (service) =>
-      service.id === selectedService && applicableRate(service, input.date),
+  const filteredServices = services.filter((service) =>
+    service.name
+      .toLocaleLowerCase("ru")
+      .includes(serviceSearch.toLocaleLowerCase("ru")),
   );
-  function addService() {
-    const service = availableServices.find(
-      (item) => item.id === selectedService,
+  const unavailableLines = serviceLines.filter(
+    (line) => !services.some((service) => service.id === line.serviceId),
+  );
+  const servicesInvalid =
+    !!unavailableLines.length ||
+    serviceLines.some((line) => {
+      const service = services.find((s) => s.id === line.serviceId);
+      return (
+        !service || service.archived || !applicableRate(service, input.date)
+      );
+    }) ||
+    !!elevator?.archived;
+  function toggleService(service: ElevatorService, checked: boolean) {
+    const remaining = inputRef.current.lines.filter(
+      (line) =>
+        line.serviceId !== service.id &&
+        (!checked ||
+          !service.alternativeGroup ||
+          !elevator?.services.some(
+            (s) =>
+              s.id === line.serviceId &&
+              s.alternativeGroup === service.alternativeGroup,
+          )),
     );
-    const rate = service && applicableRate(service, input.date);
-    if (!service || !rate) return;
+    const rate = applicableRate(service, input.date);
+    if (checked && (!rate || service.archived)) return;
+    change({
+      lines: checked
+        ? [
+            ...remaining,
+            {
+              id: crypto.randomUUID(),
+              serviceId: service.id,
+              name: service.name,
+              category: "ELEVATOR",
+              unit: service.unit,
+              price: rate!.price,
+              factor: "1",
+              overtime: false,
+            },
+          ]
+        : remaining,
+    });
+  }
+  function addWagons() {
     change({
       lines: [
-        ...input.lines,
+        ...inputRef.current.lines,
         {
           id: crypto.randomUUID(),
-          serviceId: service.id,
-          name: service.name,
-          unit: service.unit,
-          price: rate.price,
-          category: "ELEVATOR",
+          name: "Вагоны",
+          category: "TRANSPORT",
+          unit: "WAGON",
+          price: "",
           factor: "1",
           overtime: false,
         },
       ],
     });
-    setSelectedService("none");
   }
   async function calculate(event: FormEvent) {
     event.preventDefault();
+    if (servicesInvalid) {
+      setError(
+        "Проверьте выбранные услуги: часть тарифов недоступна на дату расчёта.",
+      );
+      return;
+    }
+    if (omitted.length && !reconciled) {
+      setError("Сверьте расходы, которые не перенеслись из старого расчёта.");
+      return;
+    }
     setError("");
     setCalculating(true);
     const current = inputRef.current;
@@ -159,20 +218,21 @@ export default function CalculatorEditor() {
     }
   }
   async function save() {
-    if (!result) return;
+    if (!result || !formRef.current?.reportValidity()) return;
     setSaving(true);
     setError("");
     try {
-      const record = await tradeApi.save(input, result.fingerprint);
+      const record = await tradeApi.save(inputRef.current, result.fingerprint);
       await client.invalidateQueries({ queryKey: ["calculations"] });
       router.push(`/admin/calculator/${record.id}`);
     } catch (error) {
       setError(errorText(error));
+      setResult(null);
       setSaving(false);
     }
   }
   if (options.isLoading || elevators.isLoading || (copy && original.isLoading))
-    return <div className="trade-empty">Загрузка…</div>;
+    return <CrmRouteLoading />;
   if (options.isError || elevators.isError || (copy && original.isError))
     return (
       <QueryError
@@ -183,46 +243,94 @@ export default function CalculatorEditor() {
         }}
       />
     );
+
   return (
-    <div className="trade-workspace">
+    <div className="trade-workspace cost-workspace cost-editor-screen record-workspace">
       <Link href="/admin/calculator" className="trade-back">
-        <ArrowLeft size={16} />
+        <ArrowLeft size={15} />
         Все расчёты
       </Link>
-      <header className="trade-heading">
-        <div>
-          <h1>{copy ? "Копия расчёта" : "Новый расчёт"}</h1>
-        </div>
-        <Button asChild variant="outline">
-          <Link href="/admin/elevators">Элеваторы и тарифы</Link>
-        </Button>
-      </header>
-      <div className="trade-mode" aria-label="Режим расчёта">
-        {(["DOMESTIC", "EXPORT"] as const).map((mode) => (
-          <button
-            key={mode}
-            disabled={saving}
-            type="button"
-            aria-pressed={input.mode === mode}
-            onClick={() => {
-              if (input.mode !== mode)
-                change({
-                  mode,
-                  currency: mode === "DOMESTIC" ? "KZT" : "USD",
-                  salePrice: "",
-                });
-            }}
-          >
-            {mode === "DOMESTIC" ? "Продажи по Казахстану" : "Экспорт"}
-          </button>
-        ))}
-      </div>
-      <div className="trade-editor-layout">
-        <form id="trade-calculation-form" onSubmit={calculate}>
-          <fieldset disabled={saving}>
-            <section className="trade-section">
-              <h2>Параметры сделки</h2>
-              <div className="trade-form-grid">
+      <WorkspaceHeading
+        icon={Calculator}
+        title={copy ? "Копия расчёта" : "Новый расчёт"}
+        description="Себестоимость партии"
+        actions={
+          <Button asChild variant="outline">
+            <Link href="/admin/elevators">
+              <Warehouse size={16} />
+              Элеваторы и тарифы
+              <ArrowUpRight size={15} />
+            </Link>
+          </Button>
+        }
+      />
+      <div className="trade-editor-layout cost-editor-layout">
+        <form id="trade-calculation-form" ref={formRef} onSubmit={calculate}>
+          <fieldset disabled={saving} className="cost-form-fieldset">
+            {omitted.length > 0 && (
+              <div className="cost-copy-notice" role="note">
+                <strong>Проверьте расходы исходного расчёта</strong>
+                <p>
+                  Не перенесены: {omitted.join(", ")}. Вагоны добавьте
+                  отдельными строками, остальные расходы выберите в услугах
+                  элеватора.
+                </p>
+                <label className="trade-checkbox">
+                  <Checkbox
+                    checked={reconciled}
+                    onCheckedChange={(v) => {
+                      setReconciled(v === true);
+                      setResult(null);
+                    }}
+                  />
+                  Расходы сверены
+                </label>
+              </div>
+            )}
+            <section className="cost-section">
+              <div className="cost-section-title">
+                <Wheat size={19} />
+                <h2>Партия</h2>
+              </div>
+              <div className="cost-context-row">
+                <div
+                  className="trade-mode cost-mode"
+                  role="group"
+                  aria-label="Направление расчёта"
+                >
+                  {(["DOMESTIC", "EXPORT"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      aria-pressed={input.mode === mode}
+                      onClick={() => {
+                        if (input.mode !== mode)
+                          change({
+                            mode,
+                            currency: mode === "DOMESTIC" ? "KZT" : "USD",
+                          });
+                      }}
+                    >
+                      {mode === "DOMESTIC" ? (
+                        <MapPin size={15} />
+                      ) : (
+                        <Globe2 size={15} />
+                      )}
+                      {mode === "DOMESTIC" ? "Казахстан" : "Экспорт"}
+                    </button>
+                  ))}
+                </div>
+                <Field label="Дата расчёта">
+                  <DatePickerInput
+                    value={input.date}
+                    onChange={(date) => change({ date })}
+                    max={input.currency !== "KZT" ? todayKz() : undefined}
+                    aria-label="Дата расчёта"
+                    aria-required
+                  />
+                </Field>
+              </div>
+              <div className="trade-form-grid cost-party-grid">
                 <TextField
                   label="Название расчёта"
                   value={input.title}
@@ -230,86 +338,38 @@ export default function CalculatorEditor() {
                   required
                   wide
                 />
-                <Field label="Дата расчёта">
-                  <DatePickerInput
-                    value={input.date}
-                    onChange={(date) => change({ date })}
-                    max={input.mode === "EXPORT" ? todayKz() : undefined}
-                    aria-label="Дата расчёта"
-                    aria-required
-                  />
-                </Field>
                 <TextField
                   label="Культура"
                   value={input.culture}
                   onChange={(culture) => change({ culture })}
                   required
                 />
-                <Choice
-                  label="Закупка"
-                  value={input.purchaseId || "none"}
-                  onChange={(value) => {
-                    const purchase = options.data?.purchases.find(
-                      (item) => item.id === value,
-                    );
-                    change(
-                      purchase
-                        ? {
-                            purchaseId: value,
-                            purchasePrice: purchase.unitPrice,
-                            culture: purchase.cultureName,
-                            tonnes: purchase.quantity,
-                          }
-                        : { purchaseId: undefined },
-                    );
-                  }}
-                  options={[
-                    { value: "none", label: "Без привязки" },
-                    ...(options.data?.purchases
-                      .filter((p) => p.currency === "KZT")
-                      .map((p) => ({
-                        value: p.id,
-                        label: `${p.agreementNumber} · ${p.cultureName}`,
-                      })) || []),
-                  ]}
+                <NumberField
+                  label="Объём партии, т"
+                  value={input.tonnes}
+                  step="0.001"
+                  min="0.001"
+                  onChange={(tonnes) => change({ tonnes })}
                 />
-                <Choice
-                  label="Контракт / приложение"
-                  value={
-                    input.applicationId ? String(input.applicationId) : "none"
-                  }
-                  onChange={(value) => {
-                    const application = options.data?.applications.find(
-                      (item) => item.id === Number(value),
-                    );
-                    const compatibleCurrency = application &&
-                      ["USD", "EUR", "RUB", "CNY", "KZT"].includes(application.currency || "") &&
-                      (input.mode === "EXPORT" || application.currency === "KZT");
-                    change(
-                      application
-                        ? {
-                            applicationId: application.id,
-                            culture: application.culture,
-                            departureStation:
-                              application.departure_stations.join(", "),
-                            destinationStation:
-                              application.destination_stations.join(", "),
-                            salePrice: compatibleCurrency ? String(application.price_per_ton) : "",
-                            ...(input.mode === "EXPORT" && compatibleCurrency
-                              ? { currency: application.currency as Currency }
-                              : {}),
-                          }
-                        : { applicationId: undefined },
-                    );
-                  }}
-                  options={[
-                    { value: "none", label: "Без привязки" },
-                    ...(options.data?.applications.map((a) => ({
-                      value: String(a.id),
-                      label: `${a.contract.number} · ${a.name || a.id}`,
-                    })) || []),
-                  ]}
+                <NumberField
+                  label="Закупочная цена, ₸/т"
+                  value={input.purchasePrice}
+                  onChange={(purchasePrice) => change({ purchasePrice })}
                 />
+                {input.mode === "EXPORT" && (
+                  <Choice
+                    label="Валюта расчёта"
+                    value={input.currency}
+                    onChange={(currency) =>
+                      change({ currency: currency as Currency })
+                    }
+                    options={["USD", "EUR", "RUB", "CNY", "KZT"].map(
+                      (value) => ({ value, label: value }),
+                    )}
+                  />
+                )}
+              </div>
+              <div className="trade-form-grid cost-route-grid">
                 <TextField
                   label="Станция отправления"
                   value={input.departureStation}
@@ -324,51 +384,192 @@ export default function CalculatorEditor() {
                   }
                   required
                 />
-                <NumberField
-                  label="Количество вагонов"
-                  value={input.wagons || ""}
-                  step="1"
-                  min="1"
-                  onChange={(wagons) => change({ wagons: Number(wagons) })}
-                />
-                <NumberField
-                  label="Общий объём, т"
-                  value={input.tonnes}
-                  step="0.001"
-                  min="0.001"
-                  onChange={(tonnes) => change({ tonnes })}
-                />
-                <NumberField
-                  label="Закупочная цена, KZT/т"
-                  value={input.purchasePrice}
-                  onChange={(purchasePrice) => change({ purchasePrice })}
-                />
-                <NumberField
-                  label={`Цена продажи, ${input.currency}/т`}
-                  value={input.salePrice}
-                  onChange={(salePrice) => change({ salePrice })}
-                />
-                {input.mode === "EXPORT" && (
-                  <Choice
-                    label="Валюта продажи"
-                    value={input.currency}
-                    onChange={(currency) =>
-                      change({ currency: currency as Currency, salePrice: "" })
-                    }
-                    options={["USD", "EUR", "RUB", "CNY", "KZT"].map(
-                      (value) => ({ value, label: value }),
-                    )}
-                  />
-                )}
-                <NumberField
-                  label="ТехПД, KZT/вагон"
-                  value={input.techPdPerWagon}
-                  onChange={(techPdPerWagon) => change({ techPdPerWagon })}
-                />
               </div>
+              <details className="cost-links">
+                <summary>
+                  <Link2 size={15} />
+                  Связать с закупкой или приложением
+                  <ChevronDown size={15} />
+                  {(input.purchaseId || input.applicationId) && (
+                    <Check size={14} />
+                  )}
+                </summary>
+                <div className="trade-form-grid">
+                  <Choice
+                    label="Закупка"
+                    value={input.purchaseId || "none"}
+                    onChange={(value) => {
+                      const p = options.data?.purchases.find(
+                        (item) => item.id === value,
+                      );
+                      change(
+                        p
+                          ? {
+                              purchaseId: p.id,
+                              culture: p.cultureName,
+                              tonnes: p.quantity,
+                              purchasePrice: p.unitPrice,
+                            }
+                          : { purchaseId: undefined },
+                      );
+                    }}
+                    options={[
+                      { value: "none", label: "Без привязки" },
+                      ...(options.data?.purchases
+                        .filter((p) => p.currency === "KZT")
+                        .map((p) => ({
+                          value: p.id,
+                          label: `${p.agreementNumber} · ${p.cultureName}`,
+                        })) || []),
+                    ]}
+                  />
+                  <Choice
+                    label="Контракт / приложение"
+                    value={
+                      input.applicationId ? String(input.applicationId) : "none"
+                    }
+                    onChange={(value) => {
+                      const a = options.data?.applications.find(
+                        (item) => item.id === Number(value),
+                      );
+                      change(
+                        a
+                          ? {
+                              applicationId: a.id,
+                              culture: a.culture,
+                              departureStation: a.departure_stations.join(", "),
+                              destinationStation:
+                                a.destination_stations.join(", "),
+                            }
+                          : { applicationId: undefined },
+                      );
+                    }}
+                    options={[
+                      { value: "none", label: "Без привязки" },
+                      ...(options.data?.applications.map((a) => ({
+                        value: String(a.id),
+                        label: `${a.contract.number} · ${a.name || a.id}`,
+                      })) || []),
+                    ]}
+                  />
+                </div>
+              </details>
             </section>
-            <section className="trade-section">
-              <h2>Элеватор</h2>
+            <section className="cost-section">
+              <div className="cost-section-heading">
+                <div className="cost-section-title">
+                  <TrainFront size={19} />
+                  <h2>Вагоны</h2>
+                  <span className="cost-count">{input.wagons}</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addWagons}
+                  disabled={input.lines.length >= 100}
+                >
+                  <Plus size={15} />
+                  Добавить вагоны
+                </Button>
+              </div>
+              {!wagonLines.length ? (
+                <div className="cost-empty-row">
+                  <TrainFront size={23} />
+                  <span>Расходы на вагоны не добавлены</span>
+                </div>
+              ) : (
+                <div className="cost-wagon-list">
+                  {wagonLines.map((row, i) => (
+                    <div className="cost-wagon-row" key={row.id}>
+                      <Field label={`Вагоны ${i + 1}`}>
+                        <Input
+                          aria-label={`Название вагонов ${i + 1}`}
+                          maxLength={160}
+                          value={row.name === "Вагоны" ? "" : row.name}
+                          placeholder="Собственник или примечание"
+                          onChange={(e) =>
+                            lineChange(row.id, {
+                              name: e.target.value.trim()
+                                ? e.target.value
+                                : "Вагоны",
+                            })
+                          }
+                        />
+                      </Field>
+                      <NumberField
+                        label="Количество"
+                        ariaLabel={`Количество, строка ${i + 1}`}
+                        value={row.factor}
+                        step="1"
+                        min="1"
+                        onChange={(factor) => lineChange(row.id, { factor })}
+                      />
+                      <NumberField
+                        label="Цена, ₸/вагон"
+                        ariaLabel={`Цена за вагон, ₸, строка ${i + 1}`}
+                        value={row.price}
+                        onChange={(price) => lineChange(row.id, { price })}
+                      />
+                      <div className="cost-row-amount">
+                        <span>Сумма</span>
+                        <strong>
+                          {moneyText(
+                            rowAmount(
+                              row.price,
+                              "WAGON",
+                              input.tonnes,
+                              input.wagons,
+                              row.factor,
+                              false,
+                              true,
+                            ),
+                          )}{" "}
+                          ₸
+                        </strong>
+                      </div>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        title="Удалить вагоны"
+                        aria-label={`Удалить вагоны ${i + 1}`}
+                        onClick={() =>
+                          change({
+                            lines: input.lines.filter(
+                              (line) => line.id !== row.id,
+                            ),
+                          })
+                        }
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+            <section className="cost-section">
+              <div className="cost-section-heading">
+                <div className="cost-section-title">
+                  <Warehouse size={19} />
+                  <h2>Услуги элеватора</h2>
+                  {!!serviceLines.length && (
+                    <span className="cost-count">{serviceLines.length}</span>
+                  )}
+                </div>
+                {elevator && (
+                  <Button asChild variant="ghost" size="sm">
+                    <Link
+                      href={`/admin/elevators/${elevator.id}`}
+                      target="_blank"
+                    >
+                      Тарифы
+                      <ArrowUpRight size={14} />
+                    </Link>
+                  </Button>
+                )}
+              </div>
               <Choice
                 label="Элеватор"
                 value={input.elevatorId || "none"}
@@ -377,199 +578,187 @@ export default function CalculatorEditor() {
                     elevatorId: value === "none" ? undefined : value,
                     lines: input.lines.filter((row) => !row.serviceId),
                   });
-                  setSelectedService("none");
+                  setServiceSearch("");
                 }}
                 options={[
-                  { value: "none", label: "Не выбран" },
+                  { value: "none", label: "Выберите элеватор" },
                   ...(elevators.data
                     ?.filter((e) => !e.archived || e.id === input.elevatorId)
                     .map((e) => ({
                       value: e.id,
-                      label: `${e.name}${e.archived ? " (архив)" : ""}`,
+                      label: `${e.name}${e.archived ? " · архив" : ""}`,
                     })) || []),
                 ]}
               />
-              {elevator && (
-                <div className="trade-service-add">
-                  <Choice
-                    label="Услуга элеватора"
-                    value={selectedService}
-                    onChange={setSelectedService}
-                    options={[
-                      { value: "none", label: "Выберите услугу" },
-                      ...availableServices.map((service) => {
-                        const rate = applicableRate(service, input.date);
-                        return {
-                          value: service.id,
-                          label: `${service.name} · ${rate ? `${moneyText(rate.price)} ₸` : "нет тарифа на дату"}`,
-                        };
-                      }),
-                    ]}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={!canAddService}
-                    onClick={addService}
-                  >
-                    <Plus size={16} />
-                    Добавить
-                  </Button>
+              {!elevator ? (
+                <div className="cost-empty-row">
+                  <Warehouse size={23} />
+                  <span>Элеватор не выбран</span>
                 </div>
-              )}
-            </section>
-            <section className="trade-section">
-              <div className="trade-section-heading">
-                <h2>Расходы</h2>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={input.lines.length >= 100}
-                  onClick={() =>
-                    change({
-                      lines: [
-                        ...input.lines,
-                        {
-                          id: crypto.randomUUID(),
-                          name: "",
-                          category: "OTHER",
-                          unit: "WAGON",
-                          price: "",
-                          factor: "1",
-                          overtime: false,
-                        },
-                      ],
-                    })
-                  }
-                >
-                  <Plus size={16} />
-                  Добавить расход
-                </Button>
-              </div>
-              {!input.lines.length && (
-                <p className="trade-note">Дополнительных расходов нет</p>
-              )}
-              {input.lines.map((row, index) => {
-                const service = elevator?.services.find(
-                  (s) => s.id === row.serviceId,
-                );
-                const rate = service && applicableRate(service, input.date);
-                return (
-                  <div className="trade-cost-row" key={row.id}>
-                    <div className="trade-cost-top">
-                      <div>
-                        {row.serviceId ? (
-                          <strong>{service?.name || row.name}</strong>
-                        ) : (
-                          <Input
-                            aria-label={`Название расхода ${index + 1}`}
-                            placeholder="Название расхода"
-                            maxLength={160}
-                            required
-                            value={row.name}
-                            onChange={(e) =>
-                              lineChange(row.id, { name: e.target.value })
-                            }
-                          />
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        title="Удалить расход"
-                        aria-label={`Удалить расход ${index + 1}`}
-                        onClick={() =>
-                          change({
-                            lines: input.lines.filter(
-                              (item) => item.id !== row.id,
-                            ),
-                          })
-                        }
-                      >
-                        <Trash2 size={16} />
+              ) : (
+                <>
+                  {elevator.archived && (
+                    <p className="trade-alert">
+                      Элеватор в архиве. Выберите действующий элеватор.
+                    </p>
+                  )}
+                  {services.length > 6 && (
+                    <Input
+                      className="cost-service-search"
+                      aria-label="Поиск услуги"
+                      placeholder="Найти услугу"
+                      value={serviceSearch}
+                      onChange={(e) => setServiceSearch(e.target.value)}
+                    />
+                  )}
+                  {!services.length && (
+                    <div className="cost-empty-row">
+                      <span>Услуги пока не добавлены</span>
+                      <Button asChild variant="outline" size="sm">
+                        <Link
+                          href={`/admin/elevators/${elevator.id}`}
+                          target="_blank"
+                        >
+                          <Plus size={14} />
+                          Добавить в элеватор
+                        </Link>
                       </Button>
                     </div>
-                    <div className="trade-cost-controls">
-                      {row.serviceId ? (
-                        <Field label="Единица тарифа">
-                          <div className="trade-readonly">
-                            {UNITS[service?.unit || row.unit]}
+                  )}
+                  {services.length > 0 && !filteredServices.length && (
+                    <p className="cost-empty-row">Услуги не найдены</p>
+                  )}
+                  <div className="cost-services">
+                    {filteredServices.map((service) => {
+                      const row = serviceLines.find(
+                        (line) => line.serviceId === service.id,
+                      );
+                      const rate = applicableRate(service, input.date);
+                      const invalid =
+                        service.archived || !rate || elevator.archived;
+                      const amount =
+                        row && rate
+                          ? rowAmount(
+                              rate.price,
+                              service.unit,
+                              input.tonnes,
+                              input.wagons,
+                              row.factor,
+                              row.overtime,
+                            )
+                          : null;
+                      return (
+                        <div
+                          key={service.id}
+                          className={`cost-service ${row ? "is-selected" : ""} ${invalid ? "is-unavailable" : ""}`}
+                        >
+                          <div className="cost-service-main">
+                            <Checkbox
+                              id={`service-${service.id}`}
+                              checked={!!row}
+                              disabled={
+                                !row && (invalid || input.lines.length >= 100)
+                              }
+                              onCheckedChange={(v) =>
+                                toggleService(service, v === true)
+                              }
+                            />
+                            <label
+                              htmlFor={`service-${service.id}`}
+                              className="cost-service-name"
+                            >
+                              <strong>{service.name}</strong>
+                              <span
+                                title={
+                                  rate
+                                    ? `Тариф от ${dateText(rate.effectiveFrom)}`
+                                    : undefined
+                                }
+                              >
+                                {service.archived
+                                  ? "Услуга в архиве"
+                                  : !rate
+                                    ? "Нет тарифа на выбранную дату"
+                                    : `${moneyText(rate.price)} ₸ / ${UNIT_SHORT[service.unit]}`}
+                              </span>
+                            </label>
+                            <div className="cost-service-amount">
+                              {row ? (
+                                <strong>{moneyText(amount)} ₸</strong>
+                              ) : (
+                                <span>—</span>
+                              )}
+                            </div>
                           </div>
-                        </Field>
-                      ) : (
-                        <Choice
-                          label={`Единица расхода ${index + 1}`}
-                          value={row.unit}
-                          onChange={(unit) =>
-                            lineChange(row.id, { unit: unit as CostUnit })
-                          }
-                          options={Object.entries(UNITS).map(
-                            ([value, label]) => ({ value, label }),
-                          )}
-                        />
-                      )}
-                      {row.serviceId ? (
-                        <Field label="Цена, KZT">
-                          <div className="trade-readonly">
-                            {rate ? moneyText(rate.price) : "Нет тарифа"}
-                          </div>
-                        </Field>
-                      ) : (
-                        <NumberField
-                          label={`Цена расхода ${index + 1}, KZT`}
-                          value={row.price}
-                          onChange={(price) => lineChange(row.id, { price })}
-                        />
-                      )}
-                      {["ITEM", "TONNE_MONTH", "TONNE_PERCENT"].includes(
-                        row.unit,
-                      ) && (
-                        <NumberField
-                          label={
-                            row.unit === "ITEM"
-                              ? `Количество, расход ${index + 1}`
-                              : row.unit === "TONNE_MONTH"
-                                ? `Месяцев, расход ${index + 1}`
-                                : `Снимаемые п.п., расход ${index + 1}`
-                          }
-                          step="0.001"
-                          value={row.factor}
-                          onChange={(factor) => lineChange(row.id, { factor })}
-                        />
-                      )}
-                      {!row.serviceId && (
-                        <Choice
-                          label={`Категория расхода ${index + 1}`}
-                          value={row.category}
-                          onChange={(category) =>
-                            lineChange(row.id, {
-                              category: category as CalculationLine["category"],
-                            })
-                          }
-                          options={Object.entries(CATEGORIES).map(
-                            ([value, label]) => ({ value, label }),
-                          )}
-                        />
-                      )}
-                    </div>
-                    {service?.overtimeEligible && (
-                      <label className="trade-checkbox mt-3">
-                        <input
-                          type="checkbox"
-                          checked={row.overtime}
-                          onChange={(e) =>
-                            lineChange(row.id, { overtime: e.target.checked })
-                          }
-                        />
-                        Неурочное время ×1,5
-                      </label>
-                    )}
+                          {row &&
+                            (service.overtimeEligible ||
+                              ["ITEM", "TONNE_MONTH", "TONNE_PERCENT"].includes(
+                                service.unit,
+                              )) && (
+                              <div className="cost-service-options">
+                                {[
+                                  "ITEM",
+                                  "TONNE_MONTH",
+                                  "TONNE_PERCENT",
+                                ].includes(service.unit) && (
+                                  <NumberField
+                                    label={
+                                      service.unit === "ITEM"
+                                        ? "Количество"
+                                        : service.unit === "TONNE_MONTH"
+                                          ? "Месяцев хранения"
+                                          : "Снимаемые п.п."
+                                    }
+                                    ariaLabel={`${service.unit === "ITEM" ? "Количество" : service.unit === "TONNE_MONTH" ? "Месяцев хранения" : "Снимаемые п.п."}: ${service.name}`}
+                                    value={row.factor}
+                                    min="0.001"
+                                    step="0.001"
+                                    onChange={(factor) =>
+                                      lineChange(row.id, { factor })
+                                    }
+                                  />
+                                )}
+                                {service.overtimeEligible && (
+                                  <label className="trade-checkbox">
+                                    <Checkbox
+                                      checked={row.overtime}
+                                      onCheckedChange={(v) =>
+                                        lineChange(row.id, {
+                                          overtime: v === true,
+                                        })
+                                      }
+                                    />
+                                    Неурочное время ×1,5
+                                  </label>
+                                )}
+                              </div>
+                            )}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </>
+              )}
+              {unavailableLines.map((line) => (
+                <div key={line.id} className="cost-unavailable-line">
+                  <span>Услуга недоступна: {line.name}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Удалить недоступную услугу ${line.name}`}
+                    onClick={() =>
+                      change({
+                        lines: input.lines.filter((row) => row.id !== line.id),
+                      })
+                    }
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              ))}
             </section>
-            <section className="trade-section">
+            <section className="cost-section cost-comment">
               <TextField
                 label="Комментарий"
                 value={input.notes}
@@ -580,12 +769,22 @@ export default function CalculatorEditor() {
             </section>
           </fieldset>
           {error && (
-            <p role="alert" className="trade-alert">
+            <div
+              ref={errorRef}
+              tabIndex={-1}
+              role="alert"
+              className="trade-alert"
+            >
               {error}
-            </p>
+            </div>
           )}
         </form>
-        <CalculationSummary result={result} currency={input.currency}>
+        <CalculationSummary
+          result={result}
+          currency={input.currency}
+          tonnes={input.tonnes}
+          wagons={input.wagons}
+        >
           <div className="trade-actions">
             <Button
               type="submit"
@@ -599,27 +798,56 @@ export default function CalculatorEditor() {
             <Button
               type="button"
               variant="outline"
-              disabled={!result || calculating || saving}
+              disabled={
+                !result ||
+                calculating ||
+                saving ||
+                servicesInvalid ||
+                (omitted.length > 0 && !reconciled)
+              }
               onClick={save}
             >
-              <Save size={16} />
+              {saving ? (
+                <Loader2 className="animate-spin" size={16} />
+              ) : (
+                <Save size={16} />
+              )}
               {saving ? "Сохранение…" : "Сохранить расчёт"}
             </Button>
           </div>
-          {result && (
-            <details className="trade-history mt-4">
-              <summary>Разбивка расходов</summary>
-              <ul>
-                {result.expenses.map((row) => (
-                  <li key={row.id} className="trade-overflow">
-                    {row.name}: {moneyText(row.amountKzt)} ₸
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
         </CalculationSummary>
       </div>
+      {typeof document !== "undefined" &&
+        createPortal(
+          <div className="cost-mobile-actions">
+            <button
+              type="button"
+              className="cost-mobile-total"
+              aria-label="Перейти к итогу расчёта"
+              onClick={() =>
+                document
+                  .getElementById("cost-summary")
+                  ?.scrollIntoView({ block: "start" })
+              }
+            >
+              <span>Себестоимость / т</span>
+              <strong>
+                {result ? `${moneyText(result.costPerTonneKzt)} ₸` : "—"}
+              </strong>
+            </button>
+            <Button
+              type="submit"
+              form="trade-calculation-form"
+              aria-label="Рассчитать себестоимость"
+              disabled={calculating || saving || !input.date}
+              className="trade-primary"
+            >
+              <Calculator size={16} />
+              {calculating ? "Расчёт…" : "Рассчитать"}
+            </Button>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

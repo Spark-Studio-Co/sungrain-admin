@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { WorkspaceHeading } from "@/components/ui/workspace-heading";
+import { CrmRouteLoading } from "@/components/ui/crm-route-loading";
 import { DatePickerInput } from "@/components/ui/date-picker";
 import {
   Dialog,
@@ -42,8 +44,16 @@ import {
   type ServiceInput,
 } from "@/entities/calculator/api";
 import "@/screens/calculator-page/trade.css";
+import "@/screens/calculator-page/cost-calculator.css";
 
 const templates: Omit<ServiceInput, "effectiveFrom">[] = [
+  {
+    name: "ТехПД",
+    price: "",
+    unit: "WAGON",
+    overtimeEligible: false,
+    alternativeGroup: "",
+  },
   {
     name: "Отгрузка зерна ж/д транспортом",
     price: "2100",
@@ -382,40 +392,41 @@ export default function ElevatorsPage({ id }: { id?: string }) {
     }
   }
   return (
-    <div className="trade-workspace">
+    <div className="trade-workspace cost-workspace record-workspace">
       {id && (
         <Link href="/admin/elevators" className="trade-back">
           <ArrowLeft size={16} />
           Элеваторы
         </Link>
       )}
-      <header className="trade-heading">
-        <div>
-          <h1>{id ? elevator?.name || "Элеватор" : "Элеваторы"}</h1>
-          <p>
-            {id ? elevator?.station : `${list.data?.length ?? 0} в справочнике`}
-          </p>
-        </div>
-        <div className="trade-heading-actions">
-          {id && elevator && !elevator.archived && (
-            <Button variant="outline" asChild>
-              <Link href={`/admin/calculator/new?elevator=${id}`}>
-                Создать расчёт
-              </Link>
+      <WorkspaceHeading
+        icon={Warehouse}
+        title={id ? elevator?.name || "Элеватор" : "Элеваторы"}
+        description={
+          id ? elevator?.station : `${list.data?.length ?? 0} в справочнике`
+        }
+        actions={
+          <>
+            {id && elevator && !elevator.archived && (
+              <Button variant="outline" asChild>
+                <Link href={`/admin/calculator/new?elevator=${id}`}>
+                  Создать расчёт
+                </Link>
+              </Button>
+            )}
+            <Button
+              className="trade-primary"
+              onClick={() => setDialog("elevator")}
+              disabled={!!id && !elevator}
+            >
+              {id ? <Pencil size={16} /> : <Plus size={16} />}
+              {id ? "Редактировать" : "Добавить элеватор"}
             </Button>
-          )}
-          <Button
-            className="trade-primary"
-            onClick={() => setDialog("elevator")}
-            disabled={!!id && !elevator}
-          >
-            {id ? <Pencil size={16} /> : <Plus size={16} />}
-            {id ? "Редактировать" : "Добавить элеватор"}
-          </Button>
-        </div>
-      </header>
+          </>
+        }
+      />
       {query.isLoading ? (
-        <div className="trade-empty">Загрузка…</div>
+        <CrmRouteLoading />
       ) : query.isError ? (
         <QueryError retry={() => query.refetch()} />
       ) : !id ? (
@@ -432,7 +443,7 @@ export default function ElevatorsPage({ id }: { id?: string }) {
           </div>
           {filtered.length ? (
             <div className="trade-table-wrap">
-              <table className="trade-table">
+              <table className="trade-table trade-responsive-table">
                 <thead>
                   <tr>
                     <th>Элеватор</th>
@@ -450,10 +461,12 @@ export default function ElevatorsPage({ id }: { id?: string }) {
                           {item.name}
                         </Link>
                       </td>
-                      <td>{item.station || "—"}</td>
-                      <td>{item.services.filter((s) => !s.archived).length}</td>
-                      <td>{item.contact || "—"}</td>
-                      <td>
+                      <td data-label="Станция">{item.station || "—"}</td>
+                      <td data-label="Услуги">
+                        {item.services.filter((s) => !s.archived).length}
+                      </td>
+                      <td data-label="Контакты">{item.contact || "—"}</td>
+                      <td data-label="Статус">
                         <span
                           className={`trade-tag${item.archived ? " trade-tag-muted" : ""}`}
                         >
@@ -520,7 +533,7 @@ export default function ElevatorsPage({ id }: { id?: string }) {
             )}
             {elevator.services.length ? (
               <div className="trade-table-wrap">
-                <table className="trade-table">
+                <table className="trade-table trade-responsive-table">
                   <thead>
                     <tr>
                       <th>Услуга</th>
@@ -546,8 +559,8 @@ export default function ElevatorsPage({ id }: { id?: string }) {
                               </span>
                             )}
                           </td>
-                          <td>{UNITS[service.unit]}</td>
-                          <td className="trade-number">
+                          <td data-label="Единица">{UNITS[service.unit]}</td>
+                          <td data-label="Цена, KZT" className="trade-number">
                             {current ? moneyText(current.price) : "Нет тарифа"}
                             {current && (
                               <span className="trade-subline">
@@ -555,7 +568,7 @@ export default function ElevatorsPage({ id }: { id?: string }) {
                               </span>
                             )}
                           </td>
-                          <td>
+                          <td data-label="Тарифы">
                             <details className="trade-history">
                               <summary>
                                 История ({service.rates.length})

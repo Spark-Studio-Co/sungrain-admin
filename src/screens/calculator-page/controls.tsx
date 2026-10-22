@@ -34,17 +34,19 @@ export function NumberField({
   onChange,
   step = "0.01",
   min = "0",
+  ariaLabel,
 }: {
   label: string;
   value: string | number;
   onChange: (value: string) => void;
   step?: string;
   min?: string;
+  ariaLabel?: string;
 }) {
   return (
     <Field label={label}>
       <Input
-        aria-label={label}
+        aria-label={ariaLabel || label}
         type="number"
         inputMode="decimal"
         min={min}
@@ -104,7 +106,8 @@ export function Choice({
         value={value || "none"}
         onValueChange={(next) => {
           // Ignore the hidden form control's empty reset during async hydration.
-          if (next !== value && options.some((option) => option.value === next)) onChange(next);
+          if (next !== value && options.some((option) => option.value === next))
+            onChange(next);
         }}
         disabled={disabled}
       >
