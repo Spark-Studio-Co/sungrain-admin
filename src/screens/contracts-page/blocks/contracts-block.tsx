@@ -1019,37 +1019,26 @@ export const ContractsBlock = () => {
                   <span className="sm:hidden">Добавить</span>
                 </Button>
               )}
-              <div className="relative">
-                {isAdmin && !isDataLoading && (
-                  <Button
-                    variant="outline"
-                    className="h-10 gap-2 rounded-md border-[#dce4da] bg-white font-semibold text-[#223137] shadow-sm w-full sm:w-auto"
-                    onClick={() =>
-                      document
-                        ?.getElementById("export-menu")
-                        ?.classList.toggle("hidden")
-                    }
-                  >
-                    <Download className="h-4 w-4" />
-                    Экспорт
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                )}
-                <div
-                  id="export-menu"
-                  className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10"
-                >
-                  <div className="py-1">
-                    <button
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={handleExportPDF}
+              {isAdmin && !isDataLoading && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-10 gap-2 rounded-md border-[#dce4da] bg-white font-semibold text-[#223137] shadow-sm w-full sm:w-auto"
                     >
+                      <Download className="h-4 w-4" />
+                      Экспорт
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onSelect={() => void handleExportPDF()}>
                       <FilePdf className="mr-2 h-4 w-4" />
                       Скачать в PDF
-                    </button>
-                  </div>
-                </div>
-              </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
 

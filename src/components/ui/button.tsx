@@ -10,15 +10,15 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[linear-gradient(135deg,var(--crm-orange-500),var(--crm-orange-600))] text-white shadow-[0_10px_22px_rgba(243,136,16,0.22)] hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(243,136,16,0.28)]",
+          "bg-[linear-gradient(135deg,var(--crm-orange-500),var(--crm-orange-600))] text-white shadow-[0_10px_22px_rgba(243,136,16,0.22)] [&:not([aria-haspopup]):not([role=combobox])]:hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(243,136,16,0.28)]",
         destructive:
-          "bg-destructive text-white shadow-[0_10px_22px_rgba(194,65,53,0.18)] hover:-translate-y-0.5 hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
+          "bg-destructive text-white shadow-[0_10px_22px_rgba(194,65,53,0.18)] [&:not([aria-haspopup]):not([role=combobox])]:hover:-translate-y-0.5 hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
         outline:
-          "border border-input bg-white text-foreground shadow-[0_8px_18px_rgba(34,49,55,0.055)] hover:-translate-y-0.5 hover:border-[#cbd8c9] hover:bg-[#f8faf7] hover:text-[#2f6b4f]",
+          "border border-input bg-white text-foreground shadow-[0_8px_18px_rgba(34,49,55,0.055)] [&:not([aria-haspopup]):not([role=combobox])]:hover:-translate-y-0.5 hover:border-[#cbd8c9] hover:bg-[#f8faf7] hover:text-[#2f6b4f]",
         secondary:
-          "border border-[#dbe8dc] bg-secondary text-secondary-foreground shadow-[0_8px_18px_rgba(47,107,79,0.08)] hover:-translate-y-0.5 hover:bg-[#e4f0e5]",
+          "border border-[#dbe8dc] bg-secondary text-secondary-foreground shadow-[0_8px_18px_rgba(47,107,79,0.08)] [&:not([aria-haspopup]):not([role=combobox])]:hover:-translate-y-0.5 hover:bg-[#e4f0e5]",
         success:
-          "bg-[linear-gradient(135deg,var(--crm-green-600),var(--crm-green-700))] text-white shadow-[0_10px_22px_rgba(47,107,79,0.2)] hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(47,107,79,0.26)]",
+          "bg-[linear-gradient(135deg,var(--crm-green-600),var(--crm-green-700))] text-white shadow-[0_10px_22px_rgba(47,107,79,0.2)] [&:not([aria-haspopup]):not([role=combobox])]:hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(47,107,79,0.26)]",
         subtle:
           "border border-transparent bg-[#f6f8f5] text-[#53605a] hover:bg-[#eef5ef] hover:text-[#2f6b4f]",
         ghost: "text-[#53605a] hover:bg-accent hover:text-accent-foreground",

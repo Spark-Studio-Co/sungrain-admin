@@ -192,6 +192,9 @@
   .crm-card-hover:hover {
     border-color: color-mix(in srgb, var(--crm-green-500) 34%, var(--crm-line));
     box-shadow: var(--crm-shadow-md);
+  }
+
+  .crm-card-hover:not(:has([aria-haspopup], [role="combobox"])):hover {
     transform: translateY(-1px);
   }
 
