@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { WorkspaceHeading } from "@/components/ui/workspace-heading";
 import { CrmRouteLoading } from "@/components/ui/crm-route-loading";
 import { DatePickerInput } from "@/components/ui/date-picker";
+import { getStations } from "@/entities/stations/api/get/get-stations.api";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ import {
   QueryError,
   TextField,
   NumberField,
+  StationChoice,
 } from "@/screens/calculator-page/controls";
 import {
   applicableRate,
@@ -119,6 +121,11 @@ function ElevatorEditor({
   elevator?: Elevator;
   onSaved: (item: Elevator) => void;
 }) {
+  const stations = useQuery({
+    queryKey: ["stations", 1, 5000],
+    queryFn: () => getStations(1, 5000),
+    retry: 1,
+  });
   const [input, setInput] = useState<ElevatorInput>({
     name: elevator?.name || "",
     station: elevator?.station || "",
@@ -158,11 +165,32 @@ function ElevatorEditor({
           required
           wide
         />
-        <TextField
-          label="Станция"
-          value={input.station}
-          onChange={(v) => set("station", v)}
-        />
+        <div className="min-w-0">
+          <StationChoice
+            label="Станция"
+            value={input.station}
+            onChange={(v) => set("station", v)}
+            stations={stations.data?.data || []}
+            required={false}
+            disabled={stations.isPending}
+            placeholder={stations.isPending ? "Загрузка станций…" : undefined}
+          />
+          {stations.isError && (
+            <div role="alert" className="mt-2 text-xs text-destructive">
+              Не удалось загрузить станции.{" "}
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-xs"
+                disabled={stations.isFetching}
+                onClick={() => stations.refetch()}
+              >
+                Повторить
+              </Button>
+            </div>
+          )}
+        </div>
         <TextField
           label="Контакты"
           value={input.contact}

@@ -28,7 +28,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DatePickerInput } from "@/components/ui/date-picker";
 import { CrmRouteLoading } from "@/components/ui/crm-route-loading";
 import { WorkspaceHeading } from "@/components/ui/workspace-heading";
-import { Choice, Field, NumberField, QueryError, TextField } from "./controls";
+import {
+  Choice,
+  Field,
+  NumberField,
+  QueryError,
+  StationChoice,
+  TextField,
+} from "./controls";
 import { CalculationSummary } from "./calculation-summary";
 import {
   copyCalculation,
@@ -76,6 +83,14 @@ export default function CalculatorEditor() {
     queryKey: ["calculator-options"],
     queryFn: tradeApi.options,
   });
+  const cultureNames = Array.from(
+    new Set(
+      [
+        ...(options.data?.cultures.map((culture) => culture.name) || []),
+        input.culture,
+      ].filter(Boolean),
+    ),
+  );
   const elevators = useQuery({
     queryKey: ["elevators"],
     queryFn: tradeApi.elevators,
@@ -194,6 +209,17 @@ export default function CalculatorEditor() {
   }
   async function calculate(event: FormEvent) {
     event.preventDefault();
+    if (
+      !inputRef.current.departureStation ||
+      !inputRef.current.destinationStation
+    ) {
+      setError(
+        !inputRef.current.departureStation
+          ? "Выберите станцию отправления."
+          : "Выберите станцию назначения.",
+      );
+      return;
+    }
     if (servicesInvalid) {
       setError(
         "Проверьте выбранные услуги: часть тарифов недоступна на дату расчёта.",
@@ -338,10 +364,15 @@ export default function CalculatorEditor() {
                   required
                   wide
                 />
-                <TextField
+                <Choice
                   label="Культура"
                   value={input.culture}
                   onChange={(culture) => change({ culture })}
+                  options={cultureNames.map((name) => ({
+                    value: name,
+                    label: name,
+                  }))}
+                  placeholder="Выберите культуру"
                   required
                 />
                 <NumberField
@@ -370,19 +401,19 @@ export default function CalculatorEditor() {
                 )}
               </div>
               <div className="trade-form-grid cost-route-grid">
-                <TextField
+                <StationChoice
                   label="Станция отправления"
                   value={input.departureStation}
                   onChange={(departureStation) => change({ departureStation })}
-                  required
+                  stations={options.data?.stations || []}
                 />
-                <TextField
+                <StationChoice
                   label="Станция назначения"
                   value={input.destinationStation}
                   onChange={(destinationStation) =>
                     change({ destinationStation })
                   }
-                  required
+                  stations={options.data?.stations || []}
                 />
               </div>
               <details className="cost-links">
