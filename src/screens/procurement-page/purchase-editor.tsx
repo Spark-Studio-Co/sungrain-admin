@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { format, parseISO } from "date-fns";
@@ -18,6 +25,7 @@ import {
   MapPin,
   MessageSquare,
   Phone,
+  Plus,
   Save,
   Upload,
   X,
@@ -57,6 +65,7 @@ import {
   PURCHASES_KEY,
   savePurchase,
   type Purchase,
+  type FarmOption,
   type PurchaseValues,
   type VatMode,
 } from "@/entities/procurement/api/purchases.api";
@@ -69,6 +78,7 @@ import {
   VAT_LABELS,
 } from "@/entities/procurement/model/purchase-calculation";
 import { PurchaseError } from "./purchases-page";
+import { FarmCreateDialog } from "./farm-create-dialog";
 import "./purchases.css";
 
 type PurchaseDraft = {
@@ -160,11 +170,15 @@ function PurchaseForm({
   const [fileError, setFileError] = useState("");
   const [removeDocument, setRemoveDocument] = useState(false);
   const [farmOpen, setFarmOpen] = useState(false);
+  const [createFarmOpen, setCreateFarmOpen] = useState(false);
+  const [createdFarm, setCreatedFarm] = useState<FarmOption>();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [saveError, setSaveError] = useState("");
   const [downloading, setDownloading] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const farmTrigger = useRef<HTMLButtonElement>(null);
+  const createFarmTrigger = useRef<HTMLButtonElement>(null);
   const submitted = useRef(false);
   const request = useRef<{ fingerprint: string; id: string } | undefined>(
     undefined,
@@ -200,9 +214,9 @@ function PurchaseForm({
     queryFn: () => getPurchaseOptions(debouncedSearch, values.farmId),
     enabled: editing,
   });
-  const selectedFarm = options.data?.farms.find(
-    (farm) => farm.id === values.farmId,
-  );
+  const selectedFarm =
+    options.data?.farms.find((farm) => farm.id === values.farmId) ||
+    (createdFarm?.id === values.farmId ? createdFarm : undefined);
   const useSnapshot =
     purchase && values.farmId === (purchase.sourceFarmId ?? undefined);
   const farmerName = useSnapshot
@@ -269,6 +283,15 @@ function PurchaseForm({
     "aria-invalid": !!errors[key],
     "aria-describedby": errors[key] ? `error-${key}` : undefined,
   });
+  const openCreateFarm = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    createFarmTrigger.current = event.currentTarget.closest(
+      '[data-slot="popover-content"]',
+    )
+      ? farmTrigger.current
+      : event.currentTarget;
+    setFarmOpen(false);
+    setCreateFarmOpen(true);
+  };
   const textInput = (
     key: keyof PurchaseValues,
     extra: Record<string, unknown> = {},
@@ -294,7 +317,7 @@ function PurchaseForm({
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (submitted.current || !editing || savedDraft) return;
+    if (submitted.current || !editing || savedDraft || createFarmOpen) return;
     const nextErrors = validatePurchase(values, !!purchase);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
@@ -442,19 +465,33 @@ function PurchaseForm({
       )}
       <form noValidate onSubmit={submit} className="purchase-editor">
         <fieldset
-          disabled={mutation.isPending || !!savedDraft}
+          disabled={mutation.isPending || !!savedDraft || createFarmOpen}
           className="min-w-0"
         >
           <section className="purchase-section">
-            <h2>
-              <Warehouse size={18} />
-              Хозяйство
-            </h2>
+            <div className="mb-[18px] flex flex-wrap items-center justify-between gap-3 [&>h2]:mb-0">
+              <h2>
+                <Warehouse size={18} />
+                Хозяйство
+              </h2>
+              {editing && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={openCreateFarm}
+                >
+                  <Plus className="size-4" />
+                  Добавить хозяйство
+                </Button>
+              )}
+            </div>
             <Field name="farmId" label="Хозяйство" error={errors.farmId}>
               {editing ? (
                 <Popover open={farmOpen} onOpenChange={setFarmOpen}>
                   <PopoverTrigger asChild>
                     <Button
+                      ref={farmTrigger}
                       {...inputProps("farmId")}
                       variant="outline"
                       role="combobox"
@@ -469,7 +506,10 @@ function PurchaseForm({
                   </PopoverTrigger>
                   <PopoverContent
                     align="start"
-                    className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-32px)] p-0"
+                    className="max-h-[var(--radix-popover-content-available-height)] w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-32px)] overflow-hidden p-0"
+                    onCloseAutoFocus={(event) => {
+                      if (createFarmOpen) event.preventDefault();
+                    }}
                   >
                     <Command shouldFilter={false}>
                       <CommandInput
@@ -477,7 +517,7 @@ function PurchaseForm({
                         value={search}
                         onValueChange={setSearch}
                       />
-                      <CommandList>
+                      <CommandList className="max-h-[min(18.75rem,calc(var(--radix-popover-content-available-height)-7rem))]">
                         {options.isFetching ? (
                           <p
                             role="status"
@@ -522,6 +562,17 @@ function PurchaseForm({
                         )}
                       </CommandList>
                     </Command>
+                    <div className="border-t border-[var(--crm-line)] p-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={openCreateFarm}
+                      >
+                        <Plus className="size-4" />
+                        Создать новое хозяйство
+                      </Button>
+                    </div>
                   </PopoverContent>
                 </Popover>
               ) : (
@@ -903,7 +954,7 @@ function PurchaseForm({
               <Button
                 type="submit"
                 className={purchase ? "purchase-primary w-full" : "w-full"}
-                disabled={mutation.isPending}
+                disabled={mutation.isPending || createFarmOpen}
               >
                 {mutation.isPending ? (
                   <LoaderCircle className="size-4 animate-spin" />
@@ -919,7 +970,7 @@ function PurchaseForm({
               <Button
                 type="button"
                 variant="outline"
-                disabled={mutation.isPending}
+                disabled={mutation.isPending || createFarmOpen}
                 onClick={cancel}
               >
                 Отмена
@@ -933,6 +984,23 @@ function PurchaseForm({
           )}
         </aside>
       </form>
+      {createFarmOpen && (
+        <FarmCreateDialog
+          onClose={() => setCreateFarmOpen(false)}
+          onReturnFocus={() => {
+            const trigger = createFarmTrigger.current?.isConnected
+              ? createFarmTrigger.current
+              : farmTrigger.current;
+            trigger?.focus();
+          }}
+          onCreated={(farm) => {
+            setCreatedFarm(farm);
+            set("farmId", farm.id);
+            setSearch("");
+            void queryClient.invalidateQueries({ queryKey: ["purchase-options"] });
+          }}
+        />
+      )}
     </div>
   );
 }

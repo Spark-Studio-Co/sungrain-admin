@@ -21,34 +21,17 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { WorkspaceHeading } from "@/components/ui/workspace-heading";
 import { CrmRouteLoading } from "@/components/ui/crm-route-loading";
-import type { ProcurementFarmValues } from "@/entities/procurement/api/procurement.api";
+import {
+  EMPTY_FARM_DRAFT as empty,
+  FARM_FIELDS as fields,
+  parseFarmDraft,
+  type FarmDraft as Draft,
+} from "@/entities/procurement/model/farm-form";
 import {
   useProcurementFarm,
   useSaveProcurementFarm,
 } from "@/entities/procurement/hooks/use-procurement";
 import "./purchases.css";
-
-type Draft = Omit<ProcurementFarmValues, "totalAreaHa"> & {
-  totalAreaHa: string;
-};
-const empty: Draft = {
-  organizationName: "",
-  leaderName: "",
-  phone: "",
-  regionName: "",
-  district: "",
-  ruralDistrict: "",
-  totalAreaHa: "",
-};
-const fields: Array<{ key: keyof Draft; label: string; required?: boolean }> = [
-  { key: "organizationName", label: "Название хозяйства", required: true },
-  { key: "leaderName", label: "Руководитель" },
-  { key: "phone", label: "Телефон" },
-  { key: "regionName", label: "Область" },
-  { key: "district", label: "Район" },
-  { key: "ruralDistrict", label: "Сельский округ" },
-  { key: "totalAreaHa", label: "Общая площадь, га" },
-];
 
 export default function FarmPage() {
   const params = useParams<{ id: string }>();
@@ -82,27 +65,16 @@ export default function FarmPage() {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const name = draft.organizationName.trim();
-    const area = draft.totalAreaHa.trim().replace(",", ".");
-    if (!name) {
-      setError("Укажите название хозяйства");
-      return;
-    }
-    if (area && (!Number.isFinite(Number(area)) || Number(area) < 0)) {
-      setError("Площадь должна быть неотрицательным числом");
+    const parsed = parseFarmDraft(draft);
+    if (parsed.ok === false) {
+      setError(Object.values(parsed.errors)[0] || "Проверьте данные хозяйства");
       return;
     }
     setError("");
     try {
       const result = await save.mutateAsync({
+        ...parsed.values,
         version: farm?.version,
-        organizationName: name,
-        leaderName: draft.leaderName.trim(),
-        phone: draft.phone.trim(),
-        regionName: draft.regionName.trim(),
-        district: draft.district.trim(),
-        ruralDistrict: draft.ruralDistrict.trim(),
-        totalAreaHa: area ? Number(area) : null,
       });
       toast.success(id ? "Хозяйство сохранено" : "Хозяйство создано");
       setEditing(false);
@@ -197,7 +169,7 @@ export default function FarmPage() {
                   <Input
                     value={draft[field.key]}
                     required={field.required}
-                    maxLength={field.key === "phone" ? 80 : 200}
+                    maxLength={field.maxLength}
                     inputMode={
                       field.key === "totalAreaHa"
                         ? "decimal"
