@@ -1,17 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  Archive,
-  Pencil,
-  Plus,
-  RotateCcw,
-  Warehouse,
-} from "lucide-react";
+import { ArrowLeft, Plus, Warehouse } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WorkspaceHeading } from "@/components/ui/workspace-heading";
@@ -35,10 +28,7 @@ import {
   StationChoice,
 } from "@/screens/calculator-page/controls";
 import {
-  applicableRate,
-  dateText,
   errorText,
-  moneyText,
   todayKz,
   tradeApi,
   UNITS,
@@ -49,6 +39,7 @@ import {
 } from "@/entities/calculator/api";
 import "@/screens/calculator-page/trade.css";
 import "@/screens/calculator-page/cost-calculator.css";
+import { ElevatorDetail, ElevatorRateHistory } from "./elevator-detail";
 
 const templates: Omit<ServiceInput, "effectiveFrom" | "culture">[] = [
   {
@@ -423,10 +414,11 @@ export default function ElevatorsPage({ id }: { id?: string }) {
   const router = useRouter();
   const client = useQueryClient();
   const [search, setSearch] = useState("");
-  const [dialog, setDialog] = useState<"elevator" | "service" | "rate" | null>(
-    null,
-  );
+  const [dialog, setDialog] = useState<
+    "elevator" | "service" | "rate" | "history" | null
+  >(null);
   const [selected, setSelected] = useState<ElevatorService>();
+  const dialogReturnFocus = useRef<HTMLButtonElement | null>(null);
   const [actionError, setActionError] = useState("");
   const [busyService, setBusyService] = useState<string>();
   const list = useQuery({
@@ -441,6 +433,15 @@ export default function ElevatorsPage({ id }: { id?: string }) {
   });
   const query = id ? detail : list;
   const elevator = detail.data;
+  function openDialog(
+    next: NonNullable<typeof dialog>,
+    trigger: HTMLButtonElement,
+    service?: ElevatorService,
+  ) {
+    dialogReturnFocus.current = trigger;
+    setSelected(service);
+    setDialog(next);
+  }
   const invalidate = async () => {
     setDialog(null);
     await client.invalidateQueries({ queryKey: ["elevators"] });
@@ -472,33 +473,25 @@ export default function ElevatorsPage({ id }: { id?: string }) {
           Элеваторы
         </Link>
       )}
-      <WorkspaceHeading
-        icon={Warehouse}
-        eyebrow="Логистика и хранение"
-        title={id ? elevator?.name || "Элеватор" : "Элеваторы"}
-        description={
-          id ? elevator?.station : `${list.data?.length ?? 0} в справочнике`
-        }
-        actions={
-          <>
-            {id && elevator && !elevator.archived && (
-              <Button variant="outline" asChild>
-                <Link href={`/admin/calculator/new?elevator=${id}`}>
-                  Создать расчёт
-                </Link>
+      {!id && (
+        <WorkspaceHeading
+          icon={Warehouse}
+          eyebrow="Логистика и хранение"
+          title="Элеваторы"
+          description={`${list.data?.length ?? 0} в справочнике`}
+          actions={
+            <>
+              <Button
+                className="trade-primary"
+                onClick={(event) => openDialog("elevator", event.currentTarget)}
+              >
+                <Plus size={16} />
+                Добавить элеватор
               </Button>
-            )}
-            <Button
-              className="trade-primary"
-              onClick={() => setDialog("elevator")}
-              disabled={!!id && !elevator}
-            >
-              {id ? <Pencil size={16} /> : <Plus size={16} />}
-              {id ? "Редактировать" : "Добавить элеватор"}
-            </Button>
-          </>
-        }
-      />
+            </>
+          }
+        />
+      )}
       {query.isLoading ? (
         <CrmRouteLoading />
       ) : query.isError ? (
@@ -570,150 +563,21 @@ export default function ElevatorsPage({ id }: { id?: string }) {
         </>
       ) : (
         elevator && (
-          <>
-            <dl className="trade-details">
-              <div>
-                <dt>Адрес</dt>
-                <dd>{elevator.address || "—"}</dd>
-              </div>
-              <div>
-                <dt>Контакты</dt>
-                <dd>{elevator.contact || "—"}</dd>
-              </div>
-              <div>
-                <dt>Статус</dt>
-                <dd>{elevator.archived ? "Архив" : "Действующий"}</dd>
-              </div>
-              {elevator.notes && (
-                <div className="trade-wide">
-                  <dt>Комментарий</dt>
-                  <dd>{elevator.notes}</dd>
-                </div>
-              )}
-            </dl>
-            <div className="trade-section-heading">
-              <h2>Услуги и тарифы</h2>
-              <Button
-                variant="outline"
-                disabled={elevator.archived}
-                onClick={() => {
-                  setSelected(undefined);
-                  setDialog("service");
-                }}
-              >
-                <Plus size={16} />
-                Добавить услугу
-              </Button>
-            </div>
-            {actionError && (
-              <p role="alert" className="trade-alert">
-                {actionError}
-              </p>
-            )}
-            {elevator.services.length ? (
-              <div className="trade-table-wrap">
-                <table className="trade-table trade-responsive-table">
-                  <thead>
-                    <tr>
-                      <th>Услуга</th>
-                      <th>Культура</th>
-                      <th>Единица</th>
-                      <th className="trade-number">Цена, KZT</th>
-                      <th>Тарифы</th>
-                      <th aria-label="Действия" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {elevator.services.map((service) => {
-                      const current = applicableRate(service, todayKz());
-                      return (
-                        <tr key={service.id}>
-                          <td>
-                            <strong>{service.name}</strong>
-                            {service.archived && (
-                              <span className="trade-subline">В архиве</span>
-                            )}
-                            {service.overtimeEligible && (
-                              <span className="trade-subline">
-                                Неурочное время ×1,5
-                              </span>
-                            )}
-                          </td>
-                          <td data-label="Культура">
-                            {service.culture || "Все культуры"}
-                          </td>
-                          <td data-label="Единица">{UNITS[service.unit]}</td>
-                          <td data-label="Цена, KZT" className="trade-number">
-                            {current ? moneyText(current.price) : "Нет тарифа"}
-                            {current && (
-                              <span className="trade-subline">
-                                с {dateText(current.effectiveFrom)}
-                              </span>
-                            )}
-                          </td>
-                          <td data-label="Тарифы">
-                            <details className="trade-history">
-                              <summary>
-                                История ({service.rates.length})
-                              </summary>
-                              <ul>
-                                {service.rates.map((rate) => (
-                                  <li key={rate.id}>
-                                    {dateText(rate.effectiveFrom)}:{" "}
-                                    {moneyText(rate.price)} KZT
-                                  </li>
-                                ))}
-                              </ul>
-                            </details>
-                          </td>
-                          <td>
-                            <div className="trade-actions">
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                title={`Новый тариф: ${service.name}`}
-                                aria-label={`Новый тариф: ${service.name}`}
-                                disabled={elevator.archived || service.archived}
-                                onClick={() => {
-                                  setSelected(service);
-                                  setDialog("rate");
-                                }}
-                              >
-                                <Plus size={16} />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title={
-                                  service.archived
-                                    ? "Восстановить услугу"
-                                    : "В архив"
-                                }
-                                aria-label={`${service.archived ? "Восстановить" : "Архивировать"}: ${service.name}`}
-                                disabled={busyService === service.id}
-                                onClick={() => archive(service)}
-                              >
-                                {service.archived ? (
-                                  <RotateCcw size={16} />
-                                ) : (
-                                  <Archive size={16} />
-                                )}
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <CrmEmptyState
-                icon={Warehouse}
-                title="Услуги пока не добавлены"
-              />
-            )}
-          </>
+          <ElevatorDetail
+            elevator={elevator}
+            date={todayKz()}
+            actionError={actionError}
+            busyService={busyService}
+            onEdit={(trigger) => openDialog("elevator", trigger)}
+            onAddService={(trigger) => openDialog("service", trigger)}
+            onAddRate={(service, trigger) =>
+              openDialog("rate", trigger, service)
+            }
+            onHistory={(service, trigger) =>
+              openDialog("history", trigger, service)
+            }
+            onArchive={archive}
+          />
         )
       )}
       <Dialog
@@ -723,18 +587,40 @@ export default function ElevatorsPage({ id }: { id?: string }) {
         }}
       >
         <DialogContent
-          className="trade-dialog record-dialog"
+          className="trade-dialog record-dialog elevator-dialog"
           aria-describedby={undefined}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            const trigger = dialogReturnFocus.current;
+            requestAnimationFrame(() => {
+              if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+            });
+          }}
         >
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle
+              className={
+                dialog === "rate" || dialog === "history"
+                  ? "elevator-service-dialog-title"
+                  : undefined
+              }
+            >
               {dialog === "elevator"
                 ? id
                   ? "Карточка элеватора"
                   : "Новый элеватор"
-                : dialog === "rate"
-                  ? `Новый тариф: ${selected?.name}`
-                  : "Новая услуга"}
+                : dialog === "rate" || dialog === "history" ? (
+                  <>
+                    <span className="elevator-dialog-label">
+                      {dialog === "rate" ? "Новый тариф" : "История тарифов"}:
+                    </span>{" "}
+                    <span className="elevator-dialog-service">
+                      {selected?.name}
+                    </span>
+                  </>
+                ) : (
+                  "Новая услуга"
+                )}
             </DialogTitle>
           </DialogHeader>
           {dialog === "rate" && selected && (
@@ -742,7 +628,11 @@ export default function ElevatorsPage({ id }: { id?: string }) {
               Культура: {selected.culture || "Все культуры"}
             </p>
           )}
-          {dialog === "elevator" ? (
+          {dialog === "history" ? (
+            selected && (
+              <ElevatorRateHistory service={selected} date={todayKz()} />
+            )
+          ) : dialog === "elevator" ? (
             <ElevatorEditor
               elevator={elevator}
               onSaved={async (item) => {
@@ -751,9 +641,10 @@ export default function ElevatorsPage({ id }: { id?: string }) {
               }}
             />
           ) : (
-            dialog &&
+            (dialog === "service" || dialog === "rate") &&
             elevator && (
               <ServiceEditor
+                key={dialog === "rate" ? selected?.id : "new-service"}
                 elevator={elevator}
                 service={dialog === "rate" ? selected : undefined}
                 onSaved={invalidate}
