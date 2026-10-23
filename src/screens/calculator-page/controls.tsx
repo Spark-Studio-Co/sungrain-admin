@@ -133,11 +133,17 @@ export function Choice({
         <SelectTrigger
           aria-label={label}
           aria-required={required || undefined}
-          className="w-full"
+          className="w-full min-w-0 *:data-[slot=select-value]:min-w-0"
         >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent
+          position="popper"
+          align="start"
+          sideOffset={4}
+          collisionPadding={12}
+          className="max-h-[min(20rem,var(--radix-select-content-available-height))] w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-24px)]"
+        >
           {options.length ? (
             options.map((item) => (
               <SelectItem key={item.value} value={item.value}>
