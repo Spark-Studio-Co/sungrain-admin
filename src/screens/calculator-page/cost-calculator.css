@@ -1,10 +1,5 @@
 .cost-workspace {
-  max-width: 1420px;
-}
-.cost-workspace [data-slot="input"],
-.cost-workspace [data-slot="select-trigger"],
-.cost-workspace [data-slot="button"] {
-  box-shadow: none;
+  max-width: none;
 }
 .cost-page-heading {
   padding-bottom: 24px;
@@ -195,7 +190,7 @@
   overflow-wrap: anywhere;
 }
 .cost-service-name > span {
-  color: #77857d;
+  color: var(--crm-muted);
   font-size: 12px;
 }
 .cost-service-amount {
@@ -261,9 +256,9 @@
   padding: 22px;
   top: 88px;
   border-radius: 8px;
-  border-color: #dbe5df;
-  background: #fff;
-  box-shadow: 0 6px 22px #173c2b05;
+  border-color: var(--crm-line);
+  background: var(--card);
+  box-shadow: var(--crm-shadow-sm);
 }
 .cost-summary-heading {
   display: flex;
@@ -272,7 +267,8 @@
   gap: 12px;
 }
 .cost-summary-heading h2 {
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 800;
   margin: 0;
 }
 .cost-status {
@@ -280,7 +276,7 @@
   gap: 4px;
   align-items: center;
   font-size: 10px;
-  color: #8c938f;
+  color: var(--crm-muted);
   white-space: nowrap;
 }
 .cost-status.is-ready {
@@ -293,13 +289,13 @@
 }
 .cost-total > span {
   font-size: 12px;
-  color: #728178;
+  color: var(--crm-muted);
 }
 .cost-total > strong {
   font-size: 30px;
   line-height: 1.25;
-  font-weight: 750;
-  color: #253b30;
+  font-weight: 900;
+  color: var(--crm-ink);
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
@@ -344,7 +340,7 @@
 .cost-summary-volume {
   margin-top: 15px;
   font-size: 11px;
-  color: #8b958e;
+  color: var(--crm-muted);
   display: flex;
   justify-content: space-between;
   gap: 10px;
@@ -357,21 +353,6 @@
 .cost-legacy summary {
   cursor: pointer;
   margin-bottom: 14px;
-}
-.cost-workspace .trade-table-wrap {
-  border-left: 0;
-  border-right: 0;
-  border-radius: 0;
-  background: transparent;
-}
-.cost-workspace .trade-table th {
-  background: #f0f4f2;
-  text-transform: none;
-  font-size: 12px;
-}
-.cost-workspace .trade-table td {
-  padding-top: 20px;
-  padding-bottom: 20px;
 }
 @media (max-width: 1280px) {
   .cost-editor-layout {
@@ -432,7 +413,7 @@
   }
   .cost-mobile-total span {
     display: block;
-    color: #758479;
+    color: var(--crm-muted);
     font-size: 11px;
     margin-bottom: 3px;
   }

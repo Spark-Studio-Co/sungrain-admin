@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { CrmErrorState } from "@/components/ui/crm-state";
 import {
   Command,
   CommandEmpty,
@@ -274,12 +275,16 @@ export function StationChoice({
 }
 export function QueryError({ retry }: { retry: () => void }) {
   return (
-    <div className="trade-empty" role="alert">
-      <p>Не удалось загрузить данные</p>
-      <Button variant="outline" onClick={retry}>
-        <RotateCcw size={16} />
-        Повторить
-      </Button>
+    <div role="alert">
+      <CrmErrorState
+        title="Не удалось загрузить данные"
+        action={
+          <Button variant="outline" onClick={retry}>
+            <RotateCcw size={16} />
+            Повторить
+          </Button>
+        }
+      />
     </div>
   );
 }

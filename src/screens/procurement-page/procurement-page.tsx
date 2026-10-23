@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
+import { CrmEmptyState } from "@/components/ui/crm-state";
 import {
   type ProcurementFarmFilters,
   type ProcurementFarmRecord,
@@ -79,7 +80,7 @@ function MetricCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="record-label">{label}</p>
-          <p className="mt-1 text-2xl font-bold text-[#223137]">{value}</p>
+          <p className="mt-1 text-2xl font-black text-[#223137]">{value}</p>
           <p className="mt-1 text-xs text-[#7a8580]">{description}</p>
         </div>
         <span
@@ -593,15 +594,11 @@ export default function ProcurementPage() {
             </div>
           </>
         ) : (
-          <div className="px-5 py-16 text-center">
-            <Users className="mx-auto size-8 text-[#a0ada5]" />
-            <p className="mt-3 font-bold text-[#35463e]">
-              Хозяйства не найдены
-            </p>
-            <p className="mt-1 text-sm text-[#7a8580]">
-              Добавьте хозяйство, загрузите XLSX или измените фильтр.
-            </p>
-          </div>
+          <CrmEmptyState
+            icon={Users}
+            title="Хозяйства не найдены"
+            description="Добавьте хозяйство, загрузите XLSX или измените фильтр."
+          />
         )}
       </section>
     </div>

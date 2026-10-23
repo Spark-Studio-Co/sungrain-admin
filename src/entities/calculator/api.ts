@@ -33,6 +33,7 @@ export type ElevatorRate = {
 export type ElevatorService = {
   id: string;
   name: string;
+  culture?: string | null;
   unit: CostUnit;
   archived: boolean;
   overtimeEligible: boolean;
@@ -56,7 +57,7 @@ export type ElevatorInput = Omit<Elevator, "id" | "services" | "version"> & {
 export type ServiceInput = Pick<
   ElevatorService,
   "name" | "unit" | "overtimeEligible" | "alternativeGroup"
-> & { price: string; effectiveFrom: string };
+> & { culture: string; price: string; effectiveFrom: string };
 export type CalculationLine = {
   id: string;
   serviceId?: string;
@@ -107,6 +108,7 @@ export type CalculationResult = {
     amountKzt: string;
     rateId?: string;
     effectiveFrom?: string;
+    serviceCulture?: string;
   })[];
   elevatorName: string | null;
   purchaseReference: {

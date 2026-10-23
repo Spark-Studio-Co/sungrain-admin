@@ -1,8 +1,8 @@
 .record-workspace {
   width: 100%;
-  max-width: 1480px;
+  max-width: none;
   min-width: 0;
-  margin-inline: auto;
+  margin-inline: 0;
   color: var(--crm-ink);
   letter-spacing: 0;
 }
@@ -11,41 +11,52 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding-bottom: 24px;
+  padding: 20px 24px;
   margin-bottom: 24px;
-  border-bottom: 1px solid var(--crm-line);
+  border-block: 1px solid var(--crm-line);
+  background: var(--card);
 }
 .record-heading-main {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
   min-width: 0;
 }
-.record-heading-icon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 46px;
-  height: 46px;
-  border: 1px solid #f6d8b2;
-  border-radius: 8px;
-  color: var(--crm-orange-600);
-  background: var(--crm-orange-soft);
+.record-heading-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 5px 9px;
+  border: 1px solid var(--crm-line);
+  border-radius: 6px;
+  color: var(--crm-green-600);
+  background: var(--crm-green-soft);
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.record-heading-eyebrow svg {
+  flex-shrink: 0;
 }
 .record-heading-copy {
   min-width: 0;
 }
 .record-heading h1 {
-  font-size: 26px;
-  font-weight: 760;
+  font-size: 30px;
+  font-weight: 900;
   line-height: 1.25;
   margin: 0;
   overflow-wrap: anywhere;
 }
 .record-heading-description {
   color: var(--crm-muted);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
-  margin-top: 6px;
+  margin-top: 8px;
   overflow-wrap: anywhere;
 }
 .record-heading-actions {
@@ -59,6 +70,7 @@
 }
 .record-heading-actions [data-slot="button"] {
   min-height: 40px;
+  font-weight: 700;
 }
 .record-workspace :is(.trade-back, .purchase-back) {
   font-weight: 600;
@@ -79,9 +91,10 @@
   gap: 6px;
 }
 .record-label {
-  color: var(--crm-muted);
-  font-size: 12px;
-  font-weight: 500;
+  color: var(--crm-ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 .record-workspace
   :is(
@@ -93,14 +106,13 @@
   min-height: 44px;
   border-color: var(--crm-line);
   border-radius: 6px;
-  box-shadow: none;
 }
 .record-workspace :is(.trade-table th, .purchase-table th) {
-  background: var(--crm-surface-strong);
-  color: #607269;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: none;
+  background: var(--crm-surface);
+  color: var(--crm-ink-soft);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
   letter-spacing: 0;
 }
 .record-workspace :is(.trade-table td, .purchase-table td) {
@@ -122,19 +134,111 @@
   padding-block: 16px;
 }
 .record-workspace .trade-details {
-  padding: 0 0 24px;
-  gap: 22px 28px;
+  padding: 20px;
+  gap: 22px 24px;
+  border-block: 1px solid var(--crm-line);
+  background: var(--crm-surface);
 }
 .record-workspace .trade-details dd {
   font-size: 15px;
 }
+.record-workspace .trade-details dt {
+  color: var(--crm-ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
 .record-workspace .trade-toolbar {
-  border-bottom: 1px solid var(--crm-line);
+  padding: 16px 20px;
+  border-block: 1px solid var(--crm-line);
+  background: var(--crm-surface);
   margin-bottom: 24px;
 }
 .record-workspace .trade-summary {
   box-shadow: var(--crm-shadow-sm);
   border-radius: 8px;
+}
+.record-table-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.record-table-title > div {
+  min-width: 0;
+}
+.record-row-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  height: 40px;
+  border-radius: 6px;
+  background: var(--crm-orange-soft);
+  color: var(--crm-orange-600);
+}
+.record-workspace :is(.trade-table, .purchase-table) .record-table-title a {
+  color: var(--crm-ink);
+  font-size: 14px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.record-workspace :is(.trade-table, .purchase-table) .record-table-title a:hover {
+  color: var(--crm-green-600);
+}
+.record-workspace :is(.trade-subline, .purchase-table small, .purchase-mobile-row small) {
+  color: var(--crm-muted);
+}
+.record-workspace :is(.trade-tag, .purchase-status) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border: 1px solid var(--crm-line);
+  border-radius: 4px;
+  padding: 3px 8px;
+  background: var(--crm-green-soft);
+  color: var(--crm-green-600);
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+.record-workspace .trade-tag-muted {
+  background: var(--crm-surface);
+  color: var(--crm-muted);
+}
+.record-workspace :is(.trade-pagination, .purchase-pagination) {
+  border-top: 1px solid var(--crm-line);
+  padding-top: 16px;
+  margin-top: 20px;
+}
+.record-workspace :is(.trade-section h2, .trade-section-heading h2, .purchase-section h2, .cost-section-title h2) {
+  color: var(--crm-ink);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+.record-workspace :is(.trade-field > span, .trade-field > label, .purchase-field > label) {
+  color: var(--crm-ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+.record-dialog [data-slot="dialog-header"] {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--crm-line);
+  text-align: left;
+}
+.record-dialog [data-slot="dialog-title"] {
+  padding-right: 36px;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+.record-dialog :is(.trade-field, .purchase-field) input {
+  min-height: 44px;
+}
+.record-dialog :is(.trade-field > span, .purchase-field > label) {
+  color: var(--crm-ink-soft);
+  font-size: 12px;
+  font-weight: 700;
 }
 @media (max-width: 1050px) {
   .record-heading {
@@ -145,21 +249,36 @@
 @media (max-width: 600px) {
   .record-heading {
     gap: 16px;
-    padding-bottom: 20px;
+    padding: 16px;
     margin-bottom: 20px;
   }
   .record-heading h1 {
-    font-size: 22px;
-  }
-  .record-heading-icon {
-    flex-basis: 40px;
-    height: 40px;
+    font-size: 24px;
   }
   .record-heading-main {
-    gap: 10px;
+    flex-basis: 100%;
   }
   .record-heading-actions {
     justify-content: flex-start;
+    width: 100%;
+  }
+  .record-heading-actions > [data-slot="button"] {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .record-workspace .trade-toolbar {
+    padding: 14px;
+    gap: 14px;
+  }
+  .record-workspace .trade-toolbar > .trade-field {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+  .record-workspace .trade-details {
+    padding: 16px;
+  }
+  .record-dialog :is(.trade-field, .purchase-field) input {
+    font-size: 16px;
   }
   .record-workspace
     :is(
@@ -178,7 +297,15 @@
     min-width: 0;
   }
   .record-workspace .trade-responsive-table thead {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
   }
   .record-workspace .trade-responsive-table tr {
     display: grid;
@@ -209,7 +336,11 @@
     display: block;
     font-size: 11px;
     color: var(--crm-muted);
-    font-weight: 400;
+    font-weight: 700;
+    text-transform: uppercase;
     margin-bottom: 4px;
+  }
+  .record-workspace .trade-responsive-table td:has(> .trade-actions) {
+    grid-column: 1 / -1;
   }
 }

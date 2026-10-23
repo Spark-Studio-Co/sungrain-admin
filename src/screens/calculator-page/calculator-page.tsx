@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WorkspaceHeading } from "@/components/ui/workspace-heading";
 import { CrmRouteLoading } from "@/components/ui/crm-route-loading";
+import { CrmEmptyState } from "@/components/ui/crm-state";
 import { Choice, Field, QueryError } from "./controls";
 import { CalculationSummary } from "./calculation-summary";
 import { costPerTonne } from "./calculator-model";
@@ -68,6 +69,7 @@ export default function CalculatorPage({ id }: { id?: string }) {
       )}
       <WorkspaceHeading
         icon={Calculator}
+        eyebrow="Экономика сделки"
         title={id ? record?.title || "Расчёт себестоимости" : "Калькулятор"}
         description={
           id && record
@@ -166,10 +168,17 @@ export default function CalculatorPage({ id }: { id?: string }) {
                   {list.data.items.map((item) => (
                     <tr key={item.id}>
                       <td>
-                        <Link href={`/admin/calculator/${item.id}`}>
-                          {item.title}
-                        </Link>
-                        <span className="trade-subline">{item.culture}</span>
+                        <div className="record-table-title">
+                          <span className="record-row-icon" aria-hidden="true">
+                            <Calculator size={18} />
+                          </span>
+                          <div>
+                            <Link href={`/admin/calculator/${item.id}`}>
+                              {item.title}
+                            </Link>
+                            <span className="trade-subline">{item.culture}</span>
+                          </div>
+                        </div>
                       </td>
                       <td data-label="Дата">{dateText(item.date)}</td>
                       <td data-label="Режим">
@@ -197,14 +206,12 @@ export default function CalculatorPage({ id }: { id?: string }) {
               </table>
             </div>
           ) : (
-            <div className="trade-empty">
-              <Calculator className="mx-auto mb-3" size={32} />
-              <p>
-                {search || mode
+            <CrmEmptyState
+              icon={Calculator}
+              title={search || mode
                   ? "Расчёты не найдены"
                   : "Сохранённых расчётов пока нет"}
-              </p>
-            </div>
+            />
           )}
           <div className="trade-pagination">
             <Button

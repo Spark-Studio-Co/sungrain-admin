@@ -41,6 +41,7 @@ import {
   copyCalculation,
   emptyInput,
   rowAmount,
+  serviceMatchesCulture,
   wagonCount,
 } from "./calculator-model";
 import {
@@ -139,7 +140,7 @@ export default function CalculatorEditor() {
   const services =
     elevator?.services.filter(
       (service) =>
-        !service.archived ||
+        (!service.archived && serviceMatchesCulture(service, input.culture)) ||
         serviceLines.some((line) => line.serviceId === service.id),
     ) || [];
   const filteredServices = services.filter((service) =>
@@ -150,12 +151,23 @@ export default function CalculatorEditor() {
   const unavailableLines = serviceLines.filter(
     (line) => !services.some((service) => service.id === line.serviceId),
   );
+  const copiedCultureMismatch =
+    copy &&
+    input.culture === original.data?.input.culture &&
+    services.some(
+      (service) =>
+        serviceLines.some((line) => line.serviceId === service.id) &&
+        !serviceMatchesCulture(service, input.culture),
+    );
   const servicesInvalid =
     !!unavailableLines.length ||
     serviceLines.some((line) => {
       const service = services.find((s) => s.id === line.serviceId);
       return (
-        !service || service.archived || !applicableRate(service, input.date)
+        !service ||
+        service.archived ||
+        !serviceMatchesCulture(service, input.culture) ||
+        !applicableRate(service, input.date)
       );
     }) ||
     !!elevator?.archived;
@@ -172,7 +184,13 @@ export default function CalculatorEditor() {
           )),
     );
     const rate = applicableRate(service, input.date);
-    if (checked && (!rate || service.archived)) return;
+    if (
+      checked &&
+      (!rate ||
+        service.archived ||
+        !serviceMatchesCulture(service, input.culture))
+    )
+      return;
     change({
       lines: checked
         ? [
@@ -222,7 +240,7 @@ export default function CalculatorEditor() {
     }
     if (servicesInvalid) {
       setError(
-        "Проверьте выбранные услуги: часть тарифов недоступна на дату расчёта.",
+        "Проверьте выбранные услуги: культура или дата расчёта не соответствует тарифам.",
       );
       return;
     }
@@ -278,6 +296,7 @@ export default function CalculatorEditor() {
       </Link>
       <WorkspaceHeading
         icon={Calculator}
+        eyebrow="Экономика сделки"
         title={copy ? "Копия расчёта" : "Новый расчёт"}
         description="Себестоимость партии"
         actions={
@@ -293,6 +312,13 @@ export default function CalculatorEditor() {
       <div className="trade-editor-layout cost-editor-layout">
         <form id="trade-calculation-form" ref={formRef} onSubmit={calculate}>
           <fieldset disabled={saving} className="cost-form-fieldset">
+            {copiedCultureMismatch && (
+              <p className="trade-alert" role="alert">
+                Услуги исходного расчёта теперь привязаны к другой культуре.
+                Выберите актуальную культуру партии или исключите неподходящие
+                услуги.
+              </p>
+            )}
             {omitted.length > 0 && (
               <div className="cost-copy-notice" role="note">
                 <strong>Проверьте расходы исходного расчёта</strong>
@@ -644,7 +670,15 @@ export default function CalculatorEditor() {
                   )}
                   {!services.length && (
                     <div className="cost-empty-row">
-                      <span>Услуги пока не добавлены</span>
+                      <span>
+                        {!input.culture
+                          ? "Выберите культуру партии"
+                          : !elevator.services.some(
+                                (service) => !service.archived,
+                              )
+                            ? "Услуги пока не добавлены"
+                            : `Нет услуг для культуры «${input.culture}»`}
+                      </span>
                       <Button asChild variant="outline" size="sm">
                         <Link
                           href={`/admin/elevators/${elevator.id}`}
@@ -665,10 +699,17 @@ export default function CalculatorEditor() {
                         (line) => line.serviceId === service.id,
                       );
                       const rate = applicableRate(service, input.date);
+                      const matchesCulture = serviceMatchesCulture(
+                        service,
+                        input.culture,
+                      );
                       const invalid =
-                        service.archived || !rate || elevator.archived;
+                        service.archived ||
+                        !rate ||
+                        elevator.archived ||
+                        !matchesCulture;
                       const amount =
-                        row && rate
+                        row && rate && !invalid
                           ? rowAmount(
                               rate.price,
                               service.unit,
@@ -699,6 +740,7 @@ export default function CalculatorEditor() {
                               className="cost-service-name"
                             >
                               <strong>{service.name}</strong>
+                              <span>{service.culture || "Все культуры"}</span>
                               <span
                                 title={
                                   rate
@@ -708,9 +750,11 @@ export default function CalculatorEditor() {
                               >
                                 {service.archived
                                   ? "Услуга в архиве"
-                                  : !rate
-                                    ? "Нет тарифа на выбранную дату"
-                                    : `${moneyText(rate.price)} ₸ / ${UNIT_SHORT[service.unit]}`}
+                                  : !matchesCulture
+                                    ? `Другая культура: ${service.culture}`
+                                    : !rate
+                                      ? "Нет тарифа на выбранную дату"
+                                      : `${moneyText(rate.price)} ₸ / ${UNIT_SHORT[service.unit]}`}
                               </span>
                             </label>
                             <div className="cost-service-amount">

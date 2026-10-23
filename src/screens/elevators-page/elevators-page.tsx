@@ -16,8 +16,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { WorkspaceHeading } from "@/components/ui/workspace-heading";
 import { CrmRouteLoading } from "@/components/ui/crm-route-loading";
+import { CrmEmptyState } from "@/components/ui/crm-state";
 import { DatePickerInput } from "@/components/ui/date-picker";
 import { getStations } from "@/entities/stations/api/get/get-stations.api";
+import { getCultures } from "@/entities/cultures/api/get/get-cultures.api";
 import {
   Dialog,
   DialogContent,
@@ -48,7 +50,7 @@ import {
 import "@/screens/calculator-page/trade.css";
 import "@/screens/calculator-page/cost-calculator.css";
 
-const templates: Omit<ServiceInput, "effectiveFrom">[] = [
+const templates: Omit<ServiceInput, "effectiveFrom" | "culture">[] = [
   {
     name: "ТехПД",
     price: "",
@@ -243,9 +245,16 @@ function ServiceEditor({
   service?: ElevatorService;
   onSaved: () => void;
 }) {
+  const cultures = useQuery({
+    queryKey: ["cultures", 1, 1000],
+    queryFn: () => getCultures(1, 1000),
+    enabled: !service,
+    retry: 1,
+  });
   const [template, setTemplate] = useState("none");
   const [input, setInput] = useState<ServiceInput>({
     name: service?.name || "",
+    culture: service?.culture || "",
     unit: service?.unit || "TONNE",
     price: service?.rates[0]?.price || "",
     effectiveFrom: todayKz(),
@@ -307,6 +316,37 @@ function ServiceEditor({
               required
               wide
             />
+            <div className="trade-wide">
+              <Choice
+                label="Культура"
+                value={input.culture}
+                onChange={(value) => set("culture", value)}
+                options={(cultures.data?.data || []).map(({ name }) => ({
+                  value: name,
+                  label: name,
+                }))}
+                placeholder={
+                  cultures.isPending ? "Загрузка культур…" : "Выберите культуру"
+                }
+                disabled={cultures.isPending || cultures.isError}
+                required
+              />
+              {cultures.isError && (
+                <p role="alert" className="mt-2 text-xs text-destructive">
+                  Не удалось загрузить культуры.{" "}
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
+                    onClick={() => cultures.refetch()}
+                    disabled={cultures.isFetching}
+                  >
+                    Повторить
+                  </Button>
+                </p>
+              )}
+            </div>
             <Choice
               label="Единица тарифа"
               value={input.unit}
@@ -361,7 +401,12 @@ function ServiceEditor({
       )}
       <Button
         type="submit"
-        disabled={busy || !input.effectiveFrom}
+        disabled={
+          busy ||
+          !input.effectiveFrom ||
+          (!service &&
+            (!input.culture || cultures.isError || cultures.isPending))
+        }
         className="trade-primary"
       >
         {busy
@@ -429,6 +474,7 @@ export default function ElevatorsPage({ id }: { id?: string }) {
       )}
       <WorkspaceHeading
         icon={Warehouse}
+        eyebrow="Логистика и хранение"
         title={id ? elevator?.name || "Элеватор" : "Элеваторы"}
         description={
           id ? elevator?.station : `${list.data?.length ?? 0} в справочнике`
@@ -485,9 +531,16 @@ export default function ElevatorsPage({ id }: { id?: string }) {
                   {filtered.map((item) => (
                     <tr key={item.id}>
                       <td>
-                        <Link href={`/admin/elevators/${item.id}`}>
-                          {item.name}
-                        </Link>
+                        <div className="record-table-title">
+                          <span className="record-row-icon" aria-hidden="true">
+                            <Warehouse size={18} />
+                          </span>
+                          <div>
+                            <Link href={`/admin/elevators/${item.id}`}>
+                              {item.name}
+                            </Link>
+                          </div>
+                        </div>
                       </td>
                       <td data-label="Станция">{item.station || "—"}</td>
                       <td data-label="Услуги">
@@ -507,14 +560,12 @@ export default function ElevatorsPage({ id }: { id?: string }) {
               </table>
             </div>
           ) : (
-            <div className="trade-empty">
-              <Warehouse size={32} className="mx-auto mb-3" />
-              <p>
-                {search
-                  ? "Элеваторы не найдены"
-                  : "Элеваторы пока не добавлены"}
-              </p>
-            </div>
+            <CrmEmptyState
+              icon={Warehouse}
+              title={
+                search ? "Элеваторы не найдены" : "Элеваторы пока не добавлены"
+              }
+            />
           )}
         </>
       ) : (
@@ -565,6 +616,7 @@ export default function ElevatorsPage({ id }: { id?: string }) {
                   <thead>
                     <tr>
                       <th>Услуга</th>
+                      <th>Культура</th>
                       <th>Единица</th>
                       <th className="trade-number">Цена, KZT</th>
                       <th>Тарифы</th>
@@ -586,6 +638,9 @@ export default function ElevatorsPage({ id }: { id?: string }) {
                                 Неурочное время ×1,5
                               </span>
                             )}
+                          </td>
+                          <td data-label="Культура">
+                            {service.culture || "Все культуры"}
                           </td>
                           <td data-label="Единица">{UNITS[service.unit]}</td>
                           <td data-label="Цена, KZT" className="trade-number">
@@ -653,7 +708,10 @@ export default function ElevatorsPage({ id }: { id?: string }) {
                 </table>
               </div>
             ) : (
-              <div className="trade-empty">Услуги пока не добавлены</div>
+              <CrmEmptyState
+                icon={Warehouse}
+                title="Услуги пока не добавлены"
+              />
             )}
           </>
         )
@@ -664,7 +722,10 @@ export default function ElevatorsPage({ id }: { id?: string }) {
           if (!open) setDialog(null);
         }}
       >
-        <DialogContent className="trade-dialog" aria-describedby={undefined}>
+        <DialogContent
+          className="trade-dialog record-dialog"
+          aria-describedby={undefined}
+        >
           <DialogHeader>
             <DialogTitle>
               {dialog === "elevator"
@@ -676,6 +737,11 @@ export default function ElevatorsPage({ id }: { id?: string }) {
                   : "Новая услуга"}
             </DialogTitle>
           </DialogHeader>
+          {dialog === "rate" && selected && (
+            <p className="text-sm text-muted-foreground">
+              Культура: {selected.culture || "Все культуры"}
+            </p>
+          )}
           {dialog === "elevator" ? (
             <ElevatorEditor
               elevator={elevator}

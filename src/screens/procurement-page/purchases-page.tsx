@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePickerInput } from "@/components/ui/date-picker";
 import { WorkspaceHeading } from "@/components/ui/workspace-heading";
+import { CrmRouteLoading } from "@/components/ui/crm-route-loading";
+import { CrmEmptyState, CrmErrorState } from "@/components/ui/crm-state";
 import {
   Select,
   SelectContent,
@@ -41,12 +43,16 @@ import "./purchases.css";
 
 export function PurchaseError({ retry }: { retry: () => void }) {
   return (
-    <div role="alert" className="py-12 text-center">
-      <p className="mb-3 font-semibold">Не удалось загрузить данные закупок</p>
-      <Button variant="outline" onClick={retry}>
-        <RotateCcw className="size-4" />
-        Повторить
-      </Button>
+    <div role="alert">
+      <CrmErrorState
+        title="Не удалось загрузить данные закупок"
+        action={
+          <Button variant="outline" onClick={retry}>
+            <RotateCcw className="size-4" />
+            Повторить
+          </Button>
+        }
+      />
     </div>
   );
 }
@@ -85,6 +91,7 @@ export default function PurchasesPage() {
     <div className="purchase-workspace record-workspace">
       <WorkspaceHeading
         icon={ShoppingBasket}
+        eyebrow="Закупки и хозяйства"
         title={
           <>
             Закуп{" "}
@@ -192,31 +199,27 @@ export default function PurchasesPage() {
               Дата начала не может быть позже даты окончания.
             </p>
           ) : query.isPending ? (
-            <p role="status" className="py-12 text-center text-gray-500">
-              Загружаем закупки…
-            </p>
+            <CrmRouteLoading />
           ) : query.isError ? (
             <PurchaseError retry={() => query.refetch()} />
           ) : !query.data?.rows.length ? (
-            <div className="purchase-empty">
-              <ShoppingBasket className="size-8" />
-              <h2>
-                {filters.search || filters.culture || filters.from || filters.to
+            <CrmEmptyState
+              icon={ShoppingBasket}
+              title={filters.search || filters.culture || filters.from || filters.to
                   ? "Закупки не найдены"
                   : "Пока нет закупок"}
-              </h2>
-              <p>
-                {filters.search || filters.culture || filters.from || filters.to
+              description={filters.search || filters.culture || filters.from || filters.to
                   ? "Измените параметры поиска."
                   : "Создайте первый договор закупки."}
-              </p>
-              <Button asChild>
-                <Link href="/admin/procurement/new">
-                  <Plus className="size-4" />
-                  Создать закупку
-                </Link>
-              </Button>
-            </div>
+              action={
+                <Button asChild>
+                  <Link href="/admin/procurement/new">
+                    <Plus className="size-4" />
+                    Создать закупку
+                  </Link>
+                </Button>
+              }
+            />
           ) : (
             <>
               <div className="purchase-table-wrap">
@@ -238,26 +241,33 @@ export default function PurchasesPage() {
                     {query.data.rows.map((purchase) => (
                       <tr key={purchase.id}>
                         <td>
-                          <Link
-                            className="purchase-row-title"
-                            href={`/admin/procurement/${purchase.id}`}
-                          >
-                            № {purchase.agreementNumber}
-                          </Link>
-                          <p>{purchase.farmerName}</p>
-                          <small>
-                            {purchase.agreementDate
-                              .slice(0, 10)
-                              .split("-")
-                              .reverse()
-                              .join(".")}
-                            {purchase.document && (
-                              <FileText
-                                className="ml-2 inline size-3.5"
-                                aria-label="Договор прикреплён"
-                              />
-                            )}
-                          </small>
+                          <div className="record-table-title">
+                            <span className="record-row-icon" aria-hidden="true">
+                              <FileText size={18} />
+                            </span>
+                            <div>
+                              <Link
+                                className="purchase-row-title"
+                                href={`/admin/procurement/${purchase.id}`}
+                              >
+                                № {purchase.agreementNumber}
+                              </Link>
+                              <p>{purchase.farmerName}</p>
+                              <small>
+                                {purchase.agreementDate
+                                  .slice(0, 10)
+                                  .split("-")
+                                  .reverse()
+                                  .join(".")}
+                                {purchase.document && (
+                                  <FileText
+                                    className="ml-2 inline size-3.5"
+                                    aria-label="Договор прикреплён"
+                                  />
+                                )}
+                              </small>
+                            </div>
+                          </div>
                         </td>
                         <td>{purchase.cultureName}</td>
                         <td className="text-right tabular-nums">

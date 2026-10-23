@@ -116,6 +116,7 @@ export default function FarmPage() {
       </Link>
       <WorkspaceHeading
         icon={Warehouse}
+        eyebrow="Фермерская база"
         title={id ? farm?.organizationName : "Новое хозяйство"}
         description={
           farm?.import

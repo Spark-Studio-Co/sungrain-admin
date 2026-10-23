@@ -4,6 +4,7 @@ import {
   costPerTonne,
   emptyInput,
   rowAmount,
+  serviceMatchesCulture,
   wagonCount,
 } from "./calculator-model";
 import type { Calculation, CalculationLine } from "@/entities/calculator/api";
@@ -18,6 +19,15 @@ const wagon = (count: string): CalculationLine => ({
   overtime: false,
 });
 describe("cost estimate editor", () => {
+  it("matches crop-specific services without restricting legacy general services", () => {
+    expect(serviceMatchesCulture({ culture: " Пшеница " }, "пшеница")).toBe(
+      true,
+    );
+    expect(serviceMatchesCulture({ culture: "Пшеница" }, "Ячмень")).toBe(false);
+    expect(serviceMatchesCulture({ culture: "Пшеница" }, "")).toBe(false);
+    expect(serviceMatchesCulture({ culture: null }, "Ячмень")).toBe(true);
+    expect(serviceMatchesCulture({}, "Пшеница")).toBe(true);
+  });
   it("starts without sales or implicit TechPD", () => {
     const input = emptyInput("2026-10-21");
     expect(input.schemaVersion).toBe(2);

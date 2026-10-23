@@ -1,5 +1,5 @@
 .purchase-workspace {
-  color: #223137;
+  color: var(--crm-ink);
   min-width: 0;
   padding-bottom: 32px;
   letter-spacing: 0;
@@ -39,23 +39,38 @@
 }
 .purchase-tabs {
   display: flex;
-  gap: 24px;
-  border-bottom: 1px solid #dfe5e2;
-  margin-bottom: 24px;
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--crm-line);
+  border-radius: 6px;
+  background: var(--card);
+  margin-bottom: 20px;
 }
 .purchase-tabs a {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 0 14px;
+  min-height: 40px;
+  padding: 8px 16px;
   font-size: 14px;
-  font-weight: 600;
-  border-bottom: 2px solid transparent;
-  color: #728078;
+  font-weight: 700;
+  border-radius: 4px;
+  color: var(--crm-muted);
+}
+.purchase-tabs a:hover {
+  color: var(--crm-green-600);
+  background: var(--crm-surface);
+}
+.purchase-tabs a:focus-visible {
+  outline: 2px solid var(--crm-orange-500);
+  outline-offset: 2px;
 }
 .purchase-tabs a[aria-current] {
-  color: #2f6b4f;
-  border-color: #2f6b4f;
+  color: var(--primary-foreground);
+  background: var(--crm-orange-500);
 }
 .purchase-filters {
   display: grid;
@@ -65,8 +80,9 @@
   align-items: end;
   gap: 12px;
   margin-bottom: 24px;
-  padding: 16px 0 20px;
-  border-bottom: 1px solid var(--crm-line);
+  padding: 16px 20px;
+  border-block: 1px solid var(--crm-line);
+  background: var(--crm-surface);
 }
 .purchase-filters label,
 .purchase-field {
@@ -78,6 +94,9 @@
 }
 .purchase-filters input {
   min-width: 0;
+}
+.purchase-filters :is(input, button) {
+  min-height: 44px;
 }
 .purchase-table-wrap {
   overflow-x: auto;
@@ -173,7 +192,7 @@
 }
 .purchase-section {
   border-bottom: 1px solid var(--crm-line);
-  padding: 24px 0;
+  padding: 22px 0;
 }
 .purchase-section:first-child {
   padding-top: 0;
@@ -267,7 +286,7 @@
 }
 .purchase-summary h2 {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 800;
   margin: 0;
 }
 .purchase-summary dl > div {
@@ -293,11 +312,15 @@
   margin: 24px -24px -4px;
   background: var(--crm-green-soft);
 }
+.purchase-summary .purchase-total dt {
+  color: var(--crm-ink-soft);
+}
 .purchase-total dd {
-  font-size: 28px;
+  font-size: 24px;
+  font-weight: 800;
   line-height: 1.3;
   margin-top: 8px;
-  color: #2f6b4f;
+  color: var(--crm-green-600);
 }
 .purchase-file {
   display: flex;
@@ -348,8 +371,9 @@
 }
 .purchase-is-reading .purchase-field > label {
   color: var(--crm-muted);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 .purchase-is-reading .purchase-section:first-child .purchase-field > label {
   display: none;
@@ -452,12 +476,15 @@
 }
 .farm-details-grid dt {
   color: var(--crm-muted);
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
   margin-bottom: 6px;
 }
 .farm-details-grid dd {
   font-size: 15px;
   font-weight: 600;
+  line-height: 1.6;
   overflow-wrap: anywhere;
 }
 .farm-registry {
@@ -483,6 +510,7 @@
 }
 .farm-import {
   border-block: 1px solid var(--crm-line);
+  background: var(--crm-surface);
   margin-bottom: 22px;
 }
 .farm-import > summary {
@@ -490,7 +518,7 @@
   align-items: center;
   gap: 9px;
   list-style: none;
-  padding: 14px 0;
+  padding: 14px 16px;
   font-size: 13px;
   font-weight: 600;
   color: var(--crm-green-700);
@@ -509,15 +537,16 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 340px);
   gap: 32px;
-  padding: 8px 0 22px;
+  padding: 8px 16px 22px;
 }
 .farm-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
-  padding-bottom: 22px;
+  padding: 18px 0;
   margin-bottom: 22px;
-  border-bottom: 1px solid var(--crm-line);
+  border-block: 1px solid var(--crm-line);
+  background: var(--crm-surface);
 }
 .farm-metric {
   min-width: 0;
@@ -525,7 +554,7 @@
   border-right: 1px solid var(--crm-line);
 }
 .farm-metric:first-child {
-  padding-left: 0;
+  padding-left: 20px;
 }
 .farm-metric:last-child {
   border-right: 0;
@@ -533,8 +562,17 @@
 .farm-metric p {
   overflow-wrap: anywhere;
 }
+.farm-metric p:last-child {
+  color: var(--crm-ink-soft);
+}
 .farm-filters {
-  padding-bottom: 22px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  border-block: 1px solid var(--crm-line);
+  background: var(--crm-surface);
+}
+.farm-filters :is(input:not([type="checkbox"]), button[role="combobox"]) {
+  min-height: 44px;
 }
 .farm-results {
   border: 1px solid var(--crm-line);
@@ -546,12 +584,14 @@
   overflow-x: auto;
 }
 .farm-registry-table th {
-  background: var(--crm-surface-strong);
-  text-transform: none;
+  background: var(--crm-surface);
+  text-transform: uppercase;
+  font-size: 11px;
   letter-spacing: 0;
   border-radius: 0;
   border-inline: 0;
-  font-weight: 600;
+  font-weight: 800;
+  color: var(--crm-ink-soft);
 }
 .farm-registry-table td {
   font-size: 13px;

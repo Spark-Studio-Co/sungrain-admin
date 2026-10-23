@@ -4,11 +4,13 @@ import "./workspace-heading.css";
 
 export function WorkspaceHeading({
   icon: Icon,
+  eyebrow,
   title,
   description,
   actions,
 }: {
   icon: LucideIcon;
+  eyebrow: string;
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
@@ -16,8 +18,9 @@ export function WorkspaceHeading({
   return (
     <header className="record-heading">
       <div className="record-heading-main">
-        <span className="record-heading-icon" aria-hidden="true">
-          <Icon size={22} />
+        <span className="record-heading-eyebrow">
+          <Icon size={14} aria-hidden="true" />
+          {eyebrow}
         </span>
         <div className="record-heading-copy">
           <h1>{title}</h1>

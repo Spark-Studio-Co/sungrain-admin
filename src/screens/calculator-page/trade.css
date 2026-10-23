@@ -1,8 +1,8 @@
 .trade-workspace {
-  color: #223137;
+  color: var(--crm-ink);
   min-width: 0;
-  max-width: 1560px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   letter-spacing: 0;
 }
 .trade-heading {
@@ -35,11 +35,11 @@
   letter-spacing: 0;
 }
 .trade-primary {
-  background: #f58b0b !important;
-  color: #fff !important;
+  background: linear-gradient(135deg, var(--crm-orange-500), var(--crm-orange-600));
+  color: var(--primary-foreground);
 }
 .trade-primary:hover {
-  background: #df7900 !important;
+  background: var(--crm-orange-600);
 }
 .trade-toolbar {
   display: flex;
@@ -377,8 +377,9 @@
   overflow-wrap: anywhere;
 }
 .trade-dialog {
-  max-width: 600px !important;
-  max-height: 90dvh;
+  width: calc(100% - 2rem);
+  max-width: 640px !important;
+  max-height: calc(100dvh - 2rem);
   overflow-y: auto;
 }
 .trade-dialog form {

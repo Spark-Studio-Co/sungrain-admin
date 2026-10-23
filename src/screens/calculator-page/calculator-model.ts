@@ -4,9 +4,24 @@ import {
   type CalculationInput,
   type CalculationLine,
   type CostUnit,
+  type ElevatorService,
 } from "@/entities/calculator/api";
 
-export function emptyInput(date: string, elevatorId?: string): CalculationInput {
+export function serviceMatchesCulture(
+  service: Pick<ElevatorService, "culture">,
+  culture: string,
+) {
+  return (
+    !service.culture ||
+    service.culture.trim().toLocaleLowerCase("ru") ===
+      culture.trim().toLocaleLowerCase("ru")
+  );
+}
+
+export function emptyInput(
+  date: string,
+  elevatorId?: string,
+): CalculationInput {
   return {
     schemaVersion: 2,
     requestId: crypto.randomUUID(),

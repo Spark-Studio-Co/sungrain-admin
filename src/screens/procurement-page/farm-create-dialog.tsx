@@ -73,7 +73,7 @@ export function FarmCreateDialog({
       }}
     >
       <DialogContent
-        className={`max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl ${save.isPending ? "[&>[data-slot=dialog-close]]:pointer-events-none [&>[data-slot=dialog-close]]:opacity-50" : ""}`}
+        className={`record-dialog max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl ${save.isPending ? "[&>[data-slot=dialog-close]]:pointer-events-none [&>[data-slot=dialog-close]]:opacity-50" : ""}`}
         aria-busy={save.isPending}
         onCloseAutoFocus={(event) => {
           event.preventDefault();

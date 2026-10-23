@@ -394,6 +394,7 @@ function PurchaseForm({
       </Link>
       <WorkspaceHeading
         icon={FileText}
+        eyebrow="Договор закупки"
         title={
           purchase ? `Закупка № ${purchase.agreementNumber}` : "Новая закупка"
         }
