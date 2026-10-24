@@ -437,10 +437,6 @@ export const Layout: React.FC<ILayout> = ({
                     {currentTitle}
                   </h1>
                 </div>
-                <div className="hidden items-center gap-2 rounded-md border border-border/70 bg-card px-3 py-2 text-xs text-muted-foreground shadow-sm sm:flex">
-                  <span className="size-2 rounded-full bg-[#4d7c5d]" />
-                  Online
-                </div>
                 <Button
                   type="button"
                   variant="outline"
