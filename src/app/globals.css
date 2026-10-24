@@ -201,14 +201,10 @@
   .crm-control {
     border: 1px solid var(--crm-line);
     background: rgba(255, 255, 255, 0.92);
-    box-shadow: 0 6px 16px rgba(34, 49, 55, 0.045);
   }
 
   .crm-control:focus-within {
     border-color: color-mix(in srgb, var(--crm-orange-500) 72%, var(--crm-line));
-    box-shadow:
-      0 0 0 3px rgba(243, 136, 16, 0.16),
-      0 8px 18px rgba(34, 49, 55, 0.065);
   }
 
   .crm-close-button {
@@ -628,4 +624,15 @@
   .sungrain-dashboard tbody tr:hover {
     background: rgba(77, 124, 93, 0.045);
   }
+}
+
+/* Keep form controls flat, including shared button and focus-ring utilities. */
+.crm-control,
+button[role="combobox"] {
+  box-shadow: none;
+}
+
+.crm-control[aria-invalid="true"],
+button[role="combobox"][aria-invalid="true"] {
+  border-color: var(--destructive);
 }

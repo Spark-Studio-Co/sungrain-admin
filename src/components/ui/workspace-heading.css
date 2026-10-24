@@ -104,7 +104,6 @@
     .purchase-field button[role="combobox"]
   ) {
   min-height: 44px;
-  border-color: var(--crm-line);
   border-radius: 6px;
 }
 .record-workspace :is(.trade-table th, .purchase-table th) {
