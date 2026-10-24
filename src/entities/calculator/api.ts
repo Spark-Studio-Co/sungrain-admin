@@ -182,7 +182,8 @@ export type CalculatorOptions = {
 };
 
 export const tradeApi = {
-  elevators: async () => (await apiClient.get<Elevator[]>("/elevators")).data,
+  elevators: async () =>
+    (await apiClient.get<Elevator[]>("/elevators", { timeout: 15_000 })).data,
   elevator: async (id: string) =>
     (await apiClient.get<Elevator>(`/elevators/${id}`)).data,
   createElevator: async (input: ElevatorInput) =>
@@ -209,16 +210,24 @@ export const tradeApi = {
       })
     ).data,
   options: async () =>
-    (await apiClient.get<CalculatorOptions>("/calculator/options")).data,
+    (
+      await apiClient.get<CalculatorOptions>("/calculator/options", {
+        timeout: 15_000,
+      })
+    ).data,
   preview: async (input: CalculationInput) =>
-    (await apiClient.post<CalculationResult>("/calculator/preview", input))
-      .data,
+    (
+      await apiClient.post<CalculationResult>("/calculator/preview", input, {
+        timeout: 30_000,
+      })
+    ).data,
   save: async (input: CalculationInput, previewFingerprint: string) =>
     (
-      await apiClient.post<Calculation>("/calculator/calculations", {
-        ...input,
-        previewFingerprint,
-      })
+      await apiClient.post<Calculation>(
+        "/calculator/calculations",
+        { ...input, previewFingerprint },
+        { timeout: 30_000 },
+      )
     ).data,
   list: async (search: string, mode: string, page: number) =>
     (
@@ -232,7 +241,11 @@ export const tradeApi = {
       })
     ).data,
   get: async (id: string) =>
-    (await apiClient.get<Calculation>(`/calculator/calculations/${id}`)).data,
+    (
+      await apiClient.get<Calculation>(`/calculator/calculations/${id}`, {
+        timeout: 15_000,
+      })
+    ).data,
   download: async (id: string, format: "xlsx" | "pdf") => {
     const response = await apiClient.get(
       `/calculator/calculations/${id}/export`,

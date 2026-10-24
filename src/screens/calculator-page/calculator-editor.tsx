@@ -9,10 +9,8 @@ import {
   ArrowLeft,
   ArrowUpRight,
   Calculator,
-  Check,
-  ChevronDown,
+  ChevronUp,
   Globe2,
-  Link2,
   Loader2,
   MapPin,
   Plus,
@@ -27,7 +25,23 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePickerInput } from "@/components/ui/date-picker";
 import { CrmRouteLoading } from "@/components/ui/crm-route-loading";
-import { WorkspaceHeading } from "@/components/ui/workspace-heading";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   Choice,
   Field,
@@ -38,6 +52,14 @@ import {
 } from "./controls";
 import { CalculationSummary } from "./calculation-summary";
 import { WagonOwnerChoice } from "./wagon-owner-choice";
+import { CalculationLinks } from "./calculation-links";
+import {
+  calculatorIssues,
+  isPreviewCurrent,
+  previewCatalogKey,
+  previewRatesMatch,
+  type PreviewSnapshot,
+} from "./calculator-workflow";
 import {
   copyCalculation,
   emptyInput,
@@ -55,12 +77,13 @@ import {
   UNIT_SHORT,
   type CalculationInput,
   type CalculationLine,
-  type CalculationResult,
   type Currency,
   type ElevatorService,
 } from "@/entities/calculator/api";
 import "./trade.css";
 import "./cost-calculator.css";
+import "@/components/ui/workspace-heading.css";
+import "./calculator-editor.css";
 
 export default function CalculatorEditor() {
   const params = useSearchParams();
@@ -74,9 +97,14 @@ export default function CalculatorEditor() {
   const formRef = useRef<HTMLFormElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const loadedCopy = useRef<string | null>(null);
+  const previewRef = useRef<PreviewSnapshot | null>(null);
+  const validationAfterSheet = useRef(false);
   const [omitted, setOmitted] = useState<string[]>([]);
   const [reconciled, setReconciled] = useState(false);
-  const [result, setResult] = useState<CalculationResult | null>(null);
+  const [preview, setPreview] = useState<PreviewSnapshot | null>(null);
+  const [showValidation, setShowValidation] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [pendingElevator, setPendingElevator] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [calculating, setCalculating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -84,6 +112,8 @@ export default function CalculatorEditor() {
   const options = useQuery({
     queryKey: ["calculator-options"],
     queryFn: tradeApi.options,
+    retry: 1,
+    networkMode: "always",
   });
   const cultureNames = Array.from(
     new Set(
@@ -96,11 +126,15 @@ export default function CalculatorEditor() {
   const elevators = useQuery({
     queryKey: ["elevators"],
     queryFn: tradeApi.elevators,
+    retry: 1,
+    networkMode: "always",
   });
   const original = useQuery({
     queryKey: ["calculation", copy],
     queryFn: () => tradeApi.get(copy!),
     enabled: !!copy,
+    retry: 1,
+    networkMode: "always",
   });
 
   useEffect(() => {
@@ -110,7 +144,8 @@ export default function CalculatorEditor() {
     inputRef.current = next.input;
     setInput(next.input);
     setOmitted(next.omitted);
-    setResult(null);
+    previewRef.current = null;
+    setPreview(null);
   }, [original.data]);
   useEffect(() => {
     if (error) errorRef.current?.focus();
@@ -125,7 +160,6 @@ export default function CalculatorEditor() {
     next.wagons = wagonCount(next.lines);
     inputRef.current = next;
     setInput(next);
-    setResult(null);
     setError("");
   }
   function lineChange(id: string, patch: Partial<CalculationLine>) {
@@ -172,6 +206,37 @@ export default function CalculatorEditor() {
       );
     }) ||
     !!elevator?.archived;
+  const catalogKey = previewCatalogKey(elevator, input);
+  const issues = calculatorIssues(input, todayKz());
+  const fieldError = (field: string) =>
+    showValidation ? issues[field] : undefined;
+  const previewReady =
+    isPreviewCurrent(preview, input, catalogKey) &&
+    !servicesInvalid &&
+    (!omitted.length || reconciled) &&
+    !error;
+  const result = preview?.result;
+  const readiness = [
+    ...Object.values(issues),
+    ...(servicesInvalid ? ["Есть недоступные услуги элеватора"] : []),
+    ...(omitted.length && !reconciled
+      ? ["Расходы исходного расчёта не сверены"]
+      : []),
+  ];
+  function focusInvalid() {
+    const invalid = formRef.current?.querySelector<HTMLElement>(
+      '[aria-invalid="true"]',
+    );
+    invalid?.focus({ preventScroll: true });
+    invalid?.scrollIntoView({ block: "center" });
+  }
+  function applyElevator(value: string) {
+    change({
+      elevatorId: value === "none" ? undefined : value,
+      lines: inputRef.current.lines.filter((row) => !row.serviceId),
+    });
+    setServiceSearch("");
+  }
   function toggleService(service: ElevatorService, checked: boolean) {
     const remaining = inputRef.current.lines.filter(
       (line) =>
@@ -228,21 +293,18 @@ export default function CalculatorEditor() {
   }
   async function calculate(event: FormEvent) {
     event.preventDefault();
-    if (
-      !inputRef.current.departureStation ||
-      !inputRef.current.destinationStation
-    ) {
-      setError(
-        !inputRef.current.departureStation
-          ? "Выберите станцию отправления."
-          : "Выберите станцию назначения.",
-      );
+    if (calculating || saving) return;
+    setSummaryOpen(false);
+    setShowValidation(true);
+    if (Object.keys(calculatorIssues(inputRef.current, todayKz())).length) {
+      validationAfterSheet.current = summaryOpen;
+      requestAnimationFrame(focusInvalid);
       return;
     }
+    if (!formRef.current?.reportValidity()) return;
     if (servicesInvalid) {
-      setError(
-        "Проверьте выбранные услуги: культура или дата расчёта не соответствует тарифам.",
-      );
+      validationAfterSheet.current = summaryOpen;
+      requestAnimationFrame(focusInvalid);
       return;
     }
     if (omitted.length && !reconciled) {
@@ -254,7 +316,38 @@ export default function CalculatorEditor() {
     const current = inputRef.current;
     try {
       const next = await tradeApi.preview(current);
-      if (inputRef.current.requestId === current.requestId) setResult(next);
+      if (inputRef.current.requestId === current.requestId) {
+        let currentElevator = elevators.data?.find(
+          (item) => item.id === current.elevatorId,
+        );
+        let catalogUnavailable = false;
+        if (current.lines.some((line) => line.serviceId)) {
+          const refreshed = await elevators.refetch();
+          if (inputRef.current.requestId !== current.requestId) return;
+          catalogUnavailable = refreshed.isError;
+          if (!catalogUnavailable)
+            currentElevator = refreshed.data?.find(
+              (item) => item.id === current.elevatorId,
+            );
+        }
+        const snapshot: PreviewSnapshot = {
+          result: next,
+          requestId: current.requestId!,
+          currency: current.currency,
+          tonnes: current.tonnes,
+          wagons: current.wagons,
+          date: current.date,
+          catalogKey: previewCatalogKey(currentElevator, current),
+        };
+        previewRef.current = snapshot;
+        setPreview(snapshot);
+        if (catalogUnavailable)
+          setError(
+            "Расчёт получен, но не удалось подтвердить тарифы. Повторите расчёт после восстановления связи.",
+          );
+        else if (!previewRatesMatch(next, currentElevator, current.date))
+          setError("Тарифы обновились во время расчёта. Повторите расчёт.");
+      }
     } catch (error) {
       if (inputRef.current.requestId === current.requestId)
         setError(errorText(error));
@@ -263,22 +356,38 @@ export default function CalculatorEditor() {
     }
   }
   async function save() {
-    if (!result || !formRef.current?.reportValidity()) return;
+    const snapshot = previewRef.current;
+    if (
+      !snapshot ||
+      !isPreviewCurrent(snapshot, inputRef.current, catalogKey) ||
+      !previewReady ||
+      calculating ||
+      saving ||
+      !formRef.current?.reportValidity()
+    )
+      return;
+    setSummaryOpen(false);
     setSaving(true);
     setError("");
     try {
-      const record = await tradeApi.save(inputRef.current, result.fingerprint);
+      const record = await tradeApi.save(
+        inputRef.current,
+        snapshot.result.fingerprint,
+      );
       await client.invalidateQueries({ queryKey: ["calculations"] });
       router.push(`/admin/calculator/${record.id}`);
     } catch (error) {
       setError(errorText(error));
-      setResult(null);
       setSaving(false);
     }
   }
   if (options.isLoading || elevators.isLoading || (copy && original.isLoading))
     return <CrmRouteLoading />;
-  if (options.isError || elevators.isError || (copy && original.isError))
+  if (
+    (options.isError && !options.data) ||
+    (elevators.isError && !elevators.data) ||
+    (copy && original.isError && !original.data)
+  )
     return (
       <QueryError
         retry={() => {
@@ -289,29 +398,77 @@ export default function CalculatorEditor() {
       />
     );
 
+  const summaryProps = {
+    result,
+    currency: preview?.currency ?? input.currency,
+    tonnes: preview?.tonnes ?? input.tonnes,
+    wagons: preview?.wagons ?? input.wagons,
+    stale: !!preview && !previewReady,
+    pending: calculating,
+    readiness,
+    snapshotDate: preview?.date,
+  };
+  const primaryButton = (
+    <Button
+      type={previewReady ? "button" : "submit"}
+      form={previewReady ? undefined : "trade-calculation-form"}
+      className="trade-primary"
+      disabled={calculating || saving}
+      aria-label={
+        previewReady ? "Сохранить расчёт" : "Рассчитать себестоимость"
+      }
+      onClick={previewReady ? save : undefined}
+    >
+      {calculating || saving ? (
+        <Loader2 className="animate-spin" size={16} />
+      ) : previewReady ? (
+        <Save size={16} />
+      ) : (
+        <Calculator size={16} />
+      )}
+      {saving
+        ? "Сохранение…"
+        : calculating
+          ? "Расчёт…"
+          : previewReady
+            ? "Сохранить расчёт"
+            : preview
+              ? "Пересчитать"
+              : "Рассчитать"}
+    </Button>
+  );
+
   return (
     <div className="trade-workspace cost-workspace cost-editor-screen record-workspace">
       <Link href="/admin/calculator" className="trade-back">
         <ArrowLeft size={15} />
         Все расчёты
       </Link>
-      <WorkspaceHeading
-        icon={Calculator}
-        eyebrow="Экономика сделки"
-        title={copy ? "Копия расчёта" : "Новый расчёт"}
-        description="Себестоимость партии"
-        actions={
-          <Button asChild variant="outline">
-            <Link href="/admin/elevators">
-              <Warehouse size={16} />
-              Элеваторы и тарифы
-              <ArrowUpRight size={15} />
-            </Link>
-          </Button>
-        }
-      />
+      <header className="cost-editor-heading">
+        <div className="cost-editor-identity">
+          <span className="cost-editor-icon">
+            <Calculator size={24} />
+          </span>
+          <div>
+            <h1>{copy ? "Копия расчёта" : "Новый расчёт"}</h1>
+            <p>Себестоимость партии</p>
+          </div>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/admin/elevators">
+            <Warehouse size={16} />
+            Элеваторы и тарифы
+            <ArrowUpRight size={15} />
+          </Link>
+        </Button>
+      </header>
       <div className="trade-editor-layout cost-editor-layout">
-        <form id="trade-calculation-form" ref={formRef} onSubmit={calculate}>
+        <form
+          id="trade-calculation-form"
+          ref={formRef}
+          onSubmit={calculate}
+          noValidate
+        >
           <fieldset disabled={saving} className="cost-form-fieldset">
             {copiedCultureMismatch && (
               <p className="trade-alert" role="alert">
@@ -333,7 +490,7 @@ export default function CalculatorEditor() {
                     checked={reconciled}
                     onCheckedChange={(v) => {
                       setReconciled(v === true);
-                      setResult(null);
+                      change({});
                     }}
                   />
                   Расходы сверены
@@ -343,7 +500,7 @@ export default function CalculatorEditor() {
             <section className="cost-section">
               <div className="cost-section-title">
                 <Wheat size={19} />
-                <h2>Партия</h2>
+                <h2>Партия и маршрут</h2>
               </div>
               <div className="cost-context-row">
                 <div
@@ -373,23 +530,39 @@ export default function CalculatorEditor() {
                     </button>
                   ))}
                 </div>
-                <Field label="Дата расчёта">
+                <Field
+                  label="Дата расчёта"
+                  error={fieldError("date")}
+                  errorId="cost-date-error"
+                >
                   <DatePickerInput
                     value={input.date}
                     onChange={(date) => change({ date })}
                     max={input.currency !== "KZT" ? todayKz() : undefined}
                     aria-label="Дата расчёта"
                     aria-required
+                    aria-invalid={!!fieldError("date") || undefined}
+                    aria-describedby={
+                      fieldError("date") ? "cost-date-error" : undefined
+                    }
                   />
                 </Field>
               </div>
-              <div className="trade-form-grid cost-party-grid">
+              <CalculationLinks
+                input={input}
+                options={options.data ?? { purchases: [], applications: [] }}
+                onChange={change}
+              />
+              <div
+                className={`trade-form-grid cost-party-grid ${input.mode === "EXPORT" ? "is-export" : ""}`}
+              >
                 <TextField
                   label="Название расчёта"
                   value={input.title}
                   onChange={(title) => change({ title })}
                   required
                   wide
+                  error={fieldError("title")}
                 />
                 <Choice
                   label="Культура"
@@ -401,6 +574,7 @@ export default function CalculatorEditor() {
                   }))}
                   placeholder="Выберите культуру"
                   required
+                  error={fieldError("culture")}
                 />
                 <NumberField
                   label="Объём партии, т"
@@ -408,11 +582,13 @@ export default function CalculatorEditor() {
                   step="0.001"
                   min="0.001"
                   onChange={(tonnes) => change({ tonnes })}
+                  error={fieldError("tonnes")}
                 />
                 <NumberField
                   label="Закупочная цена, ₸/т"
                   value={input.purchasePrice}
                   onChange={(purchasePrice) => change({ purchasePrice })}
+                  error={fieldError("purchasePrice")}
                 />
                 {input.mode === "EXPORT" && (
                   <Choice
@@ -433,6 +609,7 @@ export default function CalculatorEditor() {
                   value={input.departureStation}
                   onChange={(departureStation) => change({ departureStation })}
                   stations={options.data?.stations || []}
+                  error={fieldError("departureStation")}
                 />
                 <StationChoice
                   label="Станция назначения"
@@ -441,77 +618,9 @@ export default function CalculatorEditor() {
                     change({ destinationStation })
                   }
                   stations={options.data?.stations || []}
+                  error={fieldError("destinationStation")}
                 />
               </div>
-              <details className="cost-links">
-                <summary>
-                  <Link2 size={15} />
-                  Связать с закупкой или приложением
-                  <ChevronDown size={15} />
-                  {(input.purchaseId || input.applicationId) && (
-                    <Check size={14} />
-                  )}
-                </summary>
-                <div className="trade-form-grid">
-                  <Choice
-                    label="Закупка"
-                    value={input.purchaseId || "none"}
-                    onChange={(value) => {
-                      const p = options.data?.purchases.find(
-                        (item) => item.id === value,
-                      );
-                      change(
-                        p
-                          ? {
-                              purchaseId: p.id,
-                              culture: p.cultureName,
-                              tonnes: p.quantity,
-                              purchasePrice: p.unitPrice,
-                            }
-                          : { purchaseId: undefined },
-                      );
-                    }}
-                    options={[
-                      { value: "none", label: "Без привязки" },
-                      ...(options.data?.purchases
-                        .filter((p) => p.currency === "KZT")
-                        .map((p) => ({
-                          value: p.id,
-                          label: `${p.agreementNumber} · ${p.cultureName}`,
-                        })) || []),
-                    ]}
-                  />
-                  <Choice
-                    label="Контракт / приложение"
-                    value={
-                      input.applicationId ? String(input.applicationId) : "none"
-                    }
-                    onChange={(value) => {
-                      const a = options.data?.applications.find(
-                        (item) => item.id === Number(value),
-                      );
-                      change(
-                        a
-                          ? {
-                              applicationId: a.id,
-                              culture: a.culture,
-                              departureStation: a.departure_stations.join(", "),
-                              destinationStation:
-                                a.destination_stations.join(", "),
-                            }
-                          : { applicationId: undefined },
-                      );
-                    }}
-                    options={[
-                      { value: "none", label: "Без привязки" },
-                      ...(options.data?.applications.map((a) => ({
-                        value: String(a.id),
-                        label: `${a.contract.number} · ${a.name || a.id}`,
-                      })) || []),
-                    ]}
-                  />
-                </div>
-              </details>
             </section>
             <section className="cost-section">
               <div className="cost-section-heading">
@@ -555,12 +664,14 @@ export default function CalculatorEditor() {
                         step="1"
                         min="1"
                         onChange={(factor) => lineChange(row.id, { factor })}
+                        error={fieldError(`factor:${row.id}`)}
                       />
                       <NumberField
                         label="Цена, ₸/вагон"
                         ariaLabel={`Цена за вагон, ₸, строка ${i + 1}`}
                         value={row.price}
                         onChange={(price) => lineChange(row.id, { price })}
+                        error={fieldError(`price:${row.id}`)}
                       />
                       <div className="cost-row-amount">
                         <span>Сумма</span>
@@ -623,13 +734,15 @@ export default function CalculatorEditor() {
               </div>
               <Choice
                 label="Элеватор"
+                error={
+                  showValidation && elevator?.archived
+                    ? "Элеватор в архиве"
+                    : undefined
+                }
                 value={input.elevatorId || "none"}
                 onChange={(value) => {
-                  change({
-                    elevatorId: value === "none" ? undefined : value,
-                    lines: input.lines.filter((row) => !row.serviceId),
-                  });
-                  setServiceSearch("");
+                  if (serviceLines.length) setPendingElevator(value);
+                  else applyElevator(value);
                 }}
                 options={[
                   { value: "none", label: "Выберите элеватор" },
@@ -688,6 +801,13 @@ export default function CalculatorEditor() {
                     <p className="cost-empty-row">Услуги не найдены</p>
                   )}
                   <div className="cost-services">
+                    {filteredServices.length > 0 && (
+                      <div className="cost-service-columns" aria-hidden="true">
+                        <span>Услуга</span>
+                        <span>Тариф</span>
+                        <span>Сумма</span>
+                      </div>
+                    )}
                     {filteredServices.map((service) => {
                       const row = serviceLines.find(
                         (line) => line.serviceId === service.id,
@@ -722,6 +842,12 @@ export default function CalculatorEditor() {
                             <Checkbox
                               id={`service-${service.id}`}
                               checked={!!row}
+                              aria-invalid={(!!row && invalid) || undefined}
+                              aria-describedby={
+                                row && invalid
+                                  ? `cost-service-error-${service.id}`
+                                  : undefined
+                              }
                               disabled={
                                 !row && (invalid || input.lines.length >= 100)
                               }
@@ -735,13 +861,12 @@ export default function CalculatorEditor() {
                             >
                               <strong>{service.name}</strong>
                               <span>{service.culture || "Все культуры"}</span>
-                              <span
-                                title={
-                                  rate
-                                    ? `Тариф от ${dateText(rate.effectiveFrom)}`
-                                    : undefined
-                                }
-                              >
+                            </label>
+                            <div
+                              className="cost-service-tariff"
+                              id={`cost-service-error-${service.id}`}
+                            >
+                              <span>
                                 {service.archived
                                   ? "Услуга в архиве"
                                   : !matchesCulture
@@ -750,7 +875,14 @@ export default function CalculatorEditor() {
                                       ? "Нет тарифа на выбранную дату"
                                       : `${moneyText(rate.price)} ₸ / ${UNIT_SHORT[service.unit]}`}
                               </span>
-                            </label>
+                              {rate && (
+                                <time
+                                  dateTime={rate.effectiveFrom.slice(0, 10)}
+                                >
+                                  с {dateText(rate.effectiveFrom)}
+                                </time>
+                              )}
+                            </div>
                             <div className="cost-service-amount">
                               {row ? (
                                 <strong>{moneyText(amount)} ₸</strong>
@@ -785,6 +917,7 @@ export default function CalculatorEditor() {
                                     onChange={(factor) =>
                                       lineChange(row.id, { factor })
                                     }
+                                    error={fieldError(`factor:${row.id}`)}
                                   />
                                 )}
                                 {service.overtimeEligible && (
@@ -809,7 +942,12 @@ export default function CalculatorEditor() {
                 </>
               )}
               {unavailableLines.map((line) => (
-                <div key={line.id} className="cost-unavailable-line">
+                <div
+                  key={line.id}
+                  className="cost-unavailable-line"
+                  tabIndex={-1}
+                  aria-invalid="true"
+                >
                   <span>Услуга недоступна: {line.name}</span>
                   <Button
                     type="button"
@@ -848,73 +986,108 @@ export default function CalculatorEditor() {
             </div>
           )}
         </form>
-        <CalculationSummary
-          result={result}
-          currency={input.currency}
-          tonnes={input.tonnes}
-          wagons={input.wagons}
-        >
-          <div className="trade-actions">
-            <Button
-              type="submit"
-              form="trade-calculation-form"
-              className="trade-primary"
-              disabled={calculating || saving || !input.date}
-            >
-              <Calculator size={16} />
-              {calculating ? "Расчёт…" : "Рассчитать"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={
-                !result ||
-                calculating ||
-                saving ||
-                servicesInvalid ||
-                (omitted.length > 0 && !reconciled)
-              }
-              onClick={save}
-            >
-              {saving ? (
-                <Loader2 className="animate-spin" size={16} />
+        <div className="cost-editor-summary">
+          <CalculationSummary {...summaryProps}>
+            <div className="cost-summary-actions">
+              {primaryButton}
+              {previewReady ? (
+                <Button
+                  type="submit"
+                  form="trade-calculation-form"
+                  variant="outline"
+                  disabled={calculating || saving}
+                >
+                  Пересчитать
+                </Button>
               ) : (
-                <Save size={16} />
+                <Button type="button" variant="outline" disabled>
+                  <Save size={16} />
+                  Сохранить расчёт
+                </Button>
               )}
-              {saving ? "Сохранение…" : "Сохранить расчёт"}
-            </Button>
-          </div>
-        </CalculationSummary>
+            </div>
+          </CalculationSummary>
+        </div>
       </div>
+      <AlertDialog
+        open={pendingElevator !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingElevator(null);
+        }}
+      >
+        <AlertDialogContent
+          className="cost-confirm"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            formRef.current
+              ?.querySelector<HTMLButtonElement>('[aria-label="Элеватор"]')
+              ?.focus();
+          }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle>Сменить элеватор?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Выбранные услуги будут удалены из расчёта. Расходы на вагоны
+              сохранятся.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Оставить текущий</AlertDialogCancel>
+            <AlertDialogAction
+              className="trade-primary"
+              onClick={() => {
+                if (pendingElevator !== null) applyElevator(pendingElevator);
+                setPendingElevator(null);
+              }}
+            >
+              Сменить элеватор
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {typeof document !== "undefined" &&
         createPortal(
-          <div className="cost-mobile-actions">
-            <button
-              type="button"
-              className="cost-mobile-total"
-              aria-label="Перейти к итогу расчёта"
-              onClick={() =>
-                document
-                  .getElementById("cost-summary")
-                  ?.scrollIntoView({ block: "start" })
-              }
+          <Sheet open={summaryOpen} onOpenChange={setSummaryOpen}>
+            <div className="cost-mobile-actions">
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  className="cost-mobile-total"
+                  aria-label="Открыть итог расчёта"
+                >
+                  <span>
+                    {preview && !previewReady
+                      ? "Требуется пересчёт"
+                      : "Себестоимость / т"}
+                    <ChevronUp size={12} />
+                  </span>
+                  <strong>
+                    {result ? `${moneyText(result.costPerTonneKzt)} ₸` : "—"}
+                  </strong>
+                </button>
+              </SheetTrigger>
+              {primaryButton}
+            </div>
+            <SheetContent
+              side="bottom"
+              className="cost-summary-sheet"
+              aria-describedby={undefined}
+              onCloseAutoFocus={(event) => {
+                if (validationAfterSheet.current) {
+                  event.preventDefault();
+                  validationAfterSheet.current = false;
+                  focusInvalid();
+                }
+              }}
             >
-              <span>Себестоимость / т</span>
-              <strong>
-                {result ? `${moneyText(result.costPerTonneKzt)} ₸` : "—"}
-              </strong>
-            </button>
-            <Button
-              type="submit"
-              form="trade-calculation-form"
-              aria-label="Рассчитать себестоимость"
-              disabled={calculating || saving || !input.date}
-              className="trade-primary"
-            >
-              <Calculator size={16} />
-              {calculating ? "Расчёт…" : "Рассчитать"}
-            </Button>
-          </div>,
+              <SheetHeader>
+                <SheetTitle>Итог расчёта</SheetTitle>
+              </SheetHeader>
+              <CalculationSummary {...summaryProps} id="cost-mobile-summary">
+                <div className="cost-summary-actions">{primaryButton}</div>
+              </CalculationSummary>
+            </SheetContent>
+          </Sheet>,
           document.body,
         )}
     </div>

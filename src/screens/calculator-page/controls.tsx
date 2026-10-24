@@ -31,15 +31,24 @@ export function Field({
   label,
   children,
   wide = false,
+  error,
+  errorId,
 }: {
   label: string;
   children: ReactNode;
   wide?: boolean;
+  error?: string;
+  errorId?: string;
 }) {
   return (
     <div className={`trade-field${wide ? " trade-wide" : ""}`}>
       <span>{label}</span>
       {children}
+      {error && (
+        <p id={errorId} className="cost-field-error">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -50,6 +59,7 @@ export function NumberField({
   step = "0.01",
   min = "0",
   ariaLabel,
+  error,
 }: {
   label: string;
   value: string | number;
@@ -57,11 +67,15 @@ export function NumberField({
   step?: string;
   min?: string;
   ariaLabel?: string;
+  error?: string;
 }) {
+  const errorId = useId();
   return (
-    <Field label={label}>
+    <Field label={label} error={error} errorId={errorId}>
       <Input
         aria-label={ariaLabel || label}
+        aria-invalid={!!error || undefined}
+        aria-describedby={error ? errorId : undefined}
         type="number"
         inputMode="decimal"
         min={min}
@@ -80,6 +94,7 @@ export function TextField({
   required = false,
   wide = false,
   maxLength = 160,
+  error,
 }: {
   label: string;
   value: string;
@@ -87,6 +102,7 @@ export function TextField({
   required?: boolean;
   wide?: boolean;
   maxLength?: number;
+  error?: string;
 }) {
   const id = useId();
   return (
@@ -98,7 +114,14 @@ export function TextField({
         onChange={(event) => onChange(event.target.value)}
         required={required}
         maxLength={maxLength}
+        aria-invalid={!!error || undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
       />
+      {error && (
+        <p id={`${id}-error`} className="cost-field-error">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -110,6 +133,7 @@ export function Choice({
   disabled = false,
   required = false,
   placeholder,
+  error,
 }: {
   label: string;
   value: string;
@@ -118,9 +142,11 @@ export function Choice({
   disabled?: boolean;
   required?: boolean;
   placeholder?: string;
+  error?: string;
 }) {
+  const errorId = useId();
   return (
-    <Field label={label}>
+    <Field label={label} error={error} errorId={errorId}>
       <Select
         value={value || (required ? "" : "none")}
         onValueChange={(next) => {
@@ -133,6 +159,8 @@ export function Choice({
       >
         <SelectTrigger
           aria-label={label}
+          aria-invalid={!!error || undefined}
+          aria-describedby={error ? errorId : undefined}
           aria-required={required || undefined}
           className="w-full min-w-0 *:data-[slot=select-value]:min-w-0"
         >
@@ -169,6 +197,7 @@ export function StationChoice({
   required = true,
   disabled = false,
   placeholder = "Выберите станцию",
+  error,
 }: {
   label: string;
   value: string;
@@ -177,7 +206,9 @@ export function StationChoice({
   required?: boolean;
   disabled?: boolean;
   placeholder?: string;
+  error?: string;
 }) {
+  const errorId = useId();
   const [open, setOpen] = useState(false);
   const [boundary, setBoundary] = useState<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -188,7 +219,7 @@ export function StationChoice({
   };
 
   return (
-    <Field label={label}>
+    <Field label={label} error={error} errorId={errorId}>
       <Popover
         open={open}
         onOpenChange={(next) => {
@@ -208,6 +239,8 @@ export function StationChoice({
             variant="outline"
             role="combobox"
             aria-label={label}
+            aria-invalid={!!error || undefined}
+            aria-describedby={error ? errorId : undefined}
             aria-expanded={open}
             aria-required={required || undefined}
             disabled={disabled}

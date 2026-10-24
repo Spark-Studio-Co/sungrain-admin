@@ -1,0 +1,376 @@
+.cost-editor-screen .trade-back {
+  margin-bottom: 12px;
+}
+.cost-editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 0 20px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--crm-line);
+}
+.cost-editor-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.cost-editor-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 46px;
+  height: 46px;
+  border-radius: 6px;
+  background: var(--crm-orange-soft);
+  color: var(--crm-orange-600);
+}
+.cost-editor-heading h1 {
+  margin: 0;
+  color: var(--crm-ink);
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+.cost-editor-heading p {
+  margin: 5px 0 0;
+  color: var(--crm-muted);
+  font-size: 13px;
+}
+.cost-editor-heading > [data-slot="button"] {
+  flex-shrink: 0;
+  font-weight: 700;
+}
+.cost-editor-screen .cost-editor-layout {
+  gap: 28px;
+  align-items: start;
+}
+.cost-editor-screen .cost-section {
+  padding: 20px 0;
+  border-color: var(--crm-line);
+}
+.cost-editor-screen .cost-section:first-of-type {
+  padding-top: 0;
+}
+.cost-editor-screen .cost-section-title {
+  margin-bottom: 14px;
+}
+.cost-editor-screen .cost-section-heading .cost-section-title {
+  margin-bottom: 0;
+}
+.cost-editor-screen .cost-section-heading {
+  margin-bottom: 14px;
+}
+.cost-editor-screen .cost-context-row {
+  margin-bottom: 12px;
+}
+.cost-editor-screen .cost-links {
+  margin: 0 0 14px;
+}
+.cost-editor-screen .cost-links summary {
+  font-weight: 600;
+}
+.cost-editor-screen .cost-links > .trade-form-grid {
+  padding: 14px 0;
+  border-top: 1px solid var(--crm-line);
+}
+.cost-editor-screen .trade-form-grid {
+  gap: 14px;
+  align-items: start;
+}
+.cost-editor-screen .cost-party-grid.is-export {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.cost-editor-screen .cost-route-grid {
+  margin-top: 14px;
+}
+.cost-editor-screen .cost-empty-row {
+  padding: 8px 0 2px;
+  font-size: 12px;
+}
+.cost-editor-screen .cost-empty-row > svg {
+  width: 18px;
+  height: 18px;
+}
+.cost-editor-screen .cost-wagon-row {
+  align-items: start;
+  padding-block: 12px;
+}
+.cost-editor-screen .cost-wagon-row:first-child {
+  padding-top: 0;
+}
+.cost-editor-screen .cost-wagon-row > button {
+  margin-top: 24px;
+}
+.cost-editor-screen .cost-wagon-row input[type="number"] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.cost-editor-screen .cost-row-amount {
+  justify-content: start;
+  gap: 16px;
+  padding-bottom: 0;
+}
+.cost-editor-screen .cost-row-amount > strong {
+  line-height: 28px;
+}
+.cost-editor-screen .cost-service-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px 120px;
+  gap: 12px;
+  padding: 0 10px 10px 40px;
+  color: var(--crm-muted);
+  font-size: 10px;
+  line-height: 1.4;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.cost-editor-screen .cost-service-columns > :not(:first-child) {
+  text-align: right;
+}
+.cost-editor-screen .cost-service {
+  padding: 14px 10px;
+  border-color: var(--crm-line);
+}
+.cost-editor-screen .cost-service.is-selected {
+  background: var(--crm-green-soft);
+  box-shadow: inset 3px 0 var(--crm-green-600);
+  border-radius: 4px;
+}
+.cost-editor-screen .cost-service.is-selected.is-unavailable {
+  background: var(--crm-orange-soft);
+  box-shadow: inset 3px 0 var(--crm-orange-600);
+}
+.cost-editor-screen .cost-service-main {
+  grid-template-columns: 18px minmax(0, 1fr) 140px 120px;
+  gap: 12px;
+}
+.cost-editor-screen .cost-service-name > strong {
+  font-size: 13px;
+  font-weight: 750;
+}
+.cost-editor-screen .cost-service-name > span {
+  width: fit-content;
+  max-width: 100%;
+  padding: 2px 5px;
+  border: 1px solid var(--crm-line);
+  border-radius: 4px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--crm-ink-soft);
+  overflow-wrap: anywhere;
+}
+.cost-service-tariff {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--crm-ink-soft);
+  text-align: right;
+  font-size: 12px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.cost-service-tariff time {
+  color: var(--crm-muted);
+  font-size: 10px;
+}
+.cost-editor-screen .cost-service-amount {
+  font-weight: 800;
+}
+.cost-editor-screen .cost-service-options {
+  padding-top: 12px;
+  margin-top: 12px;
+  margin-left: 30px;
+  border-top: 1px solid var(--crm-line);
+}
+.cost-field-error {
+  margin: 0;
+  color: var(--destructive);
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.cost-editor-screen :is(input, button)[aria-invalid="true"] {
+  border-color: var(--destructive);
+}
+.cost-editor-summary {
+  position: sticky;
+  top: 88px;
+  min-width: 0;
+}
+.cost-editor-summary > .cost-summary {
+  position: static;
+  max-height: calc(100dvh - 112px);
+  overflow-y: auto;
+}
+.cost-summary-heading {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cost-status.is-stale {
+  color: var(--crm-orange-600);
+}
+.cost-summary.is-stale .cost-total > strong {
+  color: var(--crm-ink-soft);
+}
+.cost-total > .cost-no-result {
+  color: var(--crm-muted);
+  font-size: 22px;
+}
+.cost-readiness {
+  min-height: 126px;
+  padding: 14px 0;
+  border-top: 1px solid var(--crm-line);
+  color: var(--crm-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.cost-readiness ul {
+  display: grid;
+  gap: 5px;
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+  color: var(--crm-ink-soft);
+}
+.cost-readiness p {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  margin: 0;
+  color: var(--crm-green-600);
+}
+.cost-snapshot-date {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--crm-line);
+  color: var(--crm-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.cost-summary-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+}
+.cost-summary-actions > [data-slot="button"] {
+  width: 100%;
+  min-height: 42px;
+}
+.cost-confirm {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+.cost-confirm [data-slot="alert-dialog-title"] {
+  padding-right: 30px;
+}
+.cost-summary-sheet {
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  padding: 20px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  border-radius: 8px 8px 0 0;
+}
+.cost-summary-sheet [data-slot="sheet-header"] {
+  padding: 0 36px 14px 0;
+  border-bottom: 1px solid var(--crm-line);
+}
+.cost-summary-sheet .cost-summary {
+  position: static;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+@media (max-width: 1280px) {
+  .cost-editor-screen .cost-editor-layout {
+    gap: 24px;
+  }
+  .cost-editor-screen .cost-party-grid.is-export {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cost-editor-screen .cost-service-main {
+    grid-template-columns: 18px minmax(0, 1fr) 120px 100px;
+  }
+  .cost-editor-screen .cost-service-columns {
+    grid-template-columns: minmax(0, 1fr) 120px 100px;
+  }
+}
+@media (max-width: 1050px) {
+  .cost-editor-summary {
+    position: static;
+  }
+  .cost-editor-summary > .cost-summary {
+    max-height: none;
+  }
+}
+@media (max-width: 767px) {
+  .cost-editor-screen {
+    padding-bottom: 116px;
+  }
+  .cost-editor-summary {
+    display: none;
+  }
+  .cost-editor-heading {
+    padding-top: 8px;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .cost-editor-heading > [data-slot="button"] {
+    width: 100%;
+  }
+  .cost-editor-heading h1 {
+    font-size: 24px;
+  }
+  .cost-editor-screen .cost-service-columns {
+    display: none;
+  }
+  .cost-editor-screen .cost-service-main {
+    grid-template-columns: 18px minmax(0, 1fr) minmax(80px, auto);
+    gap: 10px;
+  }
+  .cost-editor-screen .cost-service-name {
+    grid-column: 2 / -1;
+  }
+  .cost-editor-screen .cost-service-tariff {
+    grid-column: 2;
+    text-align: left;
+  }
+  .cost-editor-screen .cost-service-amount {
+    grid-column: 3;
+    max-width: 130px;
+  }
+  .cost-mobile-total span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .cost-mobile-actions > [data-slot="button"] {
+    min-height: 44px;
+    max-width: 180px;
+    flex-shrink: 0;
+    padding-inline: 12px;
+    font-size: 13px;
+  }
+}
+@media (max-width: 540px) {
+  .cost-editor-screen .cost-context-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .cost-editor-screen .cost-wagon-row > button {
+    margin-top: 0;
+    align-self: center;
+  }
+  .cost-editor-screen .cost-row-amount {
+    padding-top: 4px;
+    align-items: center;
+  }
+  .cost-editor-screen .cost-row-amount > strong {
+    line-height: 1.5;
+  }
+}
