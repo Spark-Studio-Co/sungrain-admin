@@ -37,6 +37,7 @@ import {
   TextField,
 } from "./controls";
 import { CalculationSummary } from "./calculation-summary";
+import { WagonOwnerChoice } from "./wagon-owner-choice";
 import {
   copyCalculation,
   emptyInput,
@@ -539,21 +540,14 @@ export default function CalculatorEditor() {
                 <div className="cost-wagon-list">
                   {wagonLines.map((row, i) => (
                     <div className="cost-wagon-row" key={row.id}>
-                      <Field label={`Вагоны ${i + 1}`}>
-                        <Input
-                          aria-label={`Название вагонов ${i + 1}`}
-                          maxLength={160}
-                          value={row.name === "Вагоны" ? "" : row.name}
-                          placeholder="Собственник или примечание"
-                          onChange={(e) =>
-                            lineChange(row.id, {
-                              name: e.target.value.trim()
-                                ? e.target.value
-                                : "Вагоны",
-                            })
-                          }
-                        />
-                      </Field>
+                      <WagonOwnerChoice
+                        index={i + 1}
+                        value={row.name === "Вагоны" ? "" : row.name}
+                        onChange={(name) =>
+                          lineChange(row.id, { name: name || "Вагоны" })
+                        }
+                        disabled={saving}
+                      />
                       <NumberField
                         label="Количество"
                         ariaLabel={`Количество, строка ${i + 1}`}
