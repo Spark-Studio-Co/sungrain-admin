@@ -57,7 +57,7 @@ export type ElevatorInput = Omit<Elevator, "id" | "services" | "version"> & {
 export type ServiceInput = Pick<
   ElevatorService,
   "name" | "unit" | "overtimeEligible" | "alternativeGroup"
-> & { culture: string; price: string; effectiveFrom: string };
+> & { culture?: string | null; price: string; effectiveFrom: string };
 export type CalculationLine = {
   id: string;
   serviceId?: string;

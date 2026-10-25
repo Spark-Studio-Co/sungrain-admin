@@ -266,7 +266,11 @@ function ServiceEditor({
           price: input.price,
           effectiveFrom: input.effectiveFrom,
         });
-      else await tradeApi.addService(elevator.id, input);
+      else
+        await tradeApi.addService(elevator.id, {
+          ...input,
+          culture: input.culture || null,
+        });
       onSaved();
     } catch (error) {
       setError(errorText(error));
@@ -310,17 +314,17 @@ function ServiceEditor({
             <div className="trade-wide">
               <Choice
                 label="Культура"
-                value={input.culture}
-                onChange={(value) => set("culture", value)}
-                options={(cultures.data?.data || []).map(({ name }) => ({
-                  value: name,
-                  label: name,
-                }))}
-                placeholder={
-                  cultures.isPending ? "Загрузка культур…" : "Выберите культуру"
+                value={input.culture ? `culture:${input.culture}` : "all"}
+                onChange={(value) =>
+                  set("culture", value === "all" ? "" : value.slice("culture:".length))
                 }
-                disabled={cultures.isPending || cultures.isError}
-                required
+                options={[
+                  { value: "all", label: "Все культуры" },
+                  ...(cultures.data?.data || []).map(({ name }) => ({
+                    value: `culture:${name}`,
+                    label: name,
+                  })),
+                ]}
               />
               {cultures.isError && (
                 <p role="alert" className="mt-2 text-xs text-destructive">
@@ -392,12 +396,7 @@ function ServiceEditor({
       )}
       <Button
         type="submit"
-        disabled={
-          busy ||
-          !input.effectiveFrom ||
-          (!service &&
-            (!input.culture || cultures.isError || cultures.isPending))
-        }
+        disabled={busy || !input.effectiveFrom}
         className="trade-primary"
       >
         {busy

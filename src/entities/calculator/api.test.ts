@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { tradeApi, type CalculationInput } from "./api";
+import { tradeApi, type CalculationInput, type ServiceInput } from "./api";
 
 const { get, post } = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
 vi.mock("@/shared/api/apiClient", () => ({ apiClient: { get, post } }));
@@ -37,5 +37,27 @@ describe("calculator request deadlines", () => {
         { timeout: 30_000 },
       ],
     ]);
+  });
+
+  it("preserves optional and selected service crops in API requests", async () => {
+    const input: ServiceInput = {
+      name: "Отгрузка",
+      unit: "TONNE",
+      price: "2100",
+      effectiveFrom: "2026-10-25",
+      overtimeEligible: false,
+      alternativeGroup: "",
+    };
+    for (const service of [
+      input,
+      { ...input, culture: null },
+      { ...input, culture: "Пшеница" },
+    ]) {
+      await tradeApi.addService("elevator", service);
+      expect(post).toHaveBeenLastCalledWith(
+        "/elevators/elevator/services",
+        service,
+      );
+    }
   });
 });
