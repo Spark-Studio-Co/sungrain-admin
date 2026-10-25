@@ -321,6 +321,12 @@ export default function CalculatorPage({ id }: { id?: string }) {
                       <tr key={row.id}>
                         <td>
                           {row.name}
+                          {!row.serviceId && row.capacityTonnesPerWagon && (
+                            <span className="trade-subline">
+                              Вместимость:{" "}
+                              {moneyText(row.capacityTonnesPerWagon)} т/вагон
+                            </span>
+                          )}
                           {row.effectiveFrom && (
                             <span className="trade-subline">
                               Тариф от {dateText(row.effectiveFrom)}

@@ -66,6 +66,7 @@ export type CalculationLine = {
   unit: CostUnit;
   price: string;
   factor: string;
+  capacityTonnesPerWagon?: string;
   overtime: boolean;
 };
 export type CalculationInput = {

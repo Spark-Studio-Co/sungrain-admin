@@ -93,6 +93,13 @@ export function calculatorIssues(input: CalculationInput, today: string) {
     issues.destinationStation = "Не выбрана станция назначения";
   input.lines.forEach((line) => {
     if (
+      line.capacityTonnesPerWagon !== undefined &&
+      (!/^\d{1,9}(\.\d{1,3})?$/.test(line.capacityTonnesPerWagon) ||
+        Number(line.capacityTonnesPerWagon) <= 0)
+    )
+      issues[`capacity:${line.id}`] =
+        "Вместимость должна быть больше нуля, до 3 знаков после запятой";
+    if (
       !line.price ||
       !Number.isFinite(Number(line.price)) ||
       Number(line.price) < 0

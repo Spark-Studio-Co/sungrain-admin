@@ -58,7 +58,7 @@ describe("cost estimate editor", () => {
     const input = {
       ...emptyInput("2026-10-21"),
       title: "Saved",
-      lines: [wagon("2")],
+      lines: [{ ...wagon("2"), capacityTonnesPerWagon: "68.125" }],
       wagons: 2,
     };
     const record = { id: "source", title: "Saved", input } as Calculation;
@@ -67,6 +67,7 @@ describe("cost estimate editor", () => {
     expect(copy.input.wagons).toBe(2);
     expect(copy.input.sourceId).toBe("source");
     expect(copy.input.lines[0].id).not.toBe(input.lines[0].id);
+    expect(copy.input.lines[0].capacityTonnesPerWagon).toBe("68.125");
     expect(record.input).toBe(input);
   });
   it("identifies legacy manual charges that require reconciliation", () => {

@@ -117,6 +117,43 @@ describe("calculator preview workflow", () => {
 });
 
 describe("calculator inline issues", () => {
+  it("allows an omitted wagon capacity and validates entered capacity without changing party data", () => {
+    const row = {
+      id: "wagon",
+      name: "Вагоны",
+      category: "TRANSPORT" as const,
+      unit: "WAGON" as const,
+      factor: "2",
+      price: "100000",
+      overtime: false,
+    };
+    for (const capacityTonnesPerWagon of [undefined, "68", "68.125"]) {
+      expect(
+        calculatorIssues(
+          { ...input, lines: [{ ...row, capacityTonnesPerWagon }] },
+          "2026-10-25",
+        ),
+      ).toEqual({});
+    }
+    for (const capacityTonnesPerWagon of [
+      "0",
+      "-1",
+      "",
+      "68.1234",
+      "NaN",
+      "Infinity",
+      "1e2",
+      "1000000000",
+    ]) {
+      expect(
+        calculatorIssues(
+          { ...input, lines: [{ ...row, capacityTonnesPerWagon }] },
+          "2026-10-25",
+        )["capacity:wagon"],
+      ).toBeTruthy();
+    }
+    expect(input.tonnes).toBe("1000");
+  });
   it("accepts zero purchase price and historical nonempty cultures", () => {
     expect(calculatorIssues(input, "2026-10-24")).toEqual({});
     expect(

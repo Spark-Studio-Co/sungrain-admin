@@ -58,6 +58,7 @@ export function NumberField({
   onChange,
   step = "0.01",
   min = "0",
+  required = true,
   ariaLabel,
   error,
 }: {
@@ -66,6 +67,7 @@ export function NumberField({
   onChange: (value: string) => void;
   step?: string;
   min?: string;
+  required?: boolean;
   ariaLabel?: string;
   error?: string;
 }) {
@@ -82,7 +84,7 @@ export function NumberField({
         step={step}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        required
+        required={required}
       />
     </Field>
   );

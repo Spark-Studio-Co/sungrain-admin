@@ -667,6 +667,20 @@ export default function CalculatorEditor() {
                         error={fieldError(`factor:${row.id}`)}
                       />
                       <NumberField
+                        label="Вместимость, т/вагон"
+                        ariaLabel={`Вместимость вагона, т, строка ${i + 1}`}
+                        value={row.capacityTonnesPerWagon ?? ""}
+                        step="0.001"
+                        min="0.001"
+                        required={false}
+                        onChange={(value) =>
+                          lineChange(row.id, {
+                            capacityTonnesPerWagon: value || undefined,
+                          })
+                        }
+                        error={fieldError(`capacity:${row.id}`)}
+                      />
+                      <NumberField
                         label="Цена, ₸/вагон"
                         ariaLabel={`Цена за вагон, ₸, строка ${i + 1}`}
                         value={row.price}
