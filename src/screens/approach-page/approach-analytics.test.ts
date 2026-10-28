@@ -11,6 +11,7 @@ const row = (
   currentStation: string,
   recipient: string | null,
   tons: number,
+  departureStation: string | null = null,
 ): ApproachRow => ({
   id,
   importId: 1,
@@ -21,7 +22,7 @@ const row = (
   cargoName,
   tons,
   recipient,
-  departureStation: null,
+  departureStation,
   trainIndex: null,
   containerNumber: null,
   rawData: null,
@@ -72,5 +73,26 @@ describe("approach culture analytics", () => {
     });
     expect(groups[0].wagonNumbers).toEqual(["951", "952"]);
     expect(groups[0].share).toBeCloseTo(69);
+  });
+
+  it("keeps different departure stations in separate destination rows", () => {
+    const groups = buildCultureDestinationGroups(
+      [
+        row(1, "Пшеница", "Худжанд", "Ирода Инвест", 70, "Павлодар"),
+        row(2, "Пшеница", "Худжанд", "Ирода Инвест", 68, "Шарбакты"),
+        row(3, "Пшеница", "Худжанд", "Ирода Инвест", 62, "Павлодар"),
+      ],
+      "Пшеница",
+    );
+
+    expect(groups).toHaveLength(2);
+    expect(groups[0]).toMatchObject({
+      station: "Худжанд",
+      departureStation: "Павлодар",
+      recipient: "Ирода Инвест",
+      wagons: 2,
+      tons: 132,
+    });
+    expect(groups[1].departureStation).toBe("Шарбакты");
   });
 });

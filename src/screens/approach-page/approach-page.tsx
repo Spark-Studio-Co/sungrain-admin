@@ -404,7 +404,8 @@ function CultureDestinationDialog({
               {culture}: куда пришли вагоны
             </DialogTitle>
             <DialogDescription className="max-w-3xl text-xs leading-5 sm:text-sm">
-              Текущие станции, получатели и состав вагонов выбранного груза.
+              Станции отправления и текущего нахождения, получатели и вагоны
+              выбранного груза.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -436,7 +437,7 @@ function CultureDestinationDialog({
               <div className="space-y-2 sm:hidden">
                 {groups.map((group, index) => (
                   <article
-                    key={`${group.station}-${group.recipient}`}
+                    key={`${group.station}-${group.departureStation}-${group.recipient}`}
                     className="border border-[#dfe7de] bg-white p-3.5 shadow-[0_8px_20px_rgba(34,49,55,0.04)]"
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -444,6 +445,12 @@ function CultureDestinationDialog({
                         <p className="flex items-center gap-1.5 text-sm font-black text-[#263a31]">
                           <MapPin className="size-3.5 shrink-0 text-[#e77808]" />
                           <span className="break-words">{group.station}</span>
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-[#65736c]">
+                          Отправление:{" "}
+                          <span className="font-bold">
+                            {group.departureStation}
+                          </span>
                         </p>
                         <p className="mt-1.5 flex items-start gap-1.5 text-xs font-bold leading-5 text-[#65736c]">
                           <Users className="mt-0.5 size-3.5 shrink-0 text-[#2f6b4f]" />
@@ -492,7 +499,7 @@ function CultureDestinationDialog({
               <div className="hidden overflow-hidden border border-[#dfe7de] bg-white shadow-[0_10px_28px_rgba(34,49,55,0.04)] sm:block">
                 <div className="sticky top-0 z-10 grid grid-cols-[48px_minmax(150px,0.85fr)_minmax(190px,1.15fr)_minmax(210px,1.25fr)_110px_80px] gap-3 border-b border-[#dfe7de] bg-[#f1f5f1] px-4 py-3 text-[10px] font-black uppercase text-[#768079]">
                   <span>№</span>
-                  <span>Текущая станция</span>
+                  <span>Станции</span>
                   <span>Получатель</span>
                   <span>Доля и вагоны</span>
                   <span className="text-right">Объем</span>
@@ -501,16 +508,21 @@ function CultureDestinationDialog({
                 <div className="divide-y divide-[#edf1eb]">
                   {groups.map((group, index) => (
                     <div
-                      key={`${group.station}-${group.recipient}`}
+                      key={`${group.station}-${group.departureStation}-${group.recipient}`}
                       className="grid grid-cols-[48px_minmax(150px,0.85fr)_minmax(190px,1.15fr)_minmax(210px,1.25fr)_110px_80px] items-center gap-3 px-4 py-4 transition-colors hover:bg-[#fffaf4]"
                     >
                       <span className="grid size-7 place-items-center rounded-md bg-[#fff2e2] text-[10px] font-black tabular-nums text-[#d66f05]">
                         {String(index + 1).padStart(2, "0")}
                       </span>
-                      <p className="flex min-w-0 items-start gap-2 text-xs font-black leading-5 text-[#2d4037]">
-                        <MapPin className="mt-0.5 size-3.5 shrink-0 text-[#e77808]" />
-                        <span className="break-words">{group.station}</span>
-                      </p>
+                      <div className="min-w-0">
+                        <p className="flex items-start gap-2 text-xs font-black leading-5 text-[#2d4037]">
+                          <MapPin className="mt-0.5 size-3.5 shrink-0 text-[#e77808]" />
+                          <span className="break-words">{group.station}</span>
+                        </p>
+                        <p className="mt-1 break-words pl-[22px] text-[10px] leading-4 text-[#7d8882]">
+                          Отправление: {group.departureStation}
+                        </p>
+                      </div>
                       <p className="flex min-w-0 items-start gap-2 text-xs font-bold leading-5 text-[#56665e]">
                         <Users className="mt-0.5 size-3.5 shrink-0 text-[#2f6b4f]" />
                         <span className="break-words">{group.recipient}</span>

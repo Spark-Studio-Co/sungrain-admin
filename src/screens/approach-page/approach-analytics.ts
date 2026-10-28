@@ -31,6 +31,7 @@ const GRAIN_CARGO_CATEGORIES = [
 
 export type CultureDestinationGroup = {
   station: string;
+  departureStation: string;
   recipient: string;
   wagons: number;
   tons: number;
@@ -60,10 +61,12 @@ export const buildCultureDestinationGroups = (
 
   cultureRows.forEach((row) => {
     const station = row.currentStation?.trim() || "Станция не указана";
+    const departureStation = row.departureStation?.trim() || "Не указана";
     const recipient = row.recipient?.trim() || "Получатель не указан";
-    const key = `${station}\u0000${recipient}`;
+    const key = `${station}\u0000${departureStation}\u0000${recipient}`;
     const current = groups.get(key) ?? {
       station,
+      departureStation,
       recipient,
       wagons: 0,
       tons: 0,
