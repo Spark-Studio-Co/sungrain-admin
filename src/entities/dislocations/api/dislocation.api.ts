@@ -56,6 +56,19 @@ export type UnmatchedDislocation = {
   observedAt: string;
 };
 
+export type CurrentUnmatchedDislocation = UnmatchedDislocation & {
+  reason: string;
+  note: string | null;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  candidates: Array<{
+    id: number;
+    contractId: string | null;
+    contractNumber: string | null;
+    applicationId: number | null;
+  }>;
+};
+
 export const getDislocationImports = async (limit = 50) => {
   const response = await apiClient.get<DislocationImport[]>(
     "/dislocation/imports",
@@ -82,6 +95,47 @@ export const getUnmatchedDislocations = async (importId: number) => {
     `/dislocation/imports/${importId}/unmatched`,
   );
 
+  return response.data;
+};
+
+export const getCurrentUnmatchedDislocations = async (status: 'OPEN' | 'IGNORED' = 'OPEN') => {
+  const response = await apiClient.get<CurrentUnmatchedDislocation[]>(
+    "/dislocation/current-unmatched",
+    { params: { status } },
+  );
+  return response.data;
+};
+
+export const linkUnmatchedDislocation = async (wagonNumber: string, wagonId: number) => {
+  const response = await apiClient.post(
+    `/dislocation/current-unmatched/${encodeURIComponent(wagonNumber)}/link`,
+    { wagonId },
+  );
+  return response.data;
+};
+
+export const ignoreUnmatchedDislocation = async (wagonNumber: string, note: string) => {
+  const response = await apiClient.patch(
+    `/dislocation/current-unmatched/${encodeURIComponent(wagonNumber)}`,
+    { action: "ignore", note },
+  );
+  return response.data;
+};
+
+export const reopenUnmatchedDislocation = async (wagonNumber: string) => {
+  const response = await apiClient.patch(
+    `/dislocation/current-unmatched/${encodeURIComponent(wagonNumber)}`,
+    { action: "reopen" },
+  );
+  return response.data;
+};
+
+export type ReconcileEntry = { wagonNumber: string; snapshotId: number };
+
+export const reconcileUnmatchedDislocations = async (dryRun: boolean, entries?: ReconcileEntry[]) => {
+  const response = await apiClient.post<
+    Array<{ wagonNumber: string; action: string; wagonId?: number; snapshotId?: number }>
+  >("/dislocation/current-unmatched/reconcile", { dryRun, entries });
   return response.data;
 };
 

@@ -749,6 +749,15 @@ const dislocationImports: AnyRecord[] = [
   },
 ];
 
+const currentUnmatchedWagons: AnyRecord[] = [
+  { id: 100, wagonNumber: "95308419", departureStation: "Сарыагаш", destinationStation: "Актау-Порт", lastOperationStation: "Арыс-1", operation: "Прибытие на станцию", distanceToDestinationKm: 1180, lastOperationAt: "2026-07-11T03:20:00.000Z", observedAt: "2026-07-11T05:12:04.000Z", firstSeenAt: "2026-07-11T05:12:04.000Z", lastSeenAt: "2026-07-11T05:12:04.000Z", reason: "NO_MATCH", candidates: [] },
+  { id: 101, wagonNumber: "95308652", departureStation: "Шымкент", destinationStation: "Актау-Порт", lastOperationStation: "Шу", operation: "Следование в составе поезда", distanceToDestinationKm: 810, lastOperationAt: "2026-07-11T04:20:00.000Z", observedAt: "2026-07-11T05:12:04.000Z", firstSeenAt: "2026-07-11T05:12:04.000Z", lastSeenAt: "2026-07-11T05:12:04.000Z", reason: "AMBIGUOUS", candidates: [
+    { id: 41, contractId: "contract-1", contractNumber: "SG-1", applicationId: 11 },
+    { id: 42, contractId: "contract-2", contractNumber: "SG-2", applicationId: 12 },
+  ] },
+];
+const ignoredUnmatchedWagons: AnyRecord[] = [];
+
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const shouldUseMockApi = () =>
@@ -1340,6 +1349,32 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
   if (path === "/dislocation/imports" && method === "get") {
     return dislocationImports.slice(0, Math.max(1, toNumber(params.limit, 50)));
   }
+  if (path === "/dislocation/current-unmatched" && method === "get") {
+    return params.status === "IGNORED" ? ignoredUnmatchedWagons : currentUnmatchedWagons;
+  }
+  if (path === "/dislocation/current-unmatched/reconcile" && method === "post") {
+    if (body.dryRun !== false) return currentUnmatchedWagons.map((wagon) => ({ wagonNumber: wagon.wagonNumber, snapshotId: wagon.id, action: wagon.candidates.length === 1 ? "MATCH" : "NO_MATCH" }));
+    const expected = new Map((Array.isArray(body.entries) ? body.entries : []).map((entry: AnyRecord) => [entry.wagonNumber, entry.snapshotId]));
+    const matched = currentUnmatchedWagons.filter((wagon) => wagon.candidates.length === 1 && expected.get(wagon.wagonNumber) === wagon.id);
+    matched.forEach((wagon) => currentUnmatchedWagons.splice(currentUnmatchedWagons.indexOf(wagon), 1));
+    return matched.map((wagon) => ({ wagonNumber: wagon.wagonNumber, action: "MATCH", wagonId: wagon.candidates[0].id }));
+  }
+  if (parts[0] === "dislocation" && parts[1] === "current-unmatched" && parts[3] === "link" && method === "post") {
+    const index = currentUnmatchedWagons.findIndex((wagon) => wagon.wagonNumber === decodeURIComponent(parts[2]));
+    if (index < 0) throw new Error("Вагон не найден");
+    const [wagon] = currentUnmatchedWagons.splice(index, 1);
+    return { wagonNumber: wagon.wagonNumber, action: "MATCH", wagonId: body.wagonId };
+  }
+  if (parts[0] === "dislocation" && parts[1] === "current-unmatched" && parts.length === 3 && method === "patch") {
+    const source = body.action === "reopen" ? ignoredUnmatchedWagons : currentUnmatchedWagons;
+    const target = body.action === "reopen" ? currentUnmatchedWagons : ignoredUnmatchedWagons;
+    const index = source.findIndex((wagon) => wagon.wagonNumber === decodeURIComponent(parts[2]));
+    if (index < 0) throw new Error("Вагон не найден");
+    const [wagon] = source.splice(index, 1);
+    wagon.note = body.action === "reopen" ? null : body.note;
+    target.push(wagon);
+    return { wagonNumber: wagon.wagonNumber, status: body.action === "reopen" ? "OPEN" : "IGNORED", note: wagon.note };
+  }
   if (
     parts[0] === "dislocation" &&
     parts[1] === "imports" &&
@@ -1570,7 +1605,7 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
       (application) =>
         !Array.isArray(application.files) || application.files.length === 0,
     );
-    const unmatchedCount = toNumber(dislocationImports[0]?.unmatchedRows);
+    const unmatchedCount = currentUnmatchedWagons.length;
     const makeItem = (
       key: string,
       title: string,

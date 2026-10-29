@@ -26,24 +26,40 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Link } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import type {
   DislocationImport,
   DislocationImportStatus,
+  CurrentUnmatchedDislocation,
+  ReconcileEntry,
 } from "@/entities/dislocations/api/dislocation.api";
 import {
+  useCurrentUnmatchedDislocations,
   useDislocationImports,
+  useIgnoreUnmatchedDislocation,
   useImportDislocation,
+  useLinkUnmatchedDislocation,
+  useReconcileUnmatchedDislocations,
+  useReopenUnmatchedDislocation,
   useSyncDislocationsFromEmail,
-  useUnmatchedDislocations,
 } from "@/entities/dislocations/hooks/use-dislocations";
 import { cn } from "@/lib/utils";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 const numberFormatter = new Intl.NumberFormat("ru-RU");
+const wagonCountText = (count: number) => {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  const noun = mod100 >= 11 && mod100 <= 14 ? "вагонов" : mod10 === 1 ? "вагон" : mod10 >= 2 && mod10 <= 4 ? "вагона" : "вагонов";
+  return `${numberFormatter.format(count)} ${noun}`;
+};
 const dateTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
   day: "2-digit",
   month: "short",
@@ -163,25 +179,78 @@ export default function DislocationsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedCase, setSelectedCase] = useState<CurrentUnmatchedDislocation | null>(null);
+  const [selectedCandidateId, setSelectedCandidateId] = useState("");
+  const [ignoreNote, setIgnoreNote] = useState("");
+  const [reconcilePreview, setReconcilePreview] = useState<ReconcileEntry[]>([]);
+  const [showIgnored, setShowIgnored] = useState(false);
   const importsQuery = useDislocationImports(50);
+  const currentUnmatchedQuery = useCurrentUnmatchedDislocations();
+  const ignoredQuery = useCurrentUnmatchedDislocations("IGNORED");
   const importMutation = useImportDislocation();
   const syncMutation = useSyncDislocationsFromEmail();
+  const linkMutation = useLinkUnmatchedDislocation();
+  const ignoreMutation = useIgnoreUnmatchedDislocation();
+  const reconcileMutation = useReconcileUnmatchedDislocations();
+  const reopenMutation = useReopenUnmatchedDislocation();
 
-  const imports = Array.isArray(importsQuery.data) ? importsQuery.data : [];
+  const imports = useMemo(
+    () => Array.isArray(importsQuery.data) ? importsQuery.data : [],
+    [importsQuery.data],
+  );
   const latestImport = imports[0];
-  const unmatchedQuery = useUnmatchedDislocations(latestImport?.id);
-  const unmatchedWagons = Array.isArray(unmatchedQuery.data)
-    ? unmatchedQuery.data
+  const unmatchedWagons = Array.isArray(currentUnmatchedQuery.data)
+    ? currentUnmatchedQuery.data
     : [];
   const stats = useMemo(
     () => ({
       imports: imports.length,
       rows: imports.reduce((sum, item) => sum + item.rowsTotal, 0),
       matched: imports.reduce((sum, item) => sum + item.matchedRows, 0),
-      unmatched: latestImport?.unmatchedRows ?? 0,
+      unmatched: unmatchedWagons.length,
     }),
-    [imports, latestImport],
+    [imports, unmatchedWagons.length],
   );
+
+  const openCase = (wagon: CurrentUnmatchedDislocation) => {
+    setSelectedCase(wagon);
+    setSelectedCandidateId(wagon.candidates.length === 1 ? String(wagon.candidates[0].id) : "");
+    setIgnoreNote("");
+  };
+
+  const handleLink = () => {
+    if (!selectedCase || !selectedCandidateId) return;
+    linkMutation.mutate({ wagonNumber: selectedCase.wagonNumber, wagonId: Number(selectedCandidateId) }, {
+      onSuccess: () => {
+        toast.success("Вагон привязан", `Дислокация №${selectedCase.wagonNumber} сопоставлена с CRM.`);
+        setSelectedCase(null);
+      },
+      onError: () => toast.error("Не удалось привязать", "Проверьте, что вагон ещё активен."),
+    });
+  };
+
+  const handleIgnore = () => {
+    if (!selectedCase || !ignoreNote.trim()) return;
+    ignoreMutation.mutate({ wagonNumber: selectedCase.wagonNumber, note: ignoreNote.trim() }, {
+      onSuccess: () => {
+        toast.success("Исключён из очереди", `Вагон №${selectedCase.wagonNumber} помечен как не наш.`);
+        setSelectedCase(null);
+      },
+      onError: () => toast.error("Не удалось исключить", "Попробуйте ещё раз."),
+    });
+  };
+
+  const handleReconcilePreview = () => {
+    reconcileMutation.mutate({ dryRun: true }, {
+      onSuccess: (result) => {
+        const entries = result.filter((item) => (item.action === "MATCH" || item.action === "STALE_SNAPSHOT") && item.snapshotId)
+          .map((item) => ({ wagonNumber: item.wagonNumber, snapshotId: item.snapshotId! }));
+        setReconcilePreview(entries);
+        toast.info("Проверка завершена", entries.length ? `${wagonCountText(entries.length)} можно сопоставить автоматически.` : "Однозначных совпадений пока нет.");
+      },
+      onError: () => toast.error("Не удалось проверить", "Попробуйте ещё раз."),
+    });
+  };
 
   const selectFile = (file?: File) => {
     if (!file) return;
@@ -297,7 +366,7 @@ export default function DislocationsPage() {
                 Требует внимания
               </p>
               <p className="mt-1 text-sm font-black tabular-nums text-[#ce6c08]">
-                {numberFormatter.format(stats.unmatched)} вагонов
+                {wagonCountText(stats.unmatched)}
               </p>
             </div>
           </div>
@@ -329,7 +398,7 @@ export default function DislocationsPage() {
             {
               label: "Без совпадения",
               value: stats.unmatched,
-              detail: "в последнем файле",
+              detail: "в текущей очереди",
               icon: AlertCircle,
               tone: "orange",
             },
@@ -359,7 +428,7 @@ export default function DislocationsPage() {
         </div>
       </section>
 
-      {stats.unmatched > 0 ? (
+      {currentUnmatchedQuery.isLoading || stats.unmatched > 0 ? (
         <section className="overflow-hidden rounded-md border border-[#efcfaa] bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-[#f2dfca] bg-[#fffaf4] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div className="flex items-start gap-3">
@@ -371,21 +440,35 @@ export default function DislocationsPage() {
                   Вагоны без совпадения
                 </h3>
                 <p className="mt-1 text-xs text-[#7b857f]">
-                  Не найдены в CRM после импорта {latestImport?.attachmentName}
+                  Текущая очередь номеров без привязки к CRM
                 </p>
               </div>
             </div>
-            <Badge
-              variant="outline"
-              className="h-8 w-fit rounded-md border-[#efc28f] bg-white px-3 text-xs font-black text-[#c96608]"
-            >
-              {numberFormatter.format(stats.unmatched)} вагонов
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleReconcilePreview} disabled={reconcileMutation.isPending}>
+                <RefreshCw className="size-3.5" /> Проверить совпадения
+              </Button>
+              {reconcilePreview.length > 0 ? (
+                <Button size="sm" onClick={() => reconcileMutation.mutate({ dryRun: false, entries: reconcilePreview }, {
+                  onSuccess: (result) => {
+                    setReconcilePreview([]);
+                    const matched = result.filter((item) => item.action === "MATCH" || item.action === "STALE_SNAPSHOT").length;
+                    toast.success("Очередь обновлена", matched ? `Сопоставлено: ${wagonCountText(matched)}.` : "Снимки изменились, проверьте совпадения ещё раз.");
+                  },
+                  onError: () => toast.error("Не удалось сопоставить", "Попробуйте ещё раз."),
+                })} disabled={reconcileMutation.isPending}>
+                  Привязать {reconcilePreview.length}
+                </Button>
+              ) : null}
+              <Badge variant="outline" className="h-8 w-fit rounded-md border-[#efc28f] bg-white px-3 text-xs font-black text-[#c96608]">
+                {wagonCountText(stats.unmatched)}
+              </Badge>
+            </div>
           </div>
 
-          {unmatchedQuery.isLoading ? (
+          {currentUnmatchedQuery.isLoading ? (
             <div className="grid gap-2 p-4 sm:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: Math.min(stats.unmatched, 6) }, (_, index) => (
+              {Array.from({ length: 3 }, (_, index) => (
                 <Skeleton key={index} className="h-24 rounded-md" />
               ))}
             </div>
@@ -425,6 +508,14 @@ export default function DislocationsPage() {
                       </span>
                     ) : null}
                   </div>
+                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#eef1ed] pt-3">
+                    <span className="text-xs text-[#7b857f]">
+                      {wagon.reason === "AMBIGUOUS" ? "Несколько вагонов в CRM" : "Нет совпадения в CRM"}
+                    </span>
+                    <Button variant="outline" size="sm" onClick={() => openCase(wagon)}>
+                      Разобрать
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -434,7 +525,41 @@ export default function DislocationsPage() {
             </div>
           )}
         </section>
+      ) : currentUnmatchedQuery.isError ? (
+        <div className="rounded-md border border-[#efd5cf] bg-[#fff7f4] p-4 text-sm text-[#9c3e2b]">
+          Не удалось загрузить текущую очередь вагонов.
+        </div>
       ) : null}
+
+      <section className="border-b border-[#e7ece6] pb-4">
+        <Button variant="ghost" size="sm" onClick={() => setShowIgnored((value) => !value)}>
+          Исключённые из очереди ({ignoredQuery.data?.length ?? 0})
+        </Button>
+        {showIgnored ? (
+          ignoredQuery.isError ? (
+            <p className="mt-3 text-sm text-[#9c3e2b]">Не удалось загрузить исключённые номера.</p>
+          ) : ignoredQuery.isLoading ? (
+            <Skeleton className="mt-3 h-16 rounded-md" />
+          ) : ignoredQuery.data?.length ? (
+            <div className="mt-3 divide-y divide-[#e7ece6] border-t border-[#e7ece6]">
+              {ignoredQuery.data.map((wagon) => (
+                <div key={wagon.wagonNumber} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <div>
+                    <p className="font-semibold text-[#25382f]">№ {wagon.wagonNumber}</p>
+                    <p className="text-sm text-[#718077]">{wagon.note || "Причина не указана"}</p>
+                  </div>
+                  <Button variant="outline" size="sm" disabled={reopenMutation.isPending} onClick={() => reopenMutation.mutate(wagon.wagonNumber, {
+                    onSuccess: () => toast.success("Вагон возвращён", "Номер снова доступен для сопоставления."),
+                    onError: () => toast.error("Не удалось вернуть", "Попробуйте ещё раз."),
+                  })}>
+                    Вернуть в очередь
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : <p className="mt-3 text-sm text-[#718077]">Исключённых номеров нет.</p>
+        ) : null}
+      </section>
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.65fr)]">
         <div className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-sm sm:p-5">
@@ -756,6 +881,47 @@ export default function DislocationsPage() {
           </>
         )}
       </section>
+      <Dialog open={Boolean(selectedCase)} onOpenChange={(open) => { if (!open) setSelectedCase(null); }}>
+        <DialogContent className="max-w-lg border-[#dfe7de] bg-white">
+          <DialogHeader>
+            <DialogTitle>Вагон №{selectedCase?.wagonNumber}</DialogTitle>
+            <DialogDescription>
+              {selectedCase?.reason === "AMBIGUOUS" ? "Несколько активных вагонов с этим номером" : "Номер не найден среди активных вагонов CRM"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5 py-2">
+            {selectedCase?.candidates.length ? (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[#30433a]">Вагон в CRM</label>
+                <Select value={selectedCandidateId} onValueChange={setSelectedCandidateId}>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Выберите вагон" /></SelectTrigger>
+                  <SelectContent>
+                    {selectedCase.candidates.map((candidate) => (
+                      <SelectItem key={candidate.id} value={String(candidate.id)}>
+                        {candidate.contractNumber || `Заявка №${candidate.applicationId ?? "—"}`} · ID {candidate.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleLink} disabled={!selectedCandidateId || linkMutation.isPending} className="w-full bg-[#2f6b4f] text-white hover:bg-[#285a43]">
+                  <Link2 className="size-4" /> Привязать к вагону
+                </Button>
+              </div>
+            ) : (
+              <Button variant="outline" asChild className="w-full">
+                <Link to="/admin/contracts">Открыть контракты</Link>
+              </Button>
+            )}
+            <div className="space-y-2 border-t border-[#e7ece6] pt-4">
+              <label htmlFor="unmatched-ignore-note" className="text-sm font-bold text-[#30433a]">Не наш вагон</label>
+              <Textarea id="unmatched-ignore-note" value={ignoreNote} onChange={(event) => setIgnoreNote(event.target.value)} placeholder="Причина исключения из очереди" rows={2} />
+              <Button variant="outline" onClick={handleIgnore} disabled={!ignoreNote.trim() || ignoreMutation.isPending} className="w-full">
+                Исключить из очереди
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
