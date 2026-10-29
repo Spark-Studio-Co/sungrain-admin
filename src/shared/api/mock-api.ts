@@ -139,6 +139,8 @@ const makeWagon = (
     applicationId,
     number,
     status,
+    status_updated_at:
+      status === "client_received" ? isoDate(daysOffset + 10) : null,
     capacity,
     real_weight: realWeight,
     owner,
@@ -231,7 +233,7 @@ const contracts = [
         1,
         101,
         "54781234",
-        "en_route_to_recipient",
+        "client_received",
         68,
         67.4,
         "KTZ Express",
