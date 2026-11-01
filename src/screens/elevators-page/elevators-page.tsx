@@ -230,16 +230,18 @@ function ElevatorEditor({
 function ServiceEditor({
   elevator,
   service,
+  mode,
   onSaved,
 }: {
   elevator: Elevator;
   service?: ElevatorService;
+  mode: "create" | "edit" | "rate";
   onSaved: () => void;
 }) {
   const cultures = useQuery({
     queryKey: ["cultures", 1, 1000],
     queryFn: () => getCultures(1, 1000),
-    enabled: !service,
+    enabled: mode !== "rate",
     retry: 1,
   });
   const [template, setTemplate] = useState("none");
@@ -247,26 +249,54 @@ function ServiceEditor({
     name: service?.name || "",
     culture: service?.culture || "",
     unit: service?.unit || "TONNE",
-    price: service?.rates[0]?.price || "",
+    price: mode === "edit" ? "" : service?.rates[0]?.price || "",
     effectiveFrom: todayKz(),
-    overtimeEligible: false,
-    alternativeGroup: "",
+    overtimeEligible: service?.overtimeEligible || false,
+    alternativeGroup: service?.alternativeGroup || "",
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const set = (key: keyof ServiceInput, value: string | boolean) =>
-    setInput((current) => ({ ...current, [key]: value }));
+  const termsChanged =
+    mode === "edit" &&
+    service &&
+    (input.culture !== (service.culture || "") ||
+      input.unit !== service.unit ||
+      input.overtimeEligible !== service.overtimeEligible ||
+      input.alternativeGroup !== service.alternativeGroup);
+  const set = (key: keyof ServiceInput, value: string | boolean) => {
+    setInput((current) => ({
+      ...current,
+      ...(mode === "edit" && key === "unit" ? { price: "" } : {}),
+      [key]: value,
+    }));
+  };
   async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
     setError("");
     try {
-      if (service)
+      if (mode === "rate" && service)
         await tradeApi.addRate(elevator.id, service.id, {
           price: input.price,
           effectiveFrom: input.effectiveFrom,
         });
-      else
+      else if (mode === "edit" && service)
+        await tradeApi.updateService(elevator.id, service.id, {
+          name: input.name,
+          culture: input.culture || null,
+          unit: input.unit,
+          overtimeEligible: input.overtimeEligible,
+          alternativeGroup: input.alternativeGroup,
+          ...(termsChanged ? { newVersionPrice: input.price } : {}),
+          expected: {
+            name: service.name,
+            culture: service.culture || null,
+            unit: service.unit,
+            overtimeEligible: service.overtimeEligible,
+            alternativeGroup: service.alternativeGroup,
+          },
+        });
+      else if (mode === "create")
         await tradeApi.addService(elevator.id, {
           ...input,
           culture: input.culture || null,
@@ -281,29 +311,31 @@ function ServiceEditor({
   return (
     <form onSubmit={submit}>
       <fieldset disabled={busy} className="trade-form-grid">
-        {!service && (
+        {mode !== "rate" && (
           <>
-            <div className="trade-wide">
-              <Choice
-                label="Шаблон услуги"
-                value={template}
-                onChange={(value) => {
-                  setTemplate(value);
-                  if (value !== "none")
-                    setInput((current) => ({
-                      ...current,
-                      ...templates[Number(value)],
-                    }));
-                }}
-                options={[
-                  { value: "none", label: "Собственная услуга" },
-                  ...templates.map((t, i) => ({
-                    value: String(i),
-                    label: t.name,
-                  })),
-                ]}
-              />
-            </div>
+            {mode === "create" && (
+              <div className="trade-wide">
+                <Choice
+                  label="Шаблон услуги"
+                  value={template}
+                  onChange={(value) => {
+                    setTemplate(value);
+                    if (value !== "none")
+                      setInput((current) => ({
+                        ...current,
+                        ...templates[Number(value)],
+                      }));
+                  }}
+                  options={[
+                    { value: "none", label: "Собственная услуга" },
+                    ...templates.map((t, i) => ({
+                      value: String(i),
+                      label: t.name,
+                    })),
+                  ]}
+                />
+              </div>
+            )}
             <TextField
               label="Название услуги"
               value={input.name}
@@ -316,7 +348,10 @@ function ServiceEditor({
                 label="Культура"
                 value={input.culture ? `culture:${input.culture}` : "all"}
                 onChange={(value) =>
-                  set("culture", value === "all" ? "" : value.slice("culture:".length))
+                  set(
+                    "culture",
+                    value === "all" ? "" : value.slice("culture:".length),
+                  )
                 }
                 options={[
                   { value: "all", label: "Все культуры" },
@@ -353,20 +388,28 @@ function ServiceEditor({
             />
           </>
         )}
-        <NumberField
-          label="Цена, KZT"
-          value={input.price}
-          onChange={(v) => set("price", v)}
-        />
-        <Field label="Действует с">
-          <DatePickerInput
-            value={input.effectiveFrom}
-            onChange={(v) => set("effectiveFrom", v)}
-            aria-label="Дата начала тарифа"
-            aria-required
-          />
-        </Field>
-        {!service && (
+        {(mode !== "edit" || termsChanged) && (
+          <>
+            <NumberField
+              label={
+                termsChanged ? "Начальный тариф новой версии, KZT" : "Цена, KZT"
+              }
+              value={input.price}
+              onChange={(v) => set("price", v)}
+            />
+            {mode !== "edit" && (
+              <Field label="Действует с">
+                <DatePickerInput
+                  value={input.effectiveFrom}
+                  onChange={(v) => set("effectiveFrom", v)}
+                  aria-label="Дата начала тарифа"
+                  aria-required
+                />
+              </Field>
+            )}
+          </>
+        )}
+        {mode !== "rate" && (
           <>
             <Choice
               label="Группа альтернатив"
@@ -389,6 +432,12 @@ function ServiceEditor({
           </>
         )}
       </fieldset>
+      {termsChanged && (
+        <p className="trade-alert" role="status">
+          Новая версия с {todayKz().split("-").reverse().join(".")}. Прежние
+          условия и тарифы сохранятся в архиве.
+        </p>
+      )}
       {error && (
         <p role="alert" className="trade-alert">
           {error}
@@ -396,14 +445,22 @@ function ServiceEditor({
       )}
       <Button
         type="submit"
-        disabled={busy || !input.effectiveFrom}
+        disabled={
+          busy ||
+          (mode !== "edit" && !input.effectiveFrom) ||
+          (termsChanged && !input.price)
+        }
         className="trade-primary"
       >
         {busy
           ? "Сохранение…"
-          : service
+          : mode === "rate"
             ? "Сохранить новый тариф"
-            : "Добавить услугу"}
+            : mode === "edit"
+              ? termsChanged
+                ? "Создать новую версию"
+                : "Сохранить услугу"
+              : "Добавить услугу"}
       </Button>
     </form>
   );
@@ -414,7 +471,7 @@ export default function ElevatorsPage({ id }: { id?: string }) {
   const client = useQueryClient();
   const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState<
-    "elevator" | "service" | "rate" | "history" | null
+    "elevator" | "service" | "edit-service" | "rate" | "history" | null
   >(null);
   const [selected, setSelected] = useState<ElevatorService>();
   const dialogReturnFocus = useRef<HTMLButtonElement | null>(null);
@@ -569,6 +626,9 @@ export default function ElevatorsPage({ id }: { id?: string }) {
             busyService={busyService}
             onEdit={(trigger) => openDialog("elevator", trigger)}
             onAddService={(trigger) => openDialog("service", trigger)}
+            onEditService={(service, trigger) =>
+              openDialog("edit-service", trigger, service)
+            }
             onAddRate={(service, trigger) =>
               openDialog("rate", trigger, service)
             }
@@ -599,7 +659,7 @@ export default function ElevatorsPage({ id }: { id?: string }) {
           <DialogHeader>
             <DialogTitle
               className={
-                dialog === "rate" || dialog === "history"
+                dialog === "rate" || dialog === "history" || dialog === "edit-service"
                   ? "elevator-service-dialog-title"
                   : undefined
               }
@@ -608,10 +668,16 @@ export default function ElevatorsPage({ id }: { id?: string }) {
                 ? id
                   ? "Карточка элеватора"
                   : "Новый элеватор"
-                : dialog === "rate" || dialog === "history" ? (
+                : dialog === "rate" ||
+                    dialog === "history" ||
+                    dialog === "edit-service" ? (
                   <>
                     <span className="elevator-dialog-label">
-                      {dialog === "rate" ? "Новый тариф" : "История тарифов"}:
+                      {dialog === "rate"
+                        ? "Новый тариф"
+                        : dialog === "edit-service"
+                          ? "Редактировать услугу"
+                          : "История тарифов"}:
                     </span>{" "}
                     <span className="elevator-dialog-service">
                       {selected?.name}
@@ -640,12 +706,21 @@ export default function ElevatorsPage({ id }: { id?: string }) {
               }}
             />
           ) : (
-            (dialog === "service" || dialog === "rate") &&
+            (dialog === "service" ||
+              dialog === "edit-service" ||
+              dialog === "rate") &&
             elevator && (
               <ServiceEditor
-                key={dialog === "rate" ? selected?.id : "new-service"}
+                key={`${dialog}-${selected?.id || "new"}`}
                 elevator={elevator}
-                service={dialog === "rate" ? selected : undefined}
+                service={dialog === "service" ? undefined : selected}
+                mode={
+                  dialog === "service"
+                    ? "create"
+                    : dialog === "edit-service"
+                      ? "edit"
+                      : "rate"
+                }
                 onSaved={invalidate}
               />
             )

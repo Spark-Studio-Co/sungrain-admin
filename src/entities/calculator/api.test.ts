@@ -1,14 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { tradeApi, type CalculationInput, type ServiceInput } from "./api";
+import {
+  tradeApi,
+  type CalculationInput,
+  type ServiceUpdateInput,
+  type ServiceInput,
+} from "./api";
 
-const { get, post } = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn() }));
-vi.mock("@/shared/api/apiClient", () => ({ apiClient: { get, post } }));
+const { get, post, put } = vi.hoisted(() => ({
+  get: vi.fn(),
+  post: vi.fn(),
+  put: vi.fn(),
+}));
+vi.mock("@/shared/api/apiClient", () => ({ apiClient: { get, post, put } }));
 
 describe("calculator request deadlines", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     get.mockResolvedValue({ data: [] });
     post.mockResolvedValue({ data: {} });
+    put.mockResolvedValue({ data: {} });
   });
 
   it("bounds editor catalog and saved-input requests", async () => {
@@ -59,5 +69,29 @@ describe("calculator request deadlines", () => {
         service,
       );
     }
+  });
+
+  it("updates service details separately from dated tariffs", async () => {
+    const details: ServiceUpdateInput = {
+      name: "Отгрузка зерна",
+      culture: null,
+      unit: "TONNE",
+      overtimeEligible: true,
+      alternativeGroup: "RAIL_LOADING",
+      newVersionPrice: "3000",
+      expected: {
+        name: "Отгрузка",
+        culture: "Пшеница",
+        unit: "TONNE",
+        overtimeEligible: false,
+        alternativeGroup: "RAIL_LOADING",
+      },
+    };
+    await tradeApi.updateService("elevator", "service", details);
+    expect(put).toHaveBeenCalledWith(
+      "/elevators/elevator/services/service",
+      details,
+    );
+    expect(post).not.toHaveBeenCalled();
   });
 });

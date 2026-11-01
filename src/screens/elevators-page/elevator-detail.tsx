@@ -42,6 +42,7 @@ type ElevatorDetailProps = {
   busyService?: string;
   onEdit: (trigger: HTMLButtonElement) => void;
   onAddService: (trigger: HTMLButtonElement) => void;
+  onEditService: (service: ElevatorService, trigger: HTMLButtonElement) => void;
   onAddRate: (service: ElevatorService, trigger: HTMLButtonElement) => void;
   onHistory: (service: ElevatorService, trigger: HTMLButtonElement) => void;
   onArchive: (service: ElevatorService) => void;
@@ -54,6 +55,7 @@ export function ElevatorDetail({
   busyService,
   onEdit,
   onAddService,
+  onEditService,
   onAddRate,
   onHistory,
   onArchive,
@@ -231,7 +233,7 @@ export function ElevatorDetail({
                                 variant="outline"
                                 className="elevator-archived-service"
                               >
-                                В архиве
+                                {service.nextVersion ? "Предыдущая версия" : "В архиве"}
                               </Badge>
                             )}
                             {service.overtimeEligible && (
@@ -285,6 +287,22 @@ export function ElevatorDetail({
                             <TooltipTrigger asChild>
                               <Button
                                 variant="ghost"
+                                size="icon"
+                                aria-label={`Редактировать услугу: ${service.name}`}
+                                disabled={cannotAddRate}
+                                onClick={(event) =>
+                                  onEditService(service, event.currentTarget)
+                                }
+                              >
+                                <Pencil size={16} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Редактировать услугу</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
                                 size="sm"
                                 className="elevator-history-button"
                                 aria-label={`История тарифов: ${service.name}`}
@@ -321,7 +339,7 @@ export function ElevatorDetail({
                                 variant="ghost"
                                 size="icon"
                                 aria-label={`${service.archived ? "Восстановить" : "Архивировать"}: ${service.name}`}
-                                disabled={pending}
+                                disabled={pending || !!service.nextVersion}
                                 onClick={() => onArchive(service)}
                               >
                                 {service.archived ? (
@@ -332,7 +350,7 @@ export function ElevatorDetail({
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              {service.archived
+                              {service.nextVersion ? "Сохранена для истории" : service.archived
                                 ? "Восстановить услугу"
                                 : "Архивировать услугу"}
                             </TooltipContent>
@@ -360,7 +378,7 @@ export function ElevatorRateHistory({
   service: ElevatorService;
   date: string;
 }) {
-  const current = applicableRate(service, date);
+  const current = service.archived ? null : applicableRate(service, date);
   return (
     <div className="elevator-rate-history">
       <div className="elevator-history-context">
@@ -369,6 +387,8 @@ export function ElevatorRateHistory({
           {service.culture || "Все культуры"}
         </Badge>
         <span>{UNITS[service.unit]}</span>
+        {service.validFrom && <span>Версия с {dateText(service.validFrom)}</span>}
+        {service.validTo && <span>Заменена с {dateText(service.validTo)}</span>}
       </div>
       {service.rates.length ? (
         <div className="elevator-history-table-wrap">
@@ -407,7 +427,7 @@ export function ElevatorRateHistory({
                         rate.id === current?.id ? "is-current" : undefined
                       }
                     >
-                      {rate.id === current?.id
+                      {service.archived ? "Архивный" : rate.id === current?.id
                         ? "Действует"
                         : rate.effectiveFrom.slice(0, 10) > date
                           ? "Запланирован"

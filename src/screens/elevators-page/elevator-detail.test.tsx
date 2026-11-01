@@ -55,6 +55,7 @@ function detail(record: Elevator = elevator, busyService?: string) {
       busyService,
       onEdit: () => {},
       onAddService: () => {},
+      onEditService: () => {},
       onAddRate: () => {},
       onHistory: () => {},
       onArchive: () => {},
@@ -63,6 +64,18 @@ function detail(record: Elevator = elevator, busyService?: string) {
 }
 
 describe("elevator detail workspace", () => {
+  it("keeps previous versions read-only with accessible rate history", () => {
+    const html = detail({ ...elevator, services: [{ ...service, archived: true, nextVersion: { id: "new" } }] });
+    expect(html).toContain("Предыдущая версия");
+    expect(html).toMatch(/<button(?=[^>]*aria-label="Восстановить: Отгрузка зерна")(?=[^>]*disabled="")[^>]*>/);
+    expect(html).not.toMatch(/<button(?=[^>]*aria-label="История тарифов: Отгрузка зерна")(?=[^>]*disabled="")[^>]*>/);
+    const history = renderToStaticMarkup(createElement(ElevatorRateHistory, {
+      service: { ...service, archived: true, validTo: "2026-11-01", nextVersion: { id: "new" } }, date: "2026-11-02",
+    }));
+    expect(history).toContain("Архивный");
+    expect(history).toContain("Заменена с");
+    expect(history).not.toContain('class="is-current"');
+  });
   it("keeps semantic identity, factual metadata and the calculator link", () => {
     const html = detail();
     expect(html).toContain('<h1 id="elevator-name">Тестовый элеватор</h1>');
@@ -80,7 +93,7 @@ describe("elevator detail workspace", () => {
     expect(html).not.toContain("9 000");
     expect(html).toContain("Пшеница");
     expect(html).toContain("Неурочное время ×1,5");
-    for (const action of ["История тарифов", "Новый тариф", "Архивировать"]) {
+    for (const action of ["Редактировать услугу", "История тарифов", "Новый тариф", "Архивировать"]) {
       expect(html).toContain(`aria-label="${action}: Отгрузка зерна"`);
     }
   });
@@ -93,6 +106,9 @@ describe("elevator detail workspace", () => {
     );
     expect(html).toMatch(
       /<button(?=[^>]*aria-label="Новый тариф: Отгрузка зерна")(?=[^>]*disabled="")[^>]*>/,
+    );
+    expect(html).toMatch(
+      /<button(?=[^>]*aria-label="Редактировать услугу: Отгрузка зерна")(?=[^>]*disabled="")[^>]*>/,
     );
     expect(html).not.toMatch(
       /<button(?=[^>]*aria-label="История тарифов: Отгрузка зерна")(?=[^>]*disabled="")[^>]*>/,
@@ -110,12 +126,15 @@ describe("elevator detail workspace", () => {
     expect(html).toMatch(
       /<button(?=[^>]*aria-label="Новый тариф: Отгрузка зерна")(?=[^>]*disabled="")[^>]*>/,
     );
+    expect(html).toMatch(
+      /<button(?=[^>]*aria-label="Редактировать услугу: Отгрузка зерна")(?=[^>]*disabled="")[^>]*>/,
+    );
     expect(html).not.toContain('aria-label="Архивировать:');
   });
 
   it("disables duplicate mutations for a busy service", () => {
     const html = detail(elevator, service.id);
-    for (const action of ["Новый тариф", "Архивировать"]) {
+    for (const action of ["Редактировать услугу", "Новый тариф", "Архивировать"]) {
       expect(html).toMatch(
         new RegExp(
           `<button(?=[^>]*aria-label="${action}: Отгрузка зерна")(?=[^>]*disabled="")[^>]*>`,

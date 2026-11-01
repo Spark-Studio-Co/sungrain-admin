@@ -39,6 +39,10 @@ export type ElevatorService = {
   overtimeEligible: boolean;
   alternativeGroup: string;
   rates: ElevatorRate[];
+  previousVersionId?: string | null;
+  validFrom?: string | null;
+  validTo?: string | null;
+  nextVersion?: { id: string } | null;
 };
 export type Elevator = {
   id: string;
@@ -54,10 +58,19 @@ export type Elevator = {
 export type ElevatorInput = Omit<Elevator, "id" | "services" | "version"> & {
   version?: number;
 };
-export type ServiceInput = Pick<
+export type ServiceDetailsInput = Pick<
   ElevatorService,
   "name" | "unit" | "overtimeEligible" | "alternativeGroup"
-> & { culture?: string | null; price: string; effectiveFrom: string };
+> & { culture?: string | null };
+export type ServiceInput = ServiceDetailsInput & {
+  price: string;
+  effectiveFrom: string;
+};
+export type ServiceUpdateInput = ServiceDetailsInput & {
+  culture: string | null;
+  expected: ServiceDetailsInput & { culture: string | null };
+  newVersionPrice?: string;
+};
 export type CalculationLine = {
   id: string;
   serviceId?: string;
@@ -193,6 +206,13 @@ export const tradeApi = {
     (await apiClient.patch<Elevator>(`/elevators/${id}`, input)).data,
   addService: async (id: string, input: ServiceInput) =>
     (await apiClient.post(`/elevators/${id}/services`, input)).data,
+  updateService: async (
+    id: string,
+    serviceId: string,
+    input: ServiceUpdateInput,
+  ) =>
+    (await apiClient.put<Elevator>(`/elevators/${id}/services/${serviceId}`, input))
+      .data,
   addRate: async (
     id: string,
     serviceId: string,

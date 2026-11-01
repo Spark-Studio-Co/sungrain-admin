@@ -65,6 +65,7 @@ import {
   emptyInput,
   rowAmount,
   serviceMatchesCulture,
+  serviceAvailableOnDate,
   wagonCount,
 } from "./calculator-model";
 import {
@@ -175,7 +176,7 @@ export default function CalculatorEditor() {
   const services =
     elevator?.services.filter(
       (service) =>
-        (!service.archived && serviceMatchesCulture(service, input.culture)) ||
+        (serviceAvailableOnDate(service, input.date) && serviceMatchesCulture(service, input.culture)) ||
         serviceLines.some((line) => line.serviceId === service.id),
     ) || [];
   const filteredServices = services.filter((service) =>
@@ -200,7 +201,7 @@ export default function CalculatorEditor() {
       const service = services.find((s) => s.id === line.serviceId);
       return (
         !service ||
-        service.archived ||
+        !serviceAvailableOnDate(service, input.date) ||
         !serviceMatchesCulture(service, input.culture) ||
         !applicableRate(service, input.date)
       );
@@ -253,7 +254,7 @@ export default function CalculatorEditor() {
     if (
       checked &&
       (!rate ||
-        service.archived ||
+        !serviceAvailableOnDate(service, input.date) ||
         !serviceMatchesCulture(service, input.culture))
     )
       return;
@@ -795,7 +796,7 @@ export default function CalculatorEditor() {
                         {!input.culture
                           ? "Выберите культуру партии"
                           : !elevator.services.some(
-                                (service) => !service.archived,
+                                (service) => serviceAvailableOnDate(service, input.date),
                               )
                             ? "Услуги пока не добавлены"
                             : `Нет услуг для культуры «${input.culture}»`}
@@ -832,7 +833,7 @@ export default function CalculatorEditor() {
                         input.culture,
                       );
                       const invalid =
-                        service.archived ||
+                        !serviceAvailableOnDate(service, input.date) ||
                         !rate ||
                         elevator.archived ||
                         !matchesCulture;
@@ -881,8 +882,8 @@ export default function CalculatorEditor() {
                               id={`cost-service-error-${service.id}`}
                             >
                               <span>
-                                {service.archived
-                                  ? "Услуга в архиве"
+                                {!serviceAvailableOnDate(service, input.date)
+                                  ? "Услуга недоступна на дату расчёта"
                                   : !matchesCulture
                                     ? `Другая культура: ${service.culture}`
                                     : !rate
