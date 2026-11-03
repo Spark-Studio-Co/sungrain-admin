@@ -165,4 +165,20 @@ describe("elevator directory", () => {
     expect(html).toContain("Добавить элеватор");
     expect(html).not.toContain("ТОО Бидай");
   });
+  it("offers accessible edit/delete commands for active and archived records", () => {
+    const props = { onEdit: () => {}, onDelete: () => {} };
+    const html = render(props);
+    for (const item of items) {
+      expect(html).toContain(
+        `aria-label="Редактировать элеватор: ${item.name}"`,
+      );
+      expect(html).toContain(`aria-label="Удалить элеватор: ${item.name}"`);
+    }
+    expect(render({ ...props, busy: true })).toMatch(
+      /<button(?=[^>]*aria-label="Удалить элеватор: ТОО Бидай")(?=[^>]* disabled="")/,
+    );
+    expect(
+      render({ elevators: [{ ...items[0], deletedAt: "2026-11-03" }] }),
+    ).not.toContain("ТОО Бидай");
+  });
 });

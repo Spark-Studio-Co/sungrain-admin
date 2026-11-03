@@ -227,7 +227,7 @@
   width: 146px;
 }
 .elevator-directory-table th:nth-child(6) {
-  width: 56px;
+  width: 140px;
 }
 .record-workspace .elevator-directory-table th {
   background: var(--crm-surface);
@@ -327,6 +327,23 @@
 }
 .elevator-directory-table .elevator-directory-open {
   padding-inline: 0 16px;
+  white-space: nowrap;
+  text-align: right;
+}
+.elevator-directory-open > button {
+  width: 34px;
+  height: 34px;
+  margin-right: 4px;
+  box-shadow: none;
+}
+.elevator-directory-open .elevator-directory-delete {
+  color: var(--destructive);
+}
+.elevator-directory-open .elevator-directory-delete:hover {
+  background: color-mix(in srgb, var(--destructive) 8%, transparent);
+}
+.elevator-directory:focus {
+  outline: none;
 }
 .elevator-directory-open a {
   width: 34px;
@@ -356,7 +373,7 @@
   background: transparent;
 }
 
-@container (max-width: 900px) {
+@container (max-width: 1100px) {
   .elevator-directory .elevator-directory-table,
   .elevator-directory .elevator-directory-table tbody {
     display: block;
@@ -407,7 +424,13 @@
     text-transform: uppercase;
   }
   .record-workspace .elevator-directory-table td.elevator-directory-open {
-    display: none;
+    display: flex;
+    grid-column: 1 / -1;
+    align-items: center;
+    justify-content: flex-end;
+    padding-top: 12px;
+    border-top: 1px solid var(--crm-line);
+    gap: 6px;
   }
   .elevator-directory .record-heading {
     flex-wrap: wrap;

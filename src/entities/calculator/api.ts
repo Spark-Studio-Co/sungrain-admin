@@ -53,10 +53,14 @@ export type Elevator = {
   contact: string;
   notes: string;
   archived: boolean;
+  deletedAt?: string | null;
   version: number;
   services: ElevatorService[];
 };
-export type ElevatorInput = Omit<Elevator, "id" | "services" | "version"> & {
+export type ElevatorInput = Omit<
+  Elevator,
+  "id" | "services" | "version" | "deletedAt"
+> & {
   version?: number;
 };
 export type ServiceDetailsInput = Pick<
@@ -202,9 +206,21 @@ export const tradeApi = {
   elevator: async (id: string) =>
     (await apiClient.get<Elevator>(`/elevators/${id}`)).data,
   createElevator: async (input: ElevatorInput) =>
-    (await apiClient.post<Elevator>("/elevators", input)).data,
+    (await apiClient.post<Elevator>("/elevators", input, { timeout: 15_000 }))
+      .data,
   updateElevator: async (id: string, input: ElevatorInput) =>
-    (await apiClient.patch<Elevator>(`/elevators/${id}`, input)).data,
+    (
+      await apiClient.patch<Elevator>(`/elevators/${id}`, input, {
+        timeout: 15_000,
+      })
+    ).data,
+  deleteElevator: async (id: string, version: number) =>
+    (
+      await apiClient.delete<{ id: string }>(`/elevators/${id}`, {
+        timeout: 15_000,
+        data: { version },
+      })
+    ).data,
   addService: async (id: string, input: ServiceInput) =>
     (await apiClient.post(`/elevators/${id}/services`, input)).data,
   updateService: async (
@@ -212,8 +228,12 @@ export const tradeApi = {
     serviceId: string,
     input: ServiceUpdateInput,
   ) =>
-    (await apiClient.put<Elevator>(`/elevators/${id}/services/${serviceId}`, input))
-      .data,
+    (
+      await apiClient.put<Elevator>(
+        `/elevators/${id}/services/${serviceId}`,
+        input,
+      )
+    ).data,
   addRate: async (
     id: string,
     serviceId: string,
@@ -232,7 +252,8 @@ export const tradeApi = {
       })
     ).data,
   deleteService: async (id: string, serviceId: string) =>
-    (await apiClient.delete<Elevator>(`/elevators/${id}/services/${serviceId}`)).data,
+    (await apiClient.delete<Elevator>(`/elevators/${id}/services/${serviceId}`))
+      .data,
   options: async () =>
     (
       await apiClient.get<CalculatorOptions>("/calculator/options", {

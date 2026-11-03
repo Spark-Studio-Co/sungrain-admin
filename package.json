@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:elevator-deletion": "node test/elevator-service-deletion.cjs",
-    "test:elevator-directory": "node test/elevator-directory.cjs"
+    "test:elevator-directory": "node test/elevator-directory.cjs",
+    "test:elevator-actions": "node test/elevator-record-actions.cjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.14",

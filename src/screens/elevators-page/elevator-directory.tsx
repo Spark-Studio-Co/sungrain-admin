@@ -6,9 +6,11 @@ import {
   ArrowRight,
   MapPin,
   Phone,
+  Pencil,
   Plus,
   ReceiptText,
   Search,
+  Trash2,
   Warehouse,
   X,
 } from "lucide-react";
@@ -44,6 +46,7 @@ export function filterElevators(
     .split(/\s+/)
     .filter(Boolean);
   return items.filter((item) => {
+    if (item.deletedAt) return false;
     if (status === "active" && item.archived) return false;
     if (status === "archived" && !item.archived) return false;
     const text =
@@ -67,17 +70,25 @@ export function ElevatorDirectory({
   isError = false,
   onRetry,
   onAdd,
+  onEdit,
+  onDelete,
+  busy = false,
+  notice,
 }: {
   elevators?: Elevator[];
   isLoading?: boolean;
   isError?: boolean;
   onRetry: () => void;
   onAdd: (trigger: HTMLButtonElement) => void;
+  onEdit?: (item: Elevator, trigger: HTMLButtonElement) => void;
+  onDelete?: (item: Elevator, trigger: HTMLButtonElement) => void;
+  busy?: boolean;
+  notice?: string;
 }) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<ElevatorStatusFilter>("all");
   const input = useRef<HTMLInputElement>(null);
-  const elevators = cachedElevators ?? [];
+  const elevators = (cachedElevators ?? []).filter((item) => !item.deletedAt);
   const activeCount = elevators.filter((item) => !item.archived).length;
   const stationCount = new Set(
     elevators
@@ -97,7 +108,12 @@ export function ElevatorDirectory({
     input.current?.focus();
   }
   return (
-    <section className="elevator-directory" aria-label="Справочник элеваторов">
+    <section
+      className="elevator-directory"
+      id="elevator-directory"
+      tabIndex={-1}
+      aria-label="Справочник элеваторов"
+    >
       <WorkspaceHeading
         icon={Warehouse}
         eyebrow="Логистика и хранение"
@@ -144,6 +160,12 @@ export function ElevatorDirectory({
           </Button>
         }
       />
+
+      {notice && (
+        <div className="elevator-action-notice" role="status">
+          {notice}
+        </div>
+      )}
 
       <div className="elevator-directory-register">
         <div className="elevator-directory-toolbar">
@@ -271,7 +293,7 @@ export function ElevatorDirectory({
                       <th scope="col">Контакты</th>
                       <th scope="col">Статус</th>
                       <th scope="col">
-                        <span className="sr-only">Открыть карточку</span>
+                        <span className="sr-only">Действия</span>
                       </th>
                     </tr>
                   </thead>
@@ -355,6 +377,37 @@ export function ElevatorDirectory({
                             </span>
                           </td>
                           <td className="elevator-directory-open">
+                            {onEdit && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                disabled={busy}
+                                aria-label={`Редактировать элеватор: ${item.name}`}
+                                title="Редактировать элеватор"
+                                onClick={(event) =>
+                                  onEdit(item, event.currentTarget)
+                                }
+                              >
+                                <Pencil size={16} />
+                              </Button>
+                            )}
+                            {onDelete && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                disabled={busy}
+                                className="elevator-directory-delete"
+                                aria-label={`Удалить элеватор: ${item.name}`}
+                                title="Удалить элеватор"
+                                onClick={(event) =>
+                                  onDelete(item, event.currentTarget)
+                                }
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            )}
                             <Button variant="ghost" size="icon" asChild>
                               <Link
                                 href={`/admin/elevators/${item.id}`}

@@ -4,6 +4,7 @@ With a local Next frontend running:
 
 ```sh
 TEST_BASE_URL=http://127.0.0.1:3035 npm run test:elevator-directory
+TEST_BASE_URL=http://127.0.0.1:3035 npm run test:elevator-actions
 ```
 
 Playwright must be available in the test runtime. `PLAYWRIGHT_MODULE` may point
@@ -21,6 +22,6 @@ NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:3036/api NEXT_PUBLIC_AUTH_BYPASS=true 
 ```
 
 Open `http://127.0.0.1:3035/admin/elevators`. The fixture supports only the
-directory, reading details and creating synthetic elevators. No real database
+directory, reading details and creating/editing/deleting synthetic elevators. No real database
 or customer records are used. Auth bypass is local-only and must not be enabled
 for production builds or deployment. Never run this preview against production.

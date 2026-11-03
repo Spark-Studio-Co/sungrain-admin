@@ -17,13 +17,13 @@ if (require.main === module) {
     if (/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) response.setHeader('Access-Control-Allow-Origin', origin);
     response.setHeader('Access-Control-Allow-Credentials', 'true');
     response.setHeader('Access-Control-Allow-Headers', 'Authorization,Content-Type');
-    response.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
+    response.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
     response.setHeader('Content-Type', 'application/json');
     const send = (body, status = 200) => { response.statusCode = status; response.end(JSON.stringify(body)); };
     if (request.method === 'OPTIONS') return send({});
     const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
     if (pathname === '/api/user/access') return send({ isAdmin: true, canAccessApproach: true });
-    if (pathname === '/api/elevators' && request.method === 'GET') return send(data);
+    if (pathname === '/api/elevators' && request.method === 'GET') return send(data.filter(item => !item.deletedAt));
     if (pathname === '/api/elevators' && request.method === 'POST') {
       try {
         let body = '';
@@ -36,8 +36,25 @@ if (require.main === module) {
       } catch { return send({ message: 'Invalid JSON' }, 400); }
     }
     const detail = pathname.match(/^\/api\/elevators\/([^/]+)$/);
+    if (detail && ['PATCH','DELETE'].includes(request.method)) {
+      try {
+        let body = '';
+        for await (const chunk of request) { body += chunk; if (body.length > 10000) return send({ message: 'Request too large' }, 413); }
+        const input = JSON.parse(body);
+        const item = data.find(item => item.id === detail[1]);
+        if (!item || (item.deletedAt && request.method !== 'DELETE')) return send({ message: 'Не найден' }, 404);
+        if (item.deletedAt) return send({ id: item.id });
+        if (input.version !== item.version) return send({ message: 'Карточка изменена. Обновите список.' }, 409);
+        if (request.method === 'PATCH') {
+          Object.assign(item, input, { id: item.id, version: item.version + 1 });
+          return send(item);
+        }
+        item.deletedAt = new Date().toISOString(); item.archived = true; item.version++;
+        return send({ id: item.id });
+      } catch { return send({ message: 'Invalid JSON' }, 400); }
+    }
     if (detail && request.method === 'GET') {
-      const item = data.find(item => item.id === detail[1]);
+      const item = data.find(item => item.id === detail[1] && !item.deletedAt);
       return send(item || { message: 'Не найден' }, item ? 200 : 404);
     }
     if (/^\/api\/(station|stations|culture|cultures)/.test(pathname)) return send({ data: [], total: 0, page: 1, limit: 5000 });
