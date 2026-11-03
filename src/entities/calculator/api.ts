@@ -36,6 +36,7 @@ export type ElevatorService = {
   culture?: string | null;
   unit: CostUnit;
   archived: boolean;
+  deletedAt?: string | null;
   overtimeEligible: boolean;
   alternativeGroup: string;
   rates: ElevatorRate[];
@@ -230,6 +231,8 @@ export const tradeApi = {
         archived,
       })
     ).data,
+  deleteService: async (id: string, serviceId: string) =>
+    (await apiClient.delete<Elevator>(`/elevators/${id}/services/${serviceId}`)).data,
   options: async () =>
     (
       await apiClient.get<CalculatorOptions>("/calculator/options", {

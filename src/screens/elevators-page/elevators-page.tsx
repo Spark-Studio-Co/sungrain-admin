@@ -4,12 +4,9 @@ import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Plus, Warehouse } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { WorkspaceHeading } from "@/components/ui/workspace-heading";
 import { CrmRouteLoading } from "@/components/ui/crm-route-loading";
-import { CrmEmptyState } from "@/components/ui/crm-state";
 import { DatePickerInput } from "@/components/ui/date-picker";
 import { getStations } from "@/entities/stations/api/get/get-stations.api";
 import { getCultures } from "@/entities/cultures/api/get/get-cultures.api";
@@ -19,6 +16,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import {
   Choice,
   Field,
@@ -40,6 +46,7 @@ import {
 import "@/screens/calculator-page/trade.css";
 import "@/screens/calculator-page/cost-calculator.css";
 import { ElevatorDetail, ElevatorRateHistory } from "./elevator-detail";
+import { ElevatorDirectory } from "./elevator-directory";
 
 const templates: Omit<ServiceInput, "effectiveFrom" | "culture">[] = [
   {
@@ -469,18 +476,23 @@ function ServiceEditor({
 export default function ElevatorsPage({ id }: { id?: string }) {
   const router = useRouter();
   const client = useQueryClient();
-  const [search, setSearch] = useState("");
   const [dialog, setDialog] = useState<
     "elevator" | "service" | "edit-service" | "rate" | "history" | null
   >(null);
   const [selected, setSelected] = useState<ElevatorService>();
   const dialogReturnFocus = useRef<HTMLButtonElement | null>(null);
   const [actionError, setActionError] = useState("");
+  const [actionNotice, setActionNotice] = useState("");
   const [busyService, setBusyService] = useState<string>();
+  const mutationInFlight = useRef(false);
+  const [deleteTarget, setDeleteTarget] = useState<ElevatorService>();
+  const [deleteError, setDeleteError] = useState("");
+  const deleteReturnFocus = useRef<HTMLButtonElement | null>(null);
   const list = useQuery({
     queryKey: ["elevators"],
     queryFn: tradeApi.elevators,
     enabled: !id,
+    retry: 1,
   });
   const detail = useQuery({
     queryKey: ["elevators", id],
@@ -502,22 +514,41 @@ export default function ElevatorsPage({ id }: { id?: string }) {
     setDialog(null);
     await client.invalidateQueries({ queryKey: ["elevators"] });
   };
-  const filtered =
-    list.data?.filter((item) =>
-      `${item.name} ${item.station}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
-    ) || [];
   async function archive(service: ElevatorService) {
-    if (!elevator) return;
+    if (!elevator || mutationInFlight.current) return;
+    mutationInFlight.current = true;
     setBusyService(service.id);
     setActionError("");
+    setActionNotice("");
     try {
       await tradeApi.archiveService(elevator.id, service.id, !service.archived);
       await invalidate();
     } catch (error) {
       setActionError(errorText(error));
     } finally {
+      mutationInFlight.current = false;
+      setBusyService(undefined);
+    }
+  }
+  async function removeService() {
+    if (!elevator || !deleteTarget || mutationInFlight.current) return;
+    mutationInFlight.current = true;
+    const target = deleteTarget;
+    setBusyService(target.id);
+    setDeleteError("");
+    try {
+      const updated = await tradeApi.deleteService(elevator.id, target.id);
+      client.setQueryData(["elevators", elevator.id], updated);
+      client.setQueryData<Elevator[]>(["elevators"], (items) =>
+        items?.map((item) => item.id === updated.id ? updated : item),
+      );
+      setDeleteTarget(undefined);
+      setActionNotice(`Услуга «${target.name}» удалена.`);
+      await client.invalidateQueries({ queryKey: ["elevators"] });
+    } catch (error) {
+      setDeleteError(errorText(error));
+    } finally {
+      mutationInFlight.current = false;
       setBusyService(undefined);
     }
   }
@@ -529,100 +560,25 @@ export default function ElevatorsPage({ id }: { id?: string }) {
           Элеваторы
         </Link>
       )}
-      {!id && (
-        <WorkspaceHeading
-          icon={Warehouse}
-          eyebrow="Логистика и хранение"
-          title="Элеваторы"
-          description={`${list.data?.length ?? 0} в справочнике`}
-          actions={
-            <>
-              <Button
-                className="trade-primary"
-                onClick={(event) => openDialog("elevator", event.currentTarget)}
-              >
-                <Plus size={16} />
-                Добавить элеватор
-              </Button>
-            </>
-          }
+      {!id ? (
+        <ElevatorDirectory
+          elevators={list.data}
+          isLoading={list.isLoading}
+          isError={list.isError}
+          onRetry={() => { void list.refetch(); }}
+          onAdd={(trigger) => openDialog("elevator", trigger)}
         />
-      )}
-      {query.isLoading ? (
+      ) : query.isLoading ? (
         <CrmRouteLoading />
       ) : query.isError ? (
         <QueryError retry={() => query.refetch()} />
-      ) : !id ? (
-        <>
-          <div className="trade-toolbar">
-            <Field label="Поиск">
-              <Input
-                aria-label="Поиск элеватора"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Название или станция"
-              />
-            </Field>
-          </div>
-          {filtered.length ? (
-            <div className="trade-table-wrap">
-              <table className="trade-table trade-responsive-table">
-                <thead>
-                  <tr>
-                    <th>Элеватор</th>
-                    <th>Станция</th>
-                    <th>Услуги</th>
-                    <th>Контакты</th>
-                    <th>Статус</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        <div className="record-table-title">
-                          <span className="record-row-icon" aria-hidden="true">
-                            <Warehouse size={18} />
-                          </span>
-                          <div>
-                            <Link href={`/admin/elevators/${item.id}`}>
-                              {item.name}
-                            </Link>
-                          </div>
-                        </div>
-                      </td>
-                      <td data-label="Станция">{item.station || "—"}</td>
-                      <td data-label="Услуги">
-                        {item.services.filter((s) => !s.archived).length}
-                      </td>
-                      <td data-label="Контакты">{item.contact || "—"}</td>
-                      <td data-label="Статус">
-                        <span
-                          className={`trade-tag${item.archived ? " trade-tag-muted" : ""}`}
-                        >
-                          {item.archived ? "Архив" : "Действующий"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <CrmEmptyState
-              icon={Warehouse}
-              title={
-                search ? "Элеваторы не найдены" : "Элеваторы пока не добавлены"
-              }
-            />
-          )}
-        </>
       ) : (
         elevator && (
           <ElevatorDetail
             elevator={elevator}
             date={todayKz()}
             actionError={actionError}
+            actionNotice={actionNotice}
             busyService={busyService}
             onEdit={(trigger) => openDialog("elevator", trigger)}
             onAddService={(trigger) => openDialog("service", trigger)}
@@ -636,6 +592,13 @@ export default function ElevatorsPage({ id }: { id?: string }) {
               openDialog("history", trigger, service)
             }
             onArchive={archive}
+            onDelete={(service, trigger) => {
+              deleteReturnFocus.current = trigger;
+              setActionError("");
+              setActionNotice("");
+              setDeleteError("");
+              setDeleteTarget(service);
+            }}
           />
         )
       )}
@@ -727,6 +690,44 @@ export default function ElevatorsPage({ id }: { id?: string }) {
           )}
         </DialogContent>
       </Dialog>
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open && !mutationInFlight.current) setDeleteTarget(undefined);
+        }}
+      >
+        <AlertDialogContent
+          className="elevator-delete-dialog"
+          aria-busy={!!busyService}
+          onEscapeKeyDown={(event) => {
+            if (mutationInFlight.current) event.preventDefault();
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            const trigger = deleteReturnFocus.current;
+            requestAnimationFrame(() => {
+              const target = trigger?.isConnected ? trigger : document.getElementById("elevator-services-title");
+              target?.focus({ preventScroll: true });
+            });
+          }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className="pr-8">Удалить услугу?</AlertDialogTitle>
+            <AlertDialogDescription className="break-words">
+              «{deleteTarget?.name}» исчезнет из списка и будет недоступна для новых расчётов.
+              Сохранённые расчёты и история тарифов останутся без изменений.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteError && <p className="trade-alert" role="alert">{deleteError}</p>}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!busyService}>Отмена</AlertDialogCancel>
+            <Button variant="destructive" disabled={!!busyService} onClick={removeService}>
+              <Trash2 size={16} />
+              {busyService ? "Удаление…" : "Удалить услугу"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,0 +1,120 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
+import type { Elevator, ElevatorService } from "@/entities/calculator/api";
+import {
+  ElevatorDirectory,
+  elevatorPhoneLink,
+  filterElevators,
+} from "./elevator-directory";
+
+const service = { id: "service", archived: false } as ElevatorService;
+const items: Elevator[] = [
+  {
+    id: "one",
+    name: "ТОО Бидай",
+    station: "Шарбакты",
+    contact: "+7 700 000 00 01",
+    address: "",
+    notes: "",
+    archived: false,
+    version: 1,
+    services: [
+      service,
+      { ...service, id: "old", archived: true },
+      { ...service, id: "deleted", deletedAt: "2026-11-03" },
+    ],
+  },
+  {
+    id: "two",
+    name: "Арго",
+    station: "Павлодар",
+    contact: "Отдел логистики",
+    address: "",
+    notes: "",
+    archived: true,
+    version: 1,
+    services: [],
+  },
+];
+const render = (props: Partial<Parameters<typeof ElevatorDirectory>[0]> = {}) =>
+  renderToStaticMarkup(
+    createElement(ElevatorDirectory, {
+      elevators: items,
+      onAdd: () => {},
+      onRetry: () => {},
+      ...props,
+    }),
+  );
+
+describe("elevator directory", () => {
+  it("combines normalized multiword search with status without mutating data", () => {
+    const before = JSON.stringify(items);
+    expect(filterElevators(items, "  БИДАЙ   шарбакты ", "all")).toEqual([
+      items[0],
+    ]);
+    expect(filterElevators(items, "Павлодар", "active")).toEqual([]);
+    expect(filterElevators(items, "Павлодар", "archived")).toEqual([items[1]]);
+    expect(filterElevators(items, "700", "all")).toEqual([items[0]]);
+    expect(filterElevators(items, "  ", "all")).toEqual(items);
+    expect(JSON.stringify(items)).toBe(before);
+  });
+  it("only converts a standalone phone number into a safe telephone link", () => {
+    expect(elevatorPhoneLink("+7 (700) 000-00-01")).toBe("tel:+77000000001");
+    expect(elevatorPhoneLink("87000000001")).toBe("tel:87000000001");
+    for (const value of [
+      "",
+      "123",
+      "Отдел 87000000001",
+      "javascript:alert(1)",
+      "+7 700 000 00 01 / +7 700 000 00 02",
+    ])
+      expect(elevatorPhoneLink(value)).toBeUndefined();
+  });
+  it("keeps semantic navigation, status, active service counts and phone links", () => {
+    const html = render();
+    expect(html).toContain('aria-label="Всего элеваторов: 2"');
+    expect(html).toContain('aria-label="Поиск элеватора"');
+    expect(html).toContain('aria-label="Статус элеватора"');
+    expect(html).toContain('scope="col"');
+    expect(html).toContain('href="/admin/elevators/one"');
+    expect(html).toContain('href="tel:+77000000001"');
+    expect(html).toContain('class="elevator-directory-service-count">1</span>');
+    expect(html).toContain("В архиве");
+    expect(html).toContain('data-label="Контакты"');
+  });
+  it("does not show false zero totals while loading or when the request fails", () => {
+    for (const props of [{ isLoading: true }, { isError: true }]) {
+      const html = render({ ...props, elevators: undefined });
+      expect(html).not.toContain("Всего элеваторов:");
+      expect(html).not.toContain("В справочнике:");
+      expect(html).not.toContain('aria-label="Элеваторы"');
+    }
+    expect(render({ isError: true, elevators: undefined })).toContain(
+      "Повторить",
+    );
+    expect(render({ isError: true, elevators: undefined })).toContain(
+      'role="alert"',
+    );
+  });
+
+  it("preserves cached data and search when a background refresh fails", () => {
+    const html = render({ isError: true });
+    expect(html).toContain("ТОО Бидай");
+    expect(html).toContain('aria-label="Элеваторы"');
+    expect(html).toContain('role="alert"');
+    expect(html).toContain("Показаны последние загруженные данные.");
+    expect(html).not.toMatch(
+      /<input(?=[^>]*aria-label="Поиск элеватора")(?=[^>]* disabled="")/,
+    );
+    expect(render({ isError: true, elevators: [] })).toContain(
+      "Элеваторы пока не добавлены",
+    );
+  });
+  it("keeps the add action and a useful empty state without fake records", () => {
+    const html = render({ elevators: [] });
+    expect(html).toContain("Элеваторы пока не добавлены");
+    expect(html).toContain("Добавить элеватор");
+    expect(html).not.toContain("ТОО Бидай");
+  });
+});

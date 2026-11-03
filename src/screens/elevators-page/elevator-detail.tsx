@@ -14,6 +14,7 @@ import {
   Plus,
   Receipt,
   RotateCcw,
+  Trash2,
   Warehouse,
   Wheat,
 } from "lucide-react";
@@ -39,6 +40,7 @@ type ElevatorDetailProps = {
   elevator: Elevator;
   date: string;
   actionError: string;
+  actionNotice?: string;
   busyService?: string;
   onEdit: (trigger: HTMLButtonElement) => void;
   onAddService: (trigger: HTMLButtonElement) => void;
@@ -46,12 +48,14 @@ type ElevatorDetailProps = {
   onAddRate: (service: ElevatorService, trigger: HTMLButtonElement) => void;
   onHistory: (service: ElevatorService, trigger: HTMLButtonElement) => void;
   onArchive: (service: ElevatorService) => void;
+  onDelete: (service: ElevatorService, trigger: HTMLButtonElement) => void;
 };
 
 export function ElevatorDetail({
   elevator,
   date,
   actionError,
+  actionNotice,
   busyService,
   onEdit,
   onAddService,
@@ -59,7 +63,9 @@ export function ElevatorDetail({
   onAddRate,
   onHistory,
   onArchive,
+  onDelete,
 }: ElevatorDetailProps) {
+  const services = elevator.services.filter((service) => !service.deletedAt);
   return (
     <div className="elevator-detail">
       <header className="elevator-overview" aria-labelledby="elevator-name">
@@ -163,12 +169,12 @@ export function ElevatorDetail({
             </span>
             <div>
               <div className="elevator-services-title">
-                <h2 id="elevator-services-title">Услуги и тарифы</h2>
+                <h2 id="elevator-services-title" tabIndex={-1}>Услуги и тарифы</h2>
                 <Badge
                   variant="outline"
-                  aria-label={`Услуг: ${elevator.services.length}`}
+                  aria-label={`Услуг: ${services.length}`}
                 >
-                  {elevator.services.length}
+                  {services.length}
                 </Badge>
               </div>
               <p>
@@ -191,7 +197,8 @@ export function ElevatorDetail({
             {actionError}
           </p>
         )}
-        {elevator.services.length ? (
+        {actionNotice && <p role="status" className="elevator-action-notice">{actionNotice}</p>}
+        {services.length ? (
           <div className="elevator-service-table-wrap">
             <table className="elevator-service-table">
               <caption className="sr-only">
@@ -211,9 +218,9 @@ export function ElevatorDetail({
                 </tr>
               </thead>
               <tbody>
-                {elevator.services.map((service) => {
+                {services.map((service) => {
                   const rate = applicableRate(service, date);
-                  const pending = busyService === service.id;
+                  const pending = !!busyService;
                   const cannotAddRate =
                     elevator.archived || service.archived || pending;
                   return (
@@ -354,6 +361,21 @@ export function ElevatorDetail({
                                 ? "Восстановить услугу"
                                 : "Архивировать услугу"}
                             </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="elevator-delete-service"
+                                aria-label={`Удалить услугу: ${service.name}`}
+                                disabled={pending}
+                                onClick={(event) => onDelete(service, event.currentTarget)}
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Удалить услугу</TooltipContent>
                           </Tooltip>
                         </div>
                       </td>

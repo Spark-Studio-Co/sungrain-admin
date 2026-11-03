@@ -8,7 +8,7 @@ import {
 } from "@/entities/calculator/api";
 
 export function serviceAvailableOnDate(service: ElevatorService, date: string) {
-  if (!date) return false;
+  if (!date || service.deletedAt) return false;
   if (service.archived && !(service.nextVersion && service.validTo)) return false;
   return (!service.validFrom || date >= service.validFrom.slice(0, 10)) &&
     (!service.validTo || date < service.validTo.slice(0, 10));

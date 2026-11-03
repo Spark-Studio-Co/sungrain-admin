@@ -59,6 +59,7 @@ function detail(record: Elevator = elevator, busyService?: string) {
       onAddRate: () => {},
       onHistory: () => {},
       onArchive: () => {},
+      onDelete: () => {},
     }),
   );
 }
@@ -93,7 +94,7 @@ describe("elevator detail workspace", () => {
     expect(html).not.toContain("9 000");
     expect(html).toContain("Пшеница");
     expect(html).toContain("Неурочное время ×1,5");
-    for (const action of ["Редактировать услугу", "История тарифов", "Новый тариф", "Архивировать"]) {
+    for (const action of ["Редактировать услугу", "История тарифов", "Новый тариф", "Архивировать", "Удалить услугу"]) {
       expect(html).toContain(`aria-label="${action}: Отгрузка зерна"`);
     }
   });
@@ -134,13 +135,27 @@ describe("elevator detail workspace", () => {
 
   it("disables duplicate mutations for a busy service", () => {
     const html = detail(elevator, service.id);
-    for (const action of ["Редактировать услугу", "Новый тариф", "Архивировать"]) {
+    for (const action of ["Редактировать услугу", "Новый тариф", "Архивировать", "Удалить услугу"]) {
       expect(html).toMatch(
         new RegExp(
           `<button(?=[^>]*aria-label="${action}: Отгрузка зерна")(?=[^>]*disabled="")[^>]*>`,
         ),
       );
     }
+  });
+
+  it("allows removing an archived or superseded row without restoring it", () => {
+    const html = detail({ ...elevator, services: [{ ...service, archived: true, nextVersion: { id: "new" } }] });
+    expect(html).toContain('aria-label="Удалить услугу: Отгрузка зерна"');
+    expect(html).not.toMatch(/<button(?=[^>]*aria-label="Удалить услугу: Отгрузка зерна")(?=[^>]*disabled="")[^>]*>/);
+  });
+
+  it("does not display deleted services or count them in the list", () => {
+    const html = detail({ ...elevator, services: [{ ...service, deletedAt: "2026-11-03T10:00:00Z" }] });
+    expect(html).toContain('aria-label="Услуг: 0"');
+    expect(html).toContain("Услуги пока не добавлены");
+    expect(html).not.toContain('aria-label="Удалить услугу:');
+    expect(html).not.toContain("Отгрузка зерна");
   });
 
   it("renders empty services and empty rate history without invented prices", () => {

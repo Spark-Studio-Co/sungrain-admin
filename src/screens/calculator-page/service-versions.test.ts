@@ -20,6 +20,8 @@ describe("service version availability", () => {
     [{ ...previous, nextVersion: null }, "2026-10-31", false],
     [{ ...current, validFrom: null }, "2026-10-31", true],
     [current, "", false],
+    [{ ...current, deletedAt: "2026-11-03T10:00:00Z" }, "2026-11-02", false],
+    [{ ...previous, deletedAt: "2026-11-03T10:00:00Z" }, "2026-10-31", false],
   ])("uses historical bounds without restoring archived services", (service, date, available) => {
     expect(serviceAvailableOnDate(service as ElevatorService, date as string)).toBe(available);
   });
