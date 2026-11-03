@@ -113,7 +113,7 @@ async function run(browser, width) {
     assert((await page.locator('.elevator-action-notice').innerText()).includes('удалена'));
     await page.getByRole('link', { name: 'Элеваторы', exact: true }).last().click();
     await page.getByRole('link', { name: record.name, exact: true }).waitFor();
-    assert.equal((await page.locator('td[data-label="Услуги"]').innerText()).trim(), '0', 'Catalogue cache updated');
+    assert.equal(await page.locator('td[data-label="Услуги"] [data-count]').getAttribute('data-count'), '0', 'Catalogue cache updated');
     await page.getByRole('link', { name: record.name, exact: true }).click();
     await page.getByRole('button', { name: `Удалить услугу: ${archivedName}`, exact: true }).click();
     hold = false;

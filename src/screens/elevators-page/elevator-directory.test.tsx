@@ -79,9 +79,13 @@ describe("elevator directory", () => {
     expect(html).toContain('scope="col"');
     expect(html).toContain('href="/admin/elevators/one"');
     expect(html).toContain('href="tel:+77000000001"');
-    expect(html).toContain('class="elevator-directory-service-count">1</span>');
+    expect(html).toContain('data-count="1"');
+    expect(html).toContain("1</strong><span>услуга</span>");
     expect(html).toContain("В архиве");
     expect(html).toContain('data-label="Контакты"');
+    expect(html).toContain(
+      '<div class="sr-only" role="status"><span>Загружено элеваторов: 2</span></div>',
+    );
   });
   it("does not show false zero totals while loading or when the request fails", () => {
     for (const props of [{ isLoading: true }, { isError: true }]) {
@@ -95,6 +99,50 @@ describe("elevator directory", () => {
     );
     expect(render({ isError: true, elevators: undefined })).toContain(
       'role="alert"',
+    );
+  });
+
+  it("summarizes unique stations and excludes archived elevators and deleted services", () => {
+    const html = render({
+      elevators: [
+        items[0],
+        { ...items[1], services: Array.from({ length: 5 }, () => service) },
+        {
+          ...items[0],
+          id: "third",
+          station: "  ШАРБАКТЫ  ",
+          services: [service, service],
+        },
+      ],
+    });
+    const summary = html.match(
+      /<dl class="elevator-directory-summary">[\s\S]*?<\/dl>/,
+    )?.[0];
+    expect(summary).toContain("Станции</dt><dd>2</dd>");
+    expect(summary).toContain("Активные услуги</dt><dd>3</dd>");
+    expect(html).not.toContain("В справочнике:");
+  });
+
+  it("labels service counts correctly without disguising empty records as configured tariffs", () => {
+    for (const [count, noun] of [
+      [1, "услуга"],
+      [2, "услуги"],
+      [5, "услуг"],
+      [11, "услуг"],
+      [21, "услуга"],
+    ] as const) {
+      const html = render({
+        elevators: [
+          {
+            ...items[0],
+            services: Array.from({ length: count }, () => service),
+          },
+        ],
+      });
+      expect(html).toContain(`${count}</strong><span>${noun}</span>`);
+    }
+    expect(render({ elevators: [{ ...items[0], services: [] }] })).toContain(
+      "Нет услуг",
     );
   });
 

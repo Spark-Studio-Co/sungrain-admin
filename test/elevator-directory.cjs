@@ -34,6 +34,14 @@ async function check(browser, width) {
     const rows = page.locator('.elevator-directory-table tbody tr');
     assert.equal(await rows.count(), 3);
     await page.screenshot({ path: path.join(output, `directory-${width}.png`), fullPage: true, animations: 'disabled' });
+    const statusGroup = page.getByRole('radiogroup', { name: 'Статус элеватора' });
+    const searchControl = page.getByRole('textbox', { name: 'Поиск элеватора' });
+    await page.getByRole('radio', { name: 'Все', exact: true }).focus();
+    await page.keyboard.press('Tab');
+    assert(await searchControl.evaluate(el => el === document.activeElement), 'Tab order follows visual controls');
+    const groupBounds = await statusGroup.boundingBox();
+    const searchBounds = await searchControl.boundingBox();
+    assert(groupBounds.y < searchBounds.y || groupBounds.x < searchBounds.x, 'DOM and visual order match');
     const overflow = () => page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
     assert.equal(await overflow(), false, 'No horizontal page overflow');
     await page.getByRole('radio', { name: 'Архив', exact: true }).click();
