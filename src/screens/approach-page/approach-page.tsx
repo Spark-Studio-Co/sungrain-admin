@@ -1339,9 +1339,6 @@ function ImportHistory({
               <h3 className="text-base font-black text-[#223137]">
                 История загрузок
               </h3>
-              <p className="mt-1 text-xs text-[#818985]">
-                Каждый файл хранится отдельным снимком.
-              </p>
             </div>
           </div>
           <Select
