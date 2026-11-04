@@ -5,5 +5,6 @@ export const useGetAttentionCenter = () =>
   useQuery({
     queryKey: ["attention-center"],
     queryFn: getAttentionCenter,
+    retry: 1,
     refetchInterval: 5 * 60 * 1000,
   });

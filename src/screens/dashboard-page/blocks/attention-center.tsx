@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGetAttentionCenter } from "@/entities/contracts/hooks/query/use-get-attention-center.query";
 import type { AttentionItem } from "@/entities/contracts/api/get/get-attention-center.api";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ArrivedWagons } from "./arrived-wagons";
 
 const icons = {
   stale_dislocations: Clock,
@@ -63,6 +65,7 @@ const formatTotals = (item: AttentionItem) =>
 export const AttentionCenter = () => {
   const { data, isLoading, isError } = useGetAttentionCenter();
   const [selectedItem, setSelectedItem] = useState<AttentionItem | null>(null);
+  const arrivals = data?.items.find((item) => item.key === "arrived_wagons");
   const SelectedIcon = selectedItem
     ? icons[selectedItem.key as keyof typeof icons] || AlertCircle
     : AlertCircle;
@@ -77,7 +80,7 @@ export const AttentionCenter = () => {
 
   return (
     <>
-      <section className="overflow-hidden rounded-md border border-[#dfe7de] bg-white shadow-[0_14px_36px_rgba(34,49,55,0.06)]">
+      <section aria-label="Центр внимания" className="overflow-hidden rounded-md border border-[#dfe7de] bg-white shadow-[0_14px_36px_rgba(34,49,55,0.06)]">
       <div className="flex flex-col gap-3 border-b border-[#e8ede7] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div>
           <div className="flex items-center gap-2">
@@ -89,7 +92,7 @@ export const AttentionCenter = () => {
                 Центр внимания
               </h2>
               <p className="text-xs text-[#7b857f]">
-                Сигналы, которые требуют проверки сегодня
+                Оперативные сигналы и прибытие вагонов к клиентам
               </p>
             </div>
           </div>
@@ -106,6 +109,20 @@ export const AttentionCenter = () => {
         ) : null}
       </div>
 
+      <Tabs defaultValue="signals" className="gap-0">
+        <div className="min-w-0 px-3 py-3 sm:px-5">
+          <TabsList aria-label="Разделы центра внимания" className="grid h-auto w-full grid-cols-[auto_minmax(0,1fr)] sm:w-fit">
+            <TabsTrigger value="signals" className="min-h-10 text-xs sm:text-sm">
+              Сигналы
+            </TabsTrigger>
+            <TabsTrigger value="arrivals" className="min-h-10 whitespace-normal text-xs sm:text-sm">
+              <Train aria-hidden="true" className="size-4" />
+              Прибывшие вагоны
+              {arrivals ? <span className="rounded bg-black/5 px-1.5 py-0.5 text-[11px] tabular-nums">{arrivals.count}</span> : null}
+            </TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="signals">
       {isLoading ? (
         <div className="grid gap-2.5 p-3 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
@@ -118,7 +135,7 @@ export const AttentionCenter = () => {
         </div>
       ) : (
         <div className="grid gap-2.5 p-3 sm:grid-cols-2 xl:grid-cols-3">
-          {data?.items.map((item) => {
+          {data?.items.filter((item) => item.key !== "arrived_wagons").map((item) => {
             const Icon = icons[item.key as keyof typeof icons] || AlertCircle;
             const styles = severityStyles[item.severity];
             const totals = formatTotals(item);
@@ -206,6 +223,17 @@ export const AttentionCenter = () => {
           })}
         </div>
       )}
+        </TabsContent>
+        <TabsContent value="arrivals">
+          {isLoading ? (
+            <div className="space-y-3 px-5 pb-5" aria-label="Загрузка прибывших вагонов">
+              {Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-20 rounded-md" />)}
+            </div>
+          ) : isError ? (
+            <p role="alert" className="px-5 py-8 text-center text-sm text-[#b9472d]">Не удалось загрузить прибывшие вагоны</p>
+          ) : <ArrivedWagons item={arrivals} />}
+        </TabsContent>
+      </Tabs>
       </section>
 
       <Dialog

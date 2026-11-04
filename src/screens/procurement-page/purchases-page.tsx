@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   ArrowRight,
   FileText,
+  Paperclip,
   Plus,
   RotateCcw,
   Search,
@@ -40,6 +41,9 @@ import {
 import { shouldUseMockApi } from "@/shared/api/mock-api";
 import FarmerRegistry from "./procurement-page";
 import "./purchases.css";
+
+const formatAgreementDate = (value: string) =>
+  value.slice(0, 10).split("-").reverse().join(".");
 
 export function PurchaseError({ retry }: { retry: () => void }) {
   return (
@@ -132,7 +136,7 @@ export default function PurchasesPage() {
             <label>
               <span>Поиск</span>
               <div className="relative">
-                <Search className="absolute left-3 top-3 size-4 text-gray-400" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
                 <Input
                   className="pl-9"
                   placeholder="Фермер или номер договора"
@@ -166,7 +170,7 @@ export default function PurchasesPage() {
               </Select>
             </label>
             <label>
-              <span>Дата от</span>
+              <span>Дата договора от</span>
               <DatePickerInput
                 value={filters.from || ""}
                 onChange={(value) => set("from", value)}
@@ -174,7 +178,7 @@ export default function PurchasesPage() {
               />
             </label>
             <label>
-              <span>Дата до</span>
+              <span>Дата договора до</span>
               <DatePickerInput
                 value={filters.to || ""}
                 onChange={(value) => set("to", value)}
@@ -221,18 +225,19 @@ export default function PurchasesPage() {
               }
             />
           ) : (
-            <>
+            <section className="purchase-results" aria-label="Реестр договоров закупки">
               <div className="purchase-table-wrap">
-                <table className="purchase-table">
+                <table className="purchase-table" aria-label="Договоры закупки">
                   <thead>
                     <tr>
-                      <th>Договор / фермер</th>
-                      <th>Культура</th>
-                      <th className="text-right">Объём</th>
-                      <th className="text-right">Цена / т</th>
-                      <th>НДС</th>
-                      <th className="text-right">К оплате</th>
-                      <th>
+                      <th scope="col">Договор / фермер</th>
+                      <th scope="col">Дата договора</th>
+                      <th scope="col">Культура</th>
+                      <th scope="col" className="text-right">Объём</th>
+                      <th scope="col" className="text-right">Цена / т</th>
+                      <th scope="col">НДС</th>
+                      <th scope="col" className="text-right">К оплате</th>
+                      <th scope="col">
                         <span className="sr-only">Открыть</span>
                       </th>
                     </tr>
@@ -246,30 +251,29 @@ export default function PurchasesPage() {
                               <FileText size={18} />
                             </span>
                             <div>
-                              <Link
-                                className="purchase-row-title"
-                                href={`/admin/procurement/${purchase.id}`}
-                              >
-                                № {purchase.agreementNumber}
-                              </Link>
-                              <p>{purchase.farmerName}</p>
-                              <small>
-                                {purchase.agreementDate
-                                  .slice(0, 10)
-                                  .split("-")
-                                  .reverse()
-                                  .join(".")}
+                              <div className="purchase-agreement-line">
+                                <Link
+                                  className="purchase-row-title"
+                                  href={`/admin/procurement/${purchase.id}`}
+                                >
+                                  № {purchase.agreementNumber}
+                                </Link>
                                 {purchase.document && (
-                                  <FileText
-                                    className="ml-2 inline size-3.5"
-                                    aria-label="Договор прикреплён"
-                                  />
+                                  <span className="purchase-attachment" role="img" aria-label="Договор прикреплён" title="Договор прикреплён">
+                                    <Paperclip className="size-3.5" aria-hidden="true" />
+                                  </span>
                                 )}
-                              </small>
+                              </div>
+                              <p>{purchase.farmerName}</p>
                             </div>
                           </div>
                         </td>
-                        <td>{purchase.cultureName}</td>
+                        <td className="purchase-date-cell">
+                          <time dateTime={purchase.agreementDate.slice(0, 10)}>
+                            {formatAgreementDate(purchase.agreementDate)}
+                          </time>
+                        </td>
+                        <td className="purchase-culture-cell">{purchase.cultureName}</td>
                         <td className="text-right tabular-nums">
                           {formatQuantity(purchase.quantity)} т
                         </td>
@@ -277,21 +281,21 @@ export default function PurchasesPage() {
                           {formatMoney(purchase.unitPrice, purchase.currency)}
                         </td>
                         <td>
-                          <span className="purchase-tax">
+                          <span className="purchase-tax" data-mode={purchase.vatMode}>
                             {purchase.vatMode === "NONE"
                               ? "Без НДС"
                               : `${purchase.vatRate}%`}
                           </span>
-                          <small>
-                            {purchase.vatMode !== "NONE" &&
-                              VAT_LABELS[purchase.vatMode]}
-                          </small>
+                          {purchase.vatMode !== "NONE" && (
+                            <small>{VAT_LABELS[purchase.vatMode]}</small>
+                          )}
                         </td>
-                        <td className="text-right font-bold tabular-nums">
+                        <td className="purchase-payable text-right font-bold tabular-nums">
                           {formatMoney(purchase.totalAmount, purchase.currency)}
                         </td>
                         <td>
                           <Link
+                            className="purchase-open-link"
                             href={`/admin/procurement/${purchase.id}`}
                             title="Открыть закупку"
                             aria-label={`Открыть закупку ${purchase.agreementNumber}`}
@@ -311,27 +315,51 @@ export default function PurchasesPage() {
                     href={`/admin/procurement/${purchase.id}`}
                     className="purchase-mobile-row"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <strong>№ {purchase.agreementNumber}</strong>
+                    <div className="purchase-mobile-heading">
+                      <div className="purchase-agreement-line">
+                        <strong>№ {purchase.agreementNumber}</strong>
+                        {purchase.document && (
+                          <span className="purchase-attachment" role="img" aria-label="Договор прикреплён">
+                            <Paperclip className="size-3.5" aria-hidden="true" />
+                          </span>
+                        )}
+                      </div>
                       <ArrowRight className="size-4 shrink-0" />
                     </div>
-                    <p>{purchase.farmerName}</p>
-                    <div className="text-sm text-gray-500">
-                      {purchase.cultureName} ·{" "}
-                      {formatQuantity(purchase.quantity)} т
+                    <p className="purchase-mobile-farmer">{purchase.farmerName}</p>
+                    <dl className="purchase-mobile-details">
+                      <div>
+                        <dt>Дата договора</dt>
+                        <dd>
+                          <time dateTime={purchase.agreementDate.slice(0, 10)}>
+                            {formatAgreementDate(purchase.agreementDate)}
+                          </time>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Объём</dt>
+                        <dd>{formatQuantity(purchase.quantity)} т</dd>
+                      </div>
+                      <div className="purchase-mobile-culture">
+                        <dt>Культура</dt>
+                        <dd>{purchase.cultureName}</dd>
+                      </div>
+                    </dl>
+                    <div className="purchase-mobile-total">
+                      <div>
+                        <span>К оплате</span>
+                        <strong>{formatMoney(purchase.totalAmount, purchase.currency)}</strong>
+                      </div>
+                      <small>
+                        {VAT_LABELS[purchase.vatMode]}
+                        {purchase.vatMode !== "NONE" && ` · ${purchase.vatRate}%`}
+                      </small>
                     </div>
-                    <div className="mt-3 font-bold">
-                      {formatMoney(purchase.totalAmount, purchase.currency)}
-                    </div>
-                    <small>
-                      {VAT_LABELS[purchase.vatMode]}
-                      {purchase.vatMode !== "NONE" && ` · ${purchase.vatRate}%`}
-                    </small>
                   </Link>
                 ))}
               </div>
               <footer className="purchase-pagination">
-                <span>Всего: {query.data.total}</span>
+                <span>Всего: <strong>{query.data.total}</strong></span>
                 <div className="flex items-center gap-3">
                   <Button
                     variant="outline"
@@ -368,7 +396,7 @@ export default function PurchasesPage() {
                   </Button>
                 </div>
               </footer>
-            </>
+            </section>
           )}
         </>
       )}

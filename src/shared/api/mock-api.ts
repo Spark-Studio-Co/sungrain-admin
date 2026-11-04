@@ -4,6 +4,7 @@ import type {
   InternalAxiosRequestConfig,
 } from "axios";
 import { mockProcurement } from "./mock-procurement";
+import { isWagonClientReceivedStatus } from "@/shared/contracts/wagon-status-data";
 
 type AnyRecord = Record<string, any>;
 
@@ -1606,6 +1607,31 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
         !Array.isArray(application.files) || application.files.length === 0,
     );
     const unmatchedCount = currentUnmatchedWagons.length;
+    const arrivedDetails = contracts.flatMap((contract) =>
+      contract.wagons
+        .filter((wagon) => isWagonClientReceivedStatus(wagon.status))
+        .map((wagon) => {
+          const application = contract.applications.find((row) => row.id === wagon.applicationId);
+          return {
+            id: wagon.id,
+            label: `Вагон ${wagon.number}`,
+            meta: `${contract.company.name} · ${contract.number}`,
+            href: `/admin/contracts/${contract.id}/applications/${wagon.applicationId}`,
+            arrival: {
+              wagonNumber: wagon.number,
+              clientName: contract.company.name,
+              receiver: contract.receiver,
+              contractNumber: contract.number,
+              destinationStations: (application as AnyRecord)?.destination_stations?.length
+                ? (application as AnyRecord).destination_stations
+                : (contract as AnyRecord).destination_stations?.length
+                  ? (contract as AnyRecord).destination_stations
+                  : [contract.destination_station].filter(Boolean),
+              statusUpdatedAt: wagon.status_updated_at || null,
+            },
+          };
+        }),
+    ).sort((a, b) => (b.arrival.statusUpdatedAt || "").localeCompare(a.arrival.statusUpdatedAt || "") || a.id - b.id);
     const makeItem = (
       key: string,
       title: string,
@@ -1627,6 +1653,15 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
       totals,
     });
     const items = [
+      makeItem(
+        "arrived_wagons",
+        "Прибывшие вагоны",
+        "Вагоны со статусом «Клиент получил»",
+        arrivedDetails.length,
+        "/admin/contracts",
+        "ok",
+        arrivedDetails,
+      ),
       makeItem(
         "stale_dislocations",
         "Без свежей дислокации",
@@ -1696,7 +1731,7 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
       thresholds: { staleDislocationHours: 36, idleDays: 2 },
       items,
       summary: {
-        total: items.reduce((sum, item) => sum + item.count, 0),
+        total: items.filter((item) => item.key !== "arrived_wagons").reduce((sum, item) => sum + item.count, 0),
         affectedContracts: new Set(
           missingDocuments.map((application) => application.contractId),
         ).size,

@@ -8,6 +8,7 @@ export const useDeleteWagon = () => {
     mutationFn: async (id: number | string) => deleteWagon(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["attention-center"] });
     },
   });
 };

@@ -8,6 +8,7 @@ export const useDeleteApplication = () => {
     mutationFn: deleteApplication,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
+      queryClient.invalidateQueries({ queryKey: ["attention-center"] });
     },
   });
 };

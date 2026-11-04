@@ -777,7 +777,9 @@ function PurchaseForm({
               <div className="purchase-file">
                 <FileText className="size-5 shrink-0 text-[#2f6b4f]" />
                 <div className="purchase-file-name">
-                  {file?.name || purchase.document.name}
+                  <bdi className="purchase-file-title" title={file?.name || purchase.document.name}>
+                    {file?.name || purchase.document.name}
+                  </bdi>
                   <small>
                     {Math.max(
                       1,

@@ -7,6 +7,14 @@ export interface AttentionPreviewItem {
   label: string;
   meta: string;
   href: string;
+  arrival?: {
+    wagonNumber: string;
+    clientName: string | null;
+    receiver: string | null;
+    contractNumber: string;
+    destinationStations: string[];
+    statusUpdatedAt: string | null;
+  };
 }
 
 export interface AttentionItem {

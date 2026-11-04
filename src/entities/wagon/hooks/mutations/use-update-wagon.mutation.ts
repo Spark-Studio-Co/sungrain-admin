@@ -11,6 +11,7 @@ export const useUpdateWagon = () => {
     mutationFn: updateWagonDetails,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["attention-center"] });
     },
   });
 
@@ -18,6 +19,7 @@ export const useUpdateWagon = () => {
     mutationFn: updateWagonFiles,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["attention-center"] });
     },
   });
 

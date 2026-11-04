@@ -10,6 +10,7 @@ export const useUpdateContract = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
       queryClient.invalidateQueries({ queryKey: ["userContracts"] });
+      queryClient.invalidateQueries({ queryKey: ["attention-center"] });
     },
   });
 };

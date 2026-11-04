@@ -7,12 +7,12 @@ const faviconVersion = "20260705";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  subsets: ["latin", "cyrillic", "cyrillic-ext"],
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  subsets: ["latin", "cyrillic", "cyrillic-ext"],
 });
 
 export const metadata: Metadata = {

@@ -9,6 +9,7 @@ export const useDeleteContract = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["all-contracts"] });
       queryClient.invalidateQueries({ queryKey: ["user-contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["attention-center"] });
     },
     onError: (error) => {
       console.error("Error deleting contract:", error);
