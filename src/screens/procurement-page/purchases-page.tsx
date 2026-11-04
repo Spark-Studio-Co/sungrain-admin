@@ -67,10 +67,14 @@ export default function PurchasesPage() {
   const [filters, setFilters] = useState<PurchaseFilters>({ page: 1 });
   const [search, setSearch] = useState("");
   useEffect(() => {
-    const timer = setTimeout(
-      () => setFilters((current) => ({ ...current, search, page: 1 })),
-      250,
-    );
+    const timer = setTimeout(() => {
+      const nextSearch = search.trim();
+      setFilters((current) =>
+        (current.search ?? "") === nextSearch
+          ? current
+          : { ...current, search: nextSearch || undefined, page: 1 },
+      );
+    }, 250);
     return () => clearTimeout(timer);
   }, [search]);
   const invalidDates = !!(
