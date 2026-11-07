@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatContractMoney,
   getApplicationRoute,
   getWagonGroupStats,
   getApplicationWagonGroupStats,
@@ -22,6 +23,12 @@ const baseContract = {
 };
 
 describe("contract operational metadata", () => {
+  it("displays whole tenge across contract views and preserves other currencies", () => {
+    expect(formatContractMoney(123.45, "KZT")).toBe("123 ₸");
+    expect(formatContractMoney(123.75, "KZT")).toBe("124 ₸");
+    expect(formatContractMoney("1 234,75", "₸")).toBe("1 235 ₸");
+    expect(formatContractMoney(123.45, "USD")).toBe("123,45 USD");
+  });
   it("sorts contract applications by their natural application number", () => {
     const applications = [
       { id: "b", name: "Приложение №2", created_at: "2026-06-20" },

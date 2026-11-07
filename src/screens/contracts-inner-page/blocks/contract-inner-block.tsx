@@ -4,6 +4,8 @@ import { useState, useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 import {
   AlertCircle,
+  LayoutDashboard,
+  Files,
   Banknote,
   BarChart3,
   CheckCircle2,
@@ -254,21 +256,6 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     [contractData, contractInvoices],
   );
 
-  const handleDownload = () => {
-    if (
-      !(contractData as any)?.files ||
-      (contractData as any).files.length === 0
-    ) {
-      alert("Файл не найден!");
-      return;
-    }
-
-    handleFileDownload(
-      (contractData as any).files[0],
-      `contract-${(contractData as any).number || (contractData as any).id}.pdf`,
-    );
-  };
-
   const handleFileDownload = (fileRef: any, fileName: string) => {
     const fileUrl = resolveBackendFileUrl(fileRef);
 
@@ -396,334 +383,428 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
         <ContractHeader
           contractData={contractData}
           getCompanyName={getCompanyName}
-          handleDownload={handleDownload}
+          isAdmin={isAdmin}
+          status={contractOps.statusConfig}
         />
-        <Card className="sungrain-analytics-card overflow-hidden">
-          <CardHeader className="border-b border-[#e5ece4] bg-[linear-gradient(180deg,#fbfcfa_0%,#ffffff_100%)] px-4 py-4 sm:px-5 lg:px-6">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-              <div className="min-w-0">
-                <div className="mb-2 inline-flex items-center gap-2 rounded-md border border-[#dce8dc] bg-[#f5faf5] px-3 py-1 text-[11px] font-bold uppercase text-[#2f6b4f]">
-                  <Route className="h-3.5 w-3.5" />
-                  Операционный центр
-                </div>
-                <CardTitle className="text-2xl font-black tracking-tight text-[#223137]">
-                  Контроль сделки
-                </CardTitle>
-                <CardDescription className="mt-2 max-w-2xl text-sm text-[#6f7774]">
-                  Быстрый срез по маршруту, отгрузке, документам и финансам.
-                </CardDescription>
+        {!isApplicationDetailOpen && (
+          <section
+            aria-label="Показатели договора"
+            className="grid grid-cols-2 overflow-hidden rounded-xl border border-[#dfe7de] bg-white lg:grid-cols-4"
+          >
+            <div className="border-b border-r border-[#e5ece4] p-4 lg:border-b-0 sm:px-5">
+              <div className="flex items-center gap-2 text-xs font-medium text-[#6f7774]">
+                <Package className="size-4 text-[#2f6b4f]" />
+                Объем договора
               </div>
-              <div className="xl:min-w-[260px]">
-                <div className="rounded-md border border-[#dfe7de] bg-white px-4 py-3">
-                  <div className="text-[11px] font-black uppercase text-[#7b857f]">
-                    Статус
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className={`mt-2 ${contractOps.statusConfig.badgeClassName}`}
-                  >
-                    {contractOps.statusConfig.label}
-                  </Badge>
-                  <div className="mt-2 text-xs font-semibold text-[#7b857f]">
-                    {contractOps.statusConfig.tone}
-                  </div>
-                </div>
+              <div className="mt-2 text-2xl font-bold tabular-nums text-[#223137]">
+                {formatNumber(contractOps.totalVolume)}{" "}
+                <span className="text-sm font-medium text-[#7b857f]">т</span>
+              </div>
+              <div className="mt-1 text-xs text-[#7b857f]">
+                {contractOps.applicationsCount} заявок
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="px-4 py-4 sm:px-5 lg:px-6">
-            <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-              <div className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_12px_28px_rgba(34,49,55,0.045)]">
-                {hasMultipleRoutes ? (
-                  <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-4">
-                    <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
-                        <Route className="h-4 w-4 text-[#f38810]" />
-                        Маршруты по приложениям
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className="w-fit border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]"
-                      >
-                        {contractOps.route.label}
-                      </Badge>
-                    </div>
-
-                    <div className="grid gap-2 md:grid-cols-2">
-                      {contractOps.routes.map((route, index) => (
-                        <div
-                          key={`${route.label}-${index}`}
-                          className="rounded-md border border-[#dfe7de] bg-white p-3"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-[10px] font-black uppercase text-[#7b857f]">
-                              Маршрут {index + 1}
-                            </span>
-                            <span className="rounded-sm bg-[#f5faf5] px-2 py-1 text-[10px] font-black uppercase text-[#2f6b4f]">
-                              {formatRouteApplicationsCount(
-                                route.applicationsCount,
-                              )}
-                            </span>
-                          </div>
-                          <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[#7b857f]">
-                                <TrainFront className="h-3.5 w-3.5 text-[#2f6b4f]" />
-                                Отправление
-                              </div>
-                              <div className="mt-1 truncate text-sm font-black text-[#223137]">
-                                {route.departure}
-                              </div>
-                            </div>
-                            <div className="hidden size-8 items-center justify-center rounded-full border border-[#f2dfca] bg-[#fff3e5] text-[#f38810] sm:flex">
-                              <Route className="h-4 w-4" />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[#7b857f]">
-                                <MapPin className="h-3.5 w-3.5 text-[#f38810]" />
-                                Назначение
-                              </div>
-                              <div className="mt-1 truncate text-sm font-black text-[#223137]">
-                                {route.destination}
-                              </div>
-                            </div>
-                          </div>
-                          {route.applications?.length ? (
-                            <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[#edf1eb] pt-3">
-                              {route.applications.map((application) => (
-                                <span
-                                  key={application.id}
-                                  className="rounded-md border border-[#e3eae1] bg-[#fbfcfa] px-2 py-1 text-[10px] font-bold text-[#53605a]"
-                                >
-                                  {application.label} ·{" "}
-                                  {application.wagonsCount} ваг.
-                                </span>
-                              ))}
-                            </div>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid gap-3 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
-                    <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-4">
-                      <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
-                        <TrainFront className="h-4 w-4 text-[#2f6b4f]" />
-                        Отправление
-                      </div>
-                      <div className="truncate text-lg font-black text-[#223137]">
-                        {contractOps.route.departure}
-                      </div>
-                    </div>
-                    <div className="hidden size-11 items-center justify-center rounded-full border border-[#f2dfca] bg-[#fff3e5] text-[#f38810] lg:flex">
-                      <Route className="h-5 w-5" />
-                    </div>
-                    <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-4">
-                      <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
-                        <MapPin className="h-4 w-4 text-[#f38810]" />
-                        Назначение
-                      </div>
-                      <div className="truncate text-lg font-black text-[#223137]">
-                        {contractOps.route.destination}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-4">
-                  <div className="mb-2 flex items-center justify-between text-xs">
-                    <span className="font-black uppercase text-[#7b857f]">
-                      Прогресс отгрузки
-                    </span>
-                    <span className="font-black text-[#223137]">
-                      {contractOps.progress}%
-                    </span>
-                  </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-[#edf1eb]">
-                    <div
-                      className={`h-full rounded-full ${contractOps.statusConfig.progressClassName}`}
-                      style={{ width: `${contractOps.progress}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold text-[#7b857f]">
-                    <span>
-                      {formatNumber(contractOps.shippedVolume)} /{" "}
-                      {formatNumber(contractOps.totalVolume)} т по документам
-                    </span>
-                    <span>
-                      факт {formatNumber(contractOps.actualShippedVolume)} т
-                    </span>
-                    <span>
-                      остаток {formatNumber(contractOps.remainingVolume)} т
-                    </span>
-                    <span>{contractOps.route.eta}</span>
-                  </div>
-                </div>
+            <div className="border-b border-[#e5ece4] p-4 lg:border-b-0 lg:border-r sm:px-5">
+              <div className="flex items-center gap-2 text-xs font-medium text-[#6f7774]">
+                <TrainFront className="size-4 text-[#2f6b4f]" />
+                Отгружено по документам
               </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] p-4">
-                  <div className="flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
-                    <FileText className="h-4 w-4 text-[#f38810]" />
-                    Заявки
-                  </div>
-                  <div className="mt-2 text-3xl font-black text-[#223137]">
-                    {contractOps.applicationsCount}
-                  </div>
-                  <div className="mt-1 text-xs text-[#7b857f]">
-                    {contractOps.wagonsCount} вагонов
-                    {contractOps.receivedWagonsCount > 0
-                      ? ` · ${contractOps.receivedWagonsCount} у клиента`
-                      : ""}
-                  </div>
-                </div>
-                <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] p-4">
-                  <div className="flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
-                    <FileDown className="h-4 w-4 text-[#2f6b4f]" />
-                    Документы
-                  </div>
-                  <div className="mt-2 text-3xl font-black text-[#223137]">
-                    {contractOps.documentsCount}
-                  </div>
-                  <div className="mt-1 text-xs text-[#7b857f]">
-                    договор, маршруты, заявки
-                  </div>
-                </div>
-                <div className="rounded-md border border-[#dce8dc] bg-[#f5faf5] p-4">
-                  <div className="flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
-                    <CheckCircle2 className="h-4 w-4 text-[#2f6b4f]" />
-                    Оплачено
-                  </div>
-                  <div className="mt-2 text-2xl font-black text-[#2f6b4f]">
-                    {contractOps.paymentProgress}%
-                  </div>
-                  <div className="mt-1 text-xs text-[#7b857f]">
-                    {paidInvoiceCaption}
-                  </div>
-                </div>
-                <div className="rounded-md border border-[#f2dfca] bg-[#fffdf9] p-4">
-                  <div className="flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
-                    <Banknote className="h-4 w-4 text-[#f38810]" />
-                    Остаток
-                  </div>
-                  <div className="mt-2 text-2xl font-black text-[#d5740b]">
-                    {formatContractMoney(
-                      contractOps.balance,
-                      (contractData as any)?.currency || "USD",
-                    )}
-                  </div>
-                  <div className="mt-1 text-xs text-[#7b857f]">
-                    {balanceInvoiceCaption}
-                  </div>
-                </div>
+              <div className="mt-2 text-2xl font-bold tabular-nums text-[#223137]">
+                {formatNumber(contractOps.documentedShippedVolume)}{" "}
+                <span className="text-sm font-medium text-[#7b857f]">т</span>
+              </div>
+              <div className="mt-1 text-xs text-[#7b857f]">
+                Осталось {formatNumber(contractOps.remainingVolume)} т
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="sungrain-analytics-card overflow-hidden">
-          <CardHeader className="border-b border-[#e5ece4] bg-[#fbfcfa] px-4 py-4 sm:px-5 lg:px-6">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex items-start gap-3">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
-                  <Package className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <CardTitle className="text-xl font-black text-[#223137]">
-                    Использование объема
-                  </CardTitle>
-                  <CardDescription className="mt-1 text-sm text-[#6f7774]">
-                    План, вес по документам, фактический вес и остаток
-                  </CardDescription>
-                </div>
+            <div className="border-r border-[#e5ece4] p-4 sm:px-5">
+              <div className="flex items-center gap-2 text-xs font-medium text-[#6f7774]">
+                <Route className="size-4 text-[#2f6b4f]" />
+                Вагоны
               </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:min-w-[780px]">
-                <div className="rounded-md border border-[#dfe7de] bg-white px-4 py-3">
-                  <div className="text-[11px] font-black uppercase text-[#7b857f]">
-                    Всего
-                  </div>
-                  <div className="mt-1 text-lg font-black text-[#223137]">
-                    {formatNumber(volumeStats.totalVolume)} т
-                  </div>
-                </div>
-                <div className="rounded-md border border-[#dfe7de] bg-white px-4 py-3">
-                  <div className="text-[11px] font-black uppercase text-[#7b857f]">
-                    По документам
-                  </div>
-                  <div className="mt-1 text-lg font-black text-[#2f6b4f]">
-                    {formatNumber(volumeStats.documentedShippedVolume)} т
-                  </div>
-                </div>
-                <div className="rounded-md border border-[#dfe7de] bg-white px-4 py-3">
-                  <div className="text-[11px] font-black uppercase text-[#7b857f]">
-                    Фактически
-                  </div>
-                  <div className="mt-1 text-lg font-black text-[#223137]">
-                    {formatNumber(volumeStats.actualShippedVolume)} т
-                  </div>
-                </div>
-                <div className="rounded-md border border-[#f2dfca] bg-white px-4 py-3">
-                  <div className="text-[11px] font-black uppercase text-[#7b857f]">
-                    Остаток
-                  </div>
-                  <div className="mt-1 text-lg font-black text-[#d5740b]">
-                    {formatNumber(volumeStats.remainingVolume)} т
-                  </div>
-                </div>
+              <div className="mt-2 text-2xl font-bold tabular-nums text-[#223137]">
+                {contractOps.wagonsCount}
+              </div>
+              <div className="mt-1 text-xs text-[#7b857f]">
+                {contractOps.receivedWagonsCount} у клиента
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="px-4 py-4 sm:px-5 lg:px-6">
-            <div className="space-y-3">
-              <div className="flex flex-col gap-2 text-sm font-semibold text-[#53605a] sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-[#2f6b4f]" />
-                  <span>
-                    {volumeStats.percentUsed.toFixed(1)}% использовано по
-                    документам
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-[#f38810]" />
-                  <span>
-                    {(contractData as any)?.applications?.length || 0} заявок
-                  </span>
-                </div>
+            <div className="bg-[#fffaf3] p-4 sm:px-5">
+              <div className="flex items-center gap-2 text-xs font-medium text-[#8b7154]">
+                <Banknote className="size-4 text-[#da7a18]" />К оплате по счетам
               </div>
-              <Progress
-                value={volumeStats.percentUsed}
-                className="h-3 bg-[#f7eadc] [&>div]:bg-[#f38810]"
-              />
+              <div className="mt-2 break-words text-xl font-bold tabular-nums text-[#b66415]">
+                {isContractFinanceLoading
+                  ? "…"
+                  : formatContractMoney(contractOps.balance, contractCurrency)}
+              </div>
+              <div className="mt-1 text-xs text-[#8b7154]">
+                {isContractFinanceLoading
+                  ? "Загружаем счета"
+                  : `${contractOps.paymentProgress}% оплачено`}
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </section>
+        )}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {!isApplicationDetailOpen && (
-            <TabsList className="grid h-auto w-full grid-cols-2 rounded-md border border-[#dfe7de] bg-white p-1 shadow-[0_12px_28px_rgba(34,49,55,0.05)] sm:grid-cols-4">
+            <TabsList
+              aria-label="Разделы договора"
+              className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-xl border border-[#dfe7de] bg-white p-1.5 shadow-none"
+            >
+              <TabsTrigger
+                value="overview"
+                className="min-h-11 flex-none gap-2 rounded-lg px-3 sm:px-5"
+              >
+                <LayoutDashboard className="size-4" />
+                Обзор
+              </TabsTrigger>
               <TabsTrigger
                 value="applications"
-                className="rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
+                aria-label="Заявки"
+                className="min-h-11 flex-none gap-2 rounded-lg px-3 text-sm sm:px-5"
               >
-                Заявки
+                <FileText className="size-4" />
+                Заявки{" "}
+                <span className="ml-1 opacity-65">
+                  {contractOps.applicationsCount}
+                </span>
               </TabsTrigger>
               <TabsTrigger
                 value="finance"
-                className="rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
+                className="min-h-11 flex-none gap-2 rounded-lg px-3 text-sm sm:px-5"
               >
+                <Banknote className="size-4" />
                 Финансы
               </TabsTrigger>
               <TabsTrigger
                 value="details"
-                className="rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
+                aria-label="Вагоны"
+                className="min-h-11 flex-none gap-2 rounded-lg px-3 text-sm sm:px-5"
               >
-                <span className="hidden sm:inline">Вагоны</span>
-                <span className="sm:hidden">Вагоны</span>
+                <TrainFront className="size-4" />
+                Вагоны{" "}
+                <span className="ml-1 opacity-65">
+                  {contractOps.wagonsCount}
+                </span>
               </TabsTrigger>
-              <TabsTrigger value="documents" className="gap-2 rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white">
-                Документы <span className="text-xs">{Array.isArray((contractData as any)?.files) ? (contractData as any).files.length : 0}</span>
+              <TabsTrigger
+                value="documents"
+                className="min-h-11 flex-none gap-2 rounded-lg px-3 text-sm sm:px-5"
+              >
+                <Files className="size-4" />
+                Документы{" "}
+                <span className="text-xs">
+                  {Array.isArray((contractData as any)?.files)
+                    ? (contractData as any).files.length
+                    : 0}
+                </span>
               </TabsTrigger>
             </TabsList>
           )}
+          <TabsContent value="overview" className="mt-3 space-y-4">
+            <Card className="sungrain-analytics-card overflow-hidden">
+              <CardHeader className="border-b border-[#e5ece4] bg-[linear-gradient(180deg,#fbfcfa_0%,#ffffff_100%)] px-4 py-4 sm:px-5 lg:px-6">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="min-w-0">
+                    <div className="mb-2 inline-flex items-center gap-2 rounded-md border border-[#dce8dc] bg-[#f5faf5] px-3 py-1 text-[11px] font-bold uppercase text-[#2f6b4f]">
+                      <Route className="h-3.5 w-3.5" />
+                      Операционный центр
+                    </div>
+                    <CardTitle className="text-2xl font-black tracking-tight text-[#223137]">
+                      Контроль сделки
+                    </CardTitle>
+                    <CardDescription className="mt-2 max-w-2xl text-sm text-[#6f7774]">
+                      Быстрый срез по маршруту, отгрузке, документам и финансам.
+                    </CardDescription>
+                  </div>
+                  <div className="xl:min-w-[260px]">
+                    <div className="rounded-md border border-[#dfe7de] bg-white px-4 py-3">
+                      <div className="text-[11px] font-black uppercase text-[#7b857f]">
+                        Статус
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={`mt-2 ${contractOps.statusConfig.badgeClassName}`}
+                      >
+                        {contractOps.statusConfig.label}
+                      </Badge>
+                      <div className="mt-2 text-xs font-semibold text-[#7b857f]">
+                        {contractOps.statusConfig.tone}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 py-4 sm:px-5 lg:px-6">
+                <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+                  <div className="rounded-md border border-[#dfe7de] bg-white p-4 shadow-[0_12px_28px_rgba(34,49,55,0.045)]">
+                    {hasMultipleRoutes ? (
+                      <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-4">
+                        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
+                            <Route className="h-4 w-4 text-[#f38810]" />
+                            Маршруты по приложениям
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className="w-fit border-[#f2dfca] bg-[#fff3e5] text-[#d5740b]"
+                          >
+                            {contractOps.route.label}
+                          </Badge>
+                        </div>
+
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {contractOps.routes.map((route, index) => (
+                            <div
+                              key={`${route.label}-${index}`}
+                              className="rounded-md border border-[#dfe7de] bg-white p-3"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[10px] font-black uppercase text-[#7b857f]">
+                                  Маршрут {index + 1}
+                                </span>
+                                <span className="rounded-sm bg-[#f5faf5] px-2 py-1 text-[10px] font-black uppercase text-[#2f6b4f]">
+                                  {formatRouteApplicationsCount(
+                                    route.applicationsCount,
+                                  )}
+                                </span>
+                              </div>
+                              <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[#7b857f]">
+                                    <TrainFront className="h-3.5 w-3.5 text-[#2f6b4f]" />
+                                    Отправление
+                                  </div>
+                                  <div className="mt-1 truncate text-sm font-black text-[#223137]">
+                                    {route.departure}
+                                  </div>
+                                </div>
+                                <div className="hidden size-8 items-center justify-center rounded-full border border-[#f2dfca] bg-[#fff3e5] text-[#f38810] sm:flex">
+                                  <Route className="h-4 w-4" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[#7b857f]">
+                                    <MapPin className="h-3.5 w-3.5 text-[#f38810]" />
+                                    Назначение
+                                  </div>
+                                  <div className="mt-1 truncate text-sm font-black text-[#223137]">
+                                    {route.destination}
+                                  </div>
+                                </div>
+                              </div>
+                              {route.applications?.length ? (
+                                <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[#edf1eb] pt-3">
+                                  {route.applications.map((application) => (
+                                    <span
+                                      key={application.id}
+                                      className="rounded-md border border-[#e3eae1] bg-[#fbfcfa] px-2 py-1 text-[10px] font-bold text-[#53605a]"
+                                    >
+                                      {application.label} ·{" "}
+                                      {application.wagonsCount} ваг.
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid gap-3 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
+                        <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-4">
+                          <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
+                            <TrainFront className="h-4 w-4 text-[#2f6b4f]" />
+                            Отправление
+                          </div>
+                          <div className="truncate text-lg font-black text-[#223137]">
+                            {contractOps.route.departure}
+                          </div>
+                        </div>
+                        <div className="hidden size-11 items-center justify-center rounded-full border border-[#f2dfca] bg-[#fff3e5] text-[#f38810] lg:flex">
+                          <Route className="h-5 w-5" />
+                        </div>
+                        <div className="rounded-md border border-[#edf1eb] bg-[#fbfcfa] p-4">
+                          <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
+                            <MapPin className="h-4 w-4 text-[#f38810]" />
+                            Назначение
+                          </div>
+                          <div className="truncate text-lg font-black text-[#223137]">
+                            {contractOps.route.destination}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-4">
+                      <div className="mb-2 flex items-center justify-between text-xs">
+                        <span className="font-black uppercase text-[#7b857f]">
+                          Прогресс отгрузки
+                        </span>
+                        <span className="font-black text-[#223137]">
+                          {contractOps.progress}%
+                        </span>
+                      </div>
+                      <div className="h-3 overflow-hidden rounded-full bg-[#edf1eb]">
+                        <div
+                          className={`h-full rounded-full ${contractOps.statusConfig.progressClassName}`}
+                          style={{ width: `${contractOps.progress}%` }}
+                        />
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold text-[#7b857f]">
+                        <span>
+                          {formatNumber(contractOps.shippedVolume)} /{" "}
+                          {formatNumber(contractOps.totalVolume)} т по
+                          документам
+                        </span>
+                        <span>
+                          факт {formatNumber(contractOps.actualShippedVolume)} т
+                        </span>
+                        <span>
+                          остаток {formatNumber(contractOps.remainingVolume)} т
+                        </span>
+                        <span>{contractOps.route.eta}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] p-4">
+                      <div className="flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
+                        <FileText className="h-4 w-4 text-[#f38810]" />
+                        Заявки
+                      </div>
+                      <div className="mt-2 text-3xl font-black text-[#223137]">
+                        {contractOps.applicationsCount}
+                      </div>
+                      <div className="mt-1 text-xs text-[#7b857f]">
+                        {contractOps.wagonsCount} вагонов
+                        {contractOps.receivedWagonsCount > 0
+                          ? ` · ${contractOps.receivedWagonsCount} у клиента`
+                          : ""}
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-[#dfe7de] bg-[#fbfcfa] p-4">
+                      <div className="flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
+                        <FileDown className="h-4 w-4 text-[#2f6b4f]" />
+                        Документы
+                      </div>
+                      <div className="mt-2 text-3xl font-black text-[#223137]">
+                        {contractOps.documentsCount}
+                      </div>
+                      <div className="mt-1 text-xs text-[#7b857f]">
+                        договор, маршруты, заявки
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-[#dce8dc] bg-[#f5faf5] p-4">
+                      <div className="flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
+                        <CheckCircle2 className="h-4 w-4 text-[#2f6b4f]" />
+                        Оплачено
+                      </div>
+                      <div className="mt-2 text-2xl font-black text-[#2f6b4f]">
+                        {contractOps.paymentProgress}%
+                      </div>
+                      <div className="mt-1 text-xs text-[#7b857f]">
+                        {paidInvoiceCaption}
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-[#f2dfca] bg-[#fffdf9] p-4">
+                      <div className="flex items-center gap-2 text-xs font-black uppercase text-[#7b857f]">
+                        <Banknote className="h-4 w-4 text-[#f38810]" />
+                        Остаток
+                      </div>
+                      <div className="mt-2 text-2xl font-black text-[#d5740b]">
+                        {formatContractMoney(
+                          contractOps.balance,
+                          (contractData as any)?.currency || "USD",
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs text-[#7b857f]">
+                        {balanceInvoiceCaption}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="sungrain-analytics-card overflow-hidden">
+              <CardHeader className="border-b border-[#e5ece4] bg-[#fbfcfa] px-4 py-4 sm:px-5 lg:px-6">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-[#fff3e5] text-[#f38810]">
+                      <Package className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <CardTitle className="text-xl font-black text-[#223137]">
+                        Использование объема
+                      </CardTitle>
+                      <CardDescription className="mt-1 text-sm text-[#6f7774]">
+                        План, вес по документам, фактический вес и остаток
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:min-w-[780px]">
+                    <div className="rounded-md border border-[#dfe7de] bg-white px-4 py-3">
+                      <div className="text-[11px] font-black uppercase text-[#7b857f]">
+                        Всего
+                      </div>
+                      <div className="mt-1 text-lg font-black text-[#223137]">
+                        {formatNumber(volumeStats.totalVolume)} т
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-[#dfe7de] bg-white px-4 py-3">
+                      <div className="text-[11px] font-black uppercase text-[#7b857f]">
+                        По документам
+                      </div>
+                      <div className="mt-1 text-lg font-black text-[#2f6b4f]">
+                        {formatNumber(volumeStats.documentedShippedVolume)} т
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-[#dfe7de] bg-white px-4 py-3">
+                      <div className="text-[11px] font-black uppercase text-[#7b857f]">
+                        Фактически
+                      </div>
+                      <div className="mt-1 text-lg font-black text-[#223137]">
+                        {formatNumber(volumeStats.actualShippedVolume)} т
+                      </div>
+                    </div>
+                    <div className="rounded-md border border-[#f2dfca] bg-white px-4 py-3">
+                      <div className="text-[11px] font-black uppercase text-[#7b857f]">
+                        Остаток
+                      </div>
+                      <div className="mt-1 text-lg font-black text-[#d5740b]">
+                        {formatNumber(volumeStats.remainingVolume)} т
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 py-4 sm:px-5 lg:px-6">
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-2 text-sm font-semibold text-[#53605a] sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-[#2f6b4f]" />
+                      <span>
+                        {volumeStats.percentUsed.toFixed(1)}% использовано по
+                        документам
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-[#f38810]" />
+                      <span>
+                        {(contractData as any)?.applications?.length || 0}{" "}
+                        заявок
+                      </span>
+                    </div>
+                  </div>
+                  <Progress
+                    value={volumeStats.percentUsed}
+                    className="h-3 bg-[#f7eadc] [&>div]:bg-[#f38810]"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
           <TabsContent
             value="applications"
             className={isApplicationDetailOpen ? "mt-0" : "mt-4"}
@@ -742,7 +823,11 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
             )}
           </TabsContent>
           <TabsContent value="documents" className="mt-4">
-            <ContractDocuments contractId={contractId} files={(contractData as any)?.files} isAdmin={isAdmin} />
+            <ContractDocuments
+              contractId={contractId}
+              files={(contractData as any)?.files}
+              isAdmin={isAdmin}
+            />
           </TabsContent>
           <TabsContent value="finance" className="mt-4">
             <div className="space-y-4">

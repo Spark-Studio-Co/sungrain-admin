@@ -1,16 +1,27 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Download, FileText, Loader2, Trash2, Upload, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Download,
+  FileText,
+  Loader2,
+  Trash2,
+  Upload,
+  X,
+  FolderOpen,
+  Files,
+  FileCheck2,
+  TrainFront,
+  Award,
+  Search,
+  LayoutGrid,
+  List,
+  Plus,
+  CloudUpload,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import {
   deleteContractDocument,
@@ -51,15 +63,71 @@ export function ContractDocuments({
   files: unknown;
   isAdmin: boolean;
 }) {
-  const documents: ContractDocument[] = Array.isArray(files)
-    ? files
-        .filter(Boolean)
-        .map((file) =>
-          typeof file === "string"
-            ? { location: file, name: file.split(/[\\/]/).pop() || "Документ" }
-            : file,
-        )
-    : [];
+  const documents = useMemo<ContractDocument[]>(
+    () =>
+      Array.isArray(files)
+        ? files.filter(Boolean).map((file) =>
+            typeof file === "string"
+              ? {
+                  location: file,
+                  name: file.split(/[\\/]/).pop() || "Документ",
+                }
+              : file,
+          )
+        : [],
+    [files],
+  );
+  const [category, setCategory] = useState("all");
+  const [search, setSearch] = useState("");
+  const [view, setView] = useState<"grid" | "list">("grid");
+  const [dragging, setDragging] = useState(false);
+  const categories = [
+    { id: "all", label: "Все документы", icon: Files, types: null },
+    {
+      id: "contracts",
+      label: "Договоры",
+      icon: FileText,
+      types: ["contract", "legacy"],
+    },
+    {
+      id: "waybills",
+      label: "Накладные",
+      icon: TrainFront,
+      types: ["railway_waybill", "goods_waybill"],
+    },
+    { id: "acts", label: "Акты", icon: FileCheck2, types: ["act"] },
+    {
+      id: "certificates",
+      label: "Сертификаты",
+      icon: Award,
+      types: ["certificate"],
+    },
+    {
+      id: "other",
+      label: "Другие",
+      icon: FolderOpen,
+      types: ["invoice", "other"],
+    },
+  ];
+  const categoryFor = (document: ContractDocument) => {
+    const type = document.document_type || "legacy";
+    return categories.find((item) => item.types?.includes(type))?.id || "other";
+  };
+  const activeCategory = categories.find((item) => item.id === category)!;
+  const filtered = documents.filter(
+    (document) =>
+      (category === "all" || categoryFor(document) === category) &&
+      `${document.name || ""} ${contractDocumentTypeLabel(document.document_type)}`
+        .toLocaleLowerCase("ru-RU")
+        .includes(search.trim().toLocaleLowerCase("ru-RU")),
+  );
+  const extension = (document: ContractDocument) => {
+    for (const value of [document.name, document.location]) {
+      const match = value?.split(/[?#]/)[0].match(/\.([a-z0-9]{2,5})$/i);
+      if (match) return match[1].toUpperCase();
+    }
+    return "ФАЙЛ";
+  };
   const queryClient = useQueryClient();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -92,6 +160,8 @@ export function ContractDocuments({
     mutationFn: uploadContractDocuments,
     onSuccess: async () => {
       setOpen(false);
+      setCategory("all");
+      setSearch("");
       setDrafts([]);
       setError(null);
       toast.success("Документы добавлены");
@@ -116,6 +186,7 @@ export function ContractDocuments({
   const closeUpload = (value: boolean) => {
     if (upload.isPending) return;
     setOpen(value);
+    setDragging(false);
     if (!value) {
       setDrafts([]);
       setError(null);
@@ -134,95 +205,307 @@ export function ContractDocuments({
     upload.mutate({ contractId, documents: drafts });
   };
 
+  const addFiles = (selected: File[]) => {
+    if (!selected.length || upload.isPending) return;
+    const validation = validateContractDocumentFiles([
+      ...drafts.map(({ file }) => file),
+      ...selected,
+    ]);
+    if (validation) {
+      setError(validation);
+      return;
+    }
+    setError(null);
+    const type: ContractDocumentType =
+      category === "contracts"
+        ? "contract"
+        : category === "waybills"
+          ? "railway_waybill"
+          : category === "acts"
+            ? "act"
+            : category === "certificates"
+              ? "certificate"
+              : "other";
+    setDrafts((current) => [
+      ...current,
+      ...selected.map((file) => ({
+        file,
+        name: file.name,
+        type,
+        id: nextId.current++,
+      })),
+    ]);
+  };
+
   return (
-    <Card className="sungrain-analytics-card overflow-hidden">
-      <CardHeader className="border-b border-[#e5ece4] bg-[#fbfcfa] px-4 py-4 sm:px-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-xl font-black">
-              <FileText className="size-5 text-[#2f6b4f]" />
-              Документы договора
-            </CardTitle>
-            <CardDescription className="mt-1">
-              Накладные, акты, сертификаты и сопутствующие документы
-            </CardDescription>
+    <Card className="overflow-hidden rounded-xl border border-[#dfe7de] py-0 shadow-none">
+      <div className="flex flex-col gap-4 border-b border-[#e5ece4] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#edf5ee] text-[#2f6b4f]">
+            <FolderOpen className="size-6" />
           </div>
-          {isAdmin && (
-            <Button
-              className="gap-2"
-              disabled={busy}
-              onClick={() => closeUpload(true)}
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold text-[#223137]">
+              Документы договора
+            </h2>
+            <p className="mt-0.5 text-xs text-[#7b857f]">
+              Накладные, акты и файлы по сделке{" "}
+              <span className="mx-1 text-[#c5cec5]">·</span>
+              {documents.length} файлов
+            </p>
+          </div>
+        </div>
+        {isAdmin && (
+          <Button
+            className="gap-2 rounded-lg"
+            disabled={busy}
+            onClick={() => closeUpload(true)}
+          >
+            <Plus className="size-4" />
+            Добавить документы
+          </Button>
+        )}
+      </div>
+      <CardContent className="grid gap-5 px-4 pb-5 pt-0 sm:px-6 lg:grid-cols-[190px_minmax(0,1fr)]">
+        <nav
+          aria-label="Типы документов"
+          className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible"
+        >
+          <div className="mb-2 hidden px-3 text-[10px] font-semibold uppercase tracking-wider text-[#94a094] lg:block">
+            Документы по типу
+          </div>
+          {categories.map((item) => {
+            const Icon = item.icon;
+            const count =
+              item.id === "all"
+                ? documents.length
+                : documents.filter(
+                    (document) => categoryFor(document) === item.id,
+                  ).length;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={category === item.id}
+                onClick={() => setCategory(item.id)}
+                className={cn(
+                  "flex shrink-0 items-center gap-2.5 rounded-lg border border-transparent px-3 py-2.5 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2f6b4f] lg:w-full",
+                  category === item.id
+                    ? "border-[#dbe9dc] bg-[#edf5ee] font-semibold text-[#245b40]"
+                    : "text-[#6f7774] hover:bg-[#f6f8f5]",
+                )}
+              >
+                <Icon className="size-4 shrink-0" />
+                <span>{item.label}</span>
+                <span
+                  className={cn(
+                    "ml-auto rounded px-1.5 py-0.5 text-[11px] tabular-nums",
+                    category === item.id
+                      ? "bg-white/80 text-[#245b40]"
+                      : "bg-[#f1f4ef] text-[#7b857f]",
+                  )}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+        <div className="min-w-0">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-[#223137]">
+                {activeCategory.label}
+              </h3>
+              <span className="text-xs tabular-nums text-[#8a948a]">
+                {filtered.length}
+              </span>
+            </div>
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <div className="relative min-w-0 flex-1 sm:w-56">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[#8a948a]" />
+                <Input
+                  aria-label="Поиск документов"
+                  placeholder="Найти документ"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  className="h-9 rounded-lg pl-9 text-xs"
+                />
+              </div>
+              <div className="flex rounded-lg border border-[#dfe7de] bg-[#f8faf6] p-0.5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "size-8 rounded-md",
+                    view === "grid" && "bg-white text-[#2f6b4f] shadow-sm",
+                  )}
+                  aria-label="Показать карточками"
+                  aria-pressed={view === "grid"}
+                  onClick={() => setView("grid")}
+                >
+                  <LayoutGrid className="size-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "size-8 rounded-md",
+                    view === "list" && "bg-white text-[#2f6b4f] shadow-sm",
+                  )}
+                  aria-label="Показать списком"
+                  aria-pressed={view === "list"}
+                  onClick={() => setView("list")}
+                >
+                  <List className="size-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          {filtered.length ? (
+            <ul
+              aria-label="Файлы договора"
+              className={cn(
+                "grid gap-3",
+                view === "grid" && "md:grid-cols-2 2xl:grid-cols-3",
+              )}
             >
-              <Upload className="size-4" />
-              Добавить документы
-            </Button>
+              {filtered.map((document, index) => {
+                const url = resolveBackendFileUrl(document);
+                const name = document.name || `Документ ${index + 1}`;
+                const ext = extension(document);
+                const fileTone =
+                  ext === "PDF"
+                    ? "border-[#f2dcd5] bg-[#fff2ed] text-[#ba654c]"
+                    : ["XLSX", "XLS", "CSV"].includes(ext)
+                      ? "border-[#d7e6da] bg-[#edf5ef] text-[#427451]"
+                      : "border-[#e0e5ee] bg-[#f0f3f9] text-[#697da1]";
+                return (
+                  <li
+                    key={document.location || index}
+                    className={cn(
+                      "group min-w-0 rounded-xl border border-[#e2e9df] bg-white p-4 transition-colors hover:border-[#afc7b1] hover:bg-[#fcfdfb]",
+                      view === "list" && "flex items-center gap-4",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "flex items-start gap-3",
+                        view === "list" && "min-w-0 flex-1",
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "flex h-14 w-11 shrink-0 flex-col items-center justify-center gap-1 rounded-lg border",
+                          fileTone,
+                        )}
+                      >
+                        <FileText className="size-5" />
+                        <span className="text-[9px] font-bold tracking-wide">
+                          {ext}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] font-medium text-[#7b857f]">
+                          {contractDocumentTypeLabel(document.document_type)}
+                        </span>
+                        <div
+                          className="mt-1 line-clamp-2 break-words text-sm font-bold leading-5 text-[#223137]"
+                          title={name}
+                        >
+                          {name}
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      className={cn(
+                        "flex items-center justify-between gap-2",
+                        view === "grid" &&
+                          "mt-5 border-t border-[#edf1ea] pt-3",
+                      )}
+                    >
+                      {url ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 gap-1.5 rounded-md px-2 text-xs font-semibold text-[#2f6b4f] hover:bg-[#edf5ee]"
+                          asChild
+                        >
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Скачать ${name}`}
+                          >
+                            <Download className="size-3.5" />
+                            <span
+                              className={
+                                view === "list" ? "hidden sm:inline" : ""
+                              }
+                            >
+                              Скачать
+                            </span>
+                          </a>
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-[#9a7b6a]">
+                          Файл недоступен
+                        </span>
+                      )}
+                      {isAdmin && document.location && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-[#a2aaa0] hover:bg-[#fff0ee] hover:text-[#c25648]"
+                          disabled={busy}
+                          aria-label={`Удалить ${name}`}
+                          onClick={() => setToDelete(document)}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-[#d6e2d3] bg-[#f8fbf6] px-5 py-8 text-center">
+              <div className="mb-4 grid size-16 place-items-center rounded-2xl border border-[#dfebdc] bg-white text-[#7e9d80]">
+                <FolderOpen className="size-8" strokeWidth={1.5} />
+              </div>
+              <h3 className="text-sm font-bold text-[#314735]">
+                {search
+                  ? "Документы не найдены"
+                  : documents.length
+                    ? "В этом разделе пока нет файлов"
+                    : "Соберите документы по сделке"}
+              </h3>
+              <p className="mt-2 max-w-xs text-xs leading-5 text-[#7b857f]">
+                {search
+                  ? "Попробуйте другое название или выберите все документы."
+                  : "Договор, накладные и сертификаты будут под рукой в одном месте."}
+              </p>
+              {isAdmin && !search && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-4 gap-2 bg-white text-[#2f6b4f]"
+                  disabled={busy}
+                  onClick={() => closeUpload(true)}
+                >
+                  <Upload className="size-3.5" />
+                  Добавить первый файл
+                </Button>
+              )}
+            </div>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="p-4 sm:p-6">
-        {documents.length === 0 ? (
-          <div className="rounded-md border border-dashed border-[#dfe7de] bg-[#fbfcfa] px-4 py-10 text-center text-sm text-[#6f7774]">
-            Документы пока не добавлены
-          </div>
-        ) : (
-          <ul className="divide-y divide-[#e5ece4] rounded-md border border-[#dfe7de]">
-            {documents.map((document, index) => {
-              const url = resolveBackendFileUrl(document);
-              const name = document.name || `Документ ${index + 1}`;
-              return (
-                <li
-                  key={document.location || index}
-                  className="flex items-start gap-3 p-4"
-                >
-                  <FileText className="mt-1 size-5 shrink-0 text-[#2f6b4f]" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-semibold text-[#6f7774]">
-                      {contractDocumentTypeLabel(document.document_type)}
-                    </div>
-                    <div className="mt-1 break-words text-sm font-bold text-[#223137]">
-                      {name}
-                    </div>
-                    {!url && (
-                      <div className="mt-1 text-xs text-[#6f7774]">
-                        Файл недоступен
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 gap-1">
-                    {url && (
-                      <Button variant="outline" size="icon" asChild>
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label={`Скачать ${name}`}
-                        >
-                          <Download className="size-4" />
-                        </a>
-                      </Button>
-                    )}
-                    {isAdmin && document.location && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        disabled={busy}
-                        aria-label={`Удалить ${name}`}
-                        onClick={() => setToDelete(document)}
-                      >
-                        <Trash2 className="size-4 text-destructive" />
-                      </Button>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
       </CardContent>
 
       <Dialog open={open} onOpenChange={closeUpload}>
         <DialogContent
-          className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl"
+          className="max-h-[90dvh] overflow-y-auto rounded-xl sm:max-w-2xl"
           onInteractOutside={(event) => {
             if (upload.isPending) event.preventDefault();
           }}
@@ -235,45 +518,72 @@ export function ContractDocuments({
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={submit} className="min-w-0 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="contract-document-files">Файлы</Label>
-              <Input
+            <div
+              onDragOver={(event) => {
+                event.preventDefault();
+                if (!upload.isPending) setDragging(true);
+              }}
+              onDragLeave={(event) => {
+                if (
+                  !(event.relatedTarget instanceof Node) ||
+                  !event.currentTarget.contains(event.relatedTarget)
+                )
+                  setDragging(false);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                setDragging(false);
+                addFiles(Array.from(event.dataTransfer.files));
+              }}
+              className={cn(
+                "rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors",
+                dragging
+                  ? "border-[#f38810] bg-[#fff7ed]"
+                  : "border-[#dbe7d8] bg-[#f8fbf6]",
+              )}
+            >
+              <div className="mx-auto mb-3 grid size-11 place-items-center rounded-xl border border-[#e0eadb] bg-white text-[#4e7d53]">
+                <CloudUpload className="size-6" />
+              </div>
+              <p className="text-sm font-semibold text-[#314735]">
+                Перетащите файлы сюда
+              </p>
+              <p className="mt-1 text-xs text-[#7b857f]">
+                До 10 файлов по 50 МБ за одну загрузку
+              </p>
+              <Label htmlFor="contract-document-files" className="sr-only">
+                Файлы
+              </Label>
+              <input
                 ref={input}
                 id="contract-document-files"
                 type="file"
+                tabIndex={-1}
                 multiple
+                className="sr-only"
                 disabled={upload.isPending}
                 onChange={(event) => {
-                  const selected = Array.from(event.target.files || []);
-                  if (!selected.length) return;
-                  const combined = [
-                    ...drafts.map(({ file }) => file),
-                    ...selected,
-                  ];
-                  const validation = validateContractDocumentFiles(combined);
+                  addFiles(Array.from(event.target.files || []));
                   event.target.value = "";
-                  if (validation) {
-                    setError(validation);
-                    return;
-                  }
-                  setError(null);
-                  setDrafts((current) => [
-                    ...current,
-                    ...selected.map((file) => ({
-                      file,
-                      name: file.name,
-                      type: "other" as const,
-                      id: nextId.current++,
-                    })),
-                  ]);
                 }}
               />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-4 gap-2 bg-white text-[#2f6b4f]"
+                disabled={upload.isPending}
+                onClick={() => input.current?.click()}
+              >
+                <Plus className="size-3.5" />
+                Выбрать файлы
+              </Button>
             </div>
             <div className="space-y-3">
               {drafts.map((draft) => (
                 <div
                   key={draft.id}
-                  className="space-y-3 rounded-md border border-[#dfe7de] bg-[#fbfcfa] p-3"
+                  className="space-y-3 rounded-xl border border-[#dfe7de] bg-[#fbfcfa] p-4"
                 >
                   <div className="flex items-center gap-3">
                     <span className="min-w-0 flex-1 break-words text-xs text-[#6f7774]">

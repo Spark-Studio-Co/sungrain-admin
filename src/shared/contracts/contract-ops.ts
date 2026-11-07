@@ -5,7 +5,11 @@ import {
 } from "./wagon-status-data";
 
 export type ContractOperationStatus =
-  "active" | "risk" | "completed" | "delivered" | "draft";
+  | "active"
+  | "risk"
+  | "completed"
+  | "delivered"
+  | "draft";
 
 type ContractOpsOptions = {
   wagons?: any[];
@@ -305,9 +309,7 @@ const getFirstPositiveNumber = (...values: unknown[]) => {
 };
 
 export const isContractWagonShipped = (wagon: any) => {
-  return isWagonShipmentStartedStatus(
-    wagon?.status || wagon?.wagon?.status,
-  );
+  return isWagonShipmentStartedStatus(wagon?.status || wagon?.wagon?.status);
 };
 
 const isWagonIncludedInShippedVolume = (wagon: any) => {
@@ -849,7 +851,14 @@ export const formatContractDate = (date?: string) =>
 export const formatContractMoney = (
   value: number | string | null | undefined,
   currency = "USD",
-) => formatMoney(value, currency, "USD");
+) =>
+  formatMoney(
+    ["KZT", "₸"].includes(String(currency || "USD").trim().toUpperCase())
+      ? Math.round(toNumber(value))
+      : value,
+    currency,
+    "USD",
+  );
 
 export const getContractOpsMeta = (
   contract: any,
