@@ -2,6 +2,7 @@
 
 import { Fragment, useMemo, useState } from "react";
 import { formatNumber } from "@/lib/utils";
+import { formatReceiptOperationAt } from "@/shared/contracts/receipt-operation-date";
 import {
   Search,
   File,
@@ -115,8 +116,8 @@ const getWagonData = (wagon: any) => {
     wagonOwner,
     wagonStatus,
     isClientReceived,
-    receivedAt: isClientReceived
-      ? wagon.status_updated_at || wagon.wagon?.status_updated_at || null
+    receiptOperationAt: isClientReceived
+      ? wagon.receipt_operation_at ?? wagon.wagon?.receipt_operation_at ?? null
       : null,
     dislocation,
   };
@@ -473,7 +474,7 @@ export const WagonDetails = ({
                     wagonOwner,
                     wagonStatus,
                     isClientReceived,
-                    receivedAt,
+                    receiptOperationAt,
                     capacity,
                     realWeight,
                     dislocation,
@@ -644,10 +645,10 @@ export const WagonDetails = ({
                                   <div className="flex justify-between gap-3 border-b border-dashed border-slate-200 py-1">
                                     <span className="flex items-center gap-1 text-xs text-slate-500">
                                       <Calendar className="h-3 w-3 text-[#2f6b4f]" />
-                                      Дата получения
+                                      Дата операции · Алматы
                                     </span>
                                     <span className="text-right text-xs font-medium">
-                                      {formatDateTimeSafe(receivedAt)}
+                                      {formatReceiptOperationAt(receiptOperationAt) ?? "Не указана"}
                                     </span>
                                   </div>
                                 )}
@@ -812,7 +813,7 @@ export const WagonDetails = ({
                           wagonOwner,
                           wagonStatus,
                           isClientReceived,
-                          receivedAt,
+                          receiptOperationAt,
                           capacity,
                           realWeight,
                           dislocation,
@@ -986,10 +987,10 @@ export const WagonDetails = ({
                                               <div className="flex justify-between gap-4 border-b border-dashed border-slate-200 py-1.5">
                                                 <span className="flex items-center gap-2 text-sm text-slate-500">
                                                   <Calendar className="h-4 w-4 text-[#2f6b4f]" />
-                                                  Дата получения
+                                                  Дата операции · Алматы
                                                 </span>
                                                 <span className="text-right text-sm font-medium">
-                                                  {formatDateTimeSafe(receivedAt)}
+                                                  {formatReceiptOperationAt(receiptOperationAt) ?? "Не указана"}
                                                 </span>
                                               </div>
                                             )}

@@ -1,12 +1,27 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { createInvoice } from "./create-invoice.api";
+
+const { post } = vi.hoisted(() => ({ post: vi.fn() }));
+vi.mock("@/shared/api/apiClient", () => ({ apiClient: { post } }));
 
 describe("createInvoice api", () => {
-  const source = readFileSync(resolve(__dirname, "create-invoice.api.ts"), "utf8");
+  it.each([false, true])("submits the invoice with attachment: %s", async (attach) => {
+    const file = attach ? new File(["test invoice"], "invoice.pdf") : undefined;
+    post.mockResolvedValueOnce({ data: { id: 1 } });
 
-  it("uses the backend add-invoice route", () => {
-    expect(source).toContain("`/application/add-invoice/${applicationId}/invoice`");
-    expect(source).not.toContain("`/application/${applicationId}/invoice`");
+    await expect(createInvoice({
+      applicationId: 42,
+      name: "Тестовый счет",
+      amount: 12500,
+      date: "2026-11-05",
+      status: "pending",
+      file,
+    })).resolves.toEqual({ id: 1 });
+
+    const [url, body] = post.mock.lastCall!;
+    expect(url).toBe("/application/add-invoice/42/invoice");
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get("amount")).toBe("12500");
+    expect(body.get("files")).toBe(file ?? null);
   });
 });

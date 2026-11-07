@@ -107,13 +107,17 @@ export function validatePurchase(
 }
 
 export const formatMoney = (value: string | number, currency: string) => {
-  const [integer, fraction] = new Decimal(value).toFixed(2).split(".");
+  const fractionDigits = currency.toUpperCase() === "KZT" ? 0 : 2;
+  const [integer, fraction] = new Decimal(value)
+    .toFixed(fractionDigits)
+    .split(".");
   const grouped = new Intl.NumberFormat("ru-RU").format(BigInt(integer));
+  const amount = fraction === undefined ? grouped : `${grouped},${fraction}`;
   const symbol =
     new Intl.NumberFormat("ru-RU", { style: "currency", currency })
       .formatToParts(0)
       .find((part) => part.type === "currency")?.value || currency;
-  return `${grouped},${fraction}\u00a0${symbol}`;
+  return `${amount}\u00a0${symbol}`;
 };
 export const formatQuantity = (value: string) =>
   new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 3 }).format(

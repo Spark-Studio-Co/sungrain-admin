@@ -110,7 +110,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 interface ApplicationDetailProps {
   applicationId: string;
@@ -145,6 +145,8 @@ export const ApplicationDetail = ({
     description: "",
     file: null as File | null,
   });
+  const invoiceFileInputRef = useRef<HTMLInputElement>(null);
+  const canCreateInvoice = Boolean(newInvoice.name && newInvoice.amount);
 
   const [isEditInvoiceDialogOpen, setIsEditInvoiceDialogOpen] = useState(false);
   const [isDeleteInvoiceDialogOpen, setIsDeleteInvoiceDialogOpen] =
@@ -561,7 +563,7 @@ export const ApplicationDetail = ({
   };
 
   const handleCreateInvoice = async () => {
-    if (!newInvoice.name || !newInvoice.amount || !newInvoice.file) {
+    if (!canCreateInvoice || createInvoiceMutation.isPending) {
       return;
     }
 
@@ -576,13 +578,12 @@ export const ApplicationDetail = ({
         paidAmount: newInvoice.status === "paid" ? amount : 0,
         status: newInvoice.status,
         description: newInvoice.description,
-        file: newInvoice.file,
+        file: newInvoice.file ?? undefined,
       };
 
       await createInvoiceMutation.mutateAsync(invoiceData, {
         onSuccess: () => {
           setIsInvoiceDialogOpen(false);
-          refetchInvoices();
         },
         onError: (error) => {
           console.error("Invoice creation failed:", error);
@@ -1908,20 +1909,19 @@ export const ApplicationDetail = ({
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="invoice-file" className="text-right">
-                Файл <span className="text-red-500">*</span>
+                Файл
               </Label>
               <div className="col-span-3">
                 <Input
                   id="invoice-file"
+                  ref={invoiceFileInputRef}
                   type="file"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setNewInvoice({
-                        ...newInvoice,
-                        file: e.target.files[0],
-                      });
-                    }
-                  }}
+                  onChange={(e) =>
+                    setNewInvoice({
+                      ...newInvoice,
+                      file: e.target.files?.[0] ?? null,
+                    })
+                  }
                 />
                 {newInvoice.file && (
                   <div className="flex items-center mt-2 text-sm">
@@ -1934,9 +1934,13 @@ export const ApplicationDetail = ({
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 ml-2"
-                      onClick={() =>
-                        setNewInvoice({ ...newInvoice, file: null })
-                      }
+                      aria-label="Убрать файл счета"
+                      onClick={() => {
+                        if (invoiceFileInputRef.current) {
+                          invoiceFileInputRef.current.value = "";
+                        }
+                        setNewInvoice({ ...newInvoice, file: null });
+                      }}
                     >
                       <X className="h-4 w-4 text-red-500" />
                     </Button>
@@ -1956,12 +1960,7 @@ export const ApplicationDetail = ({
             <Button
               type="submit"
               onClick={handleCreateInvoice}
-              disabled={
-                createInvoiceMutation.isPending ||
-                !newInvoice.name ||
-                !newInvoice.amount ||
-                !newInvoice.file
-              }
+              disabled={createInvoiceMutation.isPending || !canCreateInvoice}
             >
               {createInvoiceMutation.isPending ? (
                 <>

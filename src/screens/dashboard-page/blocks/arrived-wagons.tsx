@@ -5,32 +5,27 @@ import { ArrowRight, Search, Train } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import type { AttentionItem } from "@/entities/contracts/api/get/get-attention-center.api";
+import { formatReceiptOperationAt } from "@/shared/contracts/receipt-operation-date";
 
-const formatStatusDate = (value?: string | null) => {
-  if (!value || Number.isNaN(new Date(value).getTime())) return "Не указано";
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Asia/Almaty",
-  }).format(new Date(value));
-};
+const normalizeSearch = (value: string) =>
+  value.replace(/[№\s]+/g, " ").trim().toLocaleLowerCase("ru-RU");
 
 export function ArrivedWagons({ item }: { item?: AttentionItem }) {
   const [search, setSearch] = useState("");
   const details = item?.details ?? item?.preview ?? [];
-  const term = search.trim().toLocaleLowerCase("ru-RU");
-  const filtered = details.filter((detail) =>
-    [
-      detail.label,
-      detail.meta,
-      detail.arrival?.clientName,
-      detail.arrival?.receiver,
-      ...(detail.arrival?.destinationStations ?? []),
-    ].join(" ").toLocaleLowerCase("ru-RU").includes(term),
-  );
+  const term = normalizeSearch(search);
+  const filtered = term
+    ? details.filter((detail) =>
+        normalizeSearch([
+          detail.label,
+          detail.meta,
+          detail.arrival?.clientName,
+          detail.arrival?.receiver,
+          detail.arrival?.applicationName,
+          ...(detail.arrival?.destinationStations ?? []),
+        ].join(" ")).includes(term),
+      )
+    : details;
 
   if (!item) {
     return (
@@ -46,14 +41,14 @@ export function ArrivedWagons({ item }: { item?: AttentionItem }) {
         <div className="min-w-0">
           <h3 className="text-sm font-bold text-[#223137]">Прибывшие вагоны</h3>
           <p className="mt-1 text-xs leading-relaxed text-[#7b857f]">
-            Статус «Клиент получил». Последние обновления — сверху.
+            Статус «Клиент получил». Дата операции берётся из дислокации Excel.
           </p>
         </div>
         <div className="relative w-full sm:max-w-80">
           <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#8a948f]" />
           <Input
             aria-label="Поиск прибывших вагонов"
-            placeholder="Вагон, клиент или договор"
+            placeholder="Вагон, клиент, договор или приложение"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             className="h-10 pl-9"
@@ -65,6 +60,7 @@ export function ArrivedWagons({ item }: { item?: AttentionItem }) {
         <ul aria-label="Прибывшие вагоны" className="max-h-[440px] overflow-y-auto border-t border-[#e8ede7]">
           {filtered.map((detail) => {
             const arrival = detail.arrival;
+            const operationDate = formatReceiptOperationAt(arrival?.receiptOperationAt);
             return (
               <li key={detail.id} className="border-b border-[#e8ede7] last:border-b-0">
                 <Link
@@ -73,12 +69,17 @@ export function ArrivedWagons({ item }: { item?: AttentionItem }) {
                 >
                   <dl className="grid min-w-0 grid-cols-2 gap-x-5 gap-y-4 text-xs lg:grid-cols-[1fr_1.5fr_1.2fr_1fr]">
                     <div className="min-w-0 [overflow-wrap:anywhere]">
-                      <dt className="mb-1 text-[11px] text-[#7b857f]">Вагон / договор</dt>
+                      <dt className="mb-1 text-[11px] text-[#7b857f]">Вагон / договор / приложение</dt>
                       <dd>
                         <span className="font-bold tabular-nums text-[#2f6b4f]">
                           {arrival?.wagonNumber || detail.label}
                         </span>
                         <span className="mt-1 block text-[#7b857f]">{arrival?.contractNumber}</span>
+                        {arrival && (
+                          <span className="mt-1 block font-semibold text-[#53605a]">
+                            {arrival.applicationName || "Название приложения не указано"}
+                          </span>
+                        )}
                       </dd>
                     </div>
                     <div className="min-w-0 [overflow-wrap:anywhere]">
@@ -95,11 +96,11 @@ export function ArrivedWagons({ item }: { item?: AttentionItem }) {
                       <dd className="text-[#53605a]">{arrival?.destinationStations.join(", ") || "Не указана"}</dd>
                     </div>
                     <div className="min-w-0">
-                      <dt className="mb-1 text-[11px] text-[#7b857f]">Статус обновлён · Алматы</dt>
+                      <dt className="mb-1 text-[11px] text-[#7b857f]">Дата операции · Алматы</dt>
                       <dd className="tabular-nums text-[#53605a]">
-                        {arrival?.statusUpdatedAt ? (
-                          <time dateTime={arrival.statusUpdatedAt}>{formatStatusDate(arrival.statusUpdatedAt)}</time>
-                        ) : "Не указано"}
+                        {operationDate ? (
+                          <time dateTime={arrival.receiptOperationAt}>{operationDate}</time>
+                        ) : "Дата операции не указана"}
                       </dd>
                     </div>
                   </dl>
@@ -116,7 +117,7 @@ export function ArrivedWagons({ item }: { item?: AttentionItem }) {
             {term ? "Вагоны не найдены" : item.count ? "Подробности прибытия пока недоступны" : "Прибывших вагонов пока нет"}
           </p>
           <p className="text-xs text-[#7b857f]">
-            {term ? "Измените номер вагона, клиента или договор." : "Здесь появятся вагоны со статусом «Клиент получил»."}
+            {term ? "Уточните вагон, клиента, договор или приложение." : "Здесь появятся вагоны со статусом «Клиент получил»."}
           </p>
         </div>
       )}

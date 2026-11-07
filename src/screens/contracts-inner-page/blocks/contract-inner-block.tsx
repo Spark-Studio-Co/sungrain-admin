@@ -38,6 +38,7 @@ import { useGetWagonContracts } from "@/entities/wagon/hooks/query/use-get-contr
 import { useGetApplications } from "@/entities/applications/hooks/query/use-get-applications.query";
 import { getInvoices } from "@/entities/invoices/api/get/get-invoices.api";
 import { ContractHeader } from "./contract-header";
+import { ContractDocuments } from "./contract-documents";
 import { WagonDetails } from "./wagon-details";
 import { ApplicationDetail } from "@/screens/application-page/blocks/application-details";
 import { ApplicationBlock } from "./contracts-application-block";
@@ -698,7 +699,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
         </Card>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {!isApplicationDetailOpen && (
-            <TabsList className="grid h-auto w-full grid-cols-3 rounded-md border border-[#dfe7de] bg-white p-1 shadow-[0_12px_28px_rgba(34,49,55,0.05)]">
+            <TabsList className="grid h-auto w-full grid-cols-2 rounded-md border border-[#dfe7de] bg-white p-1 shadow-[0_12px_28px_rgba(34,49,55,0.05)] sm:grid-cols-4">
               <TabsTrigger
                 value="applications"
                 className="rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white data-[state=active]:shadow-[0_10px_22px_rgba(243,136,16,0.22)]"
@@ -718,6 +719,9 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                 <span className="hidden sm:inline">Вагоны</span>
                 <span className="sm:hidden">Вагоны</span>
               </TabsTrigger>
+              <TabsTrigger value="documents" className="gap-2 rounded-md py-3 text-sm font-black text-[#6f7774] data-[state=active]:bg-[#f38810] data-[state=active]:text-white">
+                Документы <span className="text-xs">{Array.isArray((contractData as any)?.files) ? (contractData as any).files.length : 0}</span>
+              </TabsTrigger>
             </TabsList>
           )}
           <TabsContent
@@ -736,6 +740,9 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                 onSelectApplication={handleSelectApplication}
               />
             )}
+          </TabsContent>
+          <TabsContent value="documents" className="mt-4">
+            <ContractDocuments contractId={contractId} files={(contractData as any)?.files} isAdmin={isAdmin} />
           </TabsContent>
           <TabsContent value="finance" className="mt-4">
             <div className="space-y-4">

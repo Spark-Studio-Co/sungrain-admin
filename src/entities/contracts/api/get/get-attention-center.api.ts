@@ -12,7 +12,9 @@ export interface AttentionPreviewItem {
     clientName: string | null;
     receiver: string | null;
     contractNumber: string;
+    applicationName?: string | null;
     destinationStations: string[];
+    receiptOperationAt?: string | null;
     statusUpdatedAt: string | null;
   };
 }

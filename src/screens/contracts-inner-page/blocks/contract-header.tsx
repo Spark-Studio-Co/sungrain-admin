@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { getMainContractFile } from "@/entities/contracts/model/contract-documents";
 import { formatMoney, formatNumber } from "@/lib/utils";
 import {
   getContractStationNames,
@@ -36,6 +37,7 @@ export const ContractHeader = ({
   contractData,
   getCompanyName,
 }: ContractHeaderProps) => {
+  const mainFile = getMainContractFile(contractData?.files);
   const departureStations = getContractStationNames(
     contractData,
     "departure"
@@ -55,11 +57,7 @@ export const ContractHeader = ({
   };
 
   const handleOpenFile = () => {
-    if (!contractData?.files || contractData.files.length === 0) return;
-
-    const file = contractData.files[0];
-
-    const fileUrl = resolveBackendFileUrl(file);
+    const fileUrl = resolveBackendFileUrl(mainFile);
 
     if (fileUrl) {
       window.open(fileUrl, "_blank", "noopener,noreferrer");
@@ -107,7 +105,7 @@ export const ContractHeader = ({
               variant="outline"
               className="h-10 gap-2 rounded-md border-[#dce4da] bg-white font-bold text-[#223137] shadow-sm hover:bg-[#fff3e5] hover:text-[#d5740b]"
               onClick={handleOpenFile}
-              disabled={!contractData?.files || contractData.files.length === 0}
+              disabled={!resolveBackendFileUrl(mainFile)}
             >
               <Download className="h-4 w-4" />
               Скачать договор

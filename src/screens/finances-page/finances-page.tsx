@@ -978,7 +978,6 @@ export default function FinancesPage() {
           }`,
       });
 
-      await refetchFinanceData();
       setNewInvoice(createDefaultInvoiceForm());
       setIsInvoiceDialogOpen(false);
     } catch (error) {
@@ -2932,19 +2931,21 @@ export default function FinancesPage() {
                                   >
                                     Подробнее
                                   </Button>
-                                  <Button
-                                    variant="ghost"
-                                    className="h-9 w-9 rounded-md p-0 hover:bg-[#fff3e5]"
-                                    onClick={() =>
-                                      downloadFinanceDocument(
-                                        invoice.documents[0],
-                                        invoice,
-                                      )
-                                    }
-                                  >
-                                    <FileDown className="h-4 w-4" />
-                                    <span className="sr-only">Скачать</span>
-                                  </Button>
+                                  {invoice.documents.length > 0 && (
+                                    <Button
+                                      variant="ghost"
+                                      className="h-9 w-9 rounded-md p-0 hover:bg-[#fff3e5]"
+                                      onClick={() =>
+                                        downloadFinanceDocument(
+                                          invoice.documents[0],
+                                          invoice,
+                                        )
+                                      }
+                                    >
+                                      <FileDown className="h-4 w-4" />
+                                      <span className="sr-only">Скачать</span>
+                                    </Button>
+                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -3718,6 +3719,9 @@ export default function FinancesPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
+                    {selectedInvoiceDocuments.length === 0 && (
+                      <p className="text-sm text-[#7b857f]">Файл не приложен.</p>
+                    )}
                     {selectedInvoiceDocuments.map((document) => (
                       <button
                         key={document.id}
@@ -3994,19 +3998,20 @@ export default function FinancesPage() {
               >
                 Закрыть
               </Button>
-              <Button
-                className="h-11 gap-2 rounded-md bg-[#f38810] px-5 font-black text-white shadow-[0_10px_24px_rgba(243,136,16,0.22)] hover:bg-[#db790c]"
-                onClick={() =>
-                  selectedInvoiceDocuments[0] &&
-                  downloadFinanceDocument(
-                    selectedInvoiceDocuments[0],
-                    selectedInvoice,
-                  )
-                }
-              >
-                <Download className="h-4 w-4" />
-                Скачать счет
-              </Button>
+              {selectedInvoiceDocuments.length > 0 && (
+                <Button
+                  className="h-11 gap-2 rounded-md bg-[#f38810] px-5 font-black text-white shadow-[0_10px_24px_rgba(243,136,16,0.22)] hover:bg-[#db790c]"
+                  onClick={() =>
+                    downloadFinanceDocument(
+                      selectedInvoiceDocuments[0],
+                      selectedInvoice,
+                    )
+                  }
+                >
+                  <Download className="h-4 w-4" />
+                  Скачать счет
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

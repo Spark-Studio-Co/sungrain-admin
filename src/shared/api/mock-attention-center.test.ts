@@ -16,11 +16,14 @@ describe("mock attention center arrivals", () => {
     expect(arrivals.details).toHaveLength(arrivals.count);
     for (const row of arrivals.details) {
       expect(row.arrival.clientName).toBeTruthy();
+      expect(row.arrival.applicationName).toBeTruthy();
       expect(row.arrival.destinationStations.length).toBeGreaterThan(0);
       expect(row.arrival.statusUpdatedAt).toBeTruthy();
+      expect(row.arrival.receiptOperationAt).toBeTruthy();
+      expect(Date.parse(row.arrival.receiptOperationAt)).toBeLessThan(Date.parse(row.arrival.statusUpdatedAt));
       expect(row.href).toMatch(/^\/admin\/contracts\/\d+\/applications\/\d+$/);
     }
-    const dates = arrivals.details.map((row) => row.arrival.statusUpdatedAt);
+    const dates = arrivals.details.map((row) => row.arrival.receiptOperationAt);
     expect(dates).toEqual([...dates].sort().reverse());
     expect(data.summary.total).toBe(data.items
       .filter((item) => item.key !== "arrived_wagons")

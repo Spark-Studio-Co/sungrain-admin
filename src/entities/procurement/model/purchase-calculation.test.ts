@@ -37,11 +37,16 @@ describe("purchase calculation", () => {
       "1.01",
     );
   });
-  it("keeps cents when displaying totals above Number safe precision", () => {
-    expect(
-      formatMoney("99999999999999999.99", "KZT").replace(/\s/g, ""),
-    ).toMatch(/^99999999999999999,99(?:₸|KZT)$/);
-  });
+  it.each([
+    ["180000.00", "KZT", /^180000(?:₸|KZT)$/],
+    ["99999999999999999.99", "KZT", /^100000000000000000(?:₸|KZT)$/],
+    ["99999999999999999.99", "USD", /^99999999999999999,99(?:\$|USD)$/],
+  ] as const)(
+    "formats %s %s with the required precision",
+    (amount, currency, expected) => {
+      expect(formatMoney(amount, currency).replace(/\s/g, "")).toMatch(expected);
+    },
+  );
   it("validates required fields, real dates and precision", () => {
     expect(validatePurchase(values)).toEqual({});
     expect(

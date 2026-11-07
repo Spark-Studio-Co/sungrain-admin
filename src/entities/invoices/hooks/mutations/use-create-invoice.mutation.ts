@@ -17,9 +17,10 @@ export const useCreateInvoice = () => {
 
   return useMutation({
     mutationFn: (params: CreateInvoiceParams) => createInvoice(params),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["application"] });
+    onSuccess: (_, { applicationId }) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["invoices", String(applicationId)],
+      });
     },
   });
 };

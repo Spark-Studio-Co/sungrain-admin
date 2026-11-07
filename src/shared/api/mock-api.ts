@@ -142,6 +142,8 @@ const makeWagon = (
     status,
     status_updated_at:
       status === "client_received" ? isoDate(daysOffset + 10) : null,
+    receipt_operation_at:
+      status === "client_received" ? isoDate(daysOffset + 9) : null,
     capacity,
     real_weight: realWeight,
     owner,
@@ -1121,6 +1123,12 @@ const updateWagon = (id: string | number, body: AnyRecord) => {
 
   if (!wagon) return body;
 
+  if (
+    body.status &&
+    isWagonClientReceivedStatus(body.status) !== isWagonClientReceivedStatus(wagon.status)
+  ) {
+    wagon.receipt_operation_at = null;
+  }
   Object.assign(wagon, body);
   wagon.wagon = { ...wagon };
   return wagon;
@@ -1141,7 +1149,7 @@ const createInvoice = (applicationId: string | number, body: AnyRecord) => {
     amount,
     paidAmount,
     date: body.date || new Date().toISOString(),
-    file_url: "#",
+    file_url: body.files ? "#" : "",
     status:
       paidAmount >= amount && amount > 0
         ? "paid"
@@ -1534,14 +1542,27 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
     parts[1] === "upload-files" &&
     method === "post"
   ) {
-    return { success: true, files: findContract(parts[2]).files };
+    const contract = findContract(parts[2]);
+    const metadata = typeof body.files_info === "string" ? JSON.parse(body.files_info) : body.files_info;
+    const selected = Array.isArray(body.files) ? body.files : body.files ? [body.files] : [];
+    contract.files = [...(contract.files || []), ...selected.map((file, index) => makeFile(
+      `mock-${Date.now()}-${index}`, metadata?.[index]?.name || file.name, {
+        document_type: metadata?.[index]?.document_type || "other",
+        location: `/uploads/mock-${Date.now()}-${index}-${file.name}`,
+      },
+    ))];
+    return contract;
   }
   if (
     parts[0] === "contract" &&
     parts[1] === "delete-files" &&
     method === "patch"
   ) {
-    return { success: true };
+    const contract = findContract(parts[2]);
+    const metadata = typeof body.files_info === "string" ? JSON.parse(body.files_info) : body.files_info;
+    contract.files = (contract.files || []).filter((file) => !(metadata || []).some((removed) =>
+      removed.location ? removed.location === file.location : removed.name === file.name));
+    return contract;
   }
   if (
     parts[0] === "contract" &&
@@ -1622,16 +1643,22 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
               clientName: contract.company.name,
               receiver: contract.receiver,
               contractNumber: contract.number,
+              applicationName: application?.name?.trim() || null,
               destinationStations: (application as AnyRecord)?.destination_stations?.length
                 ? (application as AnyRecord).destination_stations
                 : (contract as AnyRecord).destination_stations?.length
                   ? (contract as AnyRecord).destination_stations
                   : [contract.destination_station].filter(Boolean),
+              receiptOperationAt: wagon.receipt_operation_at || null,
               statusUpdatedAt: wagon.status_updated_at || null,
             },
           };
         }),
-    ).sort((a, b) => (b.arrival.statusUpdatedAt || "").localeCompare(a.arrival.statusUpdatedAt || "") || a.id - b.id);
+    ).sort((a, b) =>
+      (b.arrival.receiptOperationAt || "").localeCompare(a.arrival.receiptOperationAt || "") ||
+      (b.arrival.statusUpdatedAt || "").localeCompare(a.arrival.statusUpdatedAt || "") ||
+      a.id - b.id,
+    );
     const makeItem = (
       key: string,
       title: string,
