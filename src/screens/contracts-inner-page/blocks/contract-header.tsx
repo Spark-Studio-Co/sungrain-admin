@@ -66,13 +66,13 @@ export const ContractHeader = ({
   return (
     <section
       aria-label="Сводка договора"
-      className="overflow-hidden rounded-xl border border-[#244f3c] bg-[#193e30] text-white shadow-[0_12px_30px_rgba(25,62,48,0.12)]"
+      className="overflow-hidden rounded-xl border border-[#dfe7de] bg-white text-[#223137]"
     >
       <div className="px-4 pt-4 sm:px-6 sm:pt-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <Link
             to={isAdmin ? "/admin/contracts" : "/contracts"}
-            className="inline-flex items-center gap-2 rounded text-xs font-semibold text-[#c6d9cc] transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            className="inline-flex items-center gap-2 rounded text-xs font-semibold text-[#71807a] transition-colors hover:text-[#2f6b4f] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2f6b4f]"
           >
             <ArrowLeft className="size-3.5" />
             Все договоры
@@ -89,18 +89,18 @@ export const ContractHeader = ({
         </div>
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#bed1c2]">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#71807a]">
               <FileText className="size-3.5" />
               Договор № {contractData?.number || contractData?.id}
-              <span className="mx-1 text-white/25">/</span>
-              <span className="text-[#f7bb70]">
+              <span className="mx-1 text-[#b4c0b9]">/</span>
+              <span className="text-[#2f6b4f]">
                 {contractData?.crop || "Культура не указана"}
               </span>
             </div>
-            <h1 className="mt-2 break-words text-2xl font-bold tracking-tight text-white sm:text-[28px]">
+            <h1 className="mt-2 break-words text-2xl font-bold tracking-tight text-[#223137] sm:text-[28px]">
               {contractData?.name || "Без названия"}
             </h1>
-            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[#c6d9cc]">
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[#71807a]">
               <span className="inline-flex items-center gap-1.5">
                 <Building2 className="size-3.5" />
                 {companyName}
@@ -114,7 +114,7 @@ export const ContractHeader = ({
                 УНК {contractData?.unk || "не указан"}
               </span>
               {contractData?.updated_at && (
-                <span className="text-[#a9c5b3]">
+                <span className="text-[#71807a]">
                   Обновлён {formatDate(contractData.updated_at)}
                 </span>
               )}
@@ -122,16 +122,16 @@ export const ContractHeader = ({
           </div>
           <div className="flex shrink-0 items-center justify-between gap-4 sm:flex-col sm:items-end">
             <div className="sm:text-right">
-              <div className="text-[11px] text-[#bed1c2]">
+              <div className="text-[11px] text-[#71807a]">
                 Стоимость договора
               </div>
-              <div className="mt-1 text-lg font-bold tabular-nums text-white">
+              <div className="mt-1 text-lg font-bold tabular-nums text-[#223137]">
                 {formatContractMoney(contractData?.estimated_cost, currency)}
               </div>
             </div>
             <Button
               variant="outline"
-              className="h-9 gap-2 border-white/20 bg-white/10 text-xs text-white shadow-none hover:bg-white/20 hover:text-white"
+              className="h-9 gap-2 text-xs"
               disabled={!mainFileUrl}
               onClick={() =>
                 window.open(mainFileUrl, "_blank", "noopener,noreferrer")
@@ -143,36 +143,36 @@ export const ContractHeader = ({
           </div>
         </div>
       </div>
-      <div className="mt-5 grid gap-3 border-t border-white/10 bg-black/10 px-4 py-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:px-6">
+      <div className="mt-5 grid gap-3 border-t border-[#dfe7de] bg-[#f8faf8] px-4 py-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:px-6">
         <div className="flex min-w-0 items-start gap-3">
-          <div className="grid size-9 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/5">
-            <TrainFront className="size-4 text-[#b9d6c2]" />
+          <div className="grid size-9 shrink-0 place-items-center rounded-lg border border-[#dce8dc] bg-[#eef5ef]">
+            <TrainFront className="size-4 text-[#2f6b4f]" />
           </div>
           <div className="min-w-0">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-[#a9c5b3]">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-[#71807a]">
               Станции отправления
             </div>
             <div className="mt-1 break-words text-sm font-bold">
               {departureStations.join(" · ") || "Не указаны"}
             </div>
-            <div className="mt-0.5 break-words text-xs text-[#a9c5b3]">
+            <div className="mt-0.5 break-words text-xs text-[#71807a]">
               {contractData?.sender || "Грузоотправитель не указан"}
             </div>
           </div>
         </div>
-        <ArrowRight className="hidden size-4 text-[#f7bb70] sm:block" />
+        <ArrowRight className="hidden size-4 text-[#b96508] sm:block" />
         <div className="flex min-w-0 items-start gap-3">
-          <div className="grid size-9 shrink-0 place-items-center rounded-lg border border-[#e8b670]/20 bg-[#e8b670]/10">
-            <MapPin className="size-4 text-[#f7bb70]" />
+          <div className="grid size-9 shrink-0 place-items-center rounded-lg border border-[#f1dfc7] bg-[#fff8ef]">
+            <MapPin className="size-4 text-[#b96508]" />
           </div>
           <div className="min-w-0">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-[#a9c5b3]">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-[#71807a]">
               Станции назначения
             </div>
             <div className="mt-1 break-words text-sm font-bold">
               {destinationStations.join(" · ") || "Не указаны"}
             </div>
-            <div className="mt-0.5 break-words text-xs text-[#a9c5b3]">
+            <div className="mt-0.5 break-words text-xs text-[#71807a]">
               {contractData?.receiver || "Грузополучатель не указан"}
             </div>
           </div>
