@@ -79,6 +79,7 @@ import {
   buildCultureDestinationGroups,
   type CultureDestinationGroup,
 } from "./approach-analytics";
+import { buildApproachCargoFilter } from "./approach-cargo-filter";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 const MAX_BATCH_FILES = 20;
@@ -1654,6 +1655,10 @@ export default function ApproachPage() {
   const dashboard = dashboardQuery.data;
   const imports = importsQuery.data ?? [];
 
+  const cargoFilter = useMemo(
+    () => buildApproachCargoFilter((dashboard?.rows ?? []).map((row) => row.cargoName)),
+    [dashboard?.rows],
+  );
   const options = useMemo(() => {
     const rows = dashboard?.rows ?? [];
     const unique = (values: Array<string | null>) =>
@@ -1664,9 +1669,9 @@ export default function ApproachPage() {
     return {
       stations: unique(rows.map((row) => row.currentStation)),
       recipients: unique(rows.map((row) => row.recipient)),
-      cargoes: unique(rows.map((row) => row.cargoName)),
+      cargoes: cargoFilter.options,
     };
-  }, [dashboard?.rows]);
+  }, [dashboard?.rows, cargoFilter]);
 
   const filteredRows = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase("ru-RU");
@@ -1675,7 +1680,7 @@ export default function ApproachPage() {
       .filter((row) => {
         if (station !== ALL && row.currentStation !== station) return false;
         if (recipient !== ALL && row.recipient !== recipient) return false;
-        if (cargo !== ALL && row.cargoName !== cargo) return false;
+        if (cargo !== ALL && (!row.cargoName || cargoFilter.labels.get(row.cargoName) !== cargo)) return false;
         if (!normalizedSearch) return true;
 
         return [
@@ -1696,7 +1701,7 @@ export default function ApproachPage() {
           left.currentStation.localeCompare(right.currentStation, "ru") ||
           left.wagonNumber.localeCompare(right.wagonNumber),
       );
-  }, [cargo, dashboard?.rows, recipient, search, station]);
+  }, [cargo, cargoFilter, dashboard?.rows, recipient, search, station]);
 
   const hasFilters =
     Boolean(search.trim()) ||
