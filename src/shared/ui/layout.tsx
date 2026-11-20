@@ -46,6 +46,10 @@ import { useAuthData } from "@/entities/auth/model/use-auth-store";
 import { Link } from "react-router-dom";
 import { AuthProvider } from "./auth-provider";
 import { cn } from "@/lib/utils";
+import {
+  accountingNavigationIncludes,
+  usesAccountingNavigation,
+} from "@/shared/users/navigation-profile";
 
 interface ILayout {
   children: React.ReactNode;
@@ -189,7 +193,7 @@ export const Layout: React.FC<ILayout> = ({
 }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const { removeRole, removeRequestId, removeUserId, removeToken, role } =
+  const { removeRole, removeRequestId, removeUserId, removeToken, role, token } =
     useAuthData();
   useAutoLogout();
 
@@ -212,8 +216,11 @@ export const Layout: React.FC<ILayout> = ({
     localStorage.setItem("sidebarOpen", String(isSidebarOpen));
   }, [isSidebarOpen]);
 
+  const accountingNavigation = useMemo(() => usesAccountingNavigation(token), [token]);
   const navigationItems = isAdmin
-    ? adminNavigationItems
+    ? accountingNavigation
+      ? adminNavigationItems.filter((item) => accountingNavigationIncludes(item.url))
+      : adminNavigationItems
     : canAccessApproach
       ? [...userNavigationItems, approachNavigationItem]
       : userNavigationItems;
@@ -266,7 +273,7 @@ export const Layout: React.FC<ILayout> = ({
               className={cn("px-3 pb-3 pt-4", isCollapsed && "px-1.5 pt-3")}
             >
               <Link
-                to={isAdmin ? "/admin" : "/contracts"}
+                to={isAdmin ? (accountingNavigation ? "/admin/contracts" : "/admin") : "/contracts"}
                 className={cn(
                   "flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.055] p-2.5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_16px_34px_rgba(0,0,0,0.14)] transition-colors hover:bg-white/[0.08]",
                   isCollapsed &&
