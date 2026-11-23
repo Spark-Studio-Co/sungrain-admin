@@ -50,7 +50,7 @@ import {
 import { resolveBackendFileUrl } from "@/shared/contracts/contract-ops";
 
 type Draft = {
-  file: File;
+  file: File | null;
   name: string;
   number: string;
   date: string;
@@ -191,6 +191,10 @@ export function ContractDocuments({
     if (upload.isPending) return;
     setOpen(value);
     setDragging(false);
+    if (value && !open) {
+      const type: ContractDocumentType = category === "contracts" ? "contract" : category === "waybills" ? "railway_waybill" : category === "acts" ? "act" : category === "certificates" ? "certificate" : "other";
+      setDrafts([{ file: null, name: "", number: "", date: "", type, id: nextId.current++ }]);
+    }
     if (!value) {
       setDrafts([]);
       setError(null);
@@ -200,23 +204,27 @@ export function ContractDocuments({
     event.preventDefault();
     if (!isAdmin || busy) return;
     const validation = validateContractDocumentFiles(
-      drafts.map(({ file }) => file),
+      drafts.flatMap(({ file }) => file ? [file] : []),
     );
     if (validation) {
       setError(validation);
+      return;
+    }
+    if (drafts.some(({ file }) => !file)) {
+      setError("Выберите файл для каждого документа");
       return;
     }
     if (drafts.some(({ name }) => !name.trim())) {
       setError("Укажите название каждого документа");
       return;
     }
-    upload.mutate({ contractId, documents: drafts });
+    upload.mutate({ contractId, documents: drafts.map((draft) => ({ ...draft, file: draft.file! })) });
   };
 
   const addFiles = (selected: File[]) => {
     if (!selected.length || upload.isPending) return;
     const validation = validateContractDocumentFiles([
-      ...drafts.map(({ file }) => file),
+      ...drafts.flatMap(({ file }) => file ? [file] : []),
       ...selected,
     ]);
     if (validation) {
@@ -234,17 +242,13 @@ export function ContractDocuments({
             : category === "certificates"
               ? "certificate"
               : "other";
-    setDrafts((current) => [
-      ...current,
-      ...selected.map((file) => ({
-        file,
-        name: file.name,
-        number: "",
-        date: "",
-        type,
-        id: nextId.current++,
-      })),
-    ]);
+    const additions = selected.map((file) => ({ file, name: file.name, number: "", date: "", type, id: nextId.current++ }));
+    setDrafts((current) => {
+      const pending = current.findIndex((draft) => !draft.file);
+      const [first, ...rest] = additions;
+      if (!first) return current;
+      return pending < 0 ? [...current, ...additions] : [...current.map((draft, index) => index === pending ? { ...draft, file: first.file, name: draft.name.trim() ? draft.name : first.name } : draft), ...rest];
+    });
   };
 
   return (
@@ -533,6 +537,114 @@ export function ContractDocuments({
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={submit} className="min-w-0 space-y-4">
+            <div className="space-y-3">
+              {drafts.map((draft) => (
+                <div
+                  key={draft.id}
+                  className="space-y-3 rounded-xl border border-[#dfe7de] bg-[#fbfcfa] p-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="min-w-0 flex-1 break-words text-xs text-[#6f7774]">
+                      {draft.file?.name || "Файл не выбран"}
+                    </span>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      disabled={upload.isPending || !draft.file}
+                      aria-label={`Убрать файл ${draft.file?.name || "документа"}`}
+                      onClick={() => {
+                        setDrafts((current) =>
+                          current.map((item) =>
+                            item.id === draft.id ? { ...item, file: null } : item,
+                          ),
+                        );
+                        setError(null);
+                      }}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                    {drafts.length > 1 && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        disabled={upload.isPending}
+                        aria-label={`Удалить документ ${draft.name || "без названия"}`}
+                        onClick={() => setDrafts((current) => current.filter(({ id }) => id !== draft.id))}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-[200px_minmax(0,1fr)]">
+                    <div className="space-y-1">
+                      <Label htmlFor={`document-type-${draft.id}`}>
+                        Тип документа
+                      </Label>
+                      <select
+                        id={`document-type-${draft.id}`}
+                        value={draft.type}
+                        disabled={upload.isPending}
+                        className="h-10 w-full rounded-md border border-input bg-white px-2 text-sm"
+                        onChange={(event) =>
+                          setDrafts((current) =>
+                            current.map((item) =>
+                              item.id === draft.id
+                                ? {
+                                    ...item,
+                                    type: event.target
+                                      .value as ContractDocumentType,
+                                  }
+                                : item,
+                            ),
+                          )
+                        }
+                      >
+                        {Object.entries(contractDocumentTypes).map(
+                          ([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`document-name-${draft.id}`}>
+                        Название *
+                      </Label>
+                      <DocumentNameInput
+                        id={`document-name-${draft.id}`}
+                        value={draft.name}
+                        maxLength={200}
+                        disabled={upload.isPending}
+                        placeholder={draft.file?.name || "Название документа"}
+                        onChange={(event) =>
+                          setDrafts((current) =>
+                            current.map((item) =>
+                              item.id === draft.id
+                                ? { ...item, name: event.target.value }
+                                : item,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label htmlFor={`document-number-${draft.id}`}>Номер</Label>
+                      <Input id={`document-number-${draft.id}`} value={draft.number} maxLength={100} disabled={upload.isPending} onChange={(event) => setDrafts((current) => current.map((item) => item.id === draft.id ? { ...item, number: event.target.value } : item))} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`document-date-${draft.id}`}>Дата</Label>
+                      <Input id={`document-date-${draft.id}`} type="date" value={draft.date} disabled={upload.isPending} onChange={(event) => setDrafts((current) => current.map((item) => item.id === draft.id ? { ...item, date: event.target.value } : item))} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
             <div
               onDragOver={(event) => {
                 event.preventDefault();
@@ -594,100 +706,6 @@ export function ContractDocuments({
                 Выбрать файлы
               </Button>
             </div>
-            <div className="space-y-3">
-              {drafts.map((draft) => (
-                <div
-                  key={draft.id}
-                  className="space-y-3 rounded-xl border border-[#dfe7de] bg-[#fbfcfa] p-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="min-w-0 flex-1 break-words text-xs text-[#6f7774]">
-                      {draft.file.name}
-                    </span>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      disabled={upload.isPending}
-                      aria-label={`Убрать ${draft.file.name}`}
-                      onClick={() => {
-                        setDrafts((current) =>
-                          current.filter(({ id }) => id !== draft.id),
-                        );
-                        setError(null);
-                      }}
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-[200px_minmax(0,1fr)]">
-                    <div className="space-y-1">
-                      <Label htmlFor={`document-type-${draft.id}`}>
-                        Тип документа
-                      </Label>
-                      <select
-                        id={`document-type-${draft.id}`}
-                        value={draft.type}
-                        disabled={upload.isPending}
-                        className="h-10 w-full rounded-md border border-input bg-white px-2 text-sm"
-                        onChange={(event) =>
-                          setDrafts((current) =>
-                            current.map((item) =>
-                              item.id === draft.id
-                                ? {
-                                    ...item,
-                                    type: event.target
-                                      .value as ContractDocumentType,
-                                  }
-                                : item,
-                            ),
-                          )
-                        }
-                      >
-                        {Object.entries(contractDocumentTypes).map(
-                          ([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ),
-                        )}
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor={`document-name-${draft.id}`}>
-                        Название *
-                      </Label>
-                      <DocumentNameInput
-                        id={`document-name-${draft.id}`}
-                        value={draft.name}
-                        maxLength={200}
-                        disabled={upload.isPending}
-                        placeholder={draft.file.name}
-                        onChange={(event) =>
-                          setDrafts((current) =>
-                            current.map((item) =>
-                              item.id === draft.id
-                                ? { ...item, name: event.target.value }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-1">
-                      <Label htmlFor={`document-number-${draft.id}`}>Номер</Label>
-                      <Input id={`document-number-${draft.id}`} value={draft.number} maxLength={100} disabled={upload.isPending} onChange={(event) => setDrafts((current) => current.map((item) => item.id === draft.id ? { ...item, number: event.target.value } : item))} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor={`document-date-${draft.id}`}>Дата</Label>
-                      <Input id={`document-date-${draft.id}`} type="date" value={draft.date} disabled={upload.isPending} onChange={(event) => setDrafts((current) => current.map((item) => item.id === draft.id ? { ...item, date: event.target.value } : item))} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
             {error && (
               <p role="alert" className="text-sm text-destructive">
                 {error}
@@ -702,7 +720,7 @@ export function ContractDocuments({
               >
                 Отмена
               </Button>
-              <Button type="submit" disabled={!drafts.length || drafts.some(({ name }) => !name.trim()) || busy}>
+              <Button type="submit" disabled={!drafts.length || drafts.some(({ name, file }) => !name.trim() || !file) || busy}>
                 {upload.isPending && (
                   <Loader2 className="size-4 animate-spin" />
                 )}

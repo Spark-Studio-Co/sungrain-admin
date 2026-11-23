@@ -18,13 +18,15 @@ import {
   type PurchaseAttachment,
 } from "@/entities/procurement/api/purchases.api";
 
-type Draft = { id: string; file: File; title: string; number: string; date: string };
+type Draft = { id: string; file: File | null; title: string; number: string; date: string };
+const emptyDraft = (): Draft => ({ id: crypto.randomUUID(), file: null, title: "", number: "", date: "" });
 
 export function PurchaseAttachments({ purchaseId }: { purchaseId: string }) {
   const key = ["purchase-attachments", purchaseId];
   const client = useQueryClient();
   const toast = useToast();
   const input = useRef<HTMLInputElement>(null);
+  const fileTarget = useRef<string | null>(null);
   const [workingId, setWorkingId] = useState<string>();
   const [open, setOpen] = useState(false);
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -36,7 +38,7 @@ export function PurchaseAttachments({ purchaseId }: { purchaseId: string }) {
       let limitReached = false;
       for (const draft of selected) {
         const { file } = draft;
-        if (!/\.(pdf|jpe?g|png|docx?|xlsx?)$/i.test(file.name) || !file.size || file.size > 10 * 1024 * 1024) {
+        if (!file || !/\.(pdf|jpe?g|png|docx?|xlsx?)$/i.test(file.name) || !file.size || file.size > 10 * 1024 * 1024) {
           failed.push(draft);
           continue;
         }
@@ -55,7 +57,7 @@ export function PurchaseAttachments({ purchaseId }: { purchaseId: string }) {
       if (uploaded) toast.success(`Загружено файлов: ${uploaded}`);
       setDrafts(failed);
       if (!failed.length) setOpen(false);
-      if (failed.length) toast.error(limitReached ? `Не загружены: ${failed.map((draft) => draft.file.name).join(", ")}. Лимит — 30 документов на закупку.` : `Не загружены: ${failed.map((draft) => draft.file.name).join(", ")}. Проверьте формат и размер файла.`);
+      if (failed.length) toast.error(limitReached ? `Не загружены: ${failed.map((draft) => draft.file?.name || "Файл").join(", ")}. Лимит — 30 документов на закупку.` : `Не загружены: ${failed.map((draft) => draft.file?.name || "Файл").join(", ")}. Проверьте формат и размер файла.`);
       void client.invalidateQueries({ queryKey: key, exact: true });
     },
   });
@@ -71,7 +73,7 @@ export function PurchaseAttachments({ purchaseId }: { purchaseId: string }) {
     <div className="purchase-attachments">
       <div className="purchase-attachments-heading">
         <div><h3>Дополнительные документы</h3><p>Накладные, акты, сертификаты и другие файлы</p></div>
-        <Button type="button" variant="outline" size="sm" disabled={upload.isPending} onClick={() => setOpen(true)}>
+        <Button type="button" variant="outline" size="sm" disabled={upload.isPending} onClick={() => { setDrafts([emptyDraft()]); setOpen(true); }}>
           <Upload className="size-4" /> Добавить документы
         </Button>
       </div>
@@ -98,15 +100,25 @@ export function PurchaseAttachments({ purchaseId }: { purchaseId: string }) {
           <input ref={input} type="file" className="sr-only" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onChange={(event) => {
             const selected = Array.from(event.target.files || []);
             event.target.value = "";
-            setDrafts((current) => [...current, ...selected.map((file) => ({ id: crypto.randomUUID(), file, title: file.name, number: "", date: "" }))]);
+            const target = fileTarget.current;
+            fileTarget.current = null;
+            const additions = selected.map((file) => ({ ...emptyDraft(), file, title: file.name }));
+            if (!additions.length) return;
+            setDrafts((current) => {
+              const index = current.findIndex((draft) => draft.id === target);
+              if (index < 0) return current;
+              const [first, ...rest] = additions;
+              return [...current.map((draft, currentIndex) => currentIndex === index ? { ...draft, id: draft.file ? first.id : draft.id, file: first.file, title: draft.title.trim() ? draft.title : first.title } : draft), ...rest];
+            });
           }} />
-          <Button type="button" variant="outline" onClick={() => input.current?.click()} disabled={upload.isPending}><Upload className="size-4" /> Выбрать файлы</Button>
           <div className="space-y-4">{drafts.map((draft) => <div key={draft.id} className="space-y-3 rounded-md border p-4">
-            <div className="flex items-center justify-between gap-3"><span className="min-w-0 truncate text-sm">{draft.file.name}</span><Button type="button" variant="ghost" size="icon" disabled={upload.isPending} aria-label={`Убрать ${draft.file.name}`} onClick={() => setDrafts((current) => current.filter((item) => item.id !== draft.id))}><Trash2 className="size-4" /></Button></div>
+            {drafts.length > 1 && <div className="flex justify-end"><Button type="button" variant="ghost" size="icon" disabled={upload.isPending} aria-label={`Убрать ${draft.file?.name || "документ"}`} onClick={() => setDrafts((current) => current.filter((item) => item.id !== draft.id))}><Trash2 className="size-4" /></Button></div>}
             <div className="space-y-1"><Label htmlFor={`purchase-title-${draft.id}`}>Название *</Label><DocumentNameInput id={`purchase-title-${draft.id}`} value={draft.title} maxLength={200} disabled={upload.isPending} onChange={(event) => setDrafts((current) => current.map((item) => item.id === draft.id ? { ...item, title: event.target.value } : item))} /></div>
             <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-1"><Label htmlFor={`purchase-number-${draft.id}`}>Номер</Label><Input id={`purchase-number-${draft.id}`} value={draft.number} maxLength={100} disabled={upload.isPending} onChange={(event) => setDrafts((current) => current.map((item) => item.id === draft.id ? { ...item, number: event.target.value } : item))} /></div><div className="space-y-1"><Label htmlFor={`purchase-date-${draft.id}`}>Дата</Label><Input id={`purchase-date-${draft.id}`} type="date" value={draft.date} disabled={upload.isPending} onChange={(event) => setDrafts((current) => current.map((item) => item.id === draft.id ? { ...item, date: event.target.value } : item))} /></div></div>
+            <div className="space-y-2"><Label>Файл *</Label><div className="flex flex-wrap items-center gap-2"><Button type="button" variant="outline" disabled={upload.isPending} onClick={() => { fileTarget.current = draft.id; input.current?.click(); }}><Upload className="size-4" />{draft.file ? "Заменить файл" : "Выбрать файлы"}</Button><span className="min-w-0 break-all text-sm text-muted-foreground">{draft.file?.name || "Файл не выбран"}</span></div></div>
           </div>)}</div>
-          <DialogFooter><Button variant="outline" type="button" disabled={upload.isPending} onClick={() => { setOpen(false); setDrafts([]); }}>Отмена</Button><Button type="button" disabled={!drafts.length || drafts.some((draft) => !draft.title.trim()) || upload.isPending} onClick={() => upload.mutate(drafts)}>{upload.isPending && <LoaderCircle className="size-4 animate-spin" />}{upload.isPending ? "Загружаем…" : "Загрузить"}</Button></DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setDrafts((current) => [...current, emptyDraft()])} disabled={upload.isPending}>Добавить ещё документ</Button>
+          <DialogFooter><Button variant="outline" type="button" disabled={upload.isPending} onClick={() => { setOpen(false); setDrafts([]); }}>Отмена</Button><Button type="button" disabled={!drafts.length || drafts.some((draft) => !draft.title.trim() || !draft.file) || upload.isPending} onClick={() => upload.mutate(drafts)}>{upload.isPending && <LoaderCircle className="size-4 animate-spin" />}{upload.isPending ? "Загружаем…" : "Загрузить"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
