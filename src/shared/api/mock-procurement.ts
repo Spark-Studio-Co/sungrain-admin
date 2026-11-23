@@ -1,6 +1,7 @@
 import { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import type {
   Purchase,
+  PurchaseAttachment,
   PurchaseValues,
 } from "../../entities/procurement/api/purchases.api";
 import type { ProcurementFarmRecord, ProcurementFarmValues } from "../../entities/procurement/api/procurement.api";
@@ -47,6 +48,7 @@ type StoredPurchase = Purchase & {
   requestId?: string;
   fingerprint?: string;
   file?: Blob;
+  attachments?: (PurchaseAttachment & { file: Blob })[];
 };
 const fixtures = (): StoredPurchase[] =>
   farms.map((farm, index) => {
@@ -84,6 +86,7 @@ const fixtures = (): StoredPurchase[] =>
 const publicPurchase = (stored: StoredPurchase): Purchase => {
   const row = { ...stored };
   delete row.file;
+  delete row.attachments;
   delete row.requestId;
   delete row.fingerprint;
   return row;
@@ -294,11 +297,15 @@ export async function mockProcurement(config: InternalAxiosRequestConfig) {
     const pdf = new TextDecoder().decode(header).startsWith("%PDF-");
     const jpg = header[0] === 255 && header[1] === 216 && header[2] === 255;
     const png = header.join(",") === "137,80,78,71,13,10,26,10";
+    const office = path[3] === "attachments" && (
+      (/\.(docx|xlsx)$/i.test(upload.name) && header.slice(0, 4).join(",") === "80,75,3,4") ||
+      (/\.(doc|xls)$/i.test(upload.name) && header.join(",") === "208,207,17,224,161,177,26,225")
+    );
     if (
       !(
         (pdf && /\.pdf$/i.test(upload.name)) ||
         (jpg && /\.jpe?g$/i.test(upload.name)) ||
-        (png && /\.png$/i.test(upload.name))
+        (png && /\.png$/i.test(upload.name)) || office
       ) ||
       !upload.size ||
       upload.size > 10485760
@@ -308,6 +315,28 @@ export async function mockProcurement(config: InternalAxiosRequestConfig) {
   const currentFarms = await accessFarms((rows) => ({ result: rows }));
   return access<unknown>((rows) => {
     const existing = rows.find((row) => row.id === path[2]);
+    if (path[3] === "attachments") {
+      if (!existing) return fail("Закупка не найдена", 404);
+      const attachments = existing.attachments || [];
+      const item = attachments.find((file) => file.id === path[4]);
+      const metadata = ({ id, name, mimeType, size, createdAt, title, number, date }: PurchaseAttachment) => ({ id, name, mimeType, size, createdAt, title, number, date });
+      if (method === "get" && !path[4]) return { result: attachments.map(metadata) };
+      if (method === "get" && path[4]) {
+        if (!item) return fail("Документ не найден", 404);
+        return { result: item.file };
+      }
+      if (method === "delete") {
+        if (!item) return fail("Документ не найден", 404);
+        return { result: { deleted: true }, save: { ...existing, attachments: attachments.filter((file) => file.id !== path[4]) } };
+      }
+      if (method === "post" && upload && path[4]) {
+        if (item) return fail("Документ с этим идентификатором уже существует", 409);
+        if (attachments.length >= 30) return fail("Можно прикрепить не более 30 дополнительных документов");
+        const added = { id: path[4], name: upload.name, size: upload.size, mimeType: upload.type, createdAt: new Date().toISOString(), title: String(form?.get("title") || ""), number: String(form?.get("number") || ""), date: String(form?.get("date") || ""), file: upload };
+        return { result: metadata(added), save: { ...existing, attachments: [added, ...attachments] } };
+      }
+      return fail("Выберите файл");
+    }
     if (path[3] === "document") {
       if (!existing?.file) fail("Договор не найден", 404);
       return { result: existing.file };
@@ -401,6 +430,7 @@ export async function mockProcurement(config: InternalAxiosRequestConfig) {
           ? null
           : existing?.document || null,
       file: upload || (remove ? undefined : existing?.file),
+      attachments: existing?.attachments,
     };
     return { result: publicPurchase(row), save: row };
   });

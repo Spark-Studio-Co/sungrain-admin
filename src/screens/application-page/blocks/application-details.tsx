@@ -1,5 +1,7 @@
 "use client";
 
+import { DocumentNameInput } from "@/shared/documents/document-name-input";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -517,7 +519,7 @@ export const ApplicationDetail = ({
     try {
       // Используем number как fileNumber для идентификации файла
       const fileNumber =
-        editingDocument.number ||
+        editingDocument.location ||
         editingDocument.originalNumber ||
         editingDocument.id;
 
@@ -561,7 +563,7 @@ export const ApplicationDetail = ({
         // Use deleteFileByNumberMutation for regular documents
         await deleteFileByNumberMutation.mutateAsync({
           applicationId: application?.id || applicationId,
-          docNumber: deletingDoc.number,
+          docNumber: deletingDoc.location || deletingDoc.number,
         });
       }
 
@@ -1516,13 +1518,13 @@ export const ApplicationDetail = ({
               <Label htmlFor="doc-name" className="text-right">
                 Название <span className="text-red-500">*</span>
               </Label>
-              <Input
+              <DocumentNameInput
                 id="doc-name"
                 value={newDocument.name}
                 onChange={(e) =>
                   setNewDocument({ ...newDocument, name: e.target.value })
                 }
-                className="col-span-3"
+                wrapperClassName="col-span-3"
               />
             </div>
 
@@ -2345,13 +2347,13 @@ export const ApplicationDetail = ({
               <Label htmlFor="shipping-doc-name" className="text-right">
                 Название <span className="text-red-500">*</span>
               </Label>
-              <Input
+              <DocumentNameInput
                 id="shipping-doc-name"
                 value={newShippingDoc.name}
                 onChange={(e) =>
                   setNewShippingDoc({ ...newShippingDoc, name: e.target.value })
                 }
-                className="col-span-3"
+                wrapperClassName="col-span-3"
               />
             </div>
 
@@ -2498,7 +2500,7 @@ export const ApplicationDetail = ({
               <Label htmlFor="edit-doc-name" className="text-right">
                 Название <span className="text-red-500">*</span>
               </Label>
-              <Input
+              <DocumentNameInput
                 id="edit-doc-name"
                 value={editingDocument?.name || ""}
                 onChange={(e) =>
@@ -2507,7 +2509,7 @@ export const ApplicationDetail = ({
                     name: e.target.value,
                   })
                 }
-                className="col-span-3"
+                wrapperClassName="col-span-3"
               />
             </div>
 

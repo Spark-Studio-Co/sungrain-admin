@@ -1,5 +1,7 @@
 "use client";
 
+import { DocumentNameInput } from "@/shared/documents/document-name-input";
+
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -702,7 +704,7 @@ export const AddContractDialog = () => {
                       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.85fr)_minmax(0,0.9fr)_auto] lg:items-end">
                         <div className="space-y-2">
                           <Label className={labelClass}>Наименование</Label>
-                        <Input
+                        <DocumentNameInput
                           value={doc.name}
                           onChange={(e) =>
                             updateDocument(index, { name: e.target.value })

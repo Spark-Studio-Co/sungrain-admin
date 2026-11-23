@@ -21,7 +21,7 @@ describe("contract documents", () => {
     await uploadContractDocuments({
       contractId: "c-1",
       documents: [
-        { file: first, name: " Накладная №4 ", type: "railway_waybill" },
+        { file: first, name: " Накладная №4 ", type: "railway_waybill", number: "4/а", date: "2026-10-07" },
         { file: second, name: " ", type: "act" },
       ],
     });
@@ -32,6 +32,8 @@ describe("contract documents", () => {
       expect.objectContaining({
         name: "Накладная №4",
         document_type: "railway_waybill",
+        number: "4/а",
+        date: "2026-10-07",
       }),
       expect.objectContaining({ name: "Акт.xlsx", document_type: "act" }),
     ]);

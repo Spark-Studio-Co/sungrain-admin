@@ -72,7 +72,7 @@ export const useUpdateWagon = () => {
         }
 
         // Then update files if needed
-        if (hasFiles || filesInfo.length > 0) {
+        if (hasFiles) {
           // Create a new FormData with only file-related data
           const fileFormData = new FormData();
 

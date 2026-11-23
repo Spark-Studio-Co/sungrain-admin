@@ -10,7 +10,7 @@ export async function uploadContractDocuments({
   documents,
 }: {
   contractId: string;
-  documents: { file: File; name: string; type: ContractDocumentType }[];
+  documents: { file: File; name: string; type: ContractDocumentType; number?: string; date?: string }[];
 }) {
   const error = validateContractDocumentFiles(
     documents.map((document) => document.file),
@@ -21,9 +21,11 @@ export async function uploadContractDocuments({
   body.append(
     "files_info",
     JSON.stringify(
-      documents.map(({ file, name, type }) => ({
+      documents.map(({ file, name, type, number, date }) => ({
         name: name.trim() || file.name,
         document_type: type,
+        number,
+        date,
         status: "-",
         price: 0,
         volume: 0,

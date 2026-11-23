@@ -1,5 +1,7 @@
 "use client";
 
+import { DocumentNameInput } from "@/shared/documents/document-name-input";
+
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -50,6 +52,8 @@ import { resolveBackendFileUrl } from "@/shared/contracts/contract-ops";
 type Draft = {
   file: File;
   name: string;
+  number: string;
+  date: string;
   type: ContractDocumentType;
   id: number;
 };
@@ -202,6 +206,10 @@ export function ContractDocuments({
       setError(validation);
       return;
     }
+    if (drafts.some(({ name }) => !name.trim())) {
+      setError("Укажите название каждого документа");
+      return;
+    }
     upload.mutate({ contractId, documents: drafts });
   };
 
@@ -231,6 +239,8 @@ export function ContractDocuments({
       ...selected.map((file) => ({
         file,
         name: file.name,
+        number: "",
+        date: "",
         type,
         id: nextId.current++,
       })),
@@ -415,6 +425,11 @@ export function ContractDocuments({
                         >
                           {name}
                         </div>
+                        {(document.number || document.date) && (
+                          <div className="mt-1 text-xs text-[#7b857f]">
+                            {[document.number && `№ ${document.number}`, document.date && document.date.split("-").reverse().join(".")].filter(Boolean).join(" · ")}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div
@@ -640,9 +655,9 @@ export function ContractDocuments({
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor={`document-name-${draft.id}`}>
-                        Название
+                        Название *
                       </Label>
-                      <Input
+                      <DocumentNameInput
                         id={`document-name-${draft.id}`}
                         value={draft.name}
                         maxLength={200}
@@ -658,6 +673,16 @@ export function ContractDocuments({
                           )
                         }
                       />
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label htmlFor={`document-number-${draft.id}`}>Номер</Label>
+                      <Input id={`document-number-${draft.id}`} value={draft.number} maxLength={100} disabled={upload.isPending} onChange={(event) => setDrafts((current) => current.map((item) => item.id === draft.id ? { ...item, number: event.target.value } : item))} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor={`document-date-${draft.id}`}>Дата</Label>
+                      <Input id={`document-date-${draft.id}`} type="date" value={draft.date} disabled={upload.isPending} onChange={(event) => setDrafts((current) => current.map((item) => item.id === draft.id ? { ...item, date: event.target.value } : item))} />
                     </div>
                   </div>
                 </div>
@@ -677,7 +702,7 @@ export function ContractDocuments({
               >
                 Отмена
               </Button>
-              <Button type="submit" disabled={!drafts.length || busy}>
+              <Button type="submit" disabled={!drafts.length || drafts.some(({ name }) => !name.trim()) || busy}>
                 {upload.isPending && (
                   <Loader2 className="size-4 animate-spin" />
                 )}

@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { CrmRouteLoading } from "@/components/ui/crm-route-loading";
 
 const ApplicationPage = dynamic(
-  () => import("@/screens/application-page/application-page"),
+  () => import("@/screens/application-page/application-document-page"),
   { ssr: false, loading: CrmRouteLoading }
 );
 

@@ -23,10 +23,10 @@ export const updateApplicationFile = async ({
   if (name !== undefined && name !== null && name !== "") {
     formData.append("name", name);
   }
-  if (number !== undefined && number !== null && number !== "") {
+  if (number !== undefined && number !== null) {
     formData.append("number", number);
   }
-  if (date !== undefined && date !== null && date !== "") {
+  if (date !== undefined && date !== null) {
     formData.append("date", date);
   }
 
@@ -45,7 +45,7 @@ export const updateApplicationFile = async ({
   });
 
   const response = await apiClient.patch(
-    `/application/update-file/${applicationId}/file/${fileNumber}`,
+    `/application/update-file/${applicationId}/file/${encodeURIComponent(fileNumber)}`,
     formData,
     {
       headers: {

@@ -1,5 +1,7 @@
 "use client";
 
+import { DocumentNameInput } from "@/shared/documents/document-name-input";
+
 import { DialogFooter } from "@/components/ui/dialog";
 import { formatMoney, formatNumber, normalizeCurrencyLabel } from "@/lib/utils";
 
@@ -971,7 +973,7 @@ export const ApplicationDialog = ({
                         {index + 1}
                       </div>
                       <div className="col-span-3">
-                        <Input
+                        <DocumentNameInput
                           value={doc.name}
                           onChange={(e) =>
                             updateDocument(index, "name", e.target.value)

@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { DocumentNameInput } from "@/shared/documents/document-name-input";
 import { DatePickerInput } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
 import {
@@ -317,6 +318,7 @@ export const ContractsBlock = ({ clientOnly = false }: { clientOnly?: boolean })
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [contractToEdit, setContractToEdit] = useState<any>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [fileMetadata, setFileMetadata] = useState<Map<File, { name: string; number: string; date: string }>>(new Map());
   const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -714,6 +716,7 @@ export const ContractsBlock = ({ clientOnly = false }: { clientOnly?: boolean })
     });
     setEditErrors({});
     setSelectedFiles([]);
+    setFileMetadata(new Map());
     setFilesToRemove([]);
     setEditDialogOpen(true);
   };
@@ -794,7 +797,9 @@ export const ContractsBlock = ({ clientOnly = false }: { clientOnly?: boolean })
             if (selectedFiles.length > 0) {
               setIsUploadingFiles(true);
               const filesInfo = selectedFiles.map((file) => ({
-                name: file.name,
+                name: fileMetadata.get(file)?.name.trim() || file.name,
+                number: fileMetadata.get(file)?.number || "",
+                date: fileMetadata.get(file)?.date || "",
                 originalname: file.name,
                 mimetype: file.type,
                 size: file.size,
@@ -2313,8 +2318,9 @@ export const ContractsBlock = ({ clientOnly = false }: { clientOnly?: boolean })
                         {selectedFiles.map((file, index) => (
                           <div
                             key={index}
-                            className="flex items-center justify-between gap-3 rounded-md border border-[#f6d7b3] bg-[#fff8ef] px-3 py-2 shadow-sm"
+                            className="space-y-3 rounded-md border border-[#f6d7b3] bg-[#fff8ef] px-3 py-2 shadow-sm"
                           >
+                            <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2">
                               <File className="h-4 w-4 text-[#f38810]" />
                               <span className="min-w-0 truncate text-sm font-semibold text-[#223137]">
@@ -2329,6 +2335,12 @@ export const ContractsBlock = ({ clientOnly = false }: { clientOnly?: boolean })
                             >
                               <X className="h-4 w-4 text-[#8a928f]" />
                             </Button>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-3">
+                              <DocumentNameInput value={fileMetadata.get(file)?.name ?? file.name} aria-label={`Название документа ${index + 1}`} onChange={(event) => setFileMetadata((current) => new Map(current).set(file, { name: event.target.value, number: current.get(file)?.number || "", date: current.get(file)?.date || "" }))} />
+                              <Input value={fileMetadata.get(file)?.number || ""} aria-label={`Номер документа ${index + 1}`} placeholder="Номер" maxLength={100} onChange={(event) => setFileMetadata((current) => new Map(current).set(file, { name: current.get(file)?.name ?? file.name, number: event.target.value, date: current.get(file)?.date || "" }))} />
+                              <Input type="date" value={fileMetadata.get(file)?.date || ""} aria-label={`Дата документа ${index + 1}`} onChange={(event) => setFileMetadata((current) => new Map(current).set(file, { name: current.get(file)?.name ?? file.name, number: current.get(file)?.number || "", date: event.target.value }))} />
+                            </div>
                           </div>
                         ))}
                       </div>

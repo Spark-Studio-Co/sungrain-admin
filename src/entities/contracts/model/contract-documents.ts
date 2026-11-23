@@ -13,6 +13,8 @@ export type ContractDocument = {
   name?: string;
   location?: string;
   document_type?: string;
+  number?: string;
+  date?: string;
   [key: string]: unknown;
 };
 

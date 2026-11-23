@@ -43,6 +43,21 @@ const form = (overrides: Record<string, string> = {}, pdf = false) => {
   return data;
 };
 describe("procurement mock persistence", () => {
+  it("stores supporting files separately from the agreement and scopes deletion", async () => {
+    const purchase = await call("/procurement/purchases", "post", form({}, true));
+    const base = `/procurement/purchases/${purchase.id}/attachments`;
+    const attachment = new FormData();
+    attachment.append("file", new Blob(["%PDF-1.7\nwaybill"], { type: "application/pdf" }), "накладная.pdf");
+    await call(`${base}/attachment-1`, "post", attachment);
+    expect((await call(base))[0]).toMatchObject({ id: "attachment-1", name: "накладная.pdf" });
+    expect(await (await call(`${base}/attachment-1`)).text()).toContain("waybill");
+    const updated = await call(`/procurement/purchases/${purchase.id}`, "patch", form({ version: "1", requestId: "" }));
+    expect(updated.document.name).toBe("agreement.pdf");
+    expect(await call(base)).toHaveLength(1);
+    await call(`${base}/attachment-1`, "delete");
+    expect(await call(base)).toHaveLength(0);
+    expect(await (await call(`/procurement/purchases/${purchase.id}/document`)).text()).toContain("Synthetic test");
+  });
   it("returns synthetic farms and seeded purchases", async () => {
     expect((await call("/procurement/purchases/options")).farms).toHaveLength(
       3,

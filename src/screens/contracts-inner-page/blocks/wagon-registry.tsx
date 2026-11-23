@@ -1,5 +1,7 @@
 "use client";
 
+import { DocumentNameInput } from "@/shared/documents/document-name-input";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -370,6 +372,10 @@ export const WagonRegistry = ({
   // Save wagon changes
   const handleSaveWagon = async () => {
     if (!editingWagon || !onUpdateWagon) return;
+    if (documents.some((doc) => !doc.name.trim() || (!doc.file && !doc.location))) {
+      alert("Укажите название и выберите файл для каждого нового документа");
+      return;
+    }
 
     setIsUpdating(true);
 
@@ -458,19 +464,6 @@ export const WagonRegistry = ({
           }
         );
       }
-
-      // Append files_info for existing files (without new uploads)
-      const existingFilesInfo = documents
-        .filter((doc) => !doc.file && doc.location)
-        .map((doc) => ({
-          id: doc.id,
-          name: doc.name,
-          number: doc.number || "",
-          date: doc.date || "",
-          location: doc.location,
-        }));
-
-      formData.append("files_info", JSON.stringify(existingFilesInfo));
 
       console.log("Updating wagon with data:", {
         ...Object.fromEntries(formData.entries()),
@@ -1082,47 +1075,9 @@ export const WagonRegistry = ({
                                 <Label className="text-xs font-black uppercase text-[#7b857f]">
                                   Тип документа
                                 </Label>
-                                <Select
-                                  value={doc.name}
-                                  onValueChange={(value) => {
-                                    updateDocument(
-                                      index,
-                                      "name",
-                                      value === "custom" ? "" : value
-                                    );
-                                  }}
-                                >
-                                  <SelectTrigger className="h-11 rounded-md border-[#dfe7de] bg-white font-semibold">
-                                    <SelectValue placeholder="Выберите тип документа" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="ЖД накладная">
-                                      ЖД накладная
-                                    </SelectItem>
-                                    <SelectItem value="Паспорт качества">
-                                      Паспорт качества
-                                    </SelectItem>
-                                    <SelectItem value="custom">
-                                      Другое название
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                {doc.name &&
-                                  doc.name !== "ЖД накладная" &&
-                                  doc.name !== "Паспорт качества" && (
-                                    <Input
-                                      value={doc.name}
-                                      onChange={(e) =>
-                                        updateDocument(
-                                          index,
-                                          "name",
-                                          e.target.value
-                                        )
-                                      }
-                                      placeholder="Введите название документа"
-                                      className="h-11 rounded-md border-[#dfe7de] bg-white font-semibold"
-                                    />
-                                  )}
+                                <DocumentNameInput value={doc.name} disabled={Boolean(doc.location && !doc.file)} onChange={(event) => updateDocument(index, "name", event.target.value)} placeholder="Название документа" aria-label={`Название документа ${index + 1}`} className="h-11 rounded-md border-[#dfe7de] bg-white font-semibold" />
+                                <Input value={doc.number} disabled={Boolean(doc.location && !doc.file)} onChange={(event) => updateDocument(index, "number", event.target.value)} placeholder="Номер документа" aria-label={`Номер документа ${index + 1}`} maxLength={100} />
+                                <Input type="date" value={doc.date} disabled={Boolean(doc.location && !doc.file)} onChange={(event) => updateDocument(index, "date", event.target.value)} aria-label={`Дата документа ${index + 1}`} />
                               </div>
 
                               <div className="space-y-2">

@@ -10,11 +10,15 @@ export interface UploadDocumentsForUploadParams {
 export const uploadDocumentsForUpload = async ({
   applicationId,
   name,
+  number,
+  date,
 }: UploadDocumentsForUploadParams) => {
   const { data } = await apiClient.post(
     `/application/create-for-upload-documents/${applicationId}`,
     {
-      name, // просто одно текстовое поле
+      name,
+      number,
+      date,
     }
   );
 

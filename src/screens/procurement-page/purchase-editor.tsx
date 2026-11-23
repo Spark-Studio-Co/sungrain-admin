@@ -79,6 +79,7 @@ import {
 } from "@/entities/procurement/model/purchase-calculation";
 import { PurchaseError } from "./purchases-page";
 import { FarmCreateDialog } from "./farm-create-dialog";
+import { PurchaseAttachments } from "./purchase-attachments";
 import "./purchases.css";
 
 type PurchaseDraft = {
@@ -881,6 +882,7 @@ function PurchaseForm({
                 Файл договора не прикреплён
               </p>
             )}
+            {purchase && <PurchaseAttachments purchaseId={purchase.id} />}
           </section>
           <section className="purchase-section">
             <h2>

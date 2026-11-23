@@ -1,5 +1,7 @@
 "use client";
 
+import { DocumentNameInput } from "@/shared/documents/document-name-input";
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -97,6 +99,10 @@ export const AddWagonPopup = ({
 
   // Update the handleAddWagon function to match the expected API structure
   const handleAddWagon = () => {
+    if (documents.some((doc) => !doc.name.trim() || !doc.file)) {
+      alert("Укажите название и выберите файл для каждого документа");
+      return;
+    }
     const formData = new FormData();
 
     // Convert string values to integers for numeric fields
@@ -416,50 +422,11 @@ export const AddWagonPopup = ({
                     {index + 1}
                   </div>
 
-                  {/* Название */}
-                  <div className="col-span-5">
-                    <Select
-                      value={doc.name}
-                      onValueChange={(value) => {
-                        if (value === "custom") {
-                          // If custom is selected, clear the name to allow manual input
-                          updateDocument(index, "name", "");
-                        } else {
-                          updateDocument(index, "name", value);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-full border-gray-300 focus:ring-1 focus:ring-primary">
-                        <SelectValue placeholder="Выберите тип документа">
-                          {doc.name || "Выберите тип документа"}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ЖД накладная">
-                          ЖД накладная
-                        </SelectItem>
-                        <SelectItem value="Паспорт качества">
-                          Паспорт качества
-                        </SelectItem>
-                        <SelectItem value="custom">
-                          Другое (свое название)
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    {/* Show input field if custom option is selected or if name doesn't match predefined options */}
-                    {doc.name &&
-                      doc.name !== "ЖД накладная" &&
-                      doc.name !== "Паспорт качества" && (
-                        <Input
-                          value={doc.name}
-                          onChange={(e) =>
-                            updateDocument(index, "name", e.target.value)
-                          }
-                          placeholder="Введите название документа"
-                          className="w-full border-gray-300 focus:ring-1 focus:ring-primary mt-2"
-                        />
-                      )}
+                  {/* Данные документа */}
+                  <div className="col-span-5 space-y-2">
+                    <DocumentNameInput value={doc.name} onChange={(event) => updateDocument(index, "name", event.target.value)} placeholder="Название документа" aria-label={`Название документа ${index + 1}`} />
+                    <Input value={doc.number} onChange={(event) => updateDocument(index, "number", event.target.value)} placeholder="Номер документа" aria-label={`Номер документа ${index + 1}`} maxLength={100} />
+                    <Input type="date" value={doc.date} onChange={(event) => updateDocument(index, "date", event.target.value)} aria-label={`Дата документа ${index + 1}`} />
                   </div>
 
                   {/* File Upload */}

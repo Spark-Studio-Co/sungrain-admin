@@ -839,3 +839,31 @@
     font-size: 21px;
   }
 }
+
+
+.purchase-document-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  color: var(--crm-muted);
+  font-size: 13px;
+}
+
+.purchase-attachments {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--crm-line);
+}
+.purchase-attachments-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.purchase-attachments-heading h3 { font-size: 14px; font-weight: 700; }
+.purchase-attachments-heading p,
+.purchase-attachments-hint { margin-top: 4px; color: var(--crm-muted); font-size: 12px; }
+.purchase-attachments-hint { margin-top: 10px; }
+.purchase-attachment-row { margin-top: 10px; }
