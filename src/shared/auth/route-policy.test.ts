@@ -81,6 +81,14 @@ describe("getAuthRedirect", () => {
     ).toBeNull();
   });
 
+  it("opens contracts for the accounting navigation profile", () => {
+    for (const pathname of ["/", "/login", "/admin"]) {
+      expect(getAuthRedirect({ pathname, hasToken: true, isAdmin: true, accountingNavigation: true })).toBe("/admin/contracts");
+    }
+    expect(getAuthRedirect({ pathname: "/admin/procurement", hasToken: true, isAdmin: true, accountingNavigation: true })).toBeNull();
+    expect(getAuthRedirect({ pathname: "/admin/finance", hasToken: true, isAdmin: true, accountingNavigation: true })).toBeNull();
+  });
+
   it("keeps regular users in contracts and blocks admin routes", () => {
     expect(
       getAuthRedirect({

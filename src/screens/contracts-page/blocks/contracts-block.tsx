@@ -295,8 +295,8 @@ const deleteContractFiles = async (contractId: string, filesInfo: any[]) => {
   }
 };
 
-export const ContractsBlock = () => {
-  const isAdmin = localStorage.getItem("isAdmin") === "true";
+export const ContractsBlock = ({ clientOnly = false }: { clientOnly?: boolean }) => {
+  const isAdmin = !clientOnly && localStorage.getItem("isAdmin") === "true";
   const { downloadPDF } = useExportTable();
   const toast = useToast();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -307,6 +307,7 @@ export const ContractsBlock = () => {
     restoredFromStorage: restoredSearchFromStorage,
   } = usePersistentState(CONTRACTS_SEARCH_STORAGE_KEY, "", {
     deserialize: deserializeContractsSearch,
+    enabled: !clientOnly,
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
@@ -338,6 +339,7 @@ export const ContractsBlock = () => {
     "all",
     {
       deserialize: deserializeContractsStatus,
+      enabled: !clientOnly,
     },
   );
   const {
@@ -350,6 +352,7 @@ export const ContractsBlock = () => {
     {
       serialize: serializeContractsFilters,
       deserialize: deserializeContractsFilters,
+      enabled: !clientOnly,
     },
   );
 
@@ -357,12 +360,15 @@ export const ContractsBlock = () => {
   const { data: stationsData = { data: [], total: 0 } } = useFetchStations(
     1,
     100,
+    isAdmin,
   );
-  const { data: receiversData = { data: [], total: 0 } } = useGetReceivers(
+  const { data: allReceivers = { data: [], total: 0 } } = useGetReceivers(
     1,
     100,
+    undefined,
+    isAdmin,
   );
-  const { data: sendersData = { data: [], total: 0 } } = useGetSenders(1, 100);
+  const { data: allSenders = { data: [], total: 0 } } = useGetSenders(1, 100, isAdmin);
   const stationOptions = useMemo(
     () =>
       (stationsData.data || []).map((station: any) => ({
@@ -400,6 +406,14 @@ export const ContractsBlock = () => {
 
   // Use the appropriate data source based on user role
   const contractsToDisplay = isAdmin ? contracts.data : userContracts.data;
+  const sendersData = useMemo(() => clientOnly ? {
+    data: Array.from(new Set((contractsToDisplay || []).map((item: any) => item.sender).filter(Boolean))).map((name) => ({ name })),
+    total: 0,
+  } : allSenders, [clientOnly, contractsToDisplay, allSenders]);
+  const receiversData = useMemo(() => clientOnly ? {
+    data: Array.from(new Set((contractsToDisplay || []).map((item: any) => item.receiver).filter(Boolean))).map((name) => ({ name })),
+    total: 0,
+  } : allReceivers, [clientOnly, contractsToDisplay, allReceivers]);
   const isDataLoading = isAdmin
     ? isAllContractsLoading
     : isUserContractsLoading;
@@ -1103,7 +1117,7 @@ export const ContractsBlock = () => {
                 onClick={() => clearFilters({ includeSearch: true })}
               >
                 <RotateCcw className="h-4 w-4" />
-                Быстрый reset
+                Сбросить
               </Button>
             )}
             <Button
@@ -1779,7 +1793,7 @@ export const ContractsBlock = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      {isAdmin && <><Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="max-w-md border-[#f2c7c1] p-0">
           <DialogHeader className="border-b border-[#f2c7c1] bg-[#fff8f7] p-5 pr-16">
             <div className="mb-3 grid size-10 place-items-center rounded-md bg-[#fff0ee] text-[#c24135]">
@@ -2368,7 +2382,7 @@ export const ContractsBlock = () => {
         </DialogContent>
       </Dialog>
 
-      <AddContractDialog />
+      <AddContractDialog /></>}
     </div>
   );
 };

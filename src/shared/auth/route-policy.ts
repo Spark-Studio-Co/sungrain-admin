@@ -9,6 +9,7 @@ interface AuthRedirectInput {
   canAccessApproach?: ApproachAccessStatus;
   isAuthHydrated?: boolean;
   bypassGuestAccess?: boolean;
+  accountingNavigation?: boolean;
 }
 
 export function getAuthRedirect({
@@ -18,6 +19,7 @@ export function getAuthRedirect({
   canAccessApproach = false,
   isAuthHydrated = true,
   bypassGuestAccess = false,
+  accountingNavigation = false,
 }: AuthRedirectInput): string | null {
   if (!isAuthHydrated) {
     return null;
@@ -42,6 +44,9 @@ export function getAuthRedirect({
   }
 
   if (isAdmin) {
+    if (accountingNavigation && (isLogin || isRoot || pathname === "/admin")) {
+      return "/admin/contracts";
+    }
     return isLogin || isRoot ? "/admin" : null;
   }
 

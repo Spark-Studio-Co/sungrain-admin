@@ -60,6 +60,7 @@ import { useUploadApplicationFiles } from "@/entities/applications/hooks/mutatio
 import { useUpdateApplicationFile } from "@/entities/applications/hooks/mutations/use-update-application-file.mutation";
 import { useUploadDocumentsForUpload } from "@/entities/applications/hooks/mutations/use-upload-documents.mutation";
 import { useGetApplication } from "@/entities/applications/hooks/query/use-get-application.query";
+import { useGetUserApplication } from "@/entities/applications/hooks/query/use-get-user-application.query";
 import { useCreateInvoice } from "@/entities/invoices/hooks/mutations/use-create-invoice.mutation";
 import { useDeleteInvoice } from "@/entities/invoices/hooks/mutations/use-delete-invoice.mutation";
 import { useUpdateInvoice } from "@/entities/invoices/hooks/mutations/use-update-invoice.mutation";
@@ -116,16 +117,14 @@ interface ApplicationDetailProps {
   applicationId: string;
   contractId: string;
   onBack: () => void;
+  isAdmin: boolean;
 }
 
 export const ApplicationDetail = ({
   applicationId,
   onBack,
+  isAdmin,
 }: ApplicationDetailProps) => {
-  const [isAdmin] = useState<boolean | null>(() => {
-    const storedAdminStatus = localStorage.getItem("isAdmin");
-    return storedAdminStatus ? JSON.parse(storedAdminStatus) : null;
-  });
   const [activeTab, setActiveTab] = useState("documents");
   const { open } = usePopupStore("addWagon");
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
@@ -180,18 +179,35 @@ export const ApplicationDetail = ({
   const [editingDocument, setEditingDocument] = useState<any>(null);
 
   const {
-    data: applicationData,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useGetApplication(applicationId);
+    data: adminApplication,
+    isLoading: isAdminLoading,
+    isError: isAdminError,
+    error: adminError,
+    refetch: refetchAdmin,
+  } = useGetApplication(applicationId, isAdmin);
 
   const {
-    data: invoicesData = [],
-    isLoading: isInvoicesLoading,
-    refetch: refetchInvoices,
-  } = useGetInvoices(applicationId);
+    data: clientApplication,
+    isLoading: isClientLoading,
+    isError: isClientError,
+    error: clientError,
+    refetch: refetchClient,
+  } = useGetUserApplication(applicationId, !isAdmin);
+
+  const {
+    data: adminInvoices = [],
+    isLoading: isAdminInvoicesLoading,
+    refetch: refetchAdminInvoices,
+  } = useGetInvoices(applicationId, isAdmin);
+
+  const applicationData = isAdmin ? adminApplication : clientApplication;
+  const isLoading = isAdmin ? isAdminLoading : isClientLoading;
+  const isError = isAdmin ? isAdminError : isClientError;
+  const error = isAdmin ? adminError : clientError;
+  const refetch = isAdmin ? refetchAdmin : refetchClient;
+  const invoicesData = isAdmin ? adminInvoices : clientApplication?.invoices ?? [];
+  const isInvoicesLoading = isAdmin ? isAdminInvoicesLoading : isClientLoading;
+  const refetchInvoices = isAdmin ? refetchAdminInvoices : refetchClient;
 
   const application = Array.isArray(applicationData)
     ? applicationData[0]

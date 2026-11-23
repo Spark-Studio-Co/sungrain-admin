@@ -9,5 +9,5 @@ const ContractsInnerPage = dynamic(
 );
 
 export default function UserContractInnerRoute() {
-  return <ContractsInnerPage />;
+  return <ContractsInnerPage clientOnly />;
 }

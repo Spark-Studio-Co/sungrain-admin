@@ -55,6 +55,7 @@ import {
 
 interface ContractInnerBlockProps {
   contractId: string;
+  clientOnly?: boolean;
 }
 
 const toEntityArray = <T = any,>(value: any): T[] => {
@@ -76,9 +77,9 @@ const formatRouteApplicationsCount = (count: number) => {
   return `${count} ${label}`;
 };
 
-export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
+export const ContractInnerBlock = ({ contractId, clientOnly = false }: ContractInnerBlockProps) => {
   const { id } = useParams();
-  const isAdmin = localStorage.getItem("isAdmin") === "true";
+  const isAdmin = !clientOnly && localStorage.getItem("isAdmin") === "true";
   const [activeTab, setActiveTab] = useState("applications");
   const [selectedApplicationId, setSelectedApplicationId] = useState<
     string | null
@@ -107,10 +108,10 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     data: wagonContractsData,
     isLoading: isWagonsLoading,
     isError: isWagonsError,
-  } = useGetWagonContracts(contractId);
+  } = useGetWagonContracts(contractId, isAdmin);
 
   const { data: companiesData, isLoading: isCompaniesLoading } =
-    useGetCompanies(1, 100);
+    useGetCompanies(1, 100, isAdmin);
 
   const contractData = isAdmin ? contract : userContract;
   const isDataLoading = isAdmin ? isLoading : isUserLoading;
@@ -120,7 +121,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   const {
     data: contractApplicationsData,
     isLoading: isContractApplicationsLoading,
-  } = useGetApplications(contractId);
+  } = useGetApplications(contractId, isAdmin);
 
   // Get company name from ID
   const getCompanyName = (companyId: number) => {
@@ -132,16 +133,16 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
   // Combine wagon data from both sources, prioritizing the wagonContractsData
   const wagons = useMemo(
     () =>
-      wagonContractsData?.length > 0
+      isAdmin && wagonContractsData?.length > 0
         ? wagonContractsData
         : (contractData as any)?.wagons || [],
-    [contractData, wagonContractsData],
+    [contractData, wagonContractsData, isAdmin],
   );
 
   const contractApplications = useMemo(() => {
-    const backendApplications = toEntityArray<Record<string, any>>(
-      contractApplicationsData,
-    );
+    const backendApplications = isAdmin
+      ? toEntityArray<Record<string, any>>(contractApplicationsData)
+      : [];
 
     if (backendApplications.length > 0) {
       return sortApplicationsByNaturalOrder(backendApplications);
@@ -150,20 +151,20 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
     return sortApplicationsByNaturalOrder(
       toEntityArray<Record<string, any>>((contractData as any)?.applications),
     );
-  }, [contractApplicationsData, contractData]);
+  }, [contractApplicationsData, contractData, isAdmin]);
 
   const invoiceQueries = useQueries({
     queries: contractApplications.map((application) => ({
       queryKey: ["invoices", String(application.id)],
       queryFn: () => getInvoices(String(application.id)),
-      enabled: Boolean(application.id),
+      enabled: isAdmin && Boolean(application.id),
     })),
   });
 
   const contractInvoices = useMemo(
     () =>
       contractApplications.flatMap((application, index) =>
-        toEntityArray<Record<string, any>>(invoiceQueries[index]?.data).map(
+        toEntityArray<Record<string, any>>(isAdmin ? invoiceQueries[index]?.data : application.invoices).map(
           (invoice) => ({
             ...invoice,
             applicationId:
@@ -177,12 +178,12 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           }),
         ),
       ),
-    [contractApplications, contractData, invoiceQueries],
+    [contractApplications, contractData, invoiceQueries, isAdmin],
   );
 
   const isContractFinanceLoading =
-    isContractApplicationsLoading ||
-    invoiceQueries.some((query) => query.isLoading);
+    isAdmin && (isContractApplicationsLoading ||
+    invoiceQueries.some((query) => query.isLoading));
 
   // const renderedFiles =
   //   wagons
@@ -811,14 +812,18 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           >
             {selectedApplicationId ? (
               <ApplicationDetail
+                isAdmin={isAdmin}
                 contractId={id as any}
                 applicationId={selectedApplicationId}
                 onBack={handleBackToApplications}
               />
             ) : (
               <ApplicationBlock
+                isAdmin={isAdmin}
                 contractId={contractId}
                 onSelectApplication={handleSelectApplication}
+                clientApplications={isAdmin ? undefined : contractApplications}
+                onRefreshClient={isAdmin ? undefined : userRefetch}
               />
             )}
           </TabsContent>
@@ -996,8 +1001,7 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
                         ))
                       ) : (
                         <div className="rounded-md border border-dashed border-[#dfe7de] bg-[#fbfcfa] p-4 text-sm font-semibold text-[#7b857f]">
-                          Отдельные платежи backend пока не хранит. Оплату берем
-                          из статусов счетов.
+                          Платежи не указаны.
                         </div>
                       )}
                     </div>
@@ -1016,10 +1020,10 @@ export const ContractInnerBlock = ({ contractId }: ContractInnerBlockProps) => {
           </TabsContent>
         </Tabs>
       </div>
-      <AddWagonPopup
+      {isAdmin && <AddWagonPopup
         contractId={contractId}
         applicationId={selectedApplicationId || undefined}
-      />
+      />}
     </>
   );
 };

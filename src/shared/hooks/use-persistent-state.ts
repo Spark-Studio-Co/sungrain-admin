@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 type PersistentStateOptions<T> = {
   serialize?: (value: T) => string;
   deserialize?: (value: string) => T;
+  enabled?: boolean;
 };
 
 function usePersistentState<T>(
@@ -12,12 +13,16 @@ function usePersistentState<T>(
   defaultValue: T,
   options: PersistentStateOptions<T> = {}
 ) {
-  const { serialize = JSON.stringify, deserialize = JSON.parse } = options;
+  const { serialize = JSON.stringify, deserialize = JSON.parse, enabled = true } = options;
   const [value, setValue] = useState<T>(defaultValue);
   const [hasHydrated, setHasHydrated] = useState(false);
   const [restoredFromStorage, setRestoredFromStorage] = useState(false);
 
   useEffect(() => {
+    if (!enabled) {
+      setHasHydrated(true);
+      return;
+    }
     try {
       const storedValue = window.localStorage.getItem(key);
       if (storedValue) {
@@ -29,20 +34,20 @@ function usePersistentState<T>(
     } finally {
       setHasHydrated(true);
     }
-  }, [deserialize, key]);
+  }, [deserialize, key, enabled]);
 
   useEffect(() => {
-    if (!hasHydrated) return;
+    if (!hasHydrated || !enabled) return;
 
     try {
       window.localStorage.setItem(key, serialize(value));
     } catch {
       // Storage can be unavailable in private mode; keep the in-memory state.
     }
-  }, [hasHydrated, key, serialize, value]);
+  }, [hasHydrated, key, serialize, value, enabled]);
 
   const clearPersistedValue = () => {
-    window.localStorage.removeItem(key);
+    if (enabled) window.localStorage.removeItem(key);
     setRestoredFromStorage(false);
     setValue(defaultValue);
   };

@@ -86,17 +86,18 @@ import {
 interface ApplicationBlockProps {
   contractId: string;
   onSelectApplication: (applicationId: string) => void;
+  isAdmin: boolean;
+  clientApplications?: any[];
+  onRefreshClient?: () => Promise<unknown>;
 }
 
 export const ApplicationBlock = ({
   contractId,
   onSelectApplication,
+  isAdmin,
+  clientApplications,
+  onRefreshClient,
 }: ApplicationBlockProps) => {
-  const [isAdmin] = useState<boolean | null>(() => {
-    const storedAdminStatus = localStorage.getItem("isAdmin");
-    return storedAdminStatus ? JSON.parse(storedAdminStatus) : null;
-  });
-
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -105,12 +106,15 @@ export const ApplicationBlock = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const {
-    data: applications,
-    isLoading,
-    isError,
+    data: fetchedApplications,
+    isLoading: isLoadingFetched,
+    isError: isErrorFetched,
     error,
     refetch,
-  } = useGetApplications(contractId);
+  } = useGetApplications(contractId, isAdmin);
+  const applications = isAdmin ? fetchedApplications : clientApplications;
+  const isLoading = isAdmin && isLoadingFetched;
+  const isError = isAdmin && isErrorFetched;
 
   const deleteApplicationMutation = useDeleteApplication();
 
@@ -127,7 +131,8 @@ export const ApplicationBlock = ({
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await refetch();
+      if (isAdmin) await refetch();
+      else await onRefreshClient?.();
     } catch {
     } finally {
       setIsRefreshing(false);
@@ -991,14 +996,14 @@ export const ApplicationBlock = ({
       </Card>
 
       {/* Add Application Dialog */}
-      <ApplicationDialog
+      {isAdmin && <ApplicationDialog
         isOpen={isAddDialogOpen}
         onClose={handleDialogClose}
         contractId={contractId}
-      />
+      />}
 
       {/* Edit Application Dialog */}
-      {selectedApplication && (
+      {isAdmin && selectedApplication && (
         <ApplicationDialog
           isOpen={isEditDialogOpen}
           onClose={handleDialogClose}
@@ -1008,7 +1013,7 @@ export const ApplicationBlock = ({
       )}
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog
+      {isAdmin && <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
       >
@@ -1038,7 +1043,7 @@ export const ApplicationBlock = ({
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog>}
     </>
   );
 };

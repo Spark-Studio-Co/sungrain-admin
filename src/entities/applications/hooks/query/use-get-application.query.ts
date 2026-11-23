@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { getApplication } from "../../api/get/get-application.api";
 
-export const useGetApplication = (applicationId: string) => {
+export const useGetApplication = (applicationId: string, enabled = true) => {
   return useQuery({
     queryKey: ["application", applicationId, "application-files"],
     queryFn: () => getApplication(applicationId),
-    enabled: !!applicationId,
+    enabled: !!applicationId && enabled,
   });
 };

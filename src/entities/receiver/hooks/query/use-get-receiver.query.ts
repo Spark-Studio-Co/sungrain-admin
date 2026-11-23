@@ -4,10 +4,12 @@ import { getReceivers } from "../../api/get/get-receiver.api";
 export const useGetReceivers = (
   page: number,
   limit: number,
-  search?: string
+  search?: string,
+  enabled = true,
 ) => {
   return useQuery({
     queryKey: ["receivers", page, limit, search],
     queryFn: () => getReceivers(page, limit, search),
+    enabled,
   });
 };

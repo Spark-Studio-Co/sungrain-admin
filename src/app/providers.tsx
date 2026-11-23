@@ -22,6 +22,7 @@ import {
 import { Layout } from "@/shared/ui/layout";
 import { ToastProvider } from "@/components/ui/toast";
 import { CrmRouteLoading } from "@/components/ui/crm-route-loading";
+import { usesAccountingNavigation } from "@/shared/users/navigation-profile";
 
 type PersistApi = {
   persist?: {
@@ -165,6 +166,7 @@ function RouteGuard({ children }: { children: ReactNode }) {
       canAccessApproach: token ? canAccessApproach : null,
       isAuthHydrated,
       bypassGuestAccess: isProtectedRoute && shouldBypassAuthLocally(),
+      accountingNavigation: usesAccountingNavigation(token),
     });
 
     if (redirect && redirect !== pathname) {
@@ -183,7 +185,7 @@ function RouteGuard({ children }: { children: ReactNode }) {
 
   const shouldRenderShell = isProtectedRoute;
 
-  if (!isAuthHydrated) {
+  if (!isAuthHydrated || (pathname === "/admin" && usesAccountingNavigation(token))) {
     return (
       <div className="crm-surface min-h-dvh p-3 sm:p-5 lg:p-6">
         <CrmRouteLoading />

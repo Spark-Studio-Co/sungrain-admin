@@ -47,6 +47,18 @@ describe("mockApiAdapter", () => {
     });
   });
 
+  it("returns application details from the client endpoint", async () => {
+    const contracts = await request("/user/my-contracts");
+    const application = contracts.data[0].applications[0];
+    const details = await request(`/user/my-application/${application.id}`);
+    expect(details).toMatchObject({
+      id: application.id,
+      wagons: expect.any(Array),
+      documents_for_upload: expect.any(Array),
+      invoices: expect.any(Array),
+    });
+  });
+
   it("creates contracts in memory so local forms can work without backend", async () => {
     const before = await request("/contract", {
       params: { page: 1, limit: 100 },

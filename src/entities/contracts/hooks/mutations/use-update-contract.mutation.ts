@@ -9,7 +9,7 @@ export const useUpdateContract = () => {
       updateContract(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
-      queryClient.invalidateQueries({ queryKey: ["userContracts"] });
+      queryClient.invalidateQueries({ queryKey: ["user-contracts"] });
       queryClient.invalidateQueries({ queryKey: ["attention-center"] });
     },
   });

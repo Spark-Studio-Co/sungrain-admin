@@ -1511,6 +1511,14 @@ const handleMockRequest = (config: InternalAxiosRequestConfig) => {
   if (parts[0] === "user" && parts[1] === "my-contract" && method === "get") {
     return findContract(parts[2]);
   }
+  if (parts[0] === "user" && parts[1] === "my-application" && method === "get") {
+    const application = findApplication(parts[2]);
+    return {
+      ...application,
+      documents_for_upload: (application as AnyRecord).documents_for_upload || [],
+      invoices: invoices.filter((invoice) => String(invoice.applicationId) === parts[2]),
+    };
+  }
   if (parts[0] === "user" && parts[1] && method === "get") {
     return users.find((user) => String(user.id) === parts[1]) || users[0];
   }
