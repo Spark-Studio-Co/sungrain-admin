@@ -2,6 +2,16 @@ import { describe, expect, it } from "vitest";
 import { buildApproachCargoFilter } from "./approach-cargo-filter";
 
 describe("approach cargo filter", () => {
+  it("groups the listed corn grain variants without merging other cargoes or qualifiers", () => {
+    const names = ["зерно кукуруз", "зерно кукуруза", "зерно кукурузная", "зерно кукурузное", "зерно кукурузы", "зернокукурузная"];
+    const other = ["зерно кукурузы 3 класса", "зерно кукурузы фуражное", "шрот кукурузный", "масло кукурузное"];
+    const result = buildApproachCargoFilter([...names, ...other]);
+    expect(names.map((name) => result.labels.get(name))).toEqual(names.map(() => "Зерно кукурузы"));
+    expect(result.options.filter((name) => name === "Зерно кукурузы")).toHaveLength(1);
+    expect(other.every((name) => result.labels.get(name) !== "Зерно кукурузы")).toBe(true);
+    expect(buildApproachCargoFilter([...names].reverse()).options).toEqual(["Зерно кукурузы"]);
+  });
+
   it("selects all sunflower oil spelling variants together without changing source names", () => {
     const names = ["масло подс", "масло подс.", "масло подсол", "масло подсолнечное", "Подсолнечное масло", "sunflower oil", "Пшеница"];
     const result = buildApproachCargoFilter(names);

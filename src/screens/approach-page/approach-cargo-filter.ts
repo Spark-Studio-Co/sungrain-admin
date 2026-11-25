@@ -21,6 +21,15 @@ const sunflowerOil = (name: string) => {
   return ["подсолнечное", "подсолнечника"].some((word) => word.startsWith(words[1]));
 };
 
+const cornGrainNames = new Set([
+  "зерно кукуруз",
+  "зерно кукуруза",
+  "зерно кукурузная",
+  "зерно кукурузное",
+  "зерно кукурузы",
+  "зернокукурузная",
+]);
+
 type Candidate = { normalized: string; label: string } | null;
 
 const extendsWords = (longer: string, shorter: string) => {
@@ -71,7 +80,7 @@ export function buildApproachCargoFilter(names: Array<string | null>) {
   for (const original of originals) {
     const key = normalize(original);
     const candidate = prefixes.get(key);
-    labels.set(original, sunflowerOil(key) ? "Масло подсолнечное" : candidate?.label ?? byNormalized.get(key) ?? original.trim());
+    labels.set(original, sunflowerOil(key) ? "Масло подсолнечное" : cornGrainNames.has(key) ? "Зерно кукурузы" : candidate?.label ?? byNormalized.get(key) ?? original.trim());
   }
   return {
     labels,
